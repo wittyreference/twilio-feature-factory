@@ -300,6 +300,117 @@ Run `/context summarize` if the session is long, to compress progress before han
 
 ---
 
+## Document-Driven Artifact Review
+
+When working in the hybrid workflow, the architect reviews artifacts created using `.github/prompts/` templates.
+
+### Artifacts to Review
+
+| Artifact | Source Template | What to Validate |
+|----------|-----------------|------------------|
+| Concept document | `brainstorm.md` | Twilio service selection, feasibility |
+| `prompt_plan.md` | `plan.md` | Architecture fit, implementation order |
+| `todo.md` | `plan.md` | Task breakdown, dependencies |
+| Specification | `spec.md` | API design, patterns, integration |
+
+### Hybrid Workflow Entry Point
+
+When artifacts exist from document-driven planning:
+
+```text
+/architect review prompt_plan.md
+```
+
+Or when invoked by `/orchestrate hybrid`:
+
+```text
+/orchestrate hybrid
+# → Architect reviews existing artifacts before subagent execution
+```
+
+### Artifact Review Process
+
+#### Step 1: Locate Artifacts
+
+Check for document-driven artifacts:
+- `prompt_plan.md` - Implementation plan
+- `todo.md` - Task tracking
+- Spec documents in `docs/` or project root
+- Concept documents from brainstorming
+
+#### Step 2: Validate Against Project Patterns
+
+```markdown
+## Artifact Review: [artifact name]
+
+### Document Summary
+[Brief description of what the artifact proposes]
+
+### Architecture Alignment
+
+| Aspect | Status | Notes |
+|--------|--------|-------|
+| Twilio Services | OK/WARN | [Correct service selection?] |
+| Directory Structure | OK/WARN | [Follows project conventions?] |
+| Access Levels | OK/WARN | [Appropriate function visibility?] |
+| Integration Points | OK/WARN | [Fits existing code?] |
+| Test Strategy | OK/WARN | [Covers requirements?] |
+
+### Recommended Adjustments
+- [Adjustment 1]
+- [Adjustment 2]
+
+### Ready for Execution
+[YES - proceed to /spec refinement | NO - needs revision]
+```
+
+#### Step 3: Handoff to Spec
+
+After artifact review:
+
+```text
+Artifact review complete.
+
+Recommendation: PROCEED with adjustments
+
+Next step: Run `/spec refine` to refine specification based on review.
+
+Key adjustments for spec writer:
+- [Adjustment 1]
+- [Adjustment 2]
+```
+
+### Example: Reviewing a Plan
+
+```markdown
+## Artifact Review: prompt_plan.md
+
+### Document Summary
+Voice IVR implementation plan with 3 phases:
+1. Basic greeting handler
+2. DTMF menu with 4 options
+3. Call routing to agents
+
+### Architecture Alignment
+
+| Aspect | Status | Notes |
+|--------|--------|-------|
+| Twilio Services | OK | Voice API with Gather verb |
+| Directory Structure | OK | functions/voice/ |
+| Access Levels | WARN | Should use .protected.js for action handler |
+| Integration Points | OK | No conflicts with existing code |
+| Test Strategy | OK | Unit tests for each handler |
+
+### Recommended Adjustments
+- Change `functions/voice/ivr-action.js` to `.protected.js`
+- Add error handling for invalid DTMF input
+
+### Ready for Execution
+YES - proceed to /spec refinement with noted adjustments
+```
+
+---
+
 ## Current Task
 
 $ARGUMENTS

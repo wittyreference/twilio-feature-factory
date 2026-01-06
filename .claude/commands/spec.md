@@ -137,6 +137,122 @@ When specifying Twilio functions, include:
 3. **Identify Twilio services**: Determine which APIs are needed
 4. **Consider edge cases**: Think about error conditions
 
+---
+
+## Document-Driven Specification Refinement
+
+When working in the hybrid workflow, the spec writer refines artifacts created using `.github/prompts/` templates and reviewed by `/architect`.
+
+### Refining Existing Specifications
+
+When a specification document already exists from the document-driven pipeline:
+
+```text
+/spec refine [spec-file-path]
+```
+
+Or when invoked by `/orchestrate hybrid`:
+
+```text
+/orchestrate hybrid
+# → After /architect review, /spec refines the specification
+```
+
+### Refinement Process
+
+#### Step 1: Review Architect Feedback
+
+Check for adjustments recommended by `/architect`:
+- Access level changes
+- Pattern recommendations
+- Integration point updates
+- Missing error handling
+
+#### Step 2: Enhance Specification
+
+Transform the document-driven spec into the full specification format:
+
+```markdown
+## Specification Refinement: [Feature Name]
+
+### Source Document
+[Path to original spec or prompt_plan.md]
+
+### Architect Adjustments Applied
+- [x] [Adjustment 1]
+- [x] [Adjustment 2]
+
+### Enhanced Sections
+
+#### Function Specifications
+[Add detailed function specs if missing]
+
+#### Error Handling Matrix
+[Add comprehensive error scenarios]
+
+#### Test Requirements
+[Expand test cases for TDD]
+```
+
+#### Step 3: Validate Completeness
+
+Ensure the specification includes all required sections:
+
+| Section | Status | Notes |
+|---------|--------|-------|
+| Overview | OK/MISSING | [Notes] |
+| User Story | OK/MISSING | [Notes] |
+| Acceptance Criteria | OK/MISSING | [Notes] |
+| Function Specifications | OK/MISSING | [Notes] |
+| Error Handling Matrix | OK/MISSING | [Notes] |
+| Test Requirements | OK/MISSING | [Notes] |
+| Security Considerations | OK/MISSING | [Notes] |
+
+### Example: Refining a Plan into Spec
+
+When `prompt_plan.md` exists but lacks full specification detail:
+
+```markdown
+## Specification Refinement: Voice IVR Menu
+
+### Source Document
+prompt_plan.md (Phase 2: DTMF Menu)
+
+### Architect Adjustments Applied
+- [x] Changed ivr-action.js to .protected.js
+- [x] Added timeout handling for no input
+
+### Enhanced Sections
+
+#### Function Specifications
+
+##### Function: ivr-menu.js
+- **Access Level**: public
+- **Purpose**: Present IVR menu with DTMF options
+- **Trigger**: Incoming call webhook
+
+[Continue with full spec format...]
+```
+
+### Handoff After Refinement
+
+```text
+Specification refinement complete.
+
+Files refined:
+- docs/ivr-menu-spec.md
+
+Ready for: /test-gen
+Test cases to generate: 8
+
+Key context for test generator:
+- 4 DTMF options (1-4)
+- Timeout after 10 seconds
+- Invalid input loops back to menu
+```
+
+---
+
 ## Handoff Protocol
 
 When specification is complete:

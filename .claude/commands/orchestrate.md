@@ -57,6 +57,28 @@ Review code for security issues.
 
 **Use when**: Auditing for vulnerabilities, credential exposure, input validation
 
+### 6. Hybrid (`hybrid`)
+Continue from document-driven artifacts to subagent execution.
+
+```
+Check artifacts ──► /architect (review) ──► /spec (refine) ──► /test-gen ──► /dev ──► /review ──► /test ──► /docs
+```
+
+**Use when**: User has created `prompt_plan.md`, `todo.md`, or spec documents using `.github/prompts/` templates
+
+**How it works**:
+1. Check for existing artifacts (`prompt_plan.md`, `todo.md`, spec files)
+2. Have `/architect` review the plan against project patterns
+3. Have `/spec` refine any specification documents
+4. Continue with normal subagent execution
+
+**Example**:
+```
+/orchestrate hybrid
+# Or with specific artifact:
+/orchestrate hybrid prompt_plan.md
+```
+
 ## Orchestration Protocol
 
 For each workflow phase:
@@ -98,6 +120,16 @@ Analyze the request and select the appropriate workflow:
 | "Refactor...", "Clean up...", "Improve..." | `refactor` | `/test` |
 | "Document...", "Update docs..." | `docs-only` | `/docs` |
 | "Audit...", "Check security..." | `security-audit` | `/review` |
+| "Continue from plan...", "Review prompt_plan..." | `hybrid` | Check artifacts |
+
+### Detecting Hybrid Workflow
+
+Before starting any workflow, check for document-driven artifacts:
+- `prompt_plan.md` - Implementation plan from `.github/prompts/plan.md`
+- `todo.md` - Task tracking from planning phase
+- Spec documents in `docs/` or project root
+
+If artifacts exist and user wants to continue from them, use `hybrid` workflow.
 
 ## State Tracking
 

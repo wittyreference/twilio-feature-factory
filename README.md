@@ -11,6 +11,8 @@ A GitHub template repository optimized for rapid Twilio CPaaS prototyping with C
 
 ## Quick Start
 
+> **New to this template?** See [WALKTHROUGH.md](WALKTHROUGH.md) for a comprehensive guide that walks you through building your first Twilio Voice app using the full AI-assisted pipeline in about 20 minutes.
+
 ### Prerequisites
 
 - Node.js 18+ installed
@@ -154,6 +156,8 @@ exports.handler = async (context, event, callback) => {
 
 This template is optimized for use with Claude Code. It includes:
 
+> **Step-by-step guide**: See [WALKTHROUGH.md](WALKTHROUGH.md) for a hands-on tutorial covering the full pipeline from idea to working application.
+
 ### Custom Slash Commands
 
 **Workflow Orchestration**
@@ -218,6 +222,19 @@ This template includes automated hooks that run during Claude Code sessions:
 
 - Root `CLAUDE.md` contains project-wide standards
 - Subdirectory `CLAUDE.md` files provide API-specific context
+
+### Context Engineering Skills
+
+The template includes skills for managing context in long development sessions:
+
+| Skill | Purpose |
+|-------|---------|
+| `context-fundamentals.md` | Core principles for context management |
+| `context-compression.md` | Summarize TwiML, payloads, and conversation history |
+| `multi-agent-patterns.md` | Orchestration strategies for complex features |
+| `memory-systems.md` | Track state across webhook invocations |
+
+Use `/context summarize` to compress context during long sessions, or `/context load` to expand context for new tasks.
 
 ### Agent-Assisted Pipeline
 
@@ -302,7 +319,15 @@ MIT
 
 ## Resources
 
+### In This Repository
+
+- [WALKTHROUGH.md](WALKTHROUGH.md) - Comprehensive pipeline tutorial (start here!)
+- [.claude/workflows/README.md](.claude/workflows/README.md) - Detailed subagent workflow documentation
+- [CLAUDE.md](CLAUDE.md) - Project standards and AI agent instructions
+
+### External Documentation
+
 - [Twilio Functions Documentation](https://www.twilio.com/docs/serverless/functions-assets/functions)
+- [Twilio Serverless Toolkit](https://www.twilio.com/docs/labs/serverless-toolkit)
 - [Twilio CLI](https://www.twilio.com/docs/twilio-cli)
-- [Serverless Toolkit](https://www.twilio.com/docs/labs/serverless-toolkit)
 - [Claude Code](https://claude.ai/code)

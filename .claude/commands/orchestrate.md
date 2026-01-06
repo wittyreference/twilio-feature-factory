@@ -151,6 +151,64 @@ Workflow paused. To continue manually:
 - Or resume orchestration: /orchestrate continue
 ```
 
+## Context Management
+
+Long workflows can accumulate significant context. Use these techniques:
+
+### Monitor Context Load
+
+After 5+ phases, check if context is getting cluttered:
+- Multiple file contents loaded
+- Full test outputs retained
+- Previous phase discussions still in context
+
+### Compress Between Phases
+
+After each phase completes:
+1. Summarize what was accomplished
+2. Note files created/modified
+3. Record key decisions
+4. Drop detailed discussion
+
+Example handoff summary:
+```
+Phase 3 complete: /test-gen
+- Created: __tests__/unit/voice/ivr.test.js
+- Tests: 6 test cases for IVR menu
+- All tests failing (expected - TDD red phase)
+Ready for: /dev to implement
+```
+
+### Use /context Command
+
+Run `/context summarize` when:
+- Workflow reaches 5+ phases
+- Switching between different features
+- Context feels cluttered or repetitive
+
+Reference `.claude/skills/memory-systems.md` for detailed state tracking patterns.
+
+### Memory Across Phases
+
+Maintain a mental session summary:
+
+```markdown
+## Workflow Progress
+
+### Completed
+- [x] Architecture: voice/ivr-menu.js in functions/voice/
+- [x] Spec: 3-option DTMF menu
+- [x] Tests: 6 cases, all failing
+
+### Current
+- /dev implementing IVR handler
+
+### Decisions
+- DTMF-only (no speech)
+- Protected endpoint
+- Polly.Amy voice
+```
+
 ## Current Request
 
 $ARGUMENTS

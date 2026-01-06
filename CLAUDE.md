@@ -228,6 +228,33 @@ The following slash commands are available for specialized tasks:
 | `/twilio-docs [topic]` | Searches Twilio documentation |
 | `/twilio-logs` | Fetches and analyzes Twilio debugger logs |
 | `/deploy [env]` | Deployment helper with pre/post checks |
+| `/context [action]` | Context optimization - summarize, load, or analyze context |
+
+## Context Engineering Skills
+
+This template includes context engineering skills in `.claude/skills/`:
+
+| Skill | Purpose |
+|-------|---------|
+| `context-fundamentals.md` | Core context management principles for Twilio development |
+| `context-compression.md` | Techniques for summarizing TwiML, webhooks, and test output |
+| `multi-agent-patterns.md` | Orchestration and coordination patterns for subagents |
+| `memory-systems.md` | State tracking across sessions and webhook invocations |
+
+### When to Use Skills
+
+- **Starting long sessions**: Load `context-fundamentals.md` for principles
+- **Context getting cluttered**: Run `/context summarize` to compress
+- **Complex multi-step features**: Reference `multi-agent-patterns.md`
+- **Tracking state across webhooks**: Use patterns from `memory-systems.md`
+
+### Accessing Skills
+
+Skills can be accessed via:
+
+1. **Direct read**: Load skill file when starting relevant work
+2. **Context command**: Run `/context [action]` for guided optimization
+3. **Subagent reference**: Orchestrator and Architect load skills automatically
 
 ## Subagent Workflows
 

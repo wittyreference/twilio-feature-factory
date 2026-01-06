@@ -278,6 +278,28 @@ Key context for spec writer:
 
 ---
 
+## Context Engineering
+
+Before starting a design review, optimize your context:
+
+### Load Relevant Context
+
+1. **Load domain CLAUDE.md**: If working on voice, load `functions/voice/CLAUDE.md`
+2. **Reference similar functions**: Find existing patterns to follow
+3. **Load multi-agent patterns skill**: `.claude/skills/multi-agent-patterns.md` for complex designs
+
+### Manage Context During Review
+
+- Compress TwiML examples to verb sequences when discussing patterns
+- Summarize webhook payloads to essential fields
+- Reference patterns by file path rather than including full code
+
+### After Review
+
+Run `/context summarize` if the session is long, to compress progress before handoff.
+
+---
+
 ## Current Task
 
 $ARGUMENTS

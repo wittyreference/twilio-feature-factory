@@ -45,6 +45,8 @@ functions/
 
 ### Twilio Service Selection Guide
 
+#### Core APIs (Start Here)
+
 | Need | Service | Pattern |
 | ---- | ------- | ------- |
 | Inbound calls | Voice API | TwiML webhook |
@@ -55,6 +57,45 @@ functions/
 | Voice AI | Conversation Relay | WebSocket + LLM |
 | Phone verification | Verify API | REST API |
 | 2FA | Verify API | REST API |
+
+#### Advanced APIs (Use Only When Needed)
+
+These add complexity. Default to simpler solutions for prototypes.
+
+| API | Use When | Don't Use When |
+| --- | -------- | -------------- |
+| **Sync** | Real-time state across devices, multi-step call flows needing persistent state, collaborative features | Simple webhooks work, state fits in cookies/query params, single-user flows |
+| **TaskRouter** | Skills-based routing to agents, contact center features, task queuing with SLAs | Simple call forwarding, single destination, no agent availability logic |
+| **Messaging Services** | High-volume campaigns, multiple sender numbers, A2P 10DLC compliance, sticky sender needed | Single phone number, low volume, simple notifications |
+
+#### Complexity Decision Tree
+
+```text
+Q: Do you need real-time state sync across multiple clients?
+├── Yes → Consider Sync
+└── No → Use cookies, query params, or simple DB
+
+Q: Do you need to route tasks to available workers with skills matching?
+├── Yes → Consider TaskRouter
+└── No → Use simple <Dial> or conditional logic
+
+Q: Do you need to send from multiple numbers or manage sender pools?
+├── Yes → Consider Messaging Services
+└── No → Use single phone number with basic Messaging API
+```
+
+#### Prototype-First Principle
+
+**Start simple, add complexity only when requirements demand it.**
+
+1. For state: Try cookies/query params → then Sync
+2. For routing: Try <Dial> with conditions → then TaskRouter
+3. For messaging: Try single number → then Messaging Services
+
+When recommending advanced APIs, explicitly note:
+- What simpler alternative was considered
+- Why the simpler approach doesn't meet requirements
+- The additional setup/configuration required
 
 ### Environment Variables
 

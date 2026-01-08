@@ -182,6 +182,9 @@ twilio-claude-prototyping/
 │   ├── messaging/           # SMS/MMS handlers
 │   ├── conversation-relay/  # Real-time voice AI
 │   ├── verify/              # Phone verification
+│   ├── sync/                # Real-time state synchronization
+│   ├── taskrouter/          # Task routing to workers
+│   ├── messaging-services/  # Sender pools, compliance
 │   └── helpers/             # Shared private functions
 ├── assets/                  # Static assets
 ├── __tests__/
@@ -207,6 +210,11 @@ This project uses a hierarchical CLAUDE.md structure:
    - `functions/messaging/CLAUDE.md` - SMS/MMS patterns and parameters
    - `functions/conversation-relay/CLAUDE.md` - WebSocket protocol and LLM integration
    - `functions/verify/CLAUDE.md` - Verification API and error handling
+   - `functions/sync/CLAUDE.md` - Real-time state synchronization (Documents, Lists, Maps, Streams)
+   - `functions/taskrouter/CLAUDE.md` - Task routing to workers and agents
+   - `functions/messaging-services/CLAUDE.md` - Sender pools, geographic routing, compliance
+3. **Reference Documents**: Quick-reference material for CLI and tools
+   - `.claude/references/twilio-cli.md` - Comprehensive Twilio CLI command reference
 
 ## Custom Slash Commands
 
@@ -341,6 +349,10 @@ Required environment variables (see `.env.example`):
 | `TWILIO_API_SECRET` | API Secret (recommended for production) |
 | `TWILIO_PHONE_NUMBER` | Your Twilio phone number (E.164) |
 | `TWILIO_VERIFY_SERVICE_SID` | Verify Service SID (for verification features) |
+| `TWILIO_SYNC_SERVICE_SID` | Sync Service SID (for real-time state sync) |
+| `TWILIO_TASKROUTER_WORKSPACE_SID` | TaskRouter Workspace SID |
+| `TWILIO_TASKROUTER_WORKFLOW_SID` | TaskRouter Workflow SID |
+| `TWILIO_MESSAGING_SERVICE_SID` | Messaging Service SID (for sender pools) |
 
 ## CI/CD Pipeline
 

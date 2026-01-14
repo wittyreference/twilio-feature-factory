@@ -33,3 +33,9 @@ npm-debug.log*
 
 # Newman reports
 newman/
+
+#MC local personal development files
+/assets/anthropic-feedback.md
+/assets/original-blog-post.md
+/assets/mc-style-guide.md
+/assets/BLOG-POST.md

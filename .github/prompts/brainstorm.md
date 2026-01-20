@@ -62,4 +62,4 @@ Once we are done, save the output as concept.md
 
 Here’s the idea:
 
-[Describe what you want to brainstorm]
+

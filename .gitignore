@@ -17,6 +17,7 @@ coverage/
 .vscode/
 *.swp
 *.swo
+*.code-workspace
 
 # OS files
 .DS_Store
@@ -33,3 +34,7 @@ npm-debug.log*
 
 # Newman reports
 newman/
+
+# Local/private files
+.claude/settings.local.json
+/concept.md

@@ -15,6 +15,7 @@ This is a Twilio prototyping project. Details will be added as the project devel
 # Interaction
 
 - Any time you interact with me, you MUST address me by my preferred name, which you won't know the first time we work together, so make sure to ask me what it is, and update the root CLAUDE.md file to reflect it for future interactions.
+- **Preferred name: MC**
 
 ## Our relationship
 

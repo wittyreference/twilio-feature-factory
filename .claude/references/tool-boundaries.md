@@ -300,10 +300,11 @@ Is the operation read-only?
 
 ## Related Documentation
 
-- [API_REFERENCE.md](API_REFERENCE.md) - Twilio API documentation and tool mapping
-- [CLAUDE.md](../CLAUDE.md) - MCP server overview and usage
-- [/.claude/references/twilio-cli.md](/.claude/references/twilio-cli.md) - CLI command reference
+- [/agents/mcp-servers/twilio/docs/API_REFERENCE.md](/agents/mcp-servers/twilio/docs/API_REFERENCE.md) - Twilio API documentation and tool mapping
+- [/agents/mcp-servers/twilio/CLAUDE.md](/agents/mcp-servers/twilio/CLAUDE.md) - MCP server overview and usage
+- [twilio-cli.md](twilio-cli.md) - CLI command reference (same directory)
 - [/.claude/hooks/pre-bash-validate.sh](/.claude/hooks/pre-bash-validate.sh) - Safety hooks
+- [/DESIGN_DECISIONS.md](/DESIGN_DECISIONS.md) - Project-wide architectural decisions
 
 ---
 

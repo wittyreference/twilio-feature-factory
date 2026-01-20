@@ -38,3 +38,6 @@ newman/
 # Local/private files
 .claude/settings.local.json
 /concept.md
+
+# Development meta-tooling (doesn't ship with product)
+.claude-dev/

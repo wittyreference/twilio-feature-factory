@@ -165,7 +165,7 @@ See [docs/API_REFERENCE.md](docs/API_REFERENCE.md) for comprehensive documentati
 
 ## Tool Boundaries
 
-See [docs/TOOL_BOUNDARIES.md](docs/TOOL_BOUNDARIES.md) for architectural guidance on:
+See [/.claude/references/tool-boundaries.md](/.claude/references/tool-boundaries.md) for architectural guidance on:
 
 - **When to use MCP vs CLI vs Functions** - Decision flowchart
 - **Operation risk tiers** - What agents can do autonomously vs. with approval

@@ -18,6 +18,14 @@ notify_user() {
     fi
 }
 
+# Call dev hooks if they exist (local development only, .claude-dev is gitignored)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+DEV_HOOK="$PROJECT_ROOT/.claude-dev/hooks/session-summary.sh"
+if [ -x "$DEV_HOOK" ]; then
+    "$DEV_HOOK"
+fi
+
 # Send notification
 notify_user "Claude Code" "Ready for your input"
 

@@ -36,4 +36,10 @@ if [ -f "$LOG_FILE" ]; then
     fi
 fi
 
+# Call dev hooks if they exist (local development only, .claude-dev is gitignored)
+DEV_HOOK="$PROJECT_ROOT/.claude-dev/hooks/doc-update-check.sh"
+if [ -x "$DEV_HOOK" ]; then
+    "$DEV_HOOK"
+fi
+
 exit 0

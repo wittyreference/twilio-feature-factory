@@ -3,7 +3,7 @@
 ## Overview
 
 This file tracks progress on extending the twilio-agent-factory with Claude Agent SDK capabilities.
-See [plan](/Users/mcarpenter/.claude/plans/deep-nibbling-castle.md) for full implementation details.
+See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 
 **Total Estimated Effort:** 10-15 sessions across 5 phases
 
@@ -26,6 +26,14 @@ See [plan](/Users/mcarpenter/.claude/plans/deep-nibbling-castle.md) for full imp
 - [x] Define tool organization plan and priority order
 - [x] Create TOOL_BOUNDARIES.md (MCP vs CLI vs Functions, risk tiers)
 - [x] Create DESIGN_DECISIONS.md (architectural rationale, changelog)
+- [x] Reorganize reference docs (DESIGN_DECISIONS.md → root, TOOL_BOUNDARIES.md → .claude/references/)
+- [x] Update cross-references in MCP CLAUDE.md and related docs
+
+### Meta-Tooling Infrastructure
+
+- [x] Create .claude-dev/ directory structure (gitignored, local-only dev tooling)
+- [x] Add conditional hooks in product hooks (call dev hooks if .claude-dev/ exists)
+- [x] Document meta vs product separation (development tooling vs shipping factory)
 
 ### P0 Tools (Core - Most Used) ✅
 
@@ -192,9 +200,10 @@ See [plan](/Users/mcarpenter/.claude/plans/deep-nibbling-castle.md) for full imp
 ## Session Log
 
 | Date | Session | Work Completed |
-|------|---------|----------------|
+| ------ | --------- | ---------------- |
 | 2026-01-19 | 1 | Initial planning, CLAUDE.md update, todo.md creation, Phase 1 setup, all 7 P0 tool modules |
-| 2026-01-20 | 2 | Node 22 setup, API crawl, API_REFERENCE.md, P0-P3 tiers, TOOL_BOUNDARIES.md, DESIGN_DECISIONS.md |
+| 2026-01-20 | 2 | API_REFERENCE.md (filtered EOL/deprecated APIs), TOOL_BOUNDARIES.md, DESIGN_DECISIONS.md |
+| 2026-01-20 | 2b | Doc reorganization, meta-tooling setup (.claude-dev/), conditional hooks, GitHub publish |
 
 ---
 

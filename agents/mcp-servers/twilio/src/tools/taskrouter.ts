@@ -89,8 +89,8 @@ export function taskrouterTools(context: TwilioContext) {
         };
       }
 
-      const filters: { assignmentStatus?: string; limit: number } = { limit: limit || 20 };
-      if (assignmentStatus) filters.assignmentStatus = assignmentStatus;
+      const filters: { assignmentStatus?: string[]; limit: number } = { limit: limit || 20 };
+      if (assignmentStatus) filters.assignmentStatus = [assignmentStatus];
 
       const tasks = await client.taskrouter.v1.workspaces(wsSid).tasks.list(filters);
 
@@ -174,8 +174,8 @@ export function taskrouterTools(context: TwilioContext) {
         };
       }
 
-      const filters: { available?: boolean; activityName?: string; limit: number } = { limit: limit || 20 };
-      if (available !== undefined) filters.available = available;
+      const filters: { available?: string; activityName?: string; limit: number } = { limit: limit || 20 };
+      if (available !== undefined) filters.available = available.toString();
       if (activityName) filters.activityName = activityName;
 
       const workers = await client.taskrouter.v1.workspaces(wsSid).workers.list(filters);

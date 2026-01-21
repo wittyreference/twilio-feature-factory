@@ -71,7 +71,6 @@ export function createTwilioMcpServer(config: TwilioMcpServerConfig = {}) {
   };
 }
 
-export { TwilioContext };
 export { messagingTools } from './tools/messaging.js';
 export { voiceTools } from './tools/voice.js';
 export { phoneNumberTools } from './tools/phone-numbers.js';

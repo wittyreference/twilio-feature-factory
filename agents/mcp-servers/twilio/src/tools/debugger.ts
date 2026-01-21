@@ -126,13 +126,13 @@ export function debuggerTools(context: TwilioContext) {
     async ({ category, startDate, endDate }) => {
       const filters: {
         category?: string;
-        startDate?: string;
-        endDate?: string;
+        startDate?: Date;
+        endDate?: Date;
       } = {};
 
       if (category) filters.category = category;
-      if (startDate) filters.startDate = startDate;
-      if (endDate) filters.endDate = endDate;
+      if (startDate) filters.startDate = new Date(startDate);
+      if (endDate) filters.endDate = new Date(endDate);
 
       const records = await client.usage.records.list(filters);
 

@@ -38,14 +38,14 @@ export function voiceTools(context: TwilioContext) {
     async ({ limit, status, to, from, startTimeAfter, startTimeBefore }) => {
       const filters: {
         limit: number;
-        status?: string;
+        status?: 'queued' | 'ringing' | 'in-progress' | 'completed' | 'busy' | 'failed' | 'no-answer' | 'canceled';
         to?: string;
         from?: string;
         startTimeAfter?: Date;
         startTimeBefore?: Date;
       } = { limit: limit || 20 };
 
-      if (status) filters.status = status;
+      if (status) filters.status = status as typeof filters.status;
       if (to) filters.to = to;
       if (from) filters.from = from;
       if (startTimeAfter) filters.startTimeAfter = new Date(startTimeAfter);

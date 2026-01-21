@@ -4,11 +4,6 @@
 import { z } from 'zod';
 import type { TwilioContext } from '../index.js';
 
-const e164Pattern = /^\+[1-9]\d{1,14}$/;
-const phoneNumberSchema = z.string().regex(e164Pattern, {
-  message: 'Phone number must be in E.164 format (e.g., +15551234567)',
-});
-
 function createTool<T extends z.ZodType>(
   name: string,
   description: string,

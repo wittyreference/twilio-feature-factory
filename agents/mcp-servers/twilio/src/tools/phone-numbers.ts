@@ -97,7 +97,7 @@ export function phoneNumberTools(context: TwilioContext) {
     'Search for available phone numbers to purchase.',
     z.object({
       countryCode: z.string().length(2).default('US').describe('ISO country code (e.g., US, GB)'),
-      areaCode: z.string().optional().describe('Area code to search within'),
+      areaCode: z.number().optional().describe('Area code to search within (e.g., 415)'),
       contains: z.string().optional().describe('Pattern to match in number'),
       smsEnabled: z.boolean().optional().describe('Filter for SMS-capable numbers'),
       voiceEnabled: z.boolean().optional().describe('Filter for voice-capable numbers'),
@@ -105,14 +105,14 @@ export function phoneNumberTools(context: TwilioContext) {
     }),
     async ({ countryCode, areaCode, contains, smsEnabled, voiceEnabled, limit }) => {
       const searchParams: {
-        areaCode?: string;
+        areaCode?: number;
         contains?: string;
         smsEnabled?: boolean;
         voiceEnabled?: boolean;
         limit: number;
       } = { limit: limit || 10 };
 
-      if (areaCode) searchParams.areaCode = areaCode;
+      if (areaCode !== undefined) searchParams.areaCode = areaCode;
       if (contains) searchParams.contains = contains;
       if (smsEnabled !== undefined) searchParams.smsEnabled = smsEnabled;
       if (voiceEnabled !== undefined) searchParams.voiceEnabled = voiceEnabled;

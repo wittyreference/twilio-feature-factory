@@ -33,9 +33,9 @@ fi
 # TEST COMPLETION
 # ============================================
 
-if echo "$COMMAND" | grep -qE "(npm\s+test|npm\s+run\s+test)"; then
-    echo ""
-    echo "Test execution completed."
-fi
+# Silently handle test completion (output already visible in terminal)
+# if echo "$COMMAND" | grep -qE "(npm\s+test|npm\s+run\s+test)"; then
+#     echo "Test execution completed."
+# fi
 
 exit 0

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/pre-write-validate.sh"
+            "command": "$(git rev-parse --show-toplevel)/.claude/hooks/pre-write-validate.sh"
           }
         ]
       },
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/pre-bash-validate.sh"
+            "command": "$(git rev-parse --show-toplevel)/.claude/hooks/pre-bash-validate.sh"
           }
         ]
       }
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/post-write.sh"
+            "command": "$(git rev-parse --show-toplevel)/.claude/hooks/post-write.sh"
           }
         ]
       },
@@ -35,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/post-bash.sh"
+            "command": "$(git rev-parse --show-toplevel)/.claude/hooks/post-bash.sh"
           }
         ]
       }
@@ -45,7 +45,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/subagent-log.sh"
+            "command": "$(git rev-parse --show-toplevel)/.claude/hooks/subagent-log.sh"
           }
         ]
       }
@@ -55,7 +55,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/notify-ready.sh"
+            "command": "$(git rev-parse --show-toplevel)/.claude/hooks/notify-ready.sh"
           }
         ]
       }
@@ -63,5 +63,11 @@
   },
   "disabledMcpjsonServers": [
     "twilio-agent-payments"
-  ]
+  ],
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch"
+    ]
+  }
 }

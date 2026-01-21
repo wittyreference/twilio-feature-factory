@@ -12,6 +12,18 @@ This is a Twilio prototyping project. Details will be added as the project devel
 - **Code Review**: Final validation of complex logic and architectural decisions
 - **Documentation**: Maintain and update technical documentation
 
+## Documentation Flywheel
+
+After completing significant work (architectural decisions, new tools, API exploration, or pattern changes), proactively suggest updating relevant docs:
+
+- **DESIGN_DECISIONS.md** - When architectural choices are made or revisited
+- **API_REFERENCE.md** - When new Twilio APIs are explored or tools added
+- **.claude/references/tool-boundaries.md** - When MCP/CLI/Functions boundaries are clarified
+- **todo.md** - Update session log after completing work
+- **Relevant CLAUDE.md files** - When new patterns or guidelines emerge
+
+Don't wait to be asked - remind MC about doc updates when they're warranted.
+
 # Interaction
 
 - Any time you interact with me, you MUST address me by my preferred name, which you won't know the first time we work together, so make sure to ask me what it is, and update the root CLAUDE.md file to reflect it for future interactions.

@@ -11,6 +11,12 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 
 ## Phase 1: Twilio MCP Server (4-5 sessions)
 
+**Scope:** 29 tool modules across 20+ Twilio APIs (excluding EOL/deprecated)
+- **P0 (Core):** 7 modules ✅ implemented
+- **P1 (High Value):** 4 modules - in progress
+- **P2 (Specialized):** 8 modules - planned
+- **P3 (Edge Cases):** 10 modules - planned
+
 ### Setup
 
 - [x] Set up agents/mcp-servers/twilio/ directory structure
@@ -58,22 +64,32 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 - [ ] video - create_video_room, list_room_participants
 - [ ] routing/proxy - create_proxy_session, add_participant
 - [ ] identity/trusthub - create_business_profile, register_a2p_brand
+- [ ] messaging/content - create_content_template, list_content_templates
+- [ ] voice/configuration - get_dialing_permissions, configure_byoc
+- [ ] phone-numbers/bundles - create_regulatory_bundle, port_number
+- [ ] media - process_media, generate_thumbnail (planned)
 
 ### P3 Tools (Edge Cases)
 
 - [ ] voice/trunking - create_sip_trunk, configure_origination
 - [ ] account/accounts - list_accounts, create_subaccount
+- [ ] account/iam - create_api_key, list_api_keys, manage_roles
+- [ ] account/oauth - create_oauth_token, refresh_token
 - [ ] monitoring/events - create_event_sink, list_event_types
-- [ ] intelligence/knowledge - create_knowledge_base, query_knowledge
+- [ ] monitoring/exports - create_export_job, get_export_status
 - [ ] monitoring/pricing - get_voice_pricing, get_sms_pricing
+- [ ] intelligence/knowledge - create_knowledge_base, query_knowledge
+- [ ] phone-numbers/routes - configure_inbound_routes (planned)
 - [ ] notify - send_push_notification, register_device
 
 ### Testing
 
 - [ ] Write unit tests for P0 tools (messaging, voice, phone-numbers)
 - [ ] Write unit tests for P0 tools (verify, sync, taskrouter, debugger)
-- [ ] Write unit tests for P1 tools as implemented
-- [ ] Write integration tests with real Twilio APIs
+- [ ] Write unit tests for P1 tools (lookups, studio, messaging-services, serverless)
+- [ ] Write unit tests for P2 tools as implemented (8 modules)
+- [ ] Write unit tests for P3 tools as implemented (10 modules)
+- [ ] Write integration tests with real Twilio APIs for all priority tiers
 
 ---
 

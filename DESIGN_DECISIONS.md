@@ -373,6 +373,47 @@ Voice webhooks must return TwiML in <200ms. Agent reasoning takes seconds.
 
 ---
 
+## Decision 11: Use Git Rev-Parse for Hook Paths
+
+### Context
+
+Claude Code hooks configured in `.claude/settings.json` use relative paths like `.claude/hooks/pre-write-validate.sh`. When Claude Code operates from subdirectories (e.g., running tests in `agents/mcp-servers/twilio/`), these relative paths fail with "No such file or directory".
+
+### Decision
+
+**Use `$(git rev-parse --show-toplevel)` in hook commands to find the project root.**
+
+```json
+{
+  "command": "$(git rev-parse --show-toplevel)/.claude/hooks/pre-write-validate.sh"
+}
+```
+
+### Rationale
+
+1. **CWD independence**: Works regardless of which subdirectory Claude Code is in
+2. **Portability**: Works on any machine without hardcoded paths
+3. **Git-native**: Uses git's own mechanism to find repo root
+4. **Shell expansion**: Claude Code expands `$()` subshells in hook commands
+
+### Alternatives Considered
+
+- **Absolute paths**: Would work but not portable across machines
+- **Wrapper scripts**: Each hook finds its own path - adds complexity
+- **Always cd to root**: Not always feasible in multi-directory workflows
+
+### Consequences
+
+- Hooks only work inside git repositories (acceptable for this project)
+- Slight overhead from git rev-parse call (negligible)
+- Pattern should be documented for anyone adding new hooks
+
+### Status
+
+**Accepted** - Session 3 (2026-01-20)
+
+---
+
 ## Open Questions
 
 Questions we haven't resolved yet:
@@ -399,6 +440,7 @@ Questions we haven't resolved yet:
 | 2026-01-20 | 2 | D3 | Functions vs MCP clarified | TOOL_BOUNDARIES.md created |
 | 2026-01-20 | 2 | D5 | EOL/deprecated APIs excluded | API_REFERENCE.md created |
 | 2026-01-20 | 2 | D6 | P0-P3 priority tiers | todo.md updated |
+| 2026-01-20 | 3 | D11 | Git rev-parse for hook paths | commit 4f84cd8 |
 
 ---
 

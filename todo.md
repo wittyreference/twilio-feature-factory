@@ -84,8 +84,8 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 
 ### Testing
 
-- [ ] Write unit tests for P0 tools (messaging, voice, phone-numbers)
-- [ ] Write unit tests for P0 tools (verify, sync, taskrouter, debugger)
+- [x] Write unit tests for P0 tools (messaging, voice, phone-numbers)
+- [x] Write unit tests for P0 tools (verify, sync, taskrouter, debugger)
 - [ ] Write unit tests for P1 tools (lookups, studio, messaging-services, serverless)
 - [ ] Write unit tests for P2 tools as implemented (8 modules)
 - [ ] Write unit tests for P3 tools as implemented (10 modules)
@@ -220,6 +220,7 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 | 2026-01-19 | 1 | Initial planning, CLAUDE.md update, todo.md creation, Phase 1 setup, all 7 P0 tool modules |
 | 2026-01-20 | 2 | API_REFERENCE.md (filtered EOL/deprecated APIs), TOOL_BOUNDARIES.md, DESIGN_DECISIONS.md |
 | 2026-01-20 | 2b | Doc reorganization, meta-tooling setup (.claude-dev/), conditional hooks, GitHub publish |
+| 2026-01-20 | 3 | P0 tool TypeScript fixes, 91 unit tests for all 7 P0 tool modules |
 
 ---
 

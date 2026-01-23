@@ -568,6 +568,51 @@ Also includes:
 
 ---
 
+## Decision 14: Git as Source of Truth for Activity Tracking
+
+### Context
+
+We attempted to enhance subagent activity logging to capture richer information:
+- Subagent type (which command was invoked)
+- Files modified during the subagent's work
+- Commits created
+- Duration
+
+The goal was to have a queryable log of what agents did.
+
+### Decision
+
+**Don't log agent activity separately. Git history + todo.md + learnings.md are sufficient.**
+
+### Rationale
+
+1. **Git already captures this**: Commits show what changed, when, why, and who (via Co-Authored-By)
+2. **Transcript parsing is unreliable**: Different agent types (Explore, Plan, Task) populate transcripts differently
+3. **Hook timing mismatch**: SubagentStop fires when exploration completes, not after implementation
+4. **Meaningless IDs**: Agent IDs are internal hashes with no human value
+5. **Duplication**: todo.md session log already tracks work per session
+
+### Alternatives Considered
+
+- **Enhanced transcript parsing**: Attempted, but transcripts don't have consistent structure
+- **Structured JSON logging**: Would add complexity without adding value over git
+- **Database tracking**: Over-engineering for the problem at hand
+
+### Consequences
+
+- Rely on existing mechanisms (git, todo.md, learnings.md, DESIGN_DECISIONS.md)
+- subagent-log.sh just triggers doc-update-check.sh (the useful part)
+- No separate activity log to maintain or query
+- Simpler hook implementation
+
+### Status
+
+**Implemented** - Session 3d (2026-01-23)
+
+Previous implementation removed in commit 9673ff2.
+
+---
+
 ## Open Questions
 
 Questions we haven't resolved yet:
@@ -601,6 +646,7 @@ Questions we haven't resolved yet:
 | 2026-01-22 | 3b | D13 | Deep validation pattern proposed | User request |
 | 2026-01-22 | 3c | D12 | Auto-setup script implemented | scripts/setup.js |
 | 2026-01-22 | 3c | D13 | Deep validation implemented | src/validation/deep-validator.ts |
+| 2026-01-23 | 3d | D14 | Git as source of truth for activity | commit 9673ff2 |
 
 ---
 

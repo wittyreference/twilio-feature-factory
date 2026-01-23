@@ -4,6 +4,7 @@
   "description": "Twilio CPaaS prototyping template optimized for Claude Code",
   "main": "index.js",
   "scripts": {
+    "setup": "node scripts/setup.js",
     "test": "jest --testPathPattern='__tests__/(unit|integration)/'",
     "test:watch": "jest --watch --testPathPattern='__tests__/(unit|integration)/'",
     "test:coverage": "jest --coverage --testPathPattern='__tests__/(unit|integration)/'",

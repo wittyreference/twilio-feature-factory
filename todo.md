@@ -120,7 +120,7 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 
 ### Agent Tool Execution (Next Priority)
 
-- [ ] Wire up actual Claude Agent SDK tool execution (currently uses basic API calls)
+- [x] Wire up actual Claude Agent SDK tool execution (agentic loop with tool calls)
 - [ ] Integrate MCP tools for deep validation in agents
 - [ ] Add session persistence for workflow resumption
 
@@ -233,6 +233,7 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 | 2026-01-22 | 3c | Auto-setup script, callback Functions infrastructure, deep validation helper, test helper with Jest matchers |
 | 2026-01-23 | 3d | Documentation infrastructure: navigator, flywheel workflow, pre-commit doc reminder, D14 decision |
 | 2026-01-23 | 4 | Phase 2 Feature Factory MVP: orchestrator, 6 agent configs, new-feature workflow, CLI, D15 value proposition |
+| 2026-01-23 | 4b | Agentic tool execution: tools.ts with Read/Write/Edit/Glob/Grep/Bash, agentic loop in orchestrator, 22 tests |
 
 ---
 

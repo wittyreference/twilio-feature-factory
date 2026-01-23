@@ -50,6 +50,10 @@ The MCP server requires the following environment variables:
 | `TWILIO_VERIFY_SERVICE_SID` | For verify tools | Verify Service SID |
 | `TWILIO_SYNC_SERVICE_SID` | For sync tools | Sync Service SID |
 | `TWILIO_TASKROUTER_WORKSPACE_SID` | For taskrouter | TaskRouter Workspace SID |
+| `TWILIO_MESSAGING_SERVICE_SID` | For messaging services | Messaging Service SID |
+| `TEST_PHONE_NUMBER` | For integration tests | Recipient number for test messages/calls |
+| `TWILIO_STATUS_CALLBACK_URL` | Optional | URL for delivery status webhooks |
+| `TWILIO_FALLBACK_URL` | Optional | Fallback URL when primary webhook fails |
 
 ## Usage with Claude Agent SDK
 

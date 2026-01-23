@@ -414,6 +414,152 @@ Claude Code hooks configured in `.claude/settings.json` use relative paths like 
 
 ---
 
+## Decision 12: Auto-Setup Script for Resource Provisioning
+
+### Context
+
+Setting up a Twilio development environment requires creating multiple resources manually via Console:
+- Phone numbers
+- Verify Service
+- Sync Service
+- TaskRouter Workspace/Workflow
+- Messaging Service
+- API Keys
+
+This is tedious and error-prone. Users must leave Claude Code, navigate Console, create resources, copy SIDs back.
+
+### Decision
+
+**Create an auto-setup script that provisions Twilio resources via API after user provides base credentials.**
+
+Flow:
+1. User provides Account SID + Auth Token (or API Key + Secret)
+2. Script prompts: "Which resources should I provision?" (checkboxes)
+3. Script creates resources via Twilio SDK
+4. Script updates .env file with new SIDs
+5. Script configures webhooks to use STATUS_CALLBACK_URL and FALLBACK_URL
+
+### Resources to Auto-Provision
+
+| Resource | API | SID Prefix | Notes |
+|----------|-----|------------|-------|
+| Phone Number | api:v2010 IncomingPhoneNumbers | PN | Searches and purchases first available local number |
+| Verify Service | verify:v2 Services | VA | Creates service named "Agent Factory" |
+| Sync Service | sync:v1 Services | IS | Creates default service |
+| TaskRouter Workspace | taskrouter:v1 Workspaces | WS | Creates workspace + default workflow |
+| Messaging Service | messaging:v1 Services | MG | Creates service, adds phone number to pool |
+| API Key | iam:v1 Keys | SK | Creates key for production use |
+
+### Implementation
+
+Location: `scripts/setup.ts` or `npx twilio-agent-factory setup`
+
+```typescript
+interface SetupOptions {
+  accountSid: string;
+  authToken: string;
+  resources: ('phone' | 'verify' | 'sync' | 'taskrouter' | 'messaging' | 'apiKey')[];
+  countryCode?: string; // For phone number search
+  statusCallbackUrl?: string;
+  fallbackUrl?: string;
+}
+```
+
+### Rationale
+
+1. **Developer experience**: Get started in seconds, not hours
+2. **Consistency**: All resources configured correctly by default
+3. **Discoverability**: Users learn what resources exist
+4. **Idempotency**: Can detect existing resources and skip
+
+### Consequences
+
+- Need Tier 3 approval for purchases (phone numbers cost money)
+- Script should show estimated costs before provisioning
+- Must handle partial failures gracefully (some resources created, others failed)
+- Should support `--dry-run` mode
+
+### Status
+
+**Proposed** - Session 3b (2026-01-22)
+
+---
+
+## Decision 13: Deep Validation Pattern for API Responses
+
+### Context
+
+A 200 OK from Twilio API doesn't guarantee success. The message may be queued but:
+- TwiML validation could fail later
+- Carrier could reject the message
+- Webhook could return errors
+- Call could fail to connect
+
+Tests that only check for 200 OK give false confidence.
+
+### Decision
+
+**Implement a deep validation helper that checks multiple signals after API operations.**
+
+For each operation type, check:
+
+| Operation | Primary Check | Secondary Checks |
+|-----------|--------------|------------------|
+| **SMS/MMS** | Message status (queued→sent→delivered) | Debugger alerts, error codes |
+| **Voice Call** | Call status (queued→ringing→in-progress→completed) | Call events, Voice Insights summary |
+| **Verification** | Verification status | Debugger alerts |
+
+### Implementation
+
+Location: `agents/mcp-servers/twilio/src/validation/deep-validator.ts`
+
+```typescript
+interface ValidationResult {
+  success: boolean;
+  primaryStatus: string;
+  checks: {
+    resourceStatus: { passed: boolean; status: string };
+    debuggerAlerts: { passed: boolean; alerts: Alert[] };
+    callEvents?: { passed: boolean; events: Event[] };
+    voiceInsights?: { passed: boolean; summary: object };
+  };
+  errors: string[];
+  warnings: string[];
+}
+
+async function validateMessage(sid: string, options?: { waitForDelivery?: boolean }): Promise<ValidationResult>;
+async function validateCall(sid: string, options?: { waitForComplete?: boolean }): Promise<ValidationResult>;
+async function validateVerification(sid: string): Promise<ValidationResult>;
+```
+
+### Deep Validation Workflow
+
+1. **Immediate check**: Fetch resource status via API
+2. **Debugger check**: Query monitor API for alerts related to resource SID (last 60 seconds)
+3. **Events check** (calls only): Fetch call events for HTTP request/response logs
+4. **Insights check** (calls only): Fetch Voice Insights call summary
+5. **Aggregate**: Return structured result with all checks
+
+### Rationale
+
+1. **Confidence**: Know operations actually succeeded end-to-end
+2. **Debugging**: When tests fail, have rich diagnostic info
+3. **Realism**: Catch issues that simple status checks miss
+4. **Learning**: Understand Twilio's async behavior
+
+### Consequences
+
+- Integration tests take longer (polling for status)
+- More API calls per test (may affect rate limits)
+- Need to handle async nature (some checks may need retries)
+- Better error messages when things fail
+
+### Status
+
+**Proposed** - Session 3b (2026-01-22)
+
+---
+
 ## Open Questions
 
 Questions we haven't resolved yet:
@@ -423,6 +569,8 @@ Questions we haven't resolved yet:
 3. **Parallel agents**: Can multiple agents work on same codebase?
 4. **Rollback**: How do we undo agent-generated changes?
 5. **Audit trail**: How detailed should agent action logging be?
+6. **Auto-setup approval**: Should phone number purchase require explicit user confirmation?
+7. **Validation timeouts**: How long should deep validation wait for message delivery?
 
 ---
 
@@ -441,6 +589,8 @@ Questions we haven't resolved yet:
 | 2026-01-20 | 2 | D5 | EOL/deprecated APIs excluded | API_REFERENCE.md created |
 | 2026-01-20 | 2 | D6 | P0-P3 priority tiers | todo.md updated |
 | 2026-01-20 | 3 | D11 | Git rev-parse for hook paths | commit 4f84cd8 |
+| 2026-01-22 | 3b | D12 | Auto-setup script proposed | User request |
+| 2026-01-22 | 3b | D13 | Deep validation pattern proposed | User request |
 
 ---
 

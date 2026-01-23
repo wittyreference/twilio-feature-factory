@@ -366,6 +366,9 @@ Required environment variables (see `.env.example`):
 | `TWILIO_TASKROUTER_WORKSPACE_SID` | TaskRouter Workspace SID |
 | `TWILIO_TASKROUTER_WORKFLOW_SID` | TaskRouter Workflow SID |
 | `TWILIO_MESSAGING_SERVICE_SID` | Messaging Service SID (for sender pools) |
+| `TEST_PHONE_NUMBER` | Test recipient number for E2E tests (E.164) |
+| `TWILIO_STATUS_CALLBACK_URL` | Webhook URL for status callbacks |
+| `TWILIO_FALLBACK_URL` | Fallback URL when primary webhook fails |
 
 ## CI/CD Pipeline
 

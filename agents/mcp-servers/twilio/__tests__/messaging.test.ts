@@ -4,6 +4,11 @@
 import { messagingTools, TwilioContext } from '../src/index';
 import Twilio from 'twilio';
 import { z } from 'zod';
+import {
+  getTestValidator,
+  validateMessageInTest,
+  TestValidationConfig,
+} from './helpers/deep-validation';
 
 // Real Twilio credentials from environment - NO magic test numbers.
 // Magic numbers don't reflect real API behavior and are not used here.
@@ -12,6 +17,7 @@ const TEST_CREDENTIALS = {
   authToken: process.env.TWILIO_AUTH_TOKEN || '',
   fromNumber: process.env.TWILIO_PHONE_NUMBER || '',
   toNumber: process.env.TEST_PHONE_NUMBER || '',
+  syncServiceSid: process.env.TWILIO_SYNC_SERVICE_SID || '',
 };
 
 const hasRealCredentials =
@@ -19,6 +25,12 @@ const hasRealCredentials =
   TEST_CREDENTIALS.authToken.length > 0 &&
   TEST_CREDENTIALS.fromNumber.startsWith('+') &&
   TEST_CREDENTIALS.toNumber.startsWith('+');
+
+const validatorConfig: TestValidationConfig = {
+  accountSid: TEST_CREDENTIALS.accountSid,
+  authToken: TEST_CREDENTIALS.authToken,
+  syncServiceSid: TEST_CREDENTIALS.syncServiceSid || undefined,
+};
 
 function createTestContext(): TwilioContext {
   const client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
@@ -240,20 +252,35 @@ describe('messagingTools', () => {
       expect(Array.isArray(response.messages)).toBe(true);
     });
 
-    itWithCredentials('send_sms should send a real message', async () => {
-      const sendSms = tools.find(t => t.name === 'send_sms')!;
+    itWithCredentials(
+      'send_sms should send a real message and pass deep validation',
+      async () => {
+        const sendSms = tools.find(t => t.name === 'send_sms')!;
 
-      // Using real Twilio numbers - this sends an actual SMS
-      const result = await sendSms.handler({
-        to: TEST_CREDENTIALS.toNumber,
-        body: `Integration test: ${new Date().toISOString()}`,
-      });
+        // Using real Twilio numbers - this sends an actual SMS
+        const result = await sendSms.handler({
+          to: TEST_CREDENTIALS.toNumber,
+          body: `Integration test: ${new Date().toISOString()}`,
+        });
 
-      expect(result.content).toHaveLength(1);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.success).toBe(true);
-      expect(response.sid).toMatch(/^SM/);
-      expect(response.to).toBe(TEST_CREDENTIALS.toNumber);
-    });
+        expect(result.content).toHaveLength(1);
+        const response = JSON.parse(result.content[0].text);
+        expect(response.success).toBe(true);
+        expect(response.sid).toMatch(/^SM/);
+        expect(response.to).toBe(TEST_CREDENTIALS.toNumber);
+
+        // Deep validation: verify no errors occurred beyond 200 OK
+        const validator = getTestValidator(validatorConfig);
+        const validation = await validateMessageInTest(validator, response.sid, {
+          timeout: 15000, // Allow extra time for SMS delivery
+          syncServiceSid: TEST_CREDENTIALS.syncServiceSid || undefined, // Skip Sync check if not configured
+        });
+
+        expect(validation.success).toBe(true);
+        expect(validation.checks.resourceStatus?.passed).toBe(true);
+        expect(validation.checks.debuggerAlerts?.passed).toBe(true);
+      },
+      30000
+    ); // 30s timeout for SMS delivery + validation
   });
 });

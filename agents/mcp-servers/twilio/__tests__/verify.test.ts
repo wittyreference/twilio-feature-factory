@@ -4,6 +4,11 @@
 import { verifyTools, TwilioContext } from '../src/index';
 import Twilio from 'twilio';
 import { z } from 'zod';
+import {
+  getTestValidator,
+  validateVerificationInTest,
+  TestValidationConfig,
+} from './helpers/deep-validation';
 
 // Real Twilio credentials from environment - NO magic test numbers.
 const TEST_CREDENTIALS = {
@@ -12,12 +17,19 @@ const TEST_CREDENTIALS = {
   fromNumber: process.env.TWILIO_PHONE_NUMBER || '',
   toNumber: process.env.TEST_PHONE_NUMBER || '',
   verifyServiceSid: process.env.TWILIO_VERIFY_SERVICE_SID,
+  syncServiceSid: process.env.TWILIO_SYNC_SERVICE_SID || '',
 };
 
 const hasRealCredentials =
   TEST_CREDENTIALS.accountSid.startsWith('AC') &&
   TEST_CREDENTIALS.authToken.length > 0 &&
   TEST_CREDENTIALS.fromNumber.startsWith('+');
+
+const validatorConfig: TestValidationConfig = {
+  accountSid: TEST_CREDENTIALS.accountSid,
+  authToken: TEST_CREDENTIALS.authToken,
+  syncServiceSid: TEST_CREDENTIALS.syncServiceSid || undefined,
+};
 
 function createTestContext(): TwilioContext {
   const client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
@@ -190,19 +202,40 @@ describe('verifyTools', () => {
   describe('API integration', () => {
     const itWithCredentials = hasRealCredentials && TEST_CREDENTIALS.verifyServiceSid ? it : it.skip;
 
-    itWithCredentials('start_verification should initiate verification', async () => {
-      const tool = tools.find(t => t.name === 'start_verification')!;
+    itWithCredentials(
+      'start_verification should initiate verification and pass deep validation',
+      async () => {
+        const tool = tools.find(t => t.name === 'start_verification')!;
 
-      // Use real phone number - this sends an actual verification SMS
-      const result = await tool.handler({
-        to: TEST_CREDENTIALS.toNumber,
-        channel: 'sms',
-      });
+        // Use real phone number - this sends an actual verification SMS
+        const result = await tool.handler({
+          to: TEST_CREDENTIALS.toNumber,
+          channel: 'sms',
+        });
 
-      expect(result.content).toHaveLength(1);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.success).toBe(true);
-      expect(response.sid).toMatch(/^VE/);
-    });
+        expect(result.content).toHaveLength(1);
+        const response = JSON.parse(result.content[0].text);
+        expect(response.success).toBe(true);
+        expect(response.sid).toMatch(/^VE/);
+
+        // Deep validation: verify no errors occurred beyond 200 OK
+        // Note: Can't fully validate without receiving and entering code
+        const validator = getTestValidator(validatorConfig);
+        const validation = await validateVerificationInTest(
+          validator,
+          TEST_CREDENTIALS.verifyServiceSid!,
+          response.sid,
+          {
+            timeout: 10000,
+            syncServiceSid: TEST_CREDENTIALS.syncServiceSid || undefined,
+          }
+        );
+
+        expect(validation.success).toBe(true);
+        expect(validation.checks.resourceStatus?.passed).toBe(true);
+        expect(validation.checks.debuggerAlerts?.passed).toBe(true);
+      },
+      30000
+    ); // 30s timeout for verification + validation
   });
 });

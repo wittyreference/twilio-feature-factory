@@ -613,6 +613,83 @@ Previous implementation removed in commit 9673ff2.
 
 ---
 
+## Decision 15: Why MCP + Agent SDK Over CLI-Only
+
+### Context
+
+When asked "why build a custom MCP server instead of just using Twilio CLI commands via Claude Code?", we needed a clear answer for the fundamental value proposition.
+
+### Decision
+
+**MCP tools enable autonomous agent pipelines where agents verify their own work. CLI-only workflows require human verification at each step.**
+
+### The Comparison
+
+| Aspect | CLI via Bash | MCP Tools |
+|--------|--------------|-----------|
+| **Output** | Text to parse | Structured JSON |
+| **Errors** | Exit codes + stderr | Typed error objects |
+| **Validation** | Hope it worked | Programmatic verification |
+| **Agent reasoning** | "I ran a command..." | "SMS delivered to +1555..., status: delivered" |
+| **Self-verification** | Not possible | Deep validation built-in |
+
+### The Fundamental Value Proposition
+
+> "Claude Code + Twilio CLI lets you build Twilio apps with Claude's help."
+>
+> "Twilio Agent Factory lets Claude **build, test, and validate** Twilio apps autonomously, with you approving at checkpoints."
+
+The difference is **who does the verification work**:
+
+**CLI-only workflow:**
+1. Claude writes code
+2. Claude runs CLI commands
+3. Human tests, finds issues
+4. Human tells Claude what's wrong
+5. Repeat until working
+
+**Agent Factory workflow:**
+1. Agent writes failing tests (TDD Red)
+2. Agent writes code to pass tests (TDD Green)
+3. Agent validates via deep validation (not just "200 OK")
+4. Agent presents verified result
+5. Human approves or requests changes
+
+### When This Adds Value
+
+**Agent Factory approach is better when:**
+- Complex features with multiple async operations (verify + SMS + call)
+- Webhook dependencies (did the callback fire?)
+- Quality requirements (TDD enforcement)
+- Reduced iteration cycles (agent catches its own mistakes)
+
+**CLI-only is sufficient when:**
+- Simple, single-step operations
+- Human is actively watching and testing
+- Prototyping where speed > reliability
+
+### Rationale
+
+1. **Structured output enables reasoning**: JSON responses let agents make decisions based on actual data, not parsed text
+2. **Deep validation catches async failures**: Twilio's async nature means 200 OK ≠ success; agents need to verify
+3. **TDD enforcement at pipeline level**: MCP tools integrate with test-gen/dev pipeline for quality gates
+4. **Self-verification reduces iterations**: Agent confirms success before asking human to review
+
+### Consequences
+
+- MCP tools are infrastructure, not the product (Feature Factory is the product)
+- For simple use cases, the complexity isn't worth it—CLI is fine
+- The real value emerges in Phase 2-5 when autonomous pipelines use these tools
+- Deep validation is the moat; without it, we'd just use CLI
+
+### Status
+
+**Accepted** - Session 3d (2026-01-23)
+
+Documented after strategic review prompted by "why not just use CLI?" question.
+
+---
+
 ## Open Questions
 
 Questions we haven't resolved yet:
@@ -647,6 +724,7 @@ Questions we haven't resolved yet:
 | 2026-01-22 | 3c | D12 | Auto-setup script implemented | scripts/setup.js |
 | 2026-01-22 | 3c | D13 | Deep validation implemented | src/validation/deep-validator.ts |
 | 2026-01-23 | 3d | D14 | Git as source of truth for activity | commit 9673ff2 |
+| 2026-01-23 | 3d | D15 | Why MCP over CLI-only documented | Strategic review |
 
 ---
 

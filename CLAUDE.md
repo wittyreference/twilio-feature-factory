@@ -51,6 +51,28 @@ This separation ensures:
 
 See [DESIGN_DECISIONS.md](/DESIGN_DECISIONS.md) for architectural rationale and [.claude/references/tool-boundaries.md](/.claude/references/tool-boundaries.md) for MCP vs CLI vs Functions guidance.
 
+## Documentation Navigator
+
+| Looking for... | Location |
+|----------------|----------|
+| Project-wide standards | This file (CLAUDE.md) |
+| Architectural decisions | [DESIGN_DECISIONS.md](/DESIGN_DECISIONS.md) |
+| MCP server patterns | [agents/mcp-servers/twilio/CLAUDE.md](/agents/mcp-servers/twilio/CLAUDE.md) |
+| Tool boundaries | [.claude/references/tool-boundaries.md](/.claude/references/tool-boundaries.md) |
+| Voice/TwiML patterns | [functions/voice/CLAUDE.md](/functions/voice/CLAUDE.md) |
+| SMS/MMS patterns | [functions/messaging/CLAUDE.md](/functions/messaging/CLAUDE.md) |
+| Real-time voice AI | [functions/conversation-relay/CLAUDE.md](/functions/conversation-relay/CLAUDE.md) |
+| Verification patterns | [functions/verify/CLAUDE.md](/functions/verify/CLAUDE.md) |
+| State synchronization | [functions/sync/CLAUDE.md](/functions/sync/CLAUDE.md) |
+| Task routing | [functions/taskrouter/CLAUDE.md](/functions/taskrouter/CLAUDE.md) |
+| Messaging services | [functions/messaging-services/CLAUDE.md](/functions/messaging-services/CLAUDE.md) |
+| Callback handlers | [functions/callbacks/CLAUDE.md](/functions/callbacks/CLAUDE.md) |
+| Deep validation | [agents/mcp-servers/twilio/src/validation/CLAUDE.md](/agents/mcp-servers/twilio/src/validation/CLAUDE.md) |
+| Setup scripts | [scripts/CLAUDE.md](/scripts/CLAUDE.md) |
+| Twilio CLI reference | [.claude/references/twilio-cli.md](/.claude/references/twilio-cli.md) |
+| Implementation progress | [todo.md](/todo.md) |
+| Session learnings | `.claude-dev/learnings.md` (local, not committed) |
+
 ## Your Role as Primary Agent
 - **Architecture & Planning**: Lead on system design and specification creation
 - **Test-Driven Development**: Primary responsibility for comprehensive test coverage
@@ -59,15 +81,36 @@ See [DESIGN_DECISIONS.md](/DESIGN_DECISIONS.md) for architectural rationale and 
 
 ## Documentation Flywheel
 
-After completing significant work (architectural decisions, new tools, API exploration, or pattern changes), proactively suggest updating relevant docs:
+Use the capture-promote-clear workflow for knowledge management:
 
-- **DESIGN_DECISIONS.md** - When architectural choices are made or revisited
-- **API_REFERENCE.md** - When new Twilio APIs are explored or tools added
-- **.claude/references/tool-boundaries.md** - When MCP/CLI/Functions boundaries are clarified
-- **todo.md** - Update session log after completing work
-- **Relevant CLAUDE.md files** - When new patterns or guidelines emerge
+### 1. Capture
 
-Don't wait to be asked - remind MC about doc updates when they're warranted.
+Add discoveries to `.claude-dev/learnings.md` (local, not committed):
+
+- Type system gotchas or API quirks
+- Debugging insights and root causes
+- Patterns that work unexpectedly well
+- Failed experiments worth remembering
+
+### 2. Promote
+
+Move stable learnings to permanent docs:
+
+| Discovery Type | Target Doc |
+|----------------|------------|
+| Architectural choices | DESIGN_DECISIONS.md |
+| New APIs or tools | API_REFERENCE.md |
+| MCP/CLI/Functions boundaries | .claude/references/tool-boundaries.md |
+| Session completion | todo.md session log |
+| New patterns | Relevant CLAUDE.md files |
+
+### 3. Clear
+
+Remove promoted entries from learnings.md to keep it focused.
+
+### Automation
+
+The `doc-update-check.sh` hook runs after subagent completion and suggests relevant docs to update based on changed files. The `session-summary.sh` hook runs at session end with a review reminder.
 
 # Interaction
 

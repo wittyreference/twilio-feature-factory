@@ -1,3 +1,7 @@
+> **Superseded:** This workflow is replaced by subagent commands.
+> Use `/architect`, `/spec`, `/test-gen`, `/dev`, `/review`, `/docs` instead.
+> See root CLAUDE.md for the full command reference.
+
 # Planning Prompt
 
 Use this prompt with Claude in Plan Mode to create a detailed implementation plan.

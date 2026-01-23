@@ -13,7 +13,8 @@ module.exports = {
     sourceType: 'module'
   },
   globals: {
-    Twilio: 'readonly'
+    Twilio: 'readonly',
+    Runtime: 'readonly'
   },
   rules: {
     'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],

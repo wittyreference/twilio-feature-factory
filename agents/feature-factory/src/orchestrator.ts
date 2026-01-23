@@ -20,6 +20,7 @@ import type {
 } from './types.js';
 import { getWorkflow } from './workflows/index.js';
 import { getAgentConfig } from './agents/index.js';
+import { getToolSchemas, executeTool, type ToolContext } from './tools.js';
 
 /**
  * Feature Factory Orchestrator
@@ -385,61 +386,181 @@ export class FeatureFactoryOrchestrator {
   }
 
   /**
-   * Execute a single agent
+   * Execute a single agent with agentic tool loop
    */
   private async runAgent(
     agentType: AgentType,
     context: AgentContext
   ): Promise<AgentResult> {
     const agentConfig = getAgentConfig(agentType);
+    const tools = getToolSchemas(agentConfig.tools);
+    const model = this.getModelId(agentConfig.model || this.config.defaultModel);
 
-    const prompt = this.buildAgentPrompt(agentConfig, context);
+    const toolContext: ToolContext = {
+      workingDirectory: context.workingDirectory,
+      verbose: this.config.verbose,
+    };
+
+    // Build initial prompt
+    const initialPrompt = this.buildAgentPrompt(agentConfig, context);
+
+    // Track accumulated results
+    const filesCreated: string[] = [];
+    const filesModified: string[] = [];
+    const commits: string[] = [];
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+    let turnsUsed = 0;
+    let finalOutput: Record<string, unknown> = {};
+
+    // Build messages for conversation
+    const messages: Anthropic.MessageParam[] = [
+      { role: 'user', content: initialPrompt },
+    ];
 
     try {
-      // Use Claude API to run the agent
-      const response = await this.client.messages.create({
-        model: this.getModelId(agentConfig.model || this.config.defaultModel),
-        max_tokens: 8192,
-        system: agentConfig.systemPrompt,
-        messages: [{ role: 'user', content: prompt }],
-      });
+      // Agentic loop
+      while (turnsUsed < agentConfig.maxTurns) {
+        turnsUsed++;
 
-      // Extract text content from response
-      const textContent = response.content.find((c) => c.type === 'text');
-      const outputText = textContent?.type === 'text' ? textContent.text : '';
+        if (this.config.verbose) {
+          console.log(`  [${agentType}] Turn ${turnsUsed}/${agentConfig.maxTurns}`);
+        }
 
-      // Parse agent output
-      const output = this.parseAgentOutput(outputText, agentConfig);
+        // Make API call
+        const response = await this.client.messages.create({
+          model,
+          max_tokens: 8192,
+          system: agentConfig.systemPrompt,
+          messages,
+          tools: tools.length > 0 ? tools : undefined,
+        });
 
-      // Calculate cost (approximate)
-      const inputTokens = response.usage?.input_tokens || 0;
-      const outputTokens = response.usage?.output_tokens || 0;
+        // Track token usage
+        totalInputTokens += response.usage?.input_tokens || 0;
+        totalOutputTokens += response.usage?.output_tokens || 0;
+
+        // Process response content
+        const toolUseBlocks: Anthropic.ToolUseBlock[] = [];
+        let textOutput = '';
+
+        for (const block of response.content) {
+          if (block.type === 'text') {
+            textOutput += block.text;
+          } else if (block.type === 'tool_use') {
+            toolUseBlocks.push(block);
+          }
+        }
+
+        // If no tool use, we're done
+        if (toolUseBlocks.length === 0 || response.stop_reason === 'end_turn') {
+          // Parse final output
+          finalOutput = this.parseAgentOutput(textOutput, agentConfig);
+          break;
+        }
+
+        // Add assistant message to history
+        messages.push({
+          role: 'assistant',
+          content: response.content,
+        });
+
+        // Execute tools and collect results
+        const toolResults: Anthropic.ToolResultBlockParam[] = [];
+
+        for (const toolUse of toolUseBlocks) {
+          if (this.config.verbose) {
+            console.log(`  [${agentType}] Calling tool: ${toolUse.name}`);
+          }
+
+          const result = await executeTool(
+            toolUse.name,
+            toolUse.input as Record<string, unknown>,
+            toolContext
+          );
+
+          // Track file changes
+          if (result.filesCreated) {
+            filesCreated.push(...result.filesCreated);
+          }
+          if (result.filesModified) {
+            filesModified.push(...result.filesModified);
+          }
+
+          // Track commits from bash output
+          if (toolUse.name === 'Bash' && result.success) {
+            const commitMatch = result.output.match(/\[[\w-]+\s+([a-f0-9]+)\]/);
+            if (commitMatch) {
+              commits.push(commitMatch[1]);
+            }
+          }
+
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: result.success
+              ? result.output
+              : `Error: ${result.error || 'Unknown error'}`,
+            is_error: !result.success,
+          });
+        }
+
+        // Add tool results to messages
+        messages.push({
+          role: 'user',
+          content: toolResults,
+        });
+      }
+
+      // Calculate cost
       const costUsd = this.calculateCost(
-        inputTokens,
-        outputTokens,
+        totalInputTokens,
+        totalOutputTokens,
+        agentConfig.model || this.config.defaultModel
+      );
+
+      // Check for max turns reached
+      if (turnsUsed >= agentConfig.maxTurns) {
+        return {
+          agent: agentType,
+          success: false,
+          output: finalOutput,
+          filesCreated: [...new Set(filesCreated)],
+          filesModified: [...new Set(filesModified)],
+          commits: [...new Set(commits)],
+          costUsd,
+          turnsUsed,
+          error: `Max turns (${agentConfig.maxTurns}) reached`,
+        };
+      }
+
+      return {
+        agent: agentType,
+        success: true,
+        output: finalOutput,
+        filesCreated: [...new Set(filesCreated)],
+        filesModified: [...new Set(filesModified)],
+        commits: [...new Set(commits)],
+        costUsd,
+        turnsUsed,
+      };
+    } catch (error) {
+      // Calculate cost even on error
+      const costUsd = this.calculateCost(
+        totalInputTokens,
+        totalOutputTokens,
         agentConfig.model || this.config.defaultModel
       );
 
       return {
         agent: agentType,
-        success: true,
-        output,
-        filesCreated: [],
-        filesModified: [],
-        commits: [],
-        costUsd,
-        turnsUsed: 1,
-      };
-    } catch (error) {
-      return {
-        agent: agentType,
         success: false,
-        output: {},
-        filesCreated: [],
-        filesModified: [],
-        commits: [],
-        costUsd: 0,
-        turnsUsed: 0,
+        output: finalOutput,
+        filesCreated: [...new Set(filesCreated)],
+        filesModified: [...new Set(filesModified)],
+        commits: [...new Set(commits)],
+        costUsd,
+        turnsUsed,
         error: error instanceof Error ? error.message : 'Unknown error',
       };
     }

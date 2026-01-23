@@ -48,3 +48,9 @@ export {
   reviewAgent,
   docsAgent,
 } from './agents/index.js';
+
+export {
+  getToolSchemas,
+  executeTool,
+} from './tools.js';
+export type { ToolResult, ToolContext, ToolSchema } from './tools.js';

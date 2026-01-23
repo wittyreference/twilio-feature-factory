@@ -224,6 +224,15 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 | 2026-01-20 | 3 | P0 tool TypeScript fixes, 91 unit tests for all 7 P0 tool modules |
 | 2026-01-22 | 3b | P0 integration tests with real credentials (102 tests), no-magic-numbers policy, hook CWD fix |
 | 2026-01-22 | 3c | Auto-setup script, callback Functions infrastructure, deep validation helper, test helper with Jest matchers |
+| 2026-01-23 | 3d | Documentation infrastructure: navigator, flywheel workflow, pre-commit doc reminder, D14 decision |
+
+---
+
+## Follow-Up Items
+
+Items to revisit in future sessions:
+
+- [ ] **Evaluate pre-commit doc reminder effectiveness** (added 2026-01-23): After a few sessions, check if the pre-commit reminder is actually prompting doc updates or being ignored. Consider escalating to interactive prompt if reminders aren't working.
 
 ---
 

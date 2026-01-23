@@ -36,6 +36,25 @@ if echo "$COMMAND" | grep -qE "git\s+commit.*\s-n(\s|$)"; then
 fi
 
 # ============================================
+# PRE-COMMIT DOCUMENTATION REMINDER
+# ============================================
+
+# Check if this is a git commit (but not the --no-verify checks above which already exited)
+if echo "$COMMAND" | grep -qE "^git\s+commit"; then
+    # Determine project root
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+    # Call dev doc-update-check if it exists
+    DEV_HOOK="$PROJECT_ROOT/.claude-dev/hooks/doc-update-check.sh"
+    if [ -x "$DEV_HOOK" ]; then
+        # Clear debounce so it always runs for commits
+        rm -f "$PROJECT_ROOT/.claude-dev/.last-doc-check" 2>/dev/null
+        "$DEV_HOOK"
+    fi
+fi
+
+# ============================================
 # FORCE PUSH PROTECTION
 # ============================================
 

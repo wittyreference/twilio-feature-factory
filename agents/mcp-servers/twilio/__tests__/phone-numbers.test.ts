@@ -1,25 +1,27 @@
 // ABOUTME: Unit tests for Twilio phone number management tools.
-// ABOUTME: Tests tool structure, schema validation, and API integration using test credentials.
+// ABOUTME: Tests tool structure, schema validation, and API integration with real credentials.
 
 import { phoneNumberTools, TwilioContext } from '../src/index';
 import Twilio from 'twilio';
 import { z } from 'zod';
 
+// Real Twilio credentials from environment - NO magic test numbers.
 const TEST_CREDENTIALS = {
-  accountSid: process.env.TWILIO_ACCOUNT_SID || 'ACtest',
-  authToken: process.env.TWILIO_AUTH_TOKEN || 'test_token',
-  phoneNumber: process.env.TWILIO_PHONE_NUMBER || '+15005550006',
+  accountSid: process.env.TWILIO_ACCOUNT_SID || '',
+  authToken: process.env.TWILIO_AUTH_TOKEN || '',
+  fromNumber: process.env.TWILIO_PHONE_NUMBER || '',
 };
 
 const hasRealCredentials =
   TEST_CREDENTIALS.accountSid.startsWith('AC') &&
-  TEST_CREDENTIALS.accountSid !== 'ACtest';
+  TEST_CREDENTIALS.authToken.length > 0 &&
+  TEST_CREDENTIALS.fromNumber.startsWith('+');
 
 function createTestContext(): TwilioContext {
   const client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
   return {
     client,
-    defaultFromNumber: TEST_CREDENTIALS.phoneNumber,
+    defaultFromNumber: TEST_CREDENTIALS.fromNumber,
   };
 }
 

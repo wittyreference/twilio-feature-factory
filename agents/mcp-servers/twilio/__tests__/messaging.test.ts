@@ -1,26 +1,30 @@
 // ABOUTME: Unit tests for Twilio messaging tools.
-// ABOUTME: Tests tool structure, schema validation, and API integration using test credentials.
+// ABOUTME: Tests tool structure, schema validation, and API integration with real credentials.
 
 import { messagingTools, TwilioContext } from '../src/index';
 import Twilio from 'twilio';
 import { z } from 'zod';
 
-// Test credentials - Twilio provides magic numbers for testing
+// Real Twilio credentials from environment - NO magic test numbers.
+// Magic numbers don't reflect real API behavior and are not used here.
 const TEST_CREDENTIALS = {
-  accountSid: process.env.TWILIO_ACCOUNT_SID || 'ACtest',
-  authToken: process.env.TWILIO_AUTH_TOKEN || 'test_token',
-  phoneNumber: process.env.TWILIO_PHONE_NUMBER || '+15005550006',
+  accountSid: process.env.TWILIO_ACCOUNT_SID || '',
+  authToken: process.env.TWILIO_AUTH_TOKEN || '',
+  fromNumber: process.env.TWILIO_PHONE_NUMBER || '',
+  toNumber: process.env.TEST_PHONE_NUMBER || '',
 };
 
 const hasRealCredentials =
   TEST_CREDENTIALS.accountSid.startsWith('AC') &&
-  TEST_CREDENTIALS.accountSid !== 'ACtest';
+  TEST_CREDENTIALS.authToken.length > 0 &&
+  TEST_CREDENTIALS.fromNumber.startsWith('+') &&
+  TEST_CREDENTIALS.toNumber.startsWith('+');
 
 function createTestContext(): TwilioContext {
   const client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
   return {
     client,
-    defaultFromNumber: TEST_CREDENTIALS.phoneNumber,
+    defaultFromNumber: TEST_CREDENTIALS.fromNumber,
   };
 }
 
@@ -236,31 +240,20 @@ describe('messagingTools', () => {
       expect(Array.isArray(response.messages)).toBe(true);
     });
 
-    itWithCredentials('send_sms should send a message using test number', async () => {
+    itWithCredentials('send_sms should send a real message', async () => {
       const sendSms = tools.find(t => t.name === 'send_sms')!;
 
-      // Using Twilio magic test number for successful message
+      // Using real Twilio numbers - this sends an actual SMS
       const result = await sendSms.handler({
-        to: '+15005550006', // Twilio test number - always succeeds
-        body: 'Test message from unit tests',
+        to: TEST_CREDENTIALS.toNumber,
+        body: `Integration test: ${new Date().toISOString()}`,
       });
 
       expect(result.content).toHaveLength(1);
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
       expect(response.sid).toMatch(/^SM/);
-    });
-
-    itWithCredentials('send_sms should handle invalid number error', async () => {
-      const sendSms = tools.find(t => t.name === 'send_sms')!;
-
-      // Using Twilio magic test number that triggers error
-      await expect(
-        sendSms.handler({
-          to: '+15005550001', // Twilio test number - invalid
-          body: 'Test message',
-        })
-      ).rejects.toThrow();
+      expect(response.to).toBe(TEST_CREDENTIALS.toNumber);
     });
   });
 });

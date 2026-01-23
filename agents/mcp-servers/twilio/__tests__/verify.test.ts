@@ -1,26 +1,29 @@
 // ABOUTME: Unit tests for Twilio Verify tools.
-// ABOUTME: Tests tool structure, schema validation, and API integration using test credentials.
+// ABOUTME: Tests tool structure, schema validation, and API integration with real credentials.
 
 import { verifyTools, TwilioContext } from '../src/index';
 import Twilio from 'twilio';
 import { z } from 'zod';
 
+// Real Twilio credentials from environment - NO magic test numbers.
 const TEST_CREDENTIALS = {
-  accountSid: process.env.TWILIO_ACCOUNT_SID || 'ACtest',
-  authToken: process.env.TWILIO_AUTH_TOKEN || 'test_token',
-  phoneNumber: process.env.TWILIO_PHONE_NUMBER || '+15005550006',
+  accountSid: process.env.TWILIO_ACCOUNT_SID || '',
+  authToken: process.env.TWILIO_AUTH_TOKEN || '',
+  fromNumber: process.env.TWILIO_PHONE_NUMBER || '',
+  toNumber: process.env.TEST_PHONE_NUMBER || '',
   verifyServiceSid: process.env.TWILIO_VERIFY_SERVICE_SID,
 };
 
 const hasRealCredentials =
   TEST_CREDENTIALS.accountSid.startsWith('AC') &&
-  TEST_CREDENTIALS.accountSid !== 'ACtest';
+  TEST_CREDENTIALS.authToken.length > 0 &&
+  TEST_CREDENTIALS.fromNumber.startsWith('+');
 
 function createTestContext(): TwilioContext {
   const client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
   return {
     client,
-    defaultFromNumber: TEST_CREDENTIALS.phoneNumber,
+    defaultFromNumber: TEST_CREDENTIALS.fromNumber,
     verifyServiceSid: TEST_CREDENTIALS.verifyServiceSid,
   };
 }
@@ -190,9 +193,9 @@ describe('verifyTools', () => {
     itWithCredentials('start_verification should initiate verification', async () => {
       const tool = tools.find(t => t.name === 'start_verification')!;
 
-      // Use a test phone number
+      // Use real phone number - this sends an actual verification SMS
       const result = await tool.handler({
-        to: '+15005550006',
+        to: TEST_CREDENTIALS.toNumber,
         channel: 'sms',
       });
 

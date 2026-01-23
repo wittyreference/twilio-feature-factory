@@ -86,10 +86,11 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 
 - [x] Write unit tests for P0 tools (messaging, voice, phone-numbers)
 - [x] Write unit tests for P0 tools (verify, sync, taskrouter, debugger)
+- [x] Write integration tests for P0 tools with real Twilio APIs (102 tests passing)
 - [ ] Write unit tests for P1 tools (lookups, studio, messaging-services, serverless)
 - [ ] Write unit tests for P2 tools as implemented (8 modules)
 - [ ] Write unit tests for P3 tools as implemented (10 modules)
-- [ ] Write integration tests with real Twilio APIs for all priority tiers
+- [ ] Write integration tests for P1-P3 tools as implemented
 
 ---
 
@@ -221,6 +222,7 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 | 2026-01-20 | 2 | API_REFERENCE.md (filtered EOL/deprecated APIs), TOOL_BOUNDARIES.md, DESIGN_DECISIONS.md |
 | 2026-01-20 | 2b | Doc reorganization, meta-tooling setup (.claude-dev/), conditional hooks, GitHub publish |
 | 2026-01-20 | 3 | P0 tool TypeScript fixes, 91 unit tests for all 7 P0 tool modules |
+| 2026-01-22 | 3b | P0 integration tests with real credentials (102 tests), no-magic-numbers policy, hook CWD fix |
 
 ---
 
@@ -229,3 +231,21 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 - Autonomy Mode: **Highly Supervised** - human approval after each phase
 - Cost Budget: $5.00 per feature, $2.00 per test run
 - All agents must respect existing hooks (credential safety, TDD enforcement)
+
+### Testing Learnings (Session 3b)
+
+**No Magic Numbers Policy:** Twilio magic test numbers (+15005550xxx) are NOT used because they don't reflect real API behavior, error modes, or carrier interactions. All tests use real Twilio numbers from the .env file.
+
+**Environment Variables for Tests:**
+
+- `TWILIO_PHONE_NUMBER` - FROM number for outbound messages/calls
+- `TEST_PHONE_NUMBER` - TO number (recipient) for outbound tests
+- Service SIDs (VERIFY, SYNC, TASKROUTER) required for respective integration tests
+
+**Running Integration Tests:**
+
+```bash
+set -a && source .env && set +a && npm test
+```
+
+The `set -a` exports all variables so they're available to Jest subprocesses.

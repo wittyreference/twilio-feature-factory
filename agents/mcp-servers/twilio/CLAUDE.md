@@ -133,9 +133,11 @@ for await (const message of query({
 
 ## Testing
 
-Tests use Twilio magic numbers where applicable:
-- `+15005550006` - Valid test number for SMS
-- `+15005550001` - Invalid number (triggers error)
+**No magic numbers.** Tests use real Twilio numbers for authentic API behavior:
+- `TWILIO_PHONE_NUMBER` - FROM number for outbound messages/calls
+- `TEST_PHONE_NUMBER` - TO number (recipient) for outbound tests
+
+Magic test numbers (`+15005550xxx`) are explicitly NOT used because they don't reflect real API behavior, error modes, or carrier interactions.
 
 Run tests:
 ```bash

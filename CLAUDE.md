@@ -4,7 +4,52 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Twilio prototyping project. Details will be added as the project develops.
+This repository contains two distinct but complementary concerns:
+
+### Core Twilio Prototyping (`functions/`)
+
+Production-ready Twilio serverless functions for voice, messaging, verification, and more. This is the deliverable application code that runs on Twilio's infrastructure.
+
+```text
+functions/
+├── voice/              # Voice call handlers (TwiML)
+├── messaging/          # SMS/MMS handlers
+├── verify/             # Phone verification
+├── sync/               # Real-time state synchronization
+├── taskrouter/         # Skills-based routing
+├── conversation-relay/ # Real-time voice AI
+├── callbacks/          # Status callback handlers for deep validation
+└── helpers/            # Shared private utilities
+```
+
+### Meta-Project: Agent Factory (`agents/`)
+
+Autonomous agent infrastructure built on Claude Agent SDK and MCP. This is development/meta tooling, not production code.
+
+```text
+agents/
+└── mcp-servers/twilio/ # MCP server wrapping Twilio APIs as tools
+    ├── src/tools/      # Tool implementations (messaging, voice, etc.)
+    ├── src/validation/ # Deep validation helpers
+    └── __tests__/      # MCP-specific tests
+```
+
+### Architecture Separation
+
+**Critical**: These two concerns are intentionally decoupled.
+
+- **Functions do NOT import from agents/** - Serverless functions are standalone
+- **Agents do NOT call function webhooks** - Agents use Twilio APIs directly
+- **Integration via Twilio services only** - Functions write to Sync, agents read from Sync
+- **Independent package.json files** - Each has its own dependencies
+
+This separation ensures:
+
+1. Functions can be deployed without agent code
+2. Agents can be used with any Twilio project
+3. No circular dependencies or tight coupling
+
+See [DESIGN_DECISIONS.md](/DESIGN_DECISIONS.md) for architectural rationale and [.claude/references/tool-boundaries.md](/.claude/references/tool-boundaries.md) for MCP vs CLI vs Functions guidance.
 
 ## Your Role as Primary Agent
 - **Architecture & Planning**: Lead on system design and specification creation

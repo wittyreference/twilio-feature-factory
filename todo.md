@@ -223,6 +223,7 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 | 2026-01-20 | 2b | Doc reorganization, meta-tooling setup (.claude-dev/), conditional hooks, GitHub publish |
 | 2026-01-20 | 3 | P0 tool TypeScript fixes, 91 unit tests for all 7 P0 tool modules |
 | 2026-01-22 | 3b | P0 integration tests with real credentials (102 tests), no-magic-numbers policy, hook CWD fix |
+| 2026-01-22 | 3c | Auto-setup script, callback Functions infrastructure, deep validation helper, test helper with Jest matchers |
 
 ---
 
@@ -249,3 +250,33 @@ set -a && source .env && set +a && npm test
 ```
 
 The `set -a` exports all variables so they're available to Jest subprocesses.
+
+### Session 3c Work Completed
+
+**Auto-Setup Script** (`scripts/setup.js` - run via `npm run setup`)
+
+- Interactive CLI for provisioning Twilio resources
+- Prompts for credentials, validates via API
+- Provisions: phone numbers, Verify, Sync, Messaging Service, TaskRouter
+- Auto-deploys callback Functions via Serverless Toolkit
+- Configures all webhooks to use deployed callback URLs
+- Updates .env with new SIDs
+
+**Callback Functions Infrastructure** (`functions/callbacks/`)
+
+- `sync-logger.private.js` - Shared helper for logging to Sync (24hr TTL)
+- `message-status.protected.js` - SMS/MMS delivery callbacks
+- `call-status.protected.js` - Voice call status callbacks
+- `task-status.protected.js` - TaskRouter event callbacks
+- `verification-status.protected.js` - Verify callbacks
+- `fallback.protected.js` - Universal fallback handler (safe TwiML for voice)
+- All callbacks log to Sync Documents for deep validation
+
+**Deep Validation Helper** (`agents/mcp-servers/twilio/src/validation/`)
+
+- Goes beyond 200 OK to verify actual operation success
+- Checks: resource status, debugger alerts, call events, Voice Insights, Sync callbacks
+- `DeepValidator` class with `validateMessage`, `validateCall`, `validateVerification`, `validateTask`
+- Test helper with custom Jest matchers (`toHavePassedValidation`, `toHaveNoDebuggerAlerts`)
+
+**Architecture Pattern Confirmed**: Functions and agents are cleanly separated - no code coupling, integration via Twilio APIs only (functions write to Sync, agents read from Sync).

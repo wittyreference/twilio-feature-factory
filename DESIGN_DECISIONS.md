@@ -481,7 +481,9 @@ interface SetupOptions {
 
 ### Status
 
-**Proposed** - Session 3b (2026-01-22)
+**Implemented** - Session 3c (2026-01-22)
+
+Implementation: `scripts/setup.js` (run via `npm run setup`)
 
 ---
 
@@ -556,7 +558,13 @@ async function validateVerification(sid: string): Promise<ValidationResult>;
 
 ### Status
 
-**Proposed** - Session 3b (2026-01-22)
+**Implemented** - Session 3c (2026-01-22)
+
+Implementation: `agents/mcp-servers/twilio/src/validation/deep-validator.ts`
+
+Also includes:
+- Callback Functions infrastructure (`functions/callbacks/`) for Sync-based callback data
+- Test helper with Jest matchers (`__tests__/helpers/deep-validation.ts`)
 
 ---
 
@@ -591,6 +599,8 @@ Questions we haven't resolved yet:
 | 2026-01-20 | 3 | D11 | Git rev-parse for hook paths | commit 4f84cd8 |
 | 2026-01-22 | 3b | D12 | Auto-setup script proposed | User request |
 | 2026-01-22 | 3b | D13 | Deep validation pattern proposed | User request |
+| 2026-01-22 | 3c | D12 | Auto-setup script implemented | scripts/setup.js |
+| 2026-01-22 | 3c | D13 | Deep validation implemented | src/validation/deep-validator.ts |
 
 ---
 
@@ -604,5 +614,6 @@ When making architectural decisions:
 4. **Link to PRs/commits** when available for traceability
 
 When merging PRs that affect architecture:
+
 - Add PR number to the Reference column
 - Example: `PR #42` or `commit abc123`

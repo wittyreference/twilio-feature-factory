@@ -54,3 +54,13 @@ export {
   executeTool,
 } from './tools.js';
 export type { ToolResult, ToolContext, ToolSchema } from './tools.js';
+
+export {
+  initializeMcpTools,
+  getMcpToolSchemas,
+  executeMcpTool,
+  getDeepValidator,
+  isMcpInitialized,
+  isMcpTool,
+} from './mcp-tools.js';
+export type { McpToolConfig } from './mcp-tools.js';

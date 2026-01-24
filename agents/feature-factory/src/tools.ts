@@ -1,12 +1,18 @@
 // ABOUTME: Tool definitions and execution for Feature Factory agents.
-// ABOUTME: Provides Read, Write, Edit, Glob, Grep, and Bash tools for subagents.
+// ABOUTME: Provides Read, Write, Edit, Glob, Grep, Bash, and MCP Twilio tools for subagents.
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { spawn } from 'child_process';
 import { glob } from 'glob';
-import type { AgentTool } from './types.js';
+import type { AgentTool, CoreTool } from './types.js';
 import type Anthropic from '@anthropic-ai/sdk';
+import {
+  isMcpInitialized,
+  isMcpTool,
+  getMcpToolSchemas,
+  executeMcpTool,
+} from './mcp-tools.js';
 
 /**
  * Tool execution result
@@ -33,15 +39,27 @@ export interface ToolContext {
 export type ToolSchema = Anthropic.Tool;
 
 /**
- * Get tool schemas for specified tools
+ * Get tool schemas for specified tools (core + MCP if enabled)
  */
 export function getToolSchemas(tools: AgentTool[]): ToolSchema[] {
   const schemas: ToolSchema[] = [];
 
+  // Get MCP tool schemas if initialized
+  const mcpSchemas = isMcpInitialized() ? getMcpToolSchemas() : [];
+  const mcpSchemaMap = new Map(mcpSchemas.map((s) => [s.name, s]));
+
   for (const tool of tools) {
-    const schema = TOOL_SCHEMAS[tool];
-    if (schema) {
-      schemas.push(schema);
+    // Check core tools first
+    const coreSchema = CORE_TOOL_SCHEMAS[tool as CoreTool];
+    if (coreSchema) {
+      schemas.push(coreSchema);
+      continue;
+    }
+
+    // Check MCP tools
+    const mcpSchema = mcpSchemaMap.get(tool);
+    if (mcpSchema) {
+      schemas.push(mcpSchema);
     }
   }
 
@@ -49,14 +67,20 @@ export function getToolSchemas(tools: AgentTool[]): ToolSchema[] {
 }
 
 /**
- * Execute a tool with given input
+ * Execute a tool with given input (core or MCP)
  */
 export async function executeTool(
   toolName: string,
   input: Record<string, unknown>,
   context: ToolContext
 ): Promise<ToolResult> {
-  const executor = TOOL_EXECUTORS[toolName as AgentTool];
+  // Check if this is an MCP tool
+  if (isMcpInitialized() && isMcpTool(toolName)) {
+    return await executeMcpTool(toolName, input);
+  }
+
+  // Check core tools
+  const executor = CORE_TOOL_EXECUTORS[toolName as CoreTool];
 
   if (!executor) {
     return {
@@ -80,7 +104,7 @@ export async function executeTool(
 /**
  * Tool schemas for Anthropic API
  */
-const TOOL_SCHEMAS: Record<AgentTool, ToolSchema | undefined> = {
+const CORE_TOOL_SCHEMAS: Record<CoreTool, ToolSchema | undefined> = {
   Read: {
     name: 'Read',
     description:
@@ -227,8 +251,8 @@ const TOOL_SCHEMAS: Record<AgentTool, ToolSchema | undefined> = {
 /**
  * Tool execution functions
  */
-const TOOL_EXECUTORS: Record<
-  AgentTool,
+const CORE_TOOL_EXECUTORS: Record<
+  CoreTool,
   | ((
       input: Record<string, unknown>,
       context: ToolContext

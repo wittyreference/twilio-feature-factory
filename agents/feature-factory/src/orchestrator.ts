@@ -21,6 +21,7 @@ import type {
 import { getWorkflow } from './workflows/index.js';
 import { getAgentConfig } from './agents/index.js';
 import { getToolSchemas, executeTool, type ToolContext } from './tools.js';
+import { initializeMcpTools } from './mcp-tools.js';
 
 /**
  * Feature Factory Orchestrator
@@ -41,6 +42,23 @@ export class FeatureFactoryOrchestrator {
 
     // Initialize Anthropic client
     this.client = new Anthropic();
+
+    // Initialize MCP tools if enabled
+    if (this.config.twilioMcpEnabled) {
+      try {
+        initializeMcpTools();
+        if (this.config.verbose) {
+          console.log('  [orchestrator] MCP tools initialized');
+        }
+      } catch (error) {
+        if (this.config.verbose) {
+          console.warn(
+            `  [orchestrator] MCP tools not available: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
+        }
+        // Continue without MCP tools - they're optional
+      }
+    }
   }
 
   /**

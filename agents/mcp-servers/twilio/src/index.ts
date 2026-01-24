@@ -78,3 +78,12 @@ export { verifyTools } from './tools/verify.js';
 export { syncTools } from './tools/sync.js';
 export { taskrouterTools } from './tools/taskrouter.js';
 export { debuggerTools } from './tools/debugger.js';
+
+// Export validation utilities
+export {
+  DeepValidator,
+  createDeepValidator,
+  type ValidationResult,
+  type ValidationOptions,
+  type CheckResult,
+} from './validation/index.js';

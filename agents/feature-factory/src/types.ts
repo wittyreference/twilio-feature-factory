@@ -18,9 +18,9 @@ export type AgentType =
 export type WorkflowType = 'new-feature' | 'bug-fix' | 'refactor';
 
 /**
- * Tools available to agents
+ * Core tools available to agents (file operations, shell)
  */
-export type AgentTool =
+export type CoreTool =
   | 'Read'
   | 'Write'
   | 'Edit'
@@ -30,6 +30,52 @@ export type AgentTool =
   | 'WebSearch'
   | 'WebFetch'
   | 'AskUserQuestion';
+
+/**
+ * MCP Twilio tools for API operations and validation
+ */
+export type McpTool =
+  // Messaging
+  | 'send_sms'
+  | 'send_mms'
+  | 'get_message_logs'
+  | 'get_message_status'
+  // Voice
+  | 'get_call_logs'
+  | 'make_call'
+  | 'get_recording'
+  // Phone Numbers
+  | 'list_phone_numbers'
+  | 'configure_webhook'
+  | 'search_available_numbers'
+  // Verify
+  | 'start_verification'
+  | 'check_verification'
+  | 'get_verification_status'
+  // Sync
+  | 'create_document'
+  | 'update_document'
+  | 'get_document'
+  | 'list_documents'
+  // TaskRouter
+  | 'create_task'
+  | 'list_tasks'
+  | 'get_task_status'
+  | 'list_workers'
+  | 'list_workflows'
+  // Debugger
+  | 'get_debugger_logs'
+  | 'analyze_errors'
+  | 'get_usage_records'
+  // Deep Validation
+  | 'validate_message'
+  | 'validate_call'
+  | 'validate_verification';
+
+/**
+ * All tools available to agents
+ */
+export type AgentTool = CoreTool | McpTool;
 
 /**
  * Model selection for agents

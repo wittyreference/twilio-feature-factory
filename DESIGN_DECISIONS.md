@@ -725,6 +725,7 @@ Questions we haven't resolved yet:
 | 2026-01-22 | 3c | D13 | Deep validation implemented | src/validation/deep-validator.ts |
 | 2026-01-23 | 3d | D14 | Git as source of truth for activity | commit 9673ff2 |
 | 2026-01-23 | 3d | D15 | Why MCP over CLI-only documented | Strategic review |
+| 2026-01-25 | 5b | D7 | TDD enforcement hook implemented | commit 435a709 |
 
 ---
 

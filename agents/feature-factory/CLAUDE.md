@@ -19,11 +19,14 @@ Ready for deployment (human approved at checkpoints)
 
 ```
 src/
-├── index.ts              # Main entry point
-├── orchestrator.ts       # Workflow coordinator
+├── index.ts              # Main entry point, exports
+├── orchestrator.ts       # Workflow coordinator with agentic loop
 ├── config.ts             # Cost limits, model selection
 ├── types.ts              # TypeScript type definitions
 ├── cli.ts                # CLI interface
+├── session.ts            # Session persistence for workflow resumption
+├── tools.ts              # Core tool implementations (Read, Write, Edit, etc.)
+├── mcp-tools.ts          # MCP tool integration (Twilio APIs)
 ├── agents/               # Subagent configurations
 │   ├── architect.ts      # Design review, pattern selection
 │   ├── spec.ts           # Detailed specifications
@@ -33,9 +36,9 @@ src/
 │   └── docs.ts           # Documentation updates
 ├── workflows/            # Pipeline definitions
 │   └── new-feature.ts    # Full TDD pipeline
-└── hooks/                # Quality gates
-    ├── tdd-enforcement.ts
-    └── validation.ts
+└── hooks/                # Pre-phase quality gates
+    ├── index.ts          # Hook registry and execution
+    └── tdd-enforcement.ts # Verifies tests exist and FAIL before dev
 ```
 
 ## Subagent Roles
@@ -98,8 +101,18 @@ npx feature-factory new-feature "Add call recording" \
   --budget 10.00 \
   --no-approval
 
-# Check status
+# Check status of recent workflows
 npx feature-factory status
+npx feature-factory status --all    # Show all sessions
+
+# Resume a paused workflow
+npx feature-factory resume          # Auto-select most recent resumable
+npx feature-factory resume <sessionId>
+
+# Session management
+npx feature-factory sessions list
+npx feature-factory sessions cleanup --days 7
+npx feature-factory sessions cleanup --days 7 --include-failed
 ```
 
 ## Integration with Twilio MCP
@@ -128,12 +141,31 @@ if (!validation.success) {
 
 ## TDD Enforcement
 
-The pipeline enforces Test-Driven Development:
+The pipeline enforces Test-Driven Development via pre-phase hooks:
 
 1. **test-gen** must create tests that **fail** initially
-2. **dev** is blocked if tests don't exist or already pass
-3. **dev** commits only when tests pass
-4. **review** validates TDD was followed
+2. **tdd-enforcement hook** runs BEFORE dev phase and verifies:
+   - test-gen phase completed successfully
+   - Tests were created (`testsCreated > 0`)
+   - Tests are FAILING (Red phase requirement)
+3. **dev** is blocked with `TDD VIOLATION` error if tests pass or don't exist
+4. **dev** commits only when tests pass
+5. **review** validates TDD was followed
+
+### Pre-Phase Hooks
+
+Workflow phases can specify `prePhaseHooks` that run before the agent starts:
+
+```typescript
+{
+  agent: 'dev',
+  name: 'TDD Green Phase',
+  prePhaseHooks: ['tdd-enforcement'],  // Blocks if tests don't fail
+  // ...
+}
+```
+
+Hook failures emit `workflow-error` events and stop the workflow.
 
 ## Cost Controls
 

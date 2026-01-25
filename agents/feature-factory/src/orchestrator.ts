@@ -22,6 +22,15 @@ import { getWorkflow } from './workflows/index.js';
 import { getAgentConfig } from './agents/index.js';
 import { getToolSchemas, executeTool, type ToolContext } from './tools.js';
 import { initializeMcpTools } from './mcp-tools.js';
+import {
+  generateSessionId,
+  saveSession,
+  loadSession,
+  listSessions,
+  getResumableSession,
+  type SessionSummary,
+} from './session.js';
+import type { PersistedSession } from './types.js';
 
 /**
  * Feature Factory Orchestrator
@@ -66,12 +75,15 @@ export class FeatureFactoryOrchestrator {
    */
   async *runWorkflow(
     workflowType: WorkflowType,
-    description: string
+    description: string,
+    options: { sessionId?: string } = {}
   ): AsyncGenerator<WorkflowEvent> {
     const workflow = getWorkflow(workflowType);
+    const sessionId = options.sessionId || generateSessionId();
 
     // Initialize state
     this.state = {
+      sessionId,
       workflow: workflowType,
       description,
       currentPhaseIndex: 0,
@@ -81,6 +93,9 @@ export class FeatureFactoryOrchestrator {
       totalTurns: 0,
       startedAt: new Date(),
     };
+
+    // Save initial state
+    this.persistState();
 
     // Emit workflow started event
     yield {
@@ -152,6 +167,9 @@ export class FeatureFactoryOrchestrator {
         this.state.totalCostUsd += result.costUsd;
         this.state.totalTurns += result.turnsUsed;
 
+        // Persist after each phase
+        this.persistState();
+
         // Emit cost update
         yield {
           type: 'cost-update',
@@ -171,6 +189,7 @@ export class FeatureFactoryOrchestrator {
           };
           this.state.status = 'failed';
           this.state.error = result.error;
+          this.persistState();
           return;
         }
 
@@ -187,6 +206,7 @@ export class FeatureFactoryOrchestrator {
             };
             this.state.status = 'failed';
             this.state.error = 'Validation failed';
+            this.persistState();
             return;
           }
         }
@@ -203,6 +223,7 @@ export class FeatureFactoryOrchestrator {
         // Request approval if required
         if (this.shouldRequestApproval(phase.approvalRequired)) {
           this.state.status = 'awaiting-approval';
+          this.persistState();
 
           const summary = this.generatePhaseSummary(phase.agent, result);
 
@@ -223,6 +244,7 @@ export class FeatureFactoryOrchestrator {
       // All phases completed
       this.state.status = 'completed';
       this.state.completedAt = new Date();
+      this.persistState();
 
       yield {
         type: 'workflow-completed',
@@ -237,6 +259,7 @@ export class FeatureFactoryOrchestrator {
       this.state.status = 'failed';
       this.state.error =
         error instanceof Error ? error.message : 'Unknown error';
+      this.persistState();
 
       yield {
         type: 'workflow-error',
@@ -332,6 +355,9 @@ export class FeatureFactoryOrchestrator {
       this.state.totalCostUsd += result.costUsd;
       this.state.totalTurns += result.turnsUsed;
 
+      // Persist after each phase
+      this.persistState();
+
       yield {
         type: 'cost-update',
         currentCostUsd: this.state.totalCostUsd,
@@ -348,6 +374,7 @@ export class FeatureFactoryOrchestrator {
           timestamp: new Date(),
         };
         this.state.status = 'failed';
+        this.persistState();
         return;
       }
 
@@ -362,6 +389,7 @@ export class FeatureFactoryOrchestrator {
             timestamp: new Date(),
           };
           this.state.status = 'failed';
+          this.persistState();
           return;
         }
       }
@@ -376,6 +404,7 @@ export class FeatureFactoryOrchestrator {
 
       if (this.shouldRequestApproval(phase.approvalRequired)) {
         this.state.status = 'awaiting-approval';
+        this.persistState();
 
         yield {
           type: 'approval-requested',
@@ -391,6 +420,7 @@ export class FeatureFactoryOrchestrator {
     // Completed
     this.state.status = 'completed';
     this.state.completedAt = new Date();
+    this.persistState();
 
     yield {
       type: 'workflow-completed',
@@ -736,5 +766,258 @@ export class FeatureFactoryOrchestrator {
    */
   getConfig(): FeatureFactoryConfig {
     return this.config;
+  }
+
+  /**
+   * Persist current state to disk
+   */
+  private persistState(): void {
+    if (this.state) {
+      try {
+        saveSession(this.state, this.config.workingDirectory);
+        if (this.config.verbose) {
+          console.log(`  [orchestrator] Session ${this.state.sessionId} saved`);
+        }
+      } catch (error) {
+        if (this.config.verbose) {
+          console.warn(
+            `  [orchestrator] Failed to save session: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
+        }
+      }
+    }
+  }
+
+  /**
+   * List all sessions in the working directory
+   */
+  listSessions(): SessionSummary[] {
+    return listSessions(this.config.workingDirectory);
+  }
+
+  /**
+   * Load a specific session
+   */
+  loadSession(sessionId: string): PersistedSession | null {
+    return loadSession(this.config.workingDirectory, sessionId);
+  }
+
+  /**
+   * Get the most recent resumable session
+   */
+  getResumableSession(): PersistedSession | null {
+    return getResumableSession(this.config.workingDirectory);
+  }
+
+  /**
+   * Resume a workflow from persisted state
+   */
+  async *resumeWorkflow(sessionId: string): AsyncGenerator<WorkflowEvent> {
+    const persisted = loadSession(this.config.workingDirectory, sessionId);
+
+    if (!persisted) {
+      yield {
+        type: 'workflow-error',
+        error: `Session ${sessionId} not found`,
+        recoverable: false,
+        timestamp: new Date(),
+      };
+      return;
+    }
+
+    const { state } = persisted;
+
+    // Check if session can be resumed
+    if (state.status !== 'running' && state.status !== 'awaiting-approval') {
+      yield {
+        type: 'workflow-error',
+        error: `Session ${sessionId} cannot be resumed (status: ${state.status})`,
+        recoverable: false,
+        timestamp: new Date(),
+      };
+      return;
+    }
+
+    // Restore state
+    this.state = state;
+
+    if (this.config.verbose) {
+      console.log(`  [orchestrator] Resuming session ${sessionId}`);
+      console.log(`  [orchestrator] Phase: ${state.currentPhaseIndex}, Status: ${state.status}`);
+    }
+
+    // Yield resume event
+    yield {
+      type: 'workflow-resumed',
+      sessionId,
+      workflow: state.workflow,
+      description: state.description,
+      resumedAtPhase: state.currentPhaseIndex,
+      previousCostUsd: state.totalCostUsd,
+      timestamp: new Date(),
+    };
+
+    // If awaiting approval, just return and wait for continueWorkflow
+    if (state.status === 'awaiting-approval') {
+      const workflow = getWorkflow(state.workflow);
+      const currentPhase = workflow.phases[state.currentPhaseIndex];
+      const currentResult = state.phaseResults[currentPhase.agent];
+
+      yield {
+        type: 'approval-requested',
+        phase: currentPhase.name,
+        summary: currentResult
+          ? this.generatePhaseSummary(currentPhase.agent, currentResult)
+          : 'Approval required',
+        result: currentResult || {
+          agent: currentPhase.agent,
+          success: true,
+          output: {},
+          filesCreated: [],
+          filesModified: [],
+          commits: [],
+          costUsd: 0,
+          turnsUsed: 0,
+        },
+        timestamp: new Date(),
+      };
+      return;
+    }
+
+    // Continue from current phase
+    const workflow = getWorkflow(state.workflow);
+
+    for (let i = state.currentPhaseIndex; i < workflow.phases.length; i++) {
+      const phase = workflow.phases[i];
+      this.state.currentPhaseIndex = i;
+
+      // Skip already completed phases
+      if (state.phaseResults[phase.agent]) {
+        continue;
+      }
+
+      // Check budget
+      if (this.state.totalCostUsd >= this.config.maxBudgetUsd) {
+        yield {
+          type: 'workflow-error',
+          phase: phase.name,
+          error: `Budget exceeded: $${this.state.totalCostUsd.toFixed(2)} of $${this.config.maxBudgetUsd.toFixed(2)}`,
+          recoverable: false,
+          timestamp: new Date(),
+        };
+        this.state.status = 'failed';
+        this.state.error = 'Budget exceeded';
+        this.persistState();
+        return;
+      }
+
+      // Emit phase started
+      yield {
+        type: 'phase-started',
+        phase: phase.name,
+        agent: phase.agent,
+        phaseIndex: i,
+        totalPhases: workflow.phases.length,
+        timestamp: new Date(),
+      };
+
+      // Build context for agent
+      const context: AgentContext = {
+        featureDescription: state.description,
+        workingDirectory: this.config.workingDirectory,
+        previousPhaseResults: this.state.phaseResults,
+      };
+
+      // Execute agent
+      const result = await this.runAgent(phase.agent, context);
+
+      // Store result
+      this.state.phaseResults[phase.agent] = result;
+      this.state.totalCostUsd += result.costUsd;
+      this.state.totalTurns += result.turnsUsed;
+
+      // Persist after each phase
+      this.persistState();
+
+      // Emit cost update
+      yield {
+        type: 'cost-update',
+        currentCostUsd: this.state.totalCostUsd,
+        budgetRemainingUsd: this.config.maxBudgetUsd - this.state.totalCostUsd,
+        timestamp: new Date(),
+      };
+
+      // Check if agent succeeded
+      if (!result.success) {
+        yield {
+          type: 'workflow-error',
+          phase: phase.name,
+          error: result.error || 'Agent failed',
+          recoverable: true,
+          timestamp: new Date(),
+        };
+        this.state.status = 'failed';
+        this.state.error = result.error;
+        this.persistState();
+        return;
+      }
+
+      // Run phase validation if present
+      if (phase.validation) {
+        const validationPassed = await phase.validation(result);
+        if (!validationPassed) {
+          yield {
+            type: 'workflow-error',
+            phase: phase.name,
+            error: 'Phase validation failed',
+            recoverable: true,
+            timestamp: new Date(),
+          };
+          this.state.status = 'failed';
+          this.state.error = 'Validation failed';
+          this.persistState();
+          return;
+        }
+      }
+
+      // Emit phase completed
+      yield {
+        type: 'phase-completed',
+        phase: phase.name,
+        agent: phase.agent,
+        result,
+        timestamp: new Date(),
+      };
+
+      // Request approval if required
+      if (this.shouldRequestApproval(phase.approvalRequired)) {
+        this.state.status = 'awaiting-approval';
+        this.persistState();
+
+        yield {
+          type: 'approval-requested',
+          phase: phase.name,
+          summary: this.generatePhaseSummary(phase.agent, result),
+          result,
+          timestamp: new Date(),
+        };
+        return;
+      }
+    }
+
+    // All phases completed
+    this.state.status = 'completed';
+    this.state.completedAt = new Date();
+    this.persistState();
+
+    yield {
+      type: 'workflow-completed',
+      workflow: state.workflow,
+      success: true,
+      totalCostUsd: this.state.totalCostUsd,
+      totalTurns: this.state.totalTurns,
+      results: this.state.phaseResults,
+      timestamp: new Date(),
+    };
   }
 }

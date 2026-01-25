@@ -207,6 +207,7 @@ export interface Workflow {
  */
 export type WorkflowEvent =
   | WorkflowStartedEvent
+  | WorkflowResumedEvent
   | PhaseStartedEvent
   | PhaseCompletedEvent
   | ApprovalRequestedEvent
@@ -220,6 +221,16 @@ export interface WorkflowStartedEvent {
   workflow: WorkflowType;
   description: string;
   totalPhases: number;
+  timestamp: Date;
+}
+
+export interface WorkflowResumedEvent {
+  type: 'workflow-resumed';
+  sessionId: string;
+  workflow: WorkflowType;
+  description: string;
+  resumedAtPhase: number;
+  previousCostUsd: number;
   timestamp: Date;
 }
 
@@ -324,6 +335,9 @@ export interface CheckResult {
  * State of a running workflow
  */
 export interface WorkflowState {
+  /** Unique session identifier */
+  sessionId: string;
+
   /** Workflow being executed */
   workflow: WorkflowType;
 
@@ -353,4 +367,35 @@ export interface WorkflowState {
 
   /** Error message if failed */
   error?: string;
+}
+
+/**
+ * Persisted session with metadata
+ */
+export interface PersistedSession {
+  /** Session metadata */
+  metadata: SessionMetadata;
+
+  /** Workflow state */
+  state: WorkflowState;
+}
+
+/**
+ * Session metadata for persistence
+ */
+export interface SessionMetadata {
+  /** Unique session identifier */
+  sessionId: string;
+
+  /** When session was created */
+  createdAt: string;
+
+  /** Last update timestamp */
+  lastUpdatedAt: string;
+
+  /** Working directory for the workflow */
+  workingDirectory: string;
+
+  /** Feature Factory version */
+  version: string;
 }

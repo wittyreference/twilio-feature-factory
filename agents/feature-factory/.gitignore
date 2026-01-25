@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Session storage (local workflow state)
+.feature-factory/
+
+# Test coverage
+coverage/
+
+# IDE
+.vscode/
+.idea/

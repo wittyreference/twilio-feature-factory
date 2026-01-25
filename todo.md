@@ -122,7 +122,7 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 
 - [x] Wire up actual Claude Agent SDK tool execution (agentic loop with tool calls)
 - [x] Integrate MCP tools for deep validation in agents
-- [ ] Add session persistence for workflow resumption
+- [x] Add session persistence for workflow resumption
 
 ### Hooks
 

@@ -27,6 +27,7 @@ export type {
   ValidationResult,
   CheckResult,
   WorkflowStartedEvent,
+  WorkflowResumedEvent,
   PhaseStartedEvent,
   PhaseCompletedEvent,
   ApprovalRequestedEvent,
@@ -34,6 +35,8 @@ export type {
   WorkflowCompletedEvent,
   WorkflowErrorEvent,
   CostUpdateEvent,
+  PersistedSession,
+  SessionMetadata,
 } from './types.js';
 
 export { getWorkflow, workflows, newFeatureWorkflow } from './workflows/index.js';
@@ -64,3 +67,14 @@ export {
   isMcpTool,
 } from './mcp-tools.js';
 export type { McpToolConfig } from './mcp-tools.js';
+
+export {
+  generateSessionId,
+  saveSession,
+  loadSession,
+  listSessions,
+  deleteSession,
+  cleanupSessions,
+  getResumableSession,
+} from './session.js';
+export type { SessionSummary, CleanupOptions } from './session.js';

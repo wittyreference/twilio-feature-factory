@@ -34,12 +34,26 @@ async function handleWorkflowEvents(
 
   for await (const event of events) {
     switch (event.type) {
-      case 'workflow-started':
+      case 'workflow-started': {
+        const state = orchestrator.getState();
         console.log(
           chalk.bold.blue(`\n🚀 Starting ${event.workflow} workflow`)
         );
+        console.log(chalk.gray(`   Session: ${state?.sessionId || 'unknown'}`));
         console.log(chalk.gray(`   Description: ${event.description}`));
         console.log(chalk.gray(`   Phases: ${event.totalPhases}`));
+        console.log();
+        break;
+      }
+
+      case 'workflow-resumed':
+        console.log(
+          chalk.bold.blue(`\n🔄 Resuming ${event.workflow} workflow`)
+        );
+        console.log(chalk.gray(`   Session: ${event.sessionId}`));
+        console.log(chalk.gray(`   Description: ${event.description}`));
+        console.log(chalk.gray(`   Resumed at phase: ${event.resumedAtPhase + 1}`));
+        console.log(chalk.gray(`   Previous cost: ${formatCurrency(event.previousCostUsd)}`));
         console.log();
         break;
 
@@ -221,14 +235,154 @@ program
     }
   );
 
-// Status command (placeholder for future session resumption)
+// Status command - show recent sessions
 program
   .command('status')
-  .description('Show status of current workflow')
+  .description('Show status of recent workflows')
+  .option('-a, --all', 'Show all sessions, not just recent')
+  .action((options: { all: boolean }) => {
+    const orchestrator = new FeatureFactoryOrchestrator({});
+    const sessions = orchestrator.listSessions();
+
+    if (sessions.length === 0) {
+      console.log(chalk.yellow('\nNo workflow sessions found.'));
+      console.log(chalk.gray('Run `feature-factory new-feature "<description>"` to start one.\n'));
+      return;
+    }
+
+    const displaySessions = options.all ? sessions : sessions.slice(0, 5);
+
+    console.log(chalk.bold('\n📋 Recent Workflow Sessions\n'));
+
+    for (const session of displaySessions) {
+      const statusColor = {
+        running: chalk.blue,
+        'awaiting-approval': chalk.yellow,
+        completed: chalk.green,
+        failed: chalk.red,
+        cancelled: chalk.gray,
+      }[session.status] || chalk.white;
+
+      console.log(`${chalk.bold(session.sessionId)} ${statusColor(`[${session.status}]`)}`);
+      console.log(chalk.gray(`   Workflow: ${session.workflow}`));
+      console.log(chalk.gray(`   Description: ${session.description.slice(0, 60)}${session.description.length > 60 ? '...' : ''}`));
+      console.log(chalk.gray(`   Phase: ${session.currentPhase + 1}, Cost: ${formatCurrency(session.totalCostUsd)}`));
+      console.log(chalk.gray(`   Updated: ${session.lastUpdatedAt}`));
+      console.log();
+    }
+
+    if (!options.all && sessions.length > 5) {
+      console.log(chalk.gray(`... and ${sessions.length - 5} more. Use --all to see all.\n`));
+    }
+
+    // Show resumable hint
+    const resumable = sessions.find(s => s.status === 'running' || s.status === 'awaiting-approval');
+    if (resumable) {
+      console.log(chalk.cyan(`💡 Tip: Run \`feature-factory resume ${resumable.sessionId}\` to continue.\n`));
+    }
+  });
+
+// Resume command - continue a paused workflow
+program
+  .command('resume [sessionId]')
+  .description('Resume a paused workflow')
+  .option('-b, --budget <amount>', 'Maximum budget in USD', '5.00')
+  .option('-v, --verbose', 'Enable verbose logging')
+  .action(
+    async (
+      sessionId: string | undefined,
+      options: { budget: string; verbose: boolean }
+    ) => {
+      console.log(chalk.bold('\n🏭 Feature Factory - Resume\n'));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        maxBudgetUsd: parseFloat(options.budget),
+        verbose: options.verbose,
+      });
+
+      // If no sessionId provided, find the most recent resumable one
+      let targetSessionId = sessionId;
+      if (!targetSessionId) {
+        const resumable = orchestrator.getResumableSession();
+        if (!resumable) {
+          console.log(chalk.yellow('No resumable sessions found.'));
+          console.log(chalk.gray('Use `feature-factory status` to see all sessions.\n'));
+          return;
+        }
+        targetSessionId = resumable.state.sessionId;
+        console.log(chalk.gray(`Auto-selected session: ${targetSessionId}`));
+      }
+
+      try {
+        const events = orchestrator.resumeWorkflow(targetSessionId);
+        await handleWorkflowEvents(events, orchestrator);
+      } catch (error) {
+        console.error(
+          chalk.red(
+            `\nFatal error: ${error instanceof Error ? error.message : 'Unknown error'}`
+          )
+        );
+        process.exit(1);
+      }
+    }
+  );
+
+// Sessions subcommand group
+const sessionsCmd = program
+  .command('sessions')
+  .description('Manage workflow sessions');
+
+// List sessions
+sessionsCmd
+  .command('list')
+  .description('List all workflow sessions')
   .action(() => {
-    console.log(
-      chalk.yellow('Status command not yet implemented (no persistent state)')
-    );
+    const orchestrator = new FeatureFactoryOrchestrator({});
+    const sessions = orchestrator.listSessions();
+
+    if (sessions.length === 0) {
+      console.log(chalk.yellow('\nNo sessions found.\n'));
+      return;
+    }
+
+    console.log(chalk.bold(`\n📋 All Sessions (${sessions.length})\n`));
+
+    for (const session of sessions) {
+      const statusColor = {
+        running: chalk.blue,
+        'awaiting-approval': chalk.yellow,
+        completed: chalk.green,
+        failed: chalk.red,
+        cancelled: chalk.gray,
+      }[session.status] || chalk.white;
+
+      console.log(`${chalk.bold(session.sessionId)} ${statusColor(`[${session.status}]`)}`);
+      console.log(chalk.gray(`   ${session.workflow}: ${session.description.slice(0, 50)}...`));
+      console.log();
+    }
+  });
+
+// Cleanup sessions
+sessionsCmd
+  .command('cleanup')
+  .description('Remove old completed/cancelled sessions')
+  .option('-d, --days <days>', 'Remove sessions older than N days', '7')
+  .option('--include-failed', 'Also remove failed sessions')
+  .action((options: { days: string; includeFailed: boolean }) => {
+    // Import cleanup function
+    const { cleanupSessions } = require('./session.js');
+
+    const deleted = cleanupSessions(process.cwd(), {
+      olderThanDays: parseInt(options.days),
+      includeCompleted: true,
+      includeFailed: options.includeFailed,
+    });
+
+    if (deleted > 0) {
+      console.log(chalk.green(`\n✓ Cleaned up ${deleted} old session(s).\n`));
+    } else {
+      console.log(chalk.gray('\nNo sessions to clean up.\n'));
+    }
   });
 
 // Parse and execute

@@ -137,7 +137,7 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 
 ### Testing
 
-- [ ] Write unit tests for orchestrator
+- [x] Write unit tests for orchestrator (36 tests)
 - [ ] Write integration tests for workflows
 
 ---

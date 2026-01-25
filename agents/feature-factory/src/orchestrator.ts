@@ -30,7 +30,8 @@ import {
   getResumableSession,
   type SessionSummary,
 } from './session.js';
-import type { PersistedSession } from './types.js';
+import { executeHook } from './hooks/index.js';
+import type { PersistedSession, HookContext, PrePhaseHookEvent } from './types.js';
 
 /**
  * Feature Factory Orchestrator
@@ -124,6 +125,54 @@ export class FeatureFactoryOrchestrator {
           this.state.status = 'failed';
           this.state.error = 'Budget exceeded';
           return;
+        }
+
+        // Run pre-phase hooks if defined
+        if (phase.prePhaseHooks && phase.prePhaseHooks.length > 0) {
+          const hookContext: HookContext = {
+            workingDirectory: this.config.workingDirectory,
+            previousPhaseResults: this.state.phaseResults,
+            workflowState: this.state,
+            verbose: this.config.verbose,
+          };
+
+          for (const hookType of phase.prePhaseHooks) {
+            if (this.config.verbose) {
+              console.log(`  [orchestrator] Running pre-phase hook: ${hookType}`);
+            }
+
+            const hookResult = await executeHook(hookType, hookContext);
+
+            // Emit hook event
+            yield {
+              type: 'pre-phase-hook',
+              phase: phase.name,
+              hook: hookType,
+              result: hookResult,
+              timestamp: new Date(),
+            } as PrePhaseHookEvent;
+
+            if (!hookResult.passed) {
+              yield {
+                type: 'workflow-error',
+                phase: phase.name,
+                error: hookResult.error || `Pre-phase hook ${hookType} failed`,
+                recoverable: true,
+                timestamp: new Date(),
+              };
+              this.state.status = 'failed';
+              this.state.error = hookResult.error;
+              this.persistState();
+              return;
+            }
+
+            // Log warnings if present
+            if (hookResult.warnings && this.config.verbose) {
+              for (const warning of hookResult.warnings) {
+                console.log(`  [${hookType}] Warning: ${warning}`);
+              }
+            }
+          }
         }
 
         // Emit phase started
@@ -331,6 +380,46 @@ export class FeatureFactoryOrchestrator {
         };
         this.state.status = 'failed';
         return;
+      }
+
+      // Run pre-phase hooks if defined
+      if (phase.prePhaseHooks && phase.prePhaseHooks.length > 0) {
+        const hookContext: HookContext = {
+          workingDirectory: this.config.workingDirectory,
+          previousPhaseResults: this.state.phaseResults,
+          workflowState: this.state,
+          verbose: this.config.verbose,
+        };
+
+        for (const hookType of phase.prePhaseHooks) {
+          if (this.config.verbose) {
+            console.log(`  [orchestrator] Running pre-phase hook: ${hookType}`);
+          }
+
+          const hookResult = await executeHook(hookType, hookContext);
+
+          yield {
+            type: 'pre-phase-hook',
+            phase: phase.name,
+            hook: hookType,
+            result: hookResult,
+            timestamp: new Date(),
+          } as PrePhaseHookEvent;
+
+          if (!hookResult.passed) {
+            yield {
+              type: 'workflow-error',
+              phase: phase.name,
+              error: hookResult.error || `Pre-phase hook ${hookType} failed`,
+              recoverable: true,
+              timestamp: new Date(),
+            };
+            this.state.status = 'failed';
+            this.state.error = hookResult.error;
+            this.persistState();
+            return;
+          }
+        }
       }
 
       yield {
@@ -909,6 +998,46 @@ export class FeatureFactoryOrchestrator {
         this.state.error = 'Budget exceeded';
         this.persistState();
         return;
+      }
+
+      // Run pre-phase hooks if defined
+      if (phase.prePhaseHooks && phase.prePhaseHooks.length > 0) {
+        const hookContext: HookContext = {
+          workingDirectory: this.config.workingDirectory,
+          previousPhaseResults: this.state.phaseResults,
+          workflowState: this.state,
+          verbose: this.config.verbose,
+        };
+
+        for (const hookType of phase.prePhaseHooks) {
+          if (this.config.verbose) {
+            console.log(`  [orchestrator] Running pre-phase hook: ${hookType}`);
+          }
+
+          const hookResult = await executeHook(hookType, hookContext);
+
+          yield {
+            type: 'pre-phase-hook',
+            phase: phase.name,
+            hook: hookType,
+            result: hookResult,
+            timestamp: new Date(),
+          } as PrePhaseHookEvent;
+
+          if (!hookResult.passed) {
+            yield {
+              type: 'workflow-error',
+              phase: phase.name,
+              error: hookResult.error || `Pre-phase hook ${hookType} failed`,
+              recoverable: true,
+              timestamp: new Date(),
+            };
+            this.state.status = 'failed';
+            this.state.error = hookResult.error;
+            this.persistState();
+            return;
+          }
+        }
       }
 
       // Emit phase started

@@ -126,7 +126,7 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 
 ### Hooks
 
-- [ ] Implement TDD enforcement hook
+- [x] Implement TDD enforcement hook
 - [ ] Implement credential safety hook
 
 ### Workflows
@@ -269,6 +269,7 @@ Voice is the most complex Twilio domain - stateful, real-time, with many archite
 | 2026-01-23 | 4c | MCP tool integration: 26 Twilio tools + 3 validation tools, deep validation, 31 tests |
 | 2026-01-23 | 4d | E2E validation (57 unit + 26 integration tests, live API test), doc hooks improvement, Voice strategy planning |
 | 2026-01-25 | 5 | Voice skill complete (500 lines): Use Case Ladder, decision frameworks, all use cases, gotchas, 2026 themes |
+| 2026-01-25 | 5b | Session persistence for workflow resumption, TDD enforcement hook with pre-phase hook infrastructure (95 tests) |
 
 ---
 

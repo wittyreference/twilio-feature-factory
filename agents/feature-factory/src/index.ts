@@ -78,3 +78,18 @@ export {
   getResumableSession,
 } from './session.js';
 export type { SessionSummary, CleanupOptions } from './session.js';
+
+export {
+  executeHook,
+  getHook,
+  listHooks,
+  hasHook,
+  tddEnforcementHook,
+} from './hooks/index.js';
+export type {
+  HookConfig,
+  HookType,
+  HookContext,
+  HookResult,
+  PrePhaseHookEvent,
+} from './types.js';

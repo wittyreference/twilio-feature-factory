@@ -80,6 +80,7 @@ export const newFeatureWorkflow: Workflow = {
       agent: 'dev',
       name: 'TDD Green Phase',
       approvalRequired: false, // Automated validation via tests
+      prePhaseHooks: ['tdd-enforcement'], // Verify tests exist and FAIL before dev runs
       nextPhaseInput: (result: AgentResult) => ({
         filesCreated: result.filesCreated,
         filesModified: result.filesModified,

@@ -186,6 +186,9 @@ export interface WorkflowPhase {
 
   /** Validation function to check if phase succeeded */
   validation?: (result: AgentResult) => boolean | Promise<boolean>;
+
+  /** Hooks to run BEFORE this phase starts */
+  prePhaseHooks?: HookType[];
 }
 
 /**
@@ -214,7 +217,8 @@ export type WorkflowEvent =
   | ApprovalReceivedEvent
   | WorkflowCompletedEvent
   | WorkflowErrorEvent
-  | CostUpdateEvent;
+  | CostUpdateEvent
+  | PrePhaseHookEvent;
 
 export interface WorkflowStartedEvent {
   type: 'workflow-started';
@@ -398,4 +402,72 @@ export interface SessionMetadata {
 
   /** Feature Factory version */
   version: string;
+}
+
+// ============================================================================
+// Hooks
+// ============================================================================
+
+/**
+ * Hook types that can run before or after phases
+ */
+export type HookType = 'tdd-enforcement' | 'credential-safety';
+
+/**
+ * Context passed to a hook when executing
+ */
+export interface HookContext {
+  /** Current working directory */
+  workingDirectory: string;
+
+  /** Results from previous phases */
+  previousPhaseResults: Record<string, AgentResult>;
+
+  /** Current workflow state */
+  workflowState: WorkflowState;
+
+  /** Verbose logging enabled */
+  verbose?: boolean;
+}
+
+/**
+ * Result from a hook execution
+ */
+export interface HookResult {
+  /** Whether the hook passed */
+  passed: boolean;
+
+  /** Error message if hook failed */
+  error?: string;
+
+  /** Additional data from the hook */
+  data?: Record<string, unknown>;
+
+  /** Warnings (hook passed but with concerns) */
+  warnings?: string[];
+}
+
+/**
+ * Configuration for a hook
+ */
+export interface HookConfig {
+  /** Hook identifier */
+  name: HookType;
+
+  /** Human-readable description */
+  description: string;
+
+  /** The hook execution function */
+  execute: (context: HookContext) => Promise<HookResult>;
+}
+
+/**
+ * Pre-phase hook event
+ */
+export interface PrePhaseHookEvent {
+  type: 'pre-phase-hook';
+  phase: string;
+  hook: HookType;
+  result: HookResult;
+  timestamp: Date;
 }

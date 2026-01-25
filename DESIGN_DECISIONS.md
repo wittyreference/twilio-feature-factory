@@ -727,6 +727,7 @@ Questions we haven't resolved yet:
 | 2026-01-23 | 3d | D15 | Why MCP over CLI-only documented | Strategic review |
 | 2026-01-25 | 5b | D7 | TDD enforcement hook implemented | commit 435a709 |
 | 2026-01-25 | 5b | D2 | Credential safety hook implemented | commit 1185739 |
+| 2026-01-25 | 5c | - | Orchestrator unit tests (36 tests) | commit dcab566 |
 
 ---
 

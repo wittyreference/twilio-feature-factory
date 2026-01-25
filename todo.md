@@ -138,7 +138,7 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 ### Testing
 
 - [x] Write unit tests for orchestrator (36 tests)
-- [ ] Write integration tests for workflows
+- [x] Write integration tests for workflows (43 tests)
 
 ---
 
@@ -270,7 +270,7 @@ Voice is the most complex Twilio domain - stateful, real-time, with many archite
 | 2026-01-23 | 4d | E2E validation (57 unit + 26 integration tests, live API test), doc hooks improvement, Voice strategy planning |
 | 2026-01-25 | 5 | Voice skill complete (500 lines): Use Case Ladder, decision frameworks, all use cases, gotchas, 2026 themes |
 | 2026-01-25 | 5b | Session persistence, TDD enforcement hook, credential safety hook (113 tests) |
-| 2026-01-25 | 5c | Orchestrator unit tests (36 tests, 149 total Feature Factory tests) |
+| 2026-01-25 | 5c | Orchestrator unit tests (36 tests), workflow integration tests (43 tests), 192 total Feature Factory tests |
 
 ---
 

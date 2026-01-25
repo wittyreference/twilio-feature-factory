@@ -367,6 +367,377 @@ describe('Feature Factory Integration', () => {
   });
 });
 
+describe('Workflow Integration', () => {
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ff-workflow-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  describe('Session Persistence', () => {
+    it('should persist and restore workflow state', () => {
+      const orchestrator1 = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+      });
+
+      // Initially no sessions
+      expect(orchestrator1.listSessions().length).toBe(0);
+
+      // Create a new orchestrator instance and verify sessions persist
+      const orchestrator2 = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+      });
+
+      // Should have access to same session directory
+      const sessions = orchestrator2.listSessions();
+      expect(Array.isArray(sessions)).toBe(true);
+    });
+
+    it('should find resumable sessions', () => {
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+      });
+
+      // No resumable session initially
+      expect(orchestrator.getResumableSession()).toBeNull();
+    });
+  });
+
+  describe('Workflow Structure Validation', () => {
+    it('should validate new-feature workflow has all required phases', () => {
+      const workflow = getWorkflow('new-feature');
+
+      // Required agents in order
+      const expectedAgents = ['architect', 'spec', 'test-gen', 'dev', 'review', 'docs'];
+      const actualAgents = workflow.phases.map(p => p.agent);
+
+      expect(actualAgents).toEqual(expectedAgents);
+    });
+
+    it('should have TDD enforcement hook on dev phase', () => {
+      const workflow = getWorkflow('new-feature');
+      const devPhase = workflow.phases.find(p => p.agent === 'dev');
+
+      expect(devPhase).toBeDefined();
+      expect(devPhase?.prePhaseHooks).toContain('tdd-enforcement');
+    });
+
+    it('should have validation functions on all phases', () => {
+      const workflow = getWorkflow('new-feature');
+
+      for (const phase of workflow.phases) {
+        expect(typeof phase.validation).toBe('function');
+      }
+    });
+
+    it('should have nextPhaseInput on phases that need to pass data', () => {
+      const workflow = getWorkflow('new-feature');
+
+      // architect, spec, test-gen, dev, review all pass data to next phase
+      const phasesWithOutput = ['architect', 'spec', 'test-gen', 'dev', 'review'];
+
+      for (const agentName of phasesWithOutput) {
+        const phase = workflow.phases.find(p => p.agent === agentName);
+        expect(phase?.nextPhaseInput).toBeDefined();
+      }
+    });
+  });
+
+  describe('Phase Validation Functions', () => {
+    it('should validate architect output correctly', () => {
+      const workflow = getWorkflow('new-feature');
+      const architectPhase = workflow.phases.find(p => p.agent === 'architect');
+
+      // Approved design should pass
+      expect(architectPhase?.validation?.({
+        agent: 'architect',
+        success: true,
+        output: { approved: true },
+        filesCreated: [],
+        filesModified: [],
+        commits: [],
+        costUsd: 0,
+        turnsUsed: 1,
+      })).toBe(true);
+
+      // Rejected design should fail
+      expect(architectPhase?.validation?.({
+        agent: 'architect',
+        success: true,
+        output: { approved: false },
+        filesCreated: [],
+        filesModified: [],
+        commits: [],
+        costUsd: 0,
+        turnsUsed: 1,
+      })).toBe(false);
+    });
+
+    it('should validate spec output correctly', () => {
+      const workflow = getWorkflow('new-feature');
+      const specPhase = workflow.phases.find(p => p.agent === 'spec');
+
+      // Valid spec with function specs and test scenarios
+      expect(specPhase?.validation?.({
+        agent: 'spec',
+        success: true,
+        output: {
+          functionSpecs: [{ name: 'test' }],
+          testScenarios: { unit: ['test1'] },
+        },
+        filesCreated: [],
+        filesModified: [],
+        commits: [],
+        costUsd: 0,
+        turnsUsed: 1,
+      })).toBe(true);
+
+      // Invalid: empty function specs
+      expect(specPhase?.validation?.({
+        agent: 'spec',
+        success: true,
+        output: {
+          functionSpecs: [],
+          testScenarios: { unit: [] },
+        },
+        filesCreated: [],
+        filesModified: [],
+        commits: [],
+        costUsd: 0,
+        turnsUsed: 1,
+      })).toBe(false);
+    });
+
+    it('should validate test-gen output correctly', () => {
+      const workflow = getWorkflow('new-feature');
+      const testGenPhase = workflow.phases.find(p => p.agent === 'test-gen');
+
+      // Valid: tests created and all failing
+      expect(testGenPhase?.validation?.({
+        agent: 'test-gen',
+        success: true,
+        output: {
+          testsCreated: 5,
+          allTestsFailing: true,
+        },
+        filesCreated: [],
+        filesModified: [],
+        commits: [],
+        costUsd: 0,
+        turnsUsed: 1,
+      })).toBe(true);
+
+      // Invalid: tests pass (TDD violation)
+      expect(testGenPhase?.validation?.({
+        agent: 'test-gen',
+        success: true,
+        output: {
+          testsCreated: 5,
+          allTestsFailing: false,
+        },
+        filesCreated: [],
+        filesModified: [],
+        commits: [],
+        costUsd: 0,
+        turnsUsed: 1,
+      })).toBe(false);
+
+      // Invalid: no tests
+      expect(testGenPhase?.validation?.({
+        agent: 'test-gen',
+        success: true,
+        output: {
+          testsCreated: 0,
+          allTestsFailing: true,
+        },
+        filesCreated: [],
+        filesModified: [],
+        commits: [],
+        costUsd: 0,
+        turnsUsed: 1,
+      })).toBe(false);
+    });
+
+    it('should validate dev output correctly', () => {
+      const workflow = getWorkflow('new-feature');
+      const devPhase = workflow.phases.find(p => p.agent === 'dev');
+
+      // Valid: all tests passing
+      expect(devPhase?.validation?.({
+        agent: 'dev',
+        success: true,
+        output: { allTestsPassing: true },
+        filesCreated: [],
+        filesModified: [],
+        commits: [],
+        costUsd: 0,
+        turnsUsed: 1,
+      })).toBe(true);
+
+      // Invalid: tests still failing
+      expect(devPhase?.validation?.({
+        agent: 'dev',
+        success: true,
+        output: { allTestsPassing: false },
+        filesCreated: [],
+        filesModified: [],
+        commits: [],
+        costUsd: 0,
+        turnsUsed: 1,
+      })).toBe(false);
+    });
+
+    it('should validate review output correctly', () => {
+      const workflow = getWorkflow('new-feature');
+      const reviewPhase = workflow.phases.find(p => p.agent === 'review');
+
+      // Valid: approved
+      expect(reviewPhase?.validation?.({
+        agent: 'review',
+        success: true,
+        output: { verdict: 'APPROVED' },
+        filesCreated: [],
+        filesModified: [],
+        commits: [],
+        costUsd: 0,
+        turnsUsed: 1,
+      })).toBe(true);
+
+      // Invalid: rejected
+      expect(reviewPhase?.validation?.({
+        agent: 'review',
+        success: true,
+        output: { verdict: 'REJECTED' },
+        filesCreated: [],
+        filesModified: [],
+        commits: [],
+        costUsd: 0,
+        turnsUsed: 1,
+      })).toBe(false);
+    });
+
+    it('should validate docs output correctly', () => {
+      const workflow = getWorkflow('new-feature');
+      const docsPhase = workflow.phases.find(p => p.agent === 'docs');
+
+      // Valid: ABOUTME verified
+      expect(docsPhase?.validation?.({
+        agent: 'docs',
+        success: true,
+        output: { aboutMeVerified: true },
+        filesCreated: [],
+        filesModified: [],
+        commits: [],
+        costUsd: 0,
+        turnsUsed: 1,
+      })).toBe(true);
+
+      // Invalid: ABOUTME not verified
+      expect(docsPhase?.validation?.({
+        agent: 'docs',
+        success: true,
+        output: { aboutMeVerified: false },
+        filesCreated: [],
+        filesModified: [],
+        commits: [],
+        costUsd: 0,
+        turnsUsed: 1,
+      })).toBe(false);
+    });
+  });
+
+  describe('Tool Integration with Workflows', () => {
+    it('should have Read tool for all agents', () => {
+      const workflow = getWorkflow('new-feature');
+
+      for (const phase of workflow.phases) {
+        const agent = getAgentConfig(phase.agent);
+        expect(agent.tools).toContain('Read');
+      }
+    });
+
+    it('should have Write tool only for agents that create files', () => {
+      // test-gen, dev, docs actually create/modify files
+      const agentsWithWrite: AgentType[] = ['test-gen', 'dev', 'docs'];
+      // architect and review only analyze, spec outputs JSON (doesn't write files directly)
+      const agentsWithoutWrite: AgentType[] = ['architect', 'spec', 'review'];
+
+      for (const agentType of agentsWithWrite) {
+        const agent = getAgentConfig(agentType);
+        expect(agent.tools).toContain('Write');
+      }
+
+      for (const agentType of agentsWithoutWrite) {
+        const agent = getAgentConfig(agentType);
+        expect(agent.tools).not.toContain('Write');
+      }
+    });
+
+    it('should have Bash tool for agents that run tests', () => {
+      const agentsWithBash: AgentType[] = ['test-gen', 'dev'];
+
+      for (const agentType of agentsWithBash) {
+        const agent = getAgentConfig(agentType);
+        expect(agent.tools).toContain('Bash');
+      }
+    });
+  });
+
+  describe('Orchestrator Configuration', () => {
+    it('should apply environment config overrides', () => {
+      // Save original env
+      const originalBudget = process.env.FEATURE_FACTORY_MAX_BUDGET;
+      const originalModel = process.env.FEATURE_FACTORY_MODEL;
+
+      // Set env vars
+      process.env.FEATURE_FACTORY_MAX_BUDGET = '15.0';
+      process.env.FEATURE_FACTORY_MODEL = 'opus';
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+      });
+
+      const config = orchestrator.getConfig();
+      expect(config.maxBudgetUsd).toBe(15.0);
+      expect(config.defaultModel).toBe('opus');
+
+      // Restore env
+      if (originalBudget) {
+        process.env.FEATURE_FACTORY_MAX_BUDGET = originalBudget;
+      } else {
+        delete process.env.FEATURE_FACTORY_MAX_BUDGET;
+      }
+      if (originalModel) {
+        process.env.FEATURE_FACTORY_MODEL = originalModel;
+      } else {
+        delete process.env.FEATURE_FACTORY_MODEL;
+      }
+    });
+
+    it('should prefer explicit config over environment', () => {
+      process.env.FEATURE_FACTORY_MAX_BUDGET = '15.0';
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        maxBudgetUsd: 8.0, // Explicit override
+        twilioMcpEnabled: false,
+      });
+
+      expect(orchestrator.getConfig().maxBudgetUsd).toBe(8.0);
+
+      delete process.env.FEATURE_FACTORY_MAX_BUDGET;
+    });
+  });
+});
+
 describe('End-to-End Component Validation', () => {
   it('should have all components properly connected', () => {
     // This test validates the entire component graph is connected

@@ -61,5 +61,15 @@ export function hasHook(hookType: HookType): boolean {
 // Re-export the individual hooks for direct use
 export { tddEnforcementHook } from './tdd-enforcement.js';
 
+// Re-export credential safety validation (tool-level, not pre-phase)
+export {
+  validateCredentials,
+  shouldSkipValidation,
+} from './credential-safety.js';
+export type {
+  CredentialViolation,
+  CredentialValidationResult,
+} from './credential-safety.js';
+
 // Export types
 export type { HookConfig, HookType, HookContext, HookResult } from '../types.js';

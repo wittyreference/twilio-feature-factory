@@ -1,5 +1,5 @@
 // ABOUTME: Unit tests for Feature Factory hooks infrastructure.
-// ABOUTME: Tests TDD enforcement hook and hook execution system.
+// ABOUTME: Tests TDD enforcement hook, credential safety, and hook execution system.
 
 import { describe, it, expect, jest } from '@jest/globals';
 import {
@@ -8,6 +8,8 @@ import {
   listHooks,
   hasHook,
   tddEnforcementHook,
+  validateCredentials,
+  shouldSkipValidation,
 } from '../src/hooks/index.js';
 import {
   createTddEnforcementHook,
@@ -421,5 +423,197 @@ describe('createTddEnforcementHook', () => {
     await hook.execute(context);
 
     expect(runnerCalled).toBe(true);
+  });
+});
+
+// ============================================================================
+// Credential Safety Tests
+// ============================================================================
+
+describe('Credential Safety Hook', () => {
+  describe('validateCredentials', () => {
+    describe('Account SID detection', () => {
+      it('should detect hardcoded Account SID', () => {
+        const content = `
+          const client = new Twilio('ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', authToken);
+        `;
+        const result = validateCredentials(content);
+
+        expect(result.passed).toBe(false);
+        expect(result.error).toContain('CREDENTIAL SAFETY VIOLATION');
+        expect(result.error).toContain('account sid');
+        expect(result.violations).toHaveLength(1);
+        expect(result.violations?.[0].type).toBe('account_sid');
+      });
+
+      it('should allow Account SID in env var reference', () => {
+        const content = `
+          const client = new Twilio(process.env.TWILIO_ACCOUNT_SID, authToken);
+        `;
+        const result = validateCredentials(content);
+
+        expect(result.passed).toBe(true);
+      });
+
+      it('should allow Account SID in context reference', () => {
+        const content = `
+          const client = context.getTwilioClient();
+          const accountSid = context.TWILIO_ACCOUNT_SID;
+        `;
+        const result = validateCredentials(content);
+
+        expect(result.passed).toBe(true);
+      });
+    });
+
+    describe('API Key SID detection', () => {
+      it('should detect hardcoded API Key SID', () => {
+        const content = `
+          const apiKey = 'SKbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+        `;
+        const result = validateCredentials(content);
+
+        expect(result.passed).toBe(false);
+        expect(result.error).toContain('api key');
+        expect(result.violations?.[0].type).toBe('api_key');
+      });
+
+      it('should allow API Key SID in env var reference', () => {
+        const content = `
+          const apiKey = process.env.TWILIO_API_KEY;
+        `;
+        const result = validateCredentials(content);
+
+        expect(result.passed).toBe(true);
+      });
+    });
+
+    describe('Auth Token detection', () => {
+      it('should detect hardcoded auth token assignment', () => {
+        const content = `
+          const authToken = 'cccccccccccccccccccccccccccccccc';
+        `;
+        const result = validateCredentials(content);
+
+        expect(result.passed).toBe(false);
+        expect(result.error).toContain('auth token');
+        expect(result.violations?.[0].type).toBe('auth_token');
+      });
+
+      it('should detect AUTH_TOKEN assignment', () => {
+        const content = `
+          AUTH_TOKEN: "dddddddddddddddddddddddddddddddd"
+        `;
+        const result = validateCredentials(content);
+
+        expect(result.passed).toBe(false);
+        expect(result.violations?.[0].type).toBe('auth_token');
+      });
+
+      it('should allow auth token from env var', () => {
+        const content = `
+          const authToken = process.env.TWILIO_AUTH_TOKEN;
+        `;
+        const result = validateCredentials(content);
+
+        expect(result.passed).toBe(true);
+      });
+    });
+
+    describe('API Secret detection', () => {
+      it('should detect hardcoded API secret', () => {
+        const content = `
+          const apiSecret = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+        `;
+        const result = validateCredentials(content);
+
+        expect(result.passed).toBe(false);
+        expect(result.error).toContain('api secret');
+        expect(result.violations?.[0].type).toBe('api_secret');
+      });
+
+      it('should allow API secret from env var', () => {
+        const content = `
+          const apiSecret = process.env.TWILIO_API_SECRET;
+        `;
+        const result = validateCredentials(content);
+
+        expect(result.passed).toBe(true);
+      });
+    });
+
+    describe('Multiple violations', () => {
+      it('should detect multiple credential types', () => {
+        // Note: hex chars are 0-9 and a-f only
+        const content = `
+          const accountSid = 'ACffffffffffffffffffffffffffffffff';
+          const apiKeySid = 'SKabcdef1234567890abcdef1234567890';
+        `;
+        const result = validateCredentials(content);
+
+        expect(result.passed).toBe(false);
+        expect(result.violations).toHaveLength(2);
+        expect(result.violations?.map(v => v.type)).toContain('account_sid');
+        expect(result.violations?.map(v => v.type)).toContain('api_key');
+      });
+    });
+
+    describe('Safe content', () => {
+      it('should pass for normal code without credentials', () => {
+        const content = `
+          function sendSms(to, body) {
+            return client.messages.create({
+              to,
+              from: process.env.TWILIO_PHONE_NUMBER,
+              body
+            });
+          }
+        `;
+        const result = validateCredentials(content);
+
+        expect(result.passed).toBe(true);
+        expect(result.violations).toBeUndefined();
+      });
+
+      it('should pass for comments mentioning credential patterns', () => {
+        const content = `
+          // Account SIDs start with AC followed by 32 hex characters
+          // API Keys start with SK followed by 32 hex characters
+          const accountSid = process.env.TWILIO_ACCOUNT_SID;
+        `;
+        const result = validateCredentials(content);
+
+        expect(result.passed).toBe(true);
+      });
+    });
+  });
+
+  describe('shouldSkipValidation', () => {
+    it('should skip .env.example files', () => {
+      expect(shouldSkipValidation('.env.example')).toBe(true);
+      expect(shouldSkipValidation('config/.env.sample')).toBe(true);
+    });
+
+    it('should skip markdown files', () => {
+      expect(shouldSkipValidation('README.md')).toBe(true);
+      expect(shouldSkipValidation('docs/guide.md')).toBe(true);
+      expect(shouldSkipValidation('CLAUDE.md')).toBe(true);
+    });
+
+    it('should skip test files', () => {
+      expect(shouldSkipValidation('foo.test.ts')).toBe(true);
+      expect(shouldSkipValidation('bar.spec.js')).toBe(true);
+      expect(shouldSkipValidation('__tests__/unit.ts')).toBe(true);
+    });
+
+    it('should skip docs directory', () => {
+      expect(shouldSkipValidation('docs/api-reference.ts')).toBe(true);
+    });
+
+    it('should not skip regular source files', () => {
+      expect(shouldSkipValidation('src/index.ts')).toBe(false);
+      expect(shouldSkipValidation('functions/voice/handler.js')).toBe(false);
+      expect(shouldSkipValidation('lib/twilio-client.ts')).toBe(false);
+    });
   });
 });

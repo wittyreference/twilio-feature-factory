@@ -85,7 +85,13 @@ export {
   listHooks,
   hasHook,
   tddEnforcementHook,
+  validateCredentials,
+  shouldSkipValidation,
 } from './hooks/index.js';
+export type {
+  CredentialViolation,
+  CredentialValidationResult,
+} from './hooks/credential-safety.js';
 export type {
   HookConfig,
   HookType,

@@ -13,6 +13,10 @@ import {
   getMcpToolSchemas,
   executeMcpTool,
 } from './mcp-tools.js';
+import {
+  validateCredentials,
+  shouldSkipValidation,
+} from './hooks/credential-safety.js';
 
 /**
  * Tool execution result
@@ -294,6 +298,18 @@ const CORE_TOOL_EXECUTORS: Record<
     const content = input.content as string;
     const isNew = !(await fileExists(filePath));
 
+    // Validate credentials unless file is excluded
+    if (!shouldSkipValidation(filePath)) {
+      const credentialCheck = validateCredentials(content);
+      if (!credentialCheck.passed) {
+        return {
+          success: false,
+          output: '',
+          error: credentialCheck.error,
+        };
+      }
+    }
+
     try {
       // Ensure directory exists
       await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -319,6 +335,18 @@ const CORE_TOOL_EXECUTORS: Record<
     const oldString = input.old_string as string;
     const newString = input.new_string as string;
     const replaceAll = (input.replace_all as boolean) || false;
+
+    // Validate credentials in new_string unless file is excluded
+    if (!shouldSkipValidation(filePath)) {
+      const credentialCheck = validateCredentials(newString);
+      if (!credentialCheck.passed) {
+        return {
+          success: false,
+          output: '',
+          error: credentialCheck.error,
+        };
+      }
+    }
 
     try {
       const content = await fs.readFile(filePath, 'utf-8');

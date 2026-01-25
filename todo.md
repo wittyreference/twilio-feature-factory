@@ -221,6 +221,38 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 
 ---
 
+## Voice Capabilities Expansion (Cross-Cutting)
+
+Voice is the most complex Twilio domain - stateful, real-time, with many architectural decisions. This section tracks ongoing Voice knowledge capture and tool expansion.
+
+### Knowledge Capture ✅
+
+- [x] Create voice.md skill with decision frameworks
+- [x] Document Static IVR vs Voice AI decision criteria
+- [x] Add Conference vs Dial vs Transfer guidance
+- [x] Document TTS voice selection criteria
+- [x] Add transcription options guide (real-time vs post-call)
+- [x] Document recording patterns and compliance considerations
+- [x] Add common call flow patterns with examples
+- [x] Capture edge cases and gotchas
+
+### MCP Tool Expansion (After Feature Factory)
+
+- [ ] Conference tools (create_conference, add_participant, remove_participant, end_conference)
+- [ ] Call control tools (hold, mute, transfer, update_call)
+- [ ] Transcription tools (configure_realtime_transcription, get_transcription)
+- [ ] Voice Insights tools (get_call_summary, get_call_metrics)
+- [ ] Voice configuration (get_dialing_permissions, configure_byoc)
+- [ ] SIP trunking (create_sip_trunk, configure_origination)
+
+### Testing
+
+- [ ] Integration tests for conference flows
+- [ ] Voice AI end-to-end test with ConversationRelay
+- [ ] Call transfer pattern tests
+
+---
+
 ## Session Log
 
 | Date | Session | Work Completed |
@@ -235,6 +267,8 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 | 2026-01-23 | 4 | Phase 2 Feature Factory MVP: orchestrator, 6 agent configs, new-feature workflow, CLI, D15 value proposition |
 | 2026-01-23 | 4b | Agentic tool execution: tools.ts with Read/Write/Edit/Glob/Grep/Bash, agentic loop in orchestrator, 22 tests |
 | 2026-01-23 | 4c | MCP tool integration: 26 Twilio tools + 3 validation tools, deep validation, 31 tests |
+| 2026-01-23 | 4d | E2E validation (57 unit + 26 integration tests, live API test), doc hooks improvement, Voice strategy planning |
+| 2026-01-25 | 5 | Voice skill complete (500 lines): Use Case Ladder, decision frameworks, all use cases, gotchas, 2026 themes |
 
 ---
 
@@ -243,6 +277,8 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 Items to revisit in future sessions:
 
 - [ ] **Evaluate pre-commit doc reminder effectiveness** (added 2026-01-23): After a few sessions, check if the pre-commit reminder is actually prompting doc updates or being ignored. Consider escalating to interactive prompt if reminders aren't working.
+
+- [ ] **Documentation flywheel mechanism review** (added 2026-01-23): Hooks are firing but output may not be reaching agent context. Need to verify hook output is actionable - consider writing to a file the agent reads vs stdout/stderr. Critical for Feature Factory users building Twilio apps. Revisit before going deep into development pipeline.
 
 ---
 

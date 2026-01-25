@@ -12,8 +12,10 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/cli.js",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
-    "test:watch": "NODE_OPTIONS='--experimental-vm-modules' jest --watch",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest --testPathIgnorePatterns=live-api",
+    "test:watch": "NODE_OPTIONS='--experimental-vm-modules' jest --watch --testPathIgnorePatterns=live-api",
+    "test:live": "NODE_OPTIONS='--experimental-vm-modules' jest __tests__/live-api.test.ts --runInBand",
+    "test:all": "NODE_OPTIONS='--experimental-vm-modules' jest --runInBand",
     "lint": "eslint src/ --ext .ts",
     "lint:fix": "eslint src/ --ext .ts --fix",
     "clean": "rm -rf dist"

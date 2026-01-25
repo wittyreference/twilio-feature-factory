@@ -728,7 +728,7 @@ Questions we haven't resolved yet:
 | 2026-01-25 | 5b | D7 | TDD enforcement hook implemented | commit 435a709 |
 | 2026-01-25 | 5b | D2 | Credential safety hook implemented | commit 1185739 |
 | 2026-01-25 | 5c | - | Orchestrator unit tests (36 tests) | commit dcab566 |
-| 2026-01-25 | 5c | - | Workflow integration tests (43 tests) | commit ec515f1 |
+| 2026-01-25 | 5c | - | Workflow integration tests (43 tests) | commit 4134491 |
 
 ---
 

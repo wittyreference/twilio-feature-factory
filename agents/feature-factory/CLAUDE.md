@@ -167,6 +167,22 @@ Workflow phases can specify `prePhaseHooks` that run before the agent starts:
 
 Hook failures emit `workflow-error` events and stop the workflow.
 
+## Credential Safety
+
+All Write and Edit operations are validated for hardcoded Twilio credentials:
+
+| Pattern | Detects | Suggestion |
+|---------|---------|------------|
+| `AC[a-f0-9]{32}` | Account SID | Use `process.env.TWILIO_ACCOUNT_SID` |
+| `SK[a-f0-9]{32}` | API Key SID | Use `process.env.TWILIO_API_KEY` |
+| `authToken = "[32-char]"` | Auth Token | Use `process.env.TWILIO_AUTH_TOKEN` |
+| `apiSecret = "[32-char]"` | API Secret | Use `process.env.TWILIO_API_SECRET` |
+
+Validation is **skipped** for:
+- Test files (`*.test.ts`, `*.spec.js`, `__tests__/`)
+- Documentation (`*.md`, `docs/`)
+- Environment examples (`.env.example`, `.env.sample`)
+
 ## Cost Controls
 
 | Control | Default | Purpose |

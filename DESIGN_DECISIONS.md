@@ -690,6 +690,71 @@ Documented after strategic review prompted by "why not just use CLI?" question.
 
 ---
 
+## Decision 16: File-Based Documentation Flywheel
+
+### Context
+
+The documentation flywheel (capture → promote → clear workflow) had hooks that ran at key checkpoints (subagent completion, commits, session end), but hook output to stdout/stderr didn't reach the agent's context. Reminders were generated but never acted upon because the agent never saw them.
+
+### Problem
+
+1. Hooks output to stderr which flashes in terminal but doesn't enter agent context
+2. `learnings.md` hadn't been updated in 4+ sessions despite discoveries
+3. Pure discipline-based reminders don't work without visibility
+
+### Decision
+
+**Replace stdout/stderr hook output with file-based communication.**
+
+Hooks write to `.claude-dev/pending-actions.md` → Agent reads file at key moments → File is cleared after actions addressed.
+
+### Implementation
+
+```
+┌─────────────────┐     writes to      ┌──────────────────────┐
+│ doc-update-check│ ──────────────────►│ .claude-dev/         │
+│ session-summary │                    │ pending-actions.md   │
+└─────────────────┘                    └──────────────────────┘
+                                                 │
+                                                 ▼ agent reads
+                                       ┌──────────────────────┐
+                                       │ Before git commits   │
+                                       │ (per CLAUDE.md)      │
+                                       └──────────────────────┘
+```
+
+**Changes:**
+- `doc-update-check.sh` appends to `pending-actions.md` instead of stdout
+- `pre-bash-validate.sh` displays file contents before commits (though this goes to stderr too)
+- `notify-ready.sh` tells MC about pending action count in desktop notification
+- `CLAUDE.md` instructs agent to read `pending-actions.md` before commits
+
+### Rationale
+
+1. **Files persist, stdout doesn't**: Writing to a file ensures reminders survive until addressed
+2. **Agent can read files**: The Read tool works reliably; stderr output doesn't reach context
+3. **MC gets notification**: Desktop notification prompts MC to ask agent to check
+4. **Clear when done**: Removing the file signals completion, prevents stale reminders
+
+### Alternatives Considered
+
+- **Injecting into system reminders**: Not possible from hooks
+- **Writing to a special hook output**: Claude Code doesn't have this mechanism
+- **Relying on discipline**: Already proven not to work
+
+### Consequences
+
+- Documentation reminders now persist and are visible to agent
+- Requires agent discipline to read file before commits (documented in CLAUDE.md)
+- MC sees pending count in notifications, can prompt agent
+- File-based communication pattern can be reused for other hook→agent communication
+
+### Status
+
+**Implemented** - Session 6 (2026-01-25)
+
+---
+
 ## Open Questions
 
 Questions we haven't resolved yet:
@@ -730,6 +795,7 @@ Questions we haven't resolved yet:
 | 2026-01-25 | 5c | - | Orchestrator unit tests (36 tests) | commit dcab566 |
 | 2026-01-25 | 5c | - | Workflow integration tests (43 tests) | commit 4134491 |
 | 2026-01-25 | 5d | D6 | P1 MCP tools complete (13 tools, 51 tests) | commit 888c220 |
+| 2026-01-25 | 6 | D16 | File-based documentation flywheel | Hook output → pending-actions.md |
 
 ---
 

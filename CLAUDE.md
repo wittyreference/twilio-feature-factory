@@ -110,7 +110,19 @@ Remove promoted entries from learnings.md to keep it focused.
 
 ### Automation
 
-The `doc-update-check.sh` hook runs after subagent completion and suggests relevant docs to update based on changed files. The `session-summary.sh` hook runs at session end with a review reminder.
+The `doc-update-check.sh` hook detects file changes and appends documentation suggestions to `.claude-dev/pending-actions.md`. This file-based approach ensures reminders persist and are visible.
+
+**Before committing, ALWAYS check for pending actions:**
+```bash
+cat .claude-dev/pending-actions.md 2>/dev/null || echo "No pending actions"
+```
+
+After addressing actions, clear the file:
+```bash
+rm .claude-dev/pending-actions.md
+```
+
+MC receives a desktop notification with pending action count when sessions end.
 
 ## Documentation Standards for Technical Assertions
 

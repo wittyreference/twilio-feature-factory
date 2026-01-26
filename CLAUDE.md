@@ -112,6 +112,44 @@ Remove promoted entries from learnings.md to keep it focused.
 
 The `doc-update-check.sh` hook runs after subagent completion and suggests relevant docs to update based on changed files. The `session-summary.sh` hook runs at session end with a review reminder.
 
+## Documentation Standards for Technical Assertions
+
+When writing documentation (CLAUDE.md files, skills, or reference docs), technical assertions require verification to prevent misinformation.
+
+### High-Risk Claims (MUST verify before writing)
+
+These claim types have caused errors and require source verification:
+
+- **Behavioral claims**: "X cannot/always/never does Y"
+- **Hard limits**: Sizes, counts, timeouts, rate limits
+- **Negative assertions**: "Not available", "Not supported", "Impossible"
+
+### Verification Process
+
+1. Search official Twilio docs (twilio.com/docs)
+2. If found: Add inline citation comment
+3. If NOT found: Either don't make the claim, or mark as unverified
+
+### Citation Format
+
+```markdown
+- Documents max 16KB <!-- verified: twilio.com/docs/sync/limits -->
+- Observed: X behavior <!-- UNVERIFIED: based on testing, needs official source -->
+```
+
+### When Uncertain
+
+- Don't make the claim, OR
+- Mark as `<!-- UNVERIFIED -->` with explanation
+- Ask MC to verify from domain expertise
+
+### Red Flags to Watch For
+
+Words that indicate high-risk assertions requiring verification:
+- "cannot", "can't", "not able to", "impossible"
+- "always", "never", "must", "only"
+- Specific numbers (limits, timeouts, counts) without source
+
 # Interaction
 
 - Any time you interact with me, you MUST address me by my preferred name, which you won't know the first time we work together, so make sure to ask me what it is, and update the root CLAUDE.md file to reflect it for future interactions.

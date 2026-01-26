@@ -85,4 +85,58 @@ if [[ "$FILE_PATH" =~ \.test\.js$ ]] || [[ "$FILE_PATH" =~ __tests__ ]]; then
     fi
 fi
 
+# ============================================
+# HIGH-RISK ASSERTION WARNING (not blocking)
+# ============================================
+
+# Check documentation files for high-risk assertion patterns
+if [[ "$FILE_PATH" =~ CLAUDE\.md$ ]] || [[ "$FILE_PATH" =~ \.claude/skills/.*\.md$ ]]; then
+    WARNED=false
+
+    # Check for negative behavioral claims without citation
+    if echo "$CONTENT" | grep -qiE "(cannot|can't|not able to|impossible|not supported|not available)" && \
+       ! echo "$CONTENT" | grep -qE "<!-- (verified|UNVERIFIED):"; then
+        if [ "$WARNED" = false ]; then
+            echo "" >&2
+            echo "⚠️  HIGH-RISK ASSERTION WARNING" >&2
+            echo "   File: $FILE_PATH" >&2
+            WARNED=true
+        fi
+        echo "   → Negative behavioral claim detected (cannot/not supported/etc.)" >&2
+    fi
+
+    # Check for absolute claims without citation
+    if echo "$CONTENT" | grep -qE "\b(always|never|must|only)\b" && \
+       echo "$CONTENT" | grep -qiE "(twilio|twiml|api|webhook|call|sms|message)" && \
+       ! echo "$CONTENT" | grep -qE "<!-- (verified|UNVERIFIED):"; then
+        if [ "$WARNED" = false ]; then
+            echo "" >&2
+            echo "⚠️  HIGH-RISK ASSERTION WARNING" >&2
+            echo "   File: $FILE_PATH" >&2
+            WARNED=true
+        fi
+        echo "   → Absolute claim detected (always/never/must/only)" >&2
+    fi
+
+    # Check for numeric limits without citation (e.g., "max 16KB", "up to 4")
+    if echo "$CONTENT" | grep -qE "(max|maximum|up to|at least|limit)[^a-z]*[0-9]+" && \
+       ! echo "$CONTENT" | grep -qE "<!-- (verified|UNVERIFIED):"; then
+        if [ "$WARNED" = false ]; then
+            echo "" >&2
+            echo "⚠️  HIGH-RISK ASSERTION WARNING" >&2
+            echo "   File: $FILE_PATH" >&2
+            WARNED=true
+        fi
+        echo "   → Numeric limit detected without citation" >&2
+    fi
+
+    if [ "$WARNED" = true ]; then
+        echo "" >&2
+        echo "   Did you verify these claims against official Twilio docs?" >&2
+        echo "   Add citations: <!-- verified: twilio.com/docs/... -->" >&2
+        echo "   Or mark uncertain: <!-- UNVERIFIED: reason -->" >&2
+        echo "" >&2
+    fi
+fi
+
 exit 0

@@ -107,6 +107,65 @@ twiml.record({
 });
 ```
 
+### Conference via REST API (Preferred)
+Use the Conferences Participants API for programmatic control:
+
+```javascript
+// Create conference by adding first participant
+const participant = await client.conferences('my-conference')
+  .participants
+  .create({
+    from: context.TWILIO_PHONE_NUMBER,
+    to: participantNumber,
+    timeout: 30,           // Ring timeout
+    timeLimit: 600,        // Max call duration (prevent runaway)
+    startConferenceOnEnter: true,
+    endConferenceOnExit: false,
+    muted: false,
+    beep: true
+  });
+
+// Add additional participants
+await client.conferences('my-conference')
+  .participants
+  .create({
+    from: context.TWILIO_PHONE_NUMBER,
+    to: anotherParticipant,
+    timeout: 30,
+    timeLimit: 600
+  });
+
+// End conference
+await client.conferences(conferenceSid)
+  .update({ status: 'completed' });
+```
+
+### Conference Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `startConferenceOnEnter` | boolean | true | Start when participant joins |
+| `endConferenceOnExit` | boolean | false | End when participant leaves (moderator) |
+| `muted` | boolean | false | Join muted |
+| `beep` | boolean | true | Play beep on join/leave |
+| `timeout` | number | 30 | Ring timeout in seconds |
+| `timeLimit` | number | 14400 | Max call duration in seconds |
+
+### Finding Conferences by Name
+```javascript
+// List in-progress conferences by friendly name
+const conferences = await client.conferences.list({
+  friendlyName: 'my-conference',
+  status: 'in-progress',
+  limit: 1
+});
+
+if (conferences.length > 0) {
+  const conference = conferences[0];
+  console.log(`SID: ${conference.sid}`);
+}
+```
+
 ## File Naming Conventions
 
 - `*.js` - Public endpoints (no signature validation)

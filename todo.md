@@ -11,11 +11,11 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 
 ## Phase 1: Twilio MCP Server (4-5 sessions)
 
-**Scope:** 160+ tools across 19 modules covering 20+ Twilio APIs (excluding EOL/deprecated)
+**Scope:** 220 tools across 25 modules covering 20+ Twilio APIs (excluding EOL/deprecated)
 - **P0 (Core):** 7 modules ✅ (22 tools)
 - **P1 (High Value):** 4 modules ✅ (40 tools)
 - **P2 (Specialized):** 8 modules ✅ (97 tools)
-- **P3 (Edge Cases):** 10 modules planned (~85 tools)
+- **P3 (Edge Cases):** 6 modules ✅ (61 tools)
 
 ### Setup
 
@@ -69,59 +69,38 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 - [x] phone-numbers/bundles (16 tools) - list_regulatory_bundles, get_bundle_status, create_regulatory_bundle, update_regulatory_bundle, delete_regulatory_bundle, list_bundle_item_assignments, create_bundle_item_assignment, delete_bundle_item_assignment, list_supporting_documents, get_supporting_document, create_supporting_document, update_supporting_document, delete_supporting_document, list_regulations, list_regulatory_end_users, create_regulatory_end_user
 - [x] media (10 tools) - list_video_recordings, get_video_recording, delete_video_recording, list_compositions, get_composition, create_composition, delete_composition, list_composition_hooks, create_composition_hook, delete_composition_hook
 
-### P3 Tools (Edge Cases) - Comprehensive Coverage Plan
+### P3 Tools (Edge Cases) ✅ - 61 tools
 
-Estimated: 80-100 tools across 10 modules. Each module to have full CRUD where applicable.
+- [x] **voice/trunking (17 tools)** - Elastic SIP Trunking
+  - SIP Trunks: list_sip_trunks, get_sip_trunk, create_sip_trunk, update_sip_trunk, delete_sip_trunk
+  - Origination URLs: list_origination_urls, create_origination_url, delete_origination_url
+  - IP ACLs: list_trunk_ip_access_control_lists, associate_ip_access_control_list, remove_trunk_ip_access_control_list
+  - Credential Lists: list_trunk_credential_lists, associate_credential_list, remove_trunk_credential_list
+  - Phone Numbers: list_trunk_phone_numbers, associate_phone_number_to_trunk, remove_phone_number_from_trunk
 
-- [ ] **voice/trunking (15 tools)**
-  - SIP Domains: list_sip_domains, get_sip_domain, create_sip_domain, update_sip_domain, delete_sip_domain
-  - IP Access Control Lists: list_ip_access_control_lists, create_ip_access_control_list, delete_ip_access_control_list
-  - Credential Lists: list_credential_lists, create_credential_list, delete_credential_list
-  - IP Records: list_ip_records, create_ip_record, delete_ip_record
-  - SIP Trunk Registration: list_sip_registrations
+- [x] **account/accounts (13 tools)** - Account management
+  - Accounts: get_account, list_accounts, create_subaccount, update_account
+  - Usage Records: list_usage_records, list_usage_records_daily, list_usage_records_monthly
+  - Usage Triggers: list_usage_triggers, create_usage_trigger, get_usage_trigger, update_usage_trigger, delete_usage_trigger
+  - Balance: get_account_balance
 
-- [ ] **account/accounts (10 tools)**
-  - Accounts: list_accounts, get_account, create_subaccount, update_account, suspend_account, close_account
-  - Usage: get_account_balance, list_usage_records, list_usage_triggers, create_usage_trigger
-
-- [ ] **account/iam (12 tools)**
+- [x] **account/iam (8 tools)** - API key management
   - API Keys: list_api_keys, get_api_key, create_api_key, update_api_key, delete_api_key
-  - Roles: list_roles, get_role, create_role, update_role, delete_role
-  - Permissions: list_permissions, assign_permission
+  - Signing Keys: list_signing_keys, create_signing_key, delete_signing_key
 
-- [ ] **account/oauth (6 tools)**
-  - Tokens: create_oauth_token, refresh_token, revoke_token
-  - Token Info: get_token_info, list_authorized_apps, revoke_app_authorization
+- [x] **monitoring/pricing (7 tools)** - Pricing lookups
+  - Voice: list_voice_pricing_countries, get_voice_pricing_country, get_voice_pricing_number
+  - Messaging: list_messaging_pricing_countries, get_messaging_pricing_country
+  - Phone Numbers: list_phone_number_pricing_countries, get_phone_number_pricing_country
 
-- [ ] **monitoring/events (10 tools)**
-  - Event Streams: list_event_sinks, get_event_sink, create_event_sink, update_event_sink, delete_event_sink
-  - Subscriptions: list_subscriptions, create_subscription, delete_subscription
-  - Types: list_event_types, get_event_type
-
-- [ ] **monitoring/exports (8 tools)**
-  - Jobs: list_export_jobs, get_export_job, create_export_job, delete_export_job
-  - Configurations: get_export_configuration, update_export_configuration
-  - Days: list_export_days, get_export_day
-
-- [ ] **monitoring/pricing (8 tools)**
-  - Voice: get_voice_pricing_country, list_voice_pricing_countries, get_voice_pricing_number
-  - SMS: get_sms_pricing_country, list_sms_pricing_countries
-  - Phone Numbers: get_phone_number_pricing_country, list_phone_number_pricing_countries
-  - Messaging: get_messaging_pricing_country
-
-- [ ] **intelligence/knowledge (8 tools)** - Voice Intelligence v2 Knowledge extension
-  - Knowledge Bases: list_knowledge_bases, get_knowledge_base, create_knowledge_base, update_knowledge_base, delete_knowledge_base
-  - Sources: list_knowledge_sources, create_knowledge_source, delete_knowledge_source
-
-- [ ] **phone-numbers/incoming (10 tools)** - Extended management
-  - Porting: list_port_in_requests, get_port_in_request, create_port_in_request
-  - Address Requirements: list_address_requirements, get_address_requirement
-  - Addresses: list_addresses, get_address, create_address, update_address, delete_address
-
-- [ ] **notify (8 tools)** - Push notifications
-  - Services: list_notify_services, get_notify_service, create_notify_service, delete_notify_service
-  - Bindings: list_bindings, create_binding, delete_binding
+- [x] **notify (10 tools)** - Push notifications
+  - Services: list_notify_services, get_notify_service, create_notify_service, update_notify_service, delete_notify_service
+  - Bindings: list_notify_bindings, get_notify_binding, create_notify_binding, delete_notify_binding
   - Notifications: send_notification
+
+- [x] **addresses (6 tools)** - Address management for regulatory compliance
+  - CRUD: list_addresses, get_address, create_address, update_address, delete_address
+  - Dependent: list_address_phone_numbers
 
 ### Testing
 
@@ -130,7 +109,7 @@ Estimated: 80-100 tools across 10 modules. Each module to have full CRUD where a
 - [x] Write integration tests for P0 tools with real Twilio APIs (102 tests passing)
 - [x] Write unit tests for P1 tools (lookups, studio, messaging-services, serverless) - 40 tools total
 - [x] Write unit tests for P2 tools (8 modules, 97 tools) - 275 total MCP tests passing
-- [ ] Write unit tests for P3 tools as implemented (10 modules, ~85 tools)
+- [x] Write unit tests for P3 tools (6 modules, 61 tools) - 338 total MCP tests passing
 - [ ] Write integration tests for P1-P3 tools as implemented
 - [ ] E2E test workflow with full MCP tool chain
 
@@ -316,6 +295,7 @@ Voice is the most complex Twilio domain - stateful, real-time, with many archite
 | 2026-01-25 | 5d | P1 MCP tools: lookups, studio, messaging-services, serverless (13 tools, 51 unit tests, 159 total MCP tests) |
 | 2026-01-25 | 5e | P2 MCP tools: intelligence, video, proxy, trusthub, content, voice-config, regulatory, media (28 tools, 116 tests, 275 total MCP tests) |
 | 2026-01-25 | 5f | P1/P2 comprehensive coverage: expanded P1 from 13→40 tools, P2 from 28→97 tools. Total: 137 tools across 12 modules. P3 detailed plan added. |
+| 2026-01-25 | 5g | P3 tools complete: trunking (17), accounts (13), iam (8), pricing (7), notify (10), addresses (6). Total: 220 tools across 25 modules. 338 MCP tests passing. |
 
 ---
 

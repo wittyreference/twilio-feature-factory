@@ -4,16 +4,17 @@ This directory contains the Model Context Protocol (MCP) server that exposes Twi
 
 ## Purpose
 
-The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **159 tools across 19 modules** covering:
+The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **220 tools across 25 modules** covering:
 
-- **Messaging**: SMS/MMS, messaging services, content templates
-- **Voice**: Call logs, recordings, BYOC trunks, dialing permissions
-- **Phone Numbers**: Management, regulatory bundles, lookups
-- **Identity**: Verification, TrustHub profiles, trust products
+- **Messaging**: SMS/MMS, messaging services, content templates, notifications
+- **Voice**: Call logs, recordings, BYOC trunks, dialing permissions, SIP trunking
+- **Phone Numbers**: Management, regulatory bundles, lookups, addresses
+- **Identity**: Verification, TrustHub profiles, trust products, IAM (API keys)
 - **Routing**: TaskRouter, Studio flows, Proxy number masking
 - **Media**: Video rooms, recordings, compositions
 - **Serverless**: Functions, builds, environments, variables
 - **Monitoring**: Debugger logs, usage records, Voice Intelligence
+- **Billing**: Account management, usage triggers, pricing lookups
 
 ## Architecture
 
@@ -39,7 +40,13 @@ src/
     ├── content.ts        # Message templates (P2)
     ├── voice-config.ts   # Dialing permissions, BYOC (P2)
     ├── regulatory.ts     # Regulatory bundles (P2)
-    └── media.ts          # Video recordings, compositions (P2)
+    ├── media.ts          # Video recordings, compositions (P2)
+    ├── trunking.ts       # SIP trunks, origination URLs (P3)
+    ├── accounts.ts       # Subaccounts, usage records (P3)
+    ├── iam.ts            # API keys, signing keys (P3)
+    ├── pricing.ts        # Voice, SMS, number pricing (P3)
+    ├── notify.ts         # Push notification services (P3)
+    └── addresses.ts      # Address management (P3)
 ```
 
 ## Tool Naming Convention
@@ -343,6 +350,97 @@ for await (const message of query({
 | `list_composition_hooks` | List composition hooks |
 | `create_composition_hook` | Create auto-composition rule |
 | `delete_composition_hook` | Delete hook |
+
+### Trunking Tools (P3) - 17 tools
+
+| Tool | Description |
+|------|-------------|
+| `list_sip_trunks` | List Elastic SIP Trunks |
+| `get_sip_trunk` | Get trunk details |
+| `create_sip_trunk` | Create new SIP trunk |
+| `update_sip_trunk` | Update trunk config |
+| `delete_sip_trunk` | Delete a trunk |
+| `list_origination_urls` | List origination URLs |
+| `create_origination_url` | Add origination URL |
+| `delete_origination_url` | Remove origination URL |
+| `list_trunk_ip_access_control_lists` | List IP ACLs on trunk |
+| `associate_ip_access_control_list` | Associate IP ACL with trunk |
+| `remove_trunk_ip_access_control_list` | Remove IP ACL from trunk |
+| `list_trunk_credential_lists` | List credential lists on trunk |
+| `associate_credential_list` | Associate credential list with trunk |
+| `remove_trunk_credential_list` | Remove credential list |
+| `list_trunk_phone_numbers` | List phone numbers on trunk |
+| `associate_phone_number_to_trunk` | Add phone number to trunk |
+| `remove_phone_number_from_trunk` | Remove phone number from trunk |
+
+### Accounts Tools (P3) - 13 tools
+
+| Tool | Description |
+|------|-------------|
+| `get_account` | Get current account details |
+| `list_accounts` | List accounts (subaccounts) |
+| `create_subaccount` | Create new subaccount |
+| `update_account` | Update account settings |
+| `list_usage_records` | List usage records |
+| `list_usage_records_daily` | List daily usage records |
+| `list_usage_records_monthly` | List monthly usage records |
+| `list_usage_triggers` | List usage triggers |
+| `create_usage_trigger` | Create usage trigger |
+| `get_usage_trigger` | Get trigger details |
+| `update_usage_trigger` | Update trigger config |
+| `delete_usage_trigger` | Delete a trigger |
+| `get_account_balance` | Get account balance |
+
+### IAM Tools (P3) - 8 tools
+
+| Tool | Description |
+|------|-------------|
+| `list_api_keys` | List API keys |
+| `get_api_key` | Get API key details |
+| `create_api_key` | Create new API key |
+| `update_api_key` | Update API key |
+| `delete_api_key` | Delete API key |
+| `list_signing_keys` | List signing keys |
+| `create_signing_key` | Create signing key |
+| `delete_signing_key` | Delete signing key |
+
+### Pricing Tools (P3) - 7 tools
+
+| Tool | Description |
+|------|-------------|
+| `list_voice_pricing_countries` | List countries with voice pricing |
+| `get_voice_pricing_country` | Get voice pricing for country |
+| `get_voice_pricing_number` | Get voice pricing for specific number |
+| `list_messaging_pricing_countries` | List countries with messaging pricing |
+| `get_messaging_pricing_country` | Get messaging pricing for country |
+| `list_phone_number_pricing_countries` | List countries with number pricing |
+| `get_phone_number_pricing_country` | Get phone number pricing for country |
+
+### Notify Tools (P3) - 10 tools
+
+| Tool | Description |
+|------|-------------|
+| `list_notify_services` | List Notify services |
+| `get_notify_service` | Get service details |
+| `create_notify_service` | Create Notify service |
+| `update_notify_service` | Update service config |
+| `delete_notify_service` | Delete a service |
+| `list_notify_bindings` | List bindings in service |
+| `get_notify_binding` | Get binding details |
+| `create_notify_binding` | Create device binding |
+| `delete_notify_binding` | Delete a binding |
+| `send_notification` | Send push notification |
+
+### Addresses Tools (P3) - 6 tools
+
+| Tool | Description |
+|------|-------------|
+| `list_addresses` | List addresses |
+| `get_address` | Get address details |
+| `create_address` | Create new address |
+| `update_address` | Update address |
+| `delete_address` | Delete address |
+| `list_address_phone_numbers` | List phone numbers using address |
 
 ## Testing
 

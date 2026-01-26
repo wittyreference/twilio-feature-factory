@@ -560,15 +560,28 @@ export function voiceTools(context: TwilioContext) {
   // ============================================
   // Voice Insights Tools
   // ============================================
+  // TIMING NOTE: Voice Insights summaries are NOT available immediately after call end.
+  // - Partial data (partial=true): Available within ~2 minutes (no SLA)
+  // - Final data (partial=false): Locked and immutable 30 minutes after call end
+  // Check processingState in response: 'partial' or 'complete'
 
   const getCallSummary = createTool(
     'get_call_summary',
-    'Get Voice Insights summary for a call (quality metrics, edge location, etc.).',
+    'Get Voice Insights summary for a call (quality metrics, edge location, etc.). ' +
+      'NOTE: Summaries are not immediately available after call end. ' +
+      'Use partial=true for early access (~2 min), final data is locked 30 min after call end. ' +
+      'Check processingState in response for data completeness.',
     z.object({
       callSid: z.string().startsWith('CA').describe('Call SID (starts with CA)'),
+      processingState: z.enum(['partial', 'complete']).optional().describe(
+        'Request partial (early, may change) or complete (final, locked 30min after call) data'
+      ),
     }),
-    async ({ callSid }) => {
-      const summary = await client.insights.v1.calls(callSid).summary().fetch();
+    async ({ callSid, processingState }) => {
+      const fetchOptions: { processingState?: 'partial' | 'complete' } = {};
+      if (processingState) fetchOptions.processingState = processingState;
+
+      const summary = await client.insights.v1.calls(callSid).summary().fetch(fetchOptions);
 
       return {
         content: [{
@@ -676,6 +689,146 @@ export function voiceTools(context: TwilioContext) {
         content: [{
           type: 'text' as const,
           text: JSON.stringify({ success: true, count: formatted.length, metrics: formatted }, null, 2),
+        }],
+      };
+    }
+  );
+
+  // ============================================
+  // Conference Insights Tools
+  // ============================================
+  // TIMING NOTE: Conference Insights summaries follow same timing as Voice Insights.
+  // - Partial data: Available within ~2 minutes (no SLA)
+  // - Final data: Locked and immutable 30 minutes after conference end
+  // Check processingState in response: 'partial' or 'complete'
+
+  const getConferenceSummary = createTool(
+    'get_conference_summary',
+    'Get Conference Insights summary for a conference (quality metrics, participant count, etc.). ' +
+      'NOTE: Summaries are not immediately available after conference end. ' +
+      'Partial data available ~2 min after end, final data locked 30 min after end. ' +
+      'Check processingState in response for data completeness.',
+    z.object({
+      conferenceSid: z.string().startsWith('CF').describe('Conference SID (starts with CF)'),
+    }),
+    async ({ conferenceSid }) => {
+      const summary = await client.insights.v1.conferences(conferenceSid).fetch();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            conferenceSid: summary.conferenceSid,
+            accountSid: summary.accountSid,
+            friendlyName: summary.friendlyName,
+            processingState: summary.processingState,
+            createTime: summary.createTime,
+            startTime: summary.startTime,
+            endTime: summary.endTime,
+            durationSeconds: summary.durationSeconds,
+            connectDurationSeconds: summary.connectDurationSeconds,
+            status: summary.status,
+            maxParticipants: summary.maxParticipants,
+            maxConcurrentParticipants: summary.maxConcurrentParticipants,
+            uniqueParticipants: summary.uniqueParticipants,
+            endReason: summary.endReason,
+            endedBy: summary.endedBy,
+            mixerRegion: summary.mixerRegion,
+            mixerRegionRequested: summary.mixerRegionRequested,
+            recordingEnabled: summary.recordingEnabled,
+            tags: summary.tags,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const listConferenceParticipantSummaries = createTool(
+    'list_conference_participant_summaries',
+    'List Conference Insights summaries for all participants in a conference. ' +
+      'NOTE: Summaries are not immediately available after conference end. ' +
+      'Partial data available ~2 min after end, final data locked 30 min after end.',
+    z.object({
+      conferenceSid: z.string().startsWith('CF').describe('Conference SID (starts with CF)'),
+      limit: z.number().min(1).max(100).optional().default(50).describe('Max results (1-100, default 50)'),
+    }),
+    async ({ conferenceSid, limit }) => {
+      const participants = await client.insights.v1
+        .conferences(conferenceSid)
+        .conferenceParticipants.list({ limit: limit || 50 });
+
+      const formatted = participants.map((p) => ({
+        participantSid: p.participantSid,
+        conferenceSid: p.conferenceSid,
+        callSid: p.callSid,
+        label: p.label,
+        processingState: p.processingState,
+        callDirection: p.callDirection,
+        from: p.from,
+        to: p.to,
+        durationSeconds: p.durationSeconds,
+        joinTime: p.joinTime,
+        leaveTime: p.leaveTime,
+        callStatus: p.callStatus,
+        countryCode: p.countryCode,
+        isModerator: p.isModerator,
+        isCoach: p.isCoach,
+        jitterBufferSize: p.jitterBufferSize,
+        properties: p.properties,
+        events: p.events,
+        metrics: p.metrics,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ success: true, count: formatted.length, participants: formatted }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const getConferenceParticipantSummary = createTool(
+    'get_conference_participant_summary',
+    'Get Conference Insights summary for a specific participant. ' +
+      'NOTE: Summaries are not immediately available after conference end. ' +
+      'Partial data available ~2 min after end, final data locked 30 min after end.',
+    z.object({
+      conferenceSid: z.string().startsWith('CF').describe('Conference SID (starts with CF)'),
+      participantSid: z.string().startsWith('CP').describe('Participant SID (starts with CP)'),
+    }),
+    async ({ conferenceSid, participantSid }) => {
+      const participant = await client.insights.v1
+        .conferences(conferenceSid)
+        .conferenceParticipants(participantSid)
+        .fetch();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            participantSid: participant.participantSid,
+            conferenceSid: participant.conferenceSid,
+            callSid: participant.callSid,
+            label: participant.label,
+            processingState: participant.processingState,
+            callDirection: participant.callDirection,
+            from: participant.from,
+            to: participant.to,
+            durationSeconds: participant.durationSeconds,
+            joinTime: participant.joinTime,
+            leaveTime: participant.leaveTime,
+            callStatus: participant.callStatus,
+            countryCode: participant.countryCode,
+            isModerator: participant.isModerator,
+            isCoach: participant.isCoach,
+            jitterBufferSize: participant.jitterBufferSize,
+            properties: participant.properties,
+            events: participant.events,
+            metrics: participant.metrics,
+          }, null, 2),
         }],
       };
     }
@@ -808,6 +961,10 @@ export function voiceTools(context: TwilioContext) {
     getCallSummary,
     listCallEvents,
     listCallMetrics,
+    // Conference Insights
+    getConferenceSummary,
+    listConferenceParticipantSummaries,
+    getConferenceParticipantSummary,
     // Transcription
     listRecordingTranscriptions,
     getTranscription,

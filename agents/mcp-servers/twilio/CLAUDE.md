@@ -4,7 +4,7 @@ This directory contains the Model Context Protocol (MCP) server that exposes Twi
 
 ## Purpose
 
-The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **236 tools across 25 modules** covering:
+The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **239 tools across 25 modules** covering:
 
 - **Messaging**: SMS/MMS, messaging services, content templates, notifications
 - **Voice**: Call management, conferences, recordings, Voice Insights, transcriptions, BYOC trunks, SIP trunking
@@ -105,7 +105,7 @@ for await (const message of query({
 | `get_message_logs` | Retrieve message history |
 | `get_message_status` | Check delivery status |
 
-### Voice Tools - 19 tools
+### Voice Tools - 22 tools
 
 | Tool | Description |
 |------|-------------|
@@ -123,11 +123,19 @@ for await (const message of query({
 | `update_conference_participant` | Mute, hold, or coach participant |
 | `add_participant_to_conference` | Add participant via Participants API |
 | `list_conference_recordings` | List conference recordings |
-| `get_call_summary` | Voice Insights call summary |
+| `get_call_summary` | Voice Insights call summary (see timing note) |
 | `list_call_events` | Voice Insights call events |
 | `list_call_metrics` | Voice Insights quality metrics |
+| `get_conference_summary` | Conference Insights summary (see timing note) |
+| `list_conference_participant_summaries` | Conference participant summaries |
+| `get_conference_participant_summary` | Single participant summary |
 | `list_recording_transcriptions` | List transcriptions for recording |
 | `get_transcription` | Get transcription text |
+
+**Voice/Conference Insights Timing:**
+- Summaries NOT available immediately after call/conference end
+- Partial data (~2 min): Use `processingState: 'partial'` for early access
+- Final data (30 min): Locked and immutable, check `processingState: 'complete'`
 
 ### Phone Number Tools
 

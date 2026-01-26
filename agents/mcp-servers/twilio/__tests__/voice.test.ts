@@ -1,6 +1,26 @@
 // ABOUTME: Unit tests for Twilio voice tools.
 // ABOUTME: Tests tool structure, schema validation, and API integration with real credentials.
 
+/**
+ * VOICE INSIGHTS & CONFERENCE INSIGHTS TIMING BEHAVIOR
+ *
+ * Voice Insights and Conference Insights summaries are NOT available immediately
+ * after a call or conference ends. The data follows this availability timeline:
+ *
+ * - Partial data: Available within ~2 minutes after end (no SLA guarantee)
+ * - Final data: Locked and immutable 30 minutes after end
+ *
+ * Check the `processingState` field in responses:
+ * - 'partial': Data may still change, not all metrics populated
+ * - 'complete': Final data, will not change
+ *
+ * This timing applies to:
+ * - get_call_summary (Voice Insights)
+ * - get_conference_summary (Conference Insights)
+ * - list_conference_participant_summaries (Conference Insights)
+ * - get_conference_participant_summary (Conference Insights)
+ */
+
 import { voiceTools, TwilioContext } from '../src/index';
 import Twilio from 'twilio';
 import { z } from 'zod';
@@ -42,8 +62,8 @@ describe('voiceTools', () => {
   });
 
   describe('tool structure', () => {
-    it('should return an array of 19 tools', () => {
-      expect(tools).toHaveLength(19);
+    it('should return an array of 22 tools', () => {
+      expect(tools).toHaveLength(22);
     });
 
     // Core call tools
@@ -169,6 +189,29 @@ describe('voiceTools', () => {
       const tool = tools.find(t => t.name === 'list_call_metrics');
       expect(tool).toBeDefined();
       expect(tool?.description).toContain('Voice Insights metrics');
+      expect(typeof tool?.handler).toBe('function');
+    });
+
+    // Conference Insights tools (with timing documentation)
+    it('should have get_conference_summary tool with timing note in description', () => {
+      const tool = tools.find(t => t.name === 'get_conference_summary');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('Conference Insights');
+      expect(tool?.description).toContain('not immediately available');
+      expect(typeof tool?.handler).toBe('function');
+    });
+
+    it('should have list_conference_participant_summaries tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'list_conference_participant_summaries');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('Conference Insights');
+      expect(typeof tool?.handler).toBe('function');
+    });
+
+    it('should have get_conference_participant_summary tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'get_conference_participant_summary');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('Conference Insights');
       expect(typeof tool?.handler).toBe('function');
     });
 
@@ -499,6 +542,9 @@ describe('voiceTools', () => {
       });
     });
 
+    // Voice Insights schema tests
+    // Note: Insights data not immediately available after call end.
+    // Partial data ~2 min, final data locked 30 min after end.
     describe('get_call_summary schema', () => {
       let schema: z.ZodType;
 
@@ -515,6 +561,26 @@ describe('voiceTools', () => {
 
         const invalid = schema.safeParse({
           callSid: 'XXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(invalid.success).toBe(false);
+      });
+
+      it('should accept optional processingState for timing control', () => {
+        const partial = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          processingState: 'partial',
+        });
+        expect(partial.success).toBe(true);
+
+        const complete = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          processingState: 'complete',
+        });
+        expect(complete.success).toBe(true);
+
+        const invalid = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          processingState: 'invalid',
         });
         expect(invalid.success).toBe(false);
       });
@@ -569,6 +635,78 @@ describe('voiceTools', () => {
 
         const invalid = schema.safeParse({
           transcriptionSid: 'XXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(invalid.success).toBe(false);
+      });
+    });
+
+    // Conference Insights schema tests
+    // Note: These tools document timing behavior in their descriptions
+    describe('get_conference_summary schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'get_conference_summary');
+        schema = tool!.inputSchema;
+      });
+
+      it('should require conference SID starting with CF', () => {
+        const valid = schema.safeParse({
+          conferenceSid: 'CFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(valid.success).toBe(true);
+
+        const invalid = schema.safeParse({
+          conferenceSid: 'XXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(invalid.success).toBe(false);
+      });
+    });
+
+    describe('list_conference_participant_summaries schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'list_conference_participant_summaries');
+        schema = tool!.inputSchema;
+      });
+
+      it('should require conference SID and have default limit', () => {
+        const result = schema.safeParse({
+          conferenceSid: 'CFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.limit).toBe(50);
+        }
+      });
+    });
+
+    describe('get_conference_participant_summary schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'get_conference_participant_summary');
+        schema = tool!.inputSchema;
+      });
+
+      it('should require both conference SID and participant SID', () => {
+        const valid = schema.safeParse({
+          conferenceSid: 'CFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          participantSid: 'CPxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(valid.success).toBe(true);
+
+        const missingParticipant = schema.safeParse({
+          conferenceSid: 'CFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(missingParticipant.success).toBe(false);
+      });
+
+      it('should require participant SID starting with CP', () => {
+        const invalid = schema.safeParse({
+          conferenceSid: 'CFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          participantSid: 'XXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
         });
         expect(invalid.success).toBe(false);
       });

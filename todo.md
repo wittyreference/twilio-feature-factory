@@ -358,6 +358,7 @@ Voice MCP tools expanded from 22 to 29 tools (246 total MCP tools):
 | 2026-01-25 | 6b | Documentation flywheel fix (file-based hook→agent communication). QA agent integrated into Feature Factory (test execution, coverage, TwiML validation, security scanning). Coverage-threshold hook. 210 Feature Factory tests passing. |
 | 2026-01-25 | 7 | Phase 4 Voice AI Builder Session 1: Directory setup, generators (twiml-handler, websocket-server, llm-integration), base templates, types.ts, 70 unit tests. |
 | 2026-01-25 | 7b | Phase 4 Voice AI Builder Session 2: voice-ai skill, use case configs (basic-assistant, customer-service, appointment-booking), architect/spec agent updates, 54 new tests. 124 total voice-ai-builder tests. |
+| 2026-01-25 | 7c | Skills audit: Updated memory-systems.md (D14, D8, D16), multi-agent-patterns.md (D4, D7), context-fundamentals.md (doc-map). Created deep-validation.md and tdd-workflow.md skills. |
 
 ---
 

@@ -260,6 +260,7 @@ Keep meta implementation intact - COPY, don't move.
 
 - [ ] Copy doc-update-check.sh from .claude-dev/hooks/ to .claude/hooks/
 - [ ] Copy session-summary.sh from .claude-dev/hooks/ to .claude/hooks/
+- [ ] Copy flywheel documentation (CLAUDE.md with mermaid diagrams) to .claude/flywheel.md
 - [ ] Update all paths in COPIED scripts (point to .claude/, not .claude-dev/)
 - [ ] Create empty .claude/pending-actions.md template
 - [ ] Create empty .claude/learnings.md template

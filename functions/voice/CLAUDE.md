@@ -168,7 +168,24 @@ if (conferences.length > 0) {
 
 ## TwiML Control Model
 
-**Critical**: Only ONE TwiML document controls a call at any given time.
+**Critical**: In almost all cases, only ONE TwiML document controls a call at any given time.
+
+### Exception: Background Operations
+
+Some TwiML verbs start background processes that continue running even after the call moves to subsequent TwiML documents:
+
+- **`<Start><Stream>`** - Media streaming continues in the background
+- **`<Start><Recording>`** - Recording continues until explicitly stopped
+- **`<Start><Siprec>`** - SIPREC streaming continues in the background
+
+These operations "fork off" and run concurrently with whatever TwiML executes next. The call can proceed through multiple TwiML documents while the stream/recording remains active.
+
+```javascript
+// Recording starts and continues through subsequent TwiML
+twiml.start().record({ name: 'my-recording' });
+twiml.say('This is being recorded...');
+twiml.redirect('/next-handler'); // Recording continues!
+```
 
 ### Key Implications
 

@@ -4,15 +4,16 @@ This directory contains the Model Context Protocol (MCP) server that exposes Twi
 
 ## Purpose
 
-The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. This allows agents to:
+The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **159 tools across 19 modules** covering:
 
-- Send SMS/MMS messages
-- Query call logs and analyze patterns
-- Configure phone number webhooks
-- Manage Sync documents for state synchronization
-- Create TaskRouter tasks
-- Query Verify service status
-- Fetch debugger logs for error analysis
+- **Messaging**: SMS/MMS, messaging services, content templates
+- **Voice**: Call logs, recordings, BYOC trunks, dialing permissions
+- **Phone Numbers**: Management, regulatory bundles, lookups
+- **Identity**: Verification, TrustHub profiles, trust products
+- **Routing**: TaskRouter, Studio flows, Proxy number masking
+- **Media**: Video rooms, recordings, compositions
+- **Serverless**: Functions, builds, environments, variables
+- **Monitoring**: Debugger logs, usage records, Voice Intelligence
 
 ## Architecture
 
@@ -154,98 +155,194 @@ for await (const message of query({
 | `lookup_phone_number` | Get carrier, line type, caller name |
 | `check_fraud_risk` | Check SIM swap, SMS pumping risk |
 
-### Studio Tools (P1)
+### Studio Tools (P1) - 9 tools
 
 | Tool | Description |
 |------|-------------|
 | `list_studio_flows` | List all Studio flows |
+| `get_flow` | Get flow details |
 | `trigger_flow` | Trigger flow execution via REST |
-| `get_execution_status` | Get execution details and steps |
+| `list_executions` | List flow executions |
+| `get_execution_status` | Get execution details |
+| `delete_execution` | Delete an execution |
+| `get_execution_context` | Get execution variables/data |
+| `list_execution_steps` | List steps in execution |
+| `get_step_context` | Get step input/output |
 
-### Messaging Services Tools (P1)
+### Messaging Services Tools (P1) - 14 tools
 
 | Tool | Description |
 |------|-------------|
 | `create_messaging_service` | Create sender pool service |
+| `list_messaging_services` | List all messaging services |
+| `get_messaging_service` | Get service details |
+| `update_messaging_service` | Update service config |
+| `delete_messaging_service` | Delete a service |
 | `add_number_to_service` | Add phone number to pool |
+| `list_phone_numbers_in_service` | List numbers in pool |
+| `remove_number_from_service` | Remove number from pool |
+| `list_alpha_senders` | List alpha sender IDs |
+| `add_alpha_sender` | Add alpha sender ID |
+| `remove_alpha_sender` | Remove alpha sender |
+| `list_short_codes` | List short codes |
+| `add_short_code` | Add short code to service |
 | `get_a2p_status` | Get A2P 10DLC registration status |
 
-### Serverless Tools (P1)
+### Serverless Tools (P1) - 15 tools
 
 | Tool | Description |
 |------|-------------|
 | `list_services` | List serverless services |
+| `get_service` | Get service details |
 | `list_functions` | List functions in a service |
+| `get_function` | Get function details |
+| `list_function_versions` | List function versions |
 | `list_environments` | List deployment environments |
 | `get_build_status` | Get build deployment status |
+| `list_builds` | List all builds |
+| `list_assets` | List assets in service |
+| `list_asset_versions` | List asset versions |
+| `list_variables` | List environment variables |
+| `create_variable` | Create environment variable |
+| `update_variable` | Update variable value |
+| `delete_variable` | Delete a variable |
+| `list_logs` | List function execution logs |
 
-### Intelligence Tools (P2)
+### Intelligence Tools (P2) - 8 tools
 
 | Tool | Description |
 |------|-------------|
 | `list_intelligence_services` | List available Intelligence services |
+| `get_intelligence_service` | Get service details |
 | `list_transcripts` | List transcripts in account |
 | `get_transcript` | Get transcript details |
+| `delete_transcript` | Delete a transcript |
+| `list_sentences` | List sentences in transcript |
+| `list_operator_results` | List operator analysis results |
+| `get_transcript_media` | Get transcript media URL |
 
-### Video Tools (P2)
+### Video Tools (P2) - 10 tools
 
 | Tool | Description |
 |------|-------------|
 | `create_video_room` | Create a video room |
 | `list_video_rooms` | List video rooms |
+| `get_room` | Get room details |
+| `update_room` | Update room (end with status=completed) |
 | `list_room_participants` | List participants in a room |
+| `get_participant` | Get participant details |
+| `update_participant` | Update participant (disconnect) |
+| `list_room_recordings` | List recordings in room |
+| `list_subscribed_tracks` | List subscribed tracks |
+| `list_published_tracks` | List published tracks |
 
-### Proxy Tools (P2)
+### Proxy Tools (P2) - 17 tools
 
 | Tool | Description |
 |------|-------------|
 | `create_proxy_service` | Create number masking service |
+| `list_proxy_services` | List all proxy services |
+| `get_proxy_service` | Get service details |
+| `update_proxy_service` | Update service config |
+| `delete_proxy_service` | Delete a service |
 | `create_proxy_session` | Create masked session |
-| `add_proxy_participant` | Add participant to session |
 | `list_proxy_sessions` | List sessions in service |
+| `get_proxy_session` | Get session details |
+| `update_proxy_session` | Update session (close) |
+| `delete_proxy_session` | Delete a session |
+| `add_proxy_participant` | Add participant to session |
+| `list_proxy_participants` | List participants |
+| `remove_proxy_participant` | Remove participant |
+| `list_proxy_interactions` | List session interactions |
+| `list_proxy_phone_numbers` | List phone numbers in service |
+| `add_proxy_phone_number` | Add phone number to service |
+| `remove_proxy_phone_number` | Remove phone number |
 
-### TrustHub Tools (P2)
+### TrustHub Tools (P2) - 17 tools
 
 | Tool | Description |
 |------|-------------|
 | `create_customer_profile` | Create customer profile |
 | `list_customer_profiles` | List customer profiles |
+| `get_customer_profile` | Get profile details |
+| `update_customer_profile` | Update profile |
+| `delete_customer_profile` | Delete profile |
+| `list_customer_profile_entity_assignments` | List entity assignments |
+| `create_customer_profile_entity_assignment` | Assign entity to profile |
+| `delete_customer_profile_entity_assignment` | Remove entity assignment |
 | `list_trust_products` | List trust products (A2P brands) |
+| `get_trust_product` | Get trust product details |
+| `create_trust_product` | Create trust product |
+| `update_trust_product` | Update trust product |
+| `delete_trust_product` | Delete trust product |
 | `list_policies` | List compliance policies |
+| `list_end_users` | List end users |
+| `create_end_user` | Create end user |
+| `list_supporting_documents` | List supporting documents |
 
-### Content Tools (P2)
+### Content Tools (P2) - 4 tools
 
 | Tool | Description |
 |------|-------------|
 | `create_content_template` | Create message template |
 | `list_content_templates` | List templates |
 | `get_content_template` | Get template details |
+| `delete_content_template` | Delete a template |
 
-### Voice Config Tools (P2)
+### Voice Config Tools (P2) - 14 tools
 
 | Tool | Description |
 |------|-------------|
 | `get_dialing_permissions` | Get country dialing permissions |
 | `list_dialing_permissions_countries` | List countries with permissions |
 | `list_byoc_trunks` | List BYOC trunks |
+| `get_byoc_trunk` | Get trunk details |
 | `create_byoc_trunk` | Create BYOC trunk |
+| `update_byoc_trunk` | Update trunk config |
+| `delete_byoc_trunk` | Delete trunk |
+| `list_connection_policies` | List connection policies |
+| `create_connection_policy` | Create connection policy |
+| `get_connection_policy` | Get policy details |
+| `delete_connection_policy` | Delete policy |
+| `list_connection_policy_targets` | List policy targets |
+| `create_connection_policy_target` | Add target to policy |
+| `delete_connection_policy_target` | Remove target |
 
-### Regulatory Tools (P2)
+### Regulatory Tools (P2) - 16 tools
 
 | Tool | Description |
 |------|-------------|
 | `list_regulatory_bundles` | List regulatory bundles |
 | `get_bundle_status` | Get bundle status |
+| `create_regulatory_bundle` | Create new bundle |
+| `update_regulatory_bundle` | Update bundle |
+| `delete_regulatory_bundle` | Delete bundle |
+| `list_bundle_item_assignments` | List bundle items |
+| `create_bundle_item_assignment` | Add item to bundle |
+| `delete_bundle_item_assignment` | Remove item from bundle |
 | `list_supporting_documents` | List supporting documents |
+| `get_supporting_document` | Get document details |
+| `create_supporting_document` | Create document |
+| `update_supporting_document` | Update document |
+| `delete_supporting_document` | Delete document |
 | `list_regulations` | List available regulations |
+| `list_regulatory_end_users` | List end users |
+| `create_regulatory_end_user` | Create end user |
 
-### Media Tools (P2)
+### Media Tools (P2) - 10 tools
 
 | Tool | Description |
 |------|-------------|
 | `list_video_recordings` | List video recordings |
 | `get_video_recording` | Get recording details |
+| `delete_video_recording` | Delete a recording |
 | `list_compositions` | List video compositions |
+| `get_composition` | Get composition details |
+| `create_composition` | Create composition from recordings |
+| `delete_composition` | Delete composition |
+| `list_composition_hooks` | List composition hooks |
+| `create_composition_hook` | Create auto-composition rule |
+| `delete_composition_hook` | Delete hook |
 
 ## Testing
 

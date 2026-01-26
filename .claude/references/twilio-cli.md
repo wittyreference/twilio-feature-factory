@@ -249,23 +249,57 @@ twilio phone-numbers:list \
 twilio phone-numbers:list -o json
 ```
 
-### Search Available Numbers
+### Search Available Numbers (Without Buying)
 
 ```bash
-# Search local numbers by area code
+# Search local numbers (API command - search only)
+twilio api:core:available-phone-numbers:local:list \
+  --country-code US \
+  --area-code 206 \
+  --voice-enabled \
+  --sms-enabled \
+  --limit 10
+
+# Search toll-free (API command - search only)
+twilio api:core:available-phone-numbers:toll-free:list \
+  --country-code US \
+  --voice-enabled \
+  --limit 10
+
+# Search mobile (API command - search only)
+twilio api:core:available-phone-numbers:mobile:list \
+  --country-code US \
+  --limit 10
+
+# Search by pattern (vanity numbers)
+twilio api:core:available-phone-numbers:local:list \
+  --country-code US \
+  --contains "555*" \
+  --limit 10
+```
+
+### Buy Phone Numbers
+
+```bash
+# Buy local number (interactive - searches then prompts to buy)
 twilio phone-numbers:buy:local \
   --country-code US \
   --area-code 415
 
-# Search toll-free
+# Buy toll-free (interactive)
 twilio phone-numbers:buy:toll-free \
   --country-code US
 
-# Search with capabilities
+# Buy with specific capabilities
 twilio phone-numbers:buy:local \
   --country-code US \
   --sms-enabled \
   --voice-enabled
+
+# Buy specific number (API command - direct purchase)
+twilio api:core:incoming-phone-numbers:create \
+  --phone-number +14155551234 \
+  --friendly-name "Conference Test 1"
 ```
 
 ### Update Number Configuration
@@ -285,7 +319,176 @@ twilio phone-numbers:update +1234567890 \
   --sms-url https://example.com/sms \
   --sms-method POST \
   --sms-fallback-url https://example.com/sms-fallback
+
+# Configure voice with status callback
+twilio phone-numbers:update +1234567890 \
+  --voice-url https://example.com/voice \
+  --voice-method POST \
+  --voice-fallback-url https://example.com/voice-fallback \
+  --status-callback https://example.com/status
 ```
+
+### Release (Delete) Phone Number
+
+```bash
+# Release a phone number (API command)
+twilio api:core:incoming-phone-numbers:remove \
+  --sid PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Find SID by phone number first
+twilio phone-numbers:list -o json | jq '.[] | select(.phoneNumber=="+1234567890") | .sid'
+```
+
+### Phone Number Search Filters
+
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--country-code` | ISO country code (required) | `US`, `GB`, `CA` |
+| `--area-code` | Area code filter | `206`, `415` |
+| `--contains` | Pattern match (use * wildcard) | `"555*"`, `"*HELP"` |
+| `--voice-enabled` | Must support voice | (presence flag) |
+| `--sms-enabled` | Must support SMS | (presence flag) |
+| `--mms-enabled` | Must support MMS | (presence flag) |
+| `--fax-enabled` | Must support fax | (presence flag) |
+| `--in-locality` | City filter | `Seattle` |
+| `--in-region` | State/region filter | `WA` |
+| `--limit` | Max results | `10` |
+
+**Note**: Flags are presence-based, NOT `--flag=true`. Use `--voice-enabled` not `--voice-enabled=true`.
+
+---
+
+## Conferences (`twilio api:core:conferences:*`)
+
+### List Conferences
+
+```bash
+# List all conferences
+twilio api:core:conferences:list --limit 20
+
+# Filter by status
+twilio api:core:conferences:list --status in-progress
+twilio api:core:conferences:list --status completed
+
+# Filter by friendly name
+twilio api:core:conferences:list --friendly-name "my-conference"
+
+# Filter by date
+twilio api:core:conferences:list \
+  --date-created-after 2024-01-01 \
+  --date-created-before 2024-01-31
+
+# Output as JSON
+twilio api:core:conferences:list -o json
+```
+
+### Fetch Conference Details
+
+```bash
+twilio api:core:conferences:fetch \
+  --sid CFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+### Update (End) Conference
+
+```bash
+# End a conference
+twilio api:core:conferences:update \
+  --sid CFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx \
+  --status completed
+```
+
+### List Conference Participants
+
+```bash
+twilio api:core:conferences:participants:list \
+  --conference-sid CFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+### Add Participant to Conference
+
+```bash
+twilio api:core:conferences:participants:create \
+  --conference-sid CFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx \
+  --from +1234567890 \
+  --to +0987654321 \
+  --start-conference-on-enter \
+  --timeout 30 \
+  --time-limit 600
+```
+
+### Update Participant (Mute/Hold)
+
+```bash
+# Mute participant
+twilio api:core:conferences:participants:update \
+  --conference-sid CFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx \
+  --call-sid CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx \
+  --muted
+
+# Put on hold
+twilio api:core:conferences:participants:update \
+  --conference-sid CFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx \
+  --call-sid CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx \
+  --hold
+```
+
+### Remove Participant
+
+```bash
+twilio api:core:conferences:participants:remove \
+  --conference-sid CFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx \
+  --call-sid CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+---
+
+## Recordings (`twilio api:core:recordings:*`)
+
+### List Recordings
+
+```bash
+# List recent recordings
+twilio api:core:recordings:list --limit 20
+
+# Filter by call SID
+twilio api:core:recordings:list \
+  --call-sid CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Filter by date range
+twilio api:core:recordings:list \
+  --date-created-after 2024-01-01 \
+  --date-created-before 2024-01-31
+
+# Output as JSON
+twilio api:core:recordings:list -o json
+```
+
+### Fetch Recording Details
+
+```bash
+twilio api:core:recordings:fetch \
+  --sid RExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+### Delete Recording
+
+```bash
+twilio api:core:recordings:remove \
+  --sid RExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+### Recording Properties
+
+| Property | Description |
+|----------|-------------|
+| `sid` | Recording SID (RExxxx) |
+| `callSid` | Associated call SID |
+| `duration` | Length in seconds |
+| `channels` | Number of audio channels |
+| `source` | `DialVerb`, `Conference`, `OutboundAPI`, etc. |
+| `status` | `processing`, `completed`, `absent` |
+| `uri` | API path to recording |
 
 ---
 
@@ -353,19 +556,60 @@ Pattern: `twilio api:<product>:<version>:<resource>:<action>`
 # List recent messages
 twilio api:core:messages:list --limit 10
 
+# Filter by To number
+twilio api:core:messages:list --to +1234567890
+
+# Filter by From number
+twilio api:core:messages:list --from +0987654321
+
+# Filter by date range
+twilio api:core:messages:list \
+  --date-sent-after 2024-01-01 \
+  --date-sent-before 2024-01-31
+
 # Send SMS
 twilio api:core:messages:create \
   --to +1234567890 \
   --from +0987654321 \
   --body "Hello from CLI"
 
+# Send SMS with status callback
+twilio api:core:messages:create \
+  --to +1234567890 \
+  --from +0987654321 \
+  --body "Hello from CLI" \
+  --status-callback https://example.com/status
+
+# Send MMS (with media)
+twilio api:core:messages:create \
+  --to +1234567890 \
+  --from +0987654321 \
+  --body "Check out this image" \
+  --media-url https://example.com/image.jpg
+
 # Get message details
 twilio api:core:messages:fetch \
+  --sid SMxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Delete message
+twilio api:core:messages:remove \
   --sid SMxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Output as JSON
 twilio api:core:messages:list -o json
 ```
+
+### Message Status Values
+
+| Status | Description |
+|--------|-------------|
+| `queued` | Message queued for sending |
+| `sending` | Message is being sent |
+| `sent` | Message sent to carrier |
+| `delivered` | Carrier confirmed delivery |
+| `undelivered` | Carrier failed to deliver |
+| `failed` | Message could not be sent |
+| `received` | Inbound message received |
 
 ### Calls
 
@@ -373,21 +617,88 @@ twilio api:core:messages:list -o json
 # List recent calls
 twilio api:core:calls:list --limit 10
 
-# Make outbound call
+# Filter by To number
+twilio api:core:calls:list --to +1234567890
+
+# Filter by From number
+twilio api:core:calls:list --from +0987654321
+
+# Filter by status
+twilio api:core:calls:list --status completed
+twilio api:core:calls:list --status in-progress
+
+# Filter by date range
+twilio api:core:calls:list \
+  --start-time-after 2024-01-01 \
+  --start-time-before 2024-01-31
+
+# Make outbound call with TwiML URL
 twilio api:core:calls:create \
   --to +1234567890 \
   --from +0987654321 \
   --url https://example.com/twiml
 
+# Make outbound call with inline TwiML
+twilio api:core:calls:create \
+  --to +1234567890 \
+  --from +0987654321 \
+  --twiml '<Response><Say>Hello!</Say></Response>'
+
+# Make call with status callback
+twilio api:core:calls:create \
+  --to +1234567890 \
+  --from +0987654321 \
+  --url https://example.com/twiml \
+  --status-callback https://example.com/status \
+  --status-callback-event initiated ringing answered completed
+
+# Make call with timeout and time limit
+twilio api:core:calls:create \
+  --to +1234567890 \
+  --from +0987654321 \
+  --url https://example.com/twiml \
+  --timeout 30 \
+  --time-limit 600
+
+# Make call with recording
+twilio api:core:calls:create \
+  --to +1234567890 \
+  --from +0987654321 \
+  --url https://example.com/twiml \
+  --record
+
 # Get call details
 twilio api:core:calls:fetch \
   --sid CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# Update in-progress call
+# Update in-progress call (end it)
 twilio api:core:calls:update \
   --sid CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx \
   --status completed
+
+# Update call with new TwiML (redirect)
+twilio api:core:calls:update \
+  --sid CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx \
+  --url https://example.com/new-twiml
+
+# Update call with inline TwiML
+twilio api:core:calls:update \
+  --sid CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx \
+  --twiml '<Response><Say>Call updated!</Say><Hangup/></Response>'
 ```
+
+### Call Status Values
+
+| Status | Description |
+|--------|-------------|
+| `queued` | Call queued |
+| `ringing` | Ringing at destination |
+| `in-progress` | Call connected |
+| `completed` | Call ended normally |
+| `busy` | Destination was busy |
+| `no-answer` | No answer within timeout |
+| `canceled` | Call was canceled |
+| `failed` | Call failed to connect |
 
 ### Verify
 

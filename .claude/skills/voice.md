@@ -122,10 +122,10 @@ ConversationRelay provides direct LLM integration over WebSocket. Dialogflow is 
 | Conference per-participant | `record` param in Participants API | Record specific participant |
 | Elastic SIP Trunking | Trunk-level config | Record all trunk traffic |
 
-**Recording Control (API-started recordings only):**
+**Recording Control (works for ANY in-progress recording):**
 - `start_call_recording` - Start recording active call
 - `update_call_recording` - Pause (skip/silence), resume, or stop
-- Recordings started via TwiML cannot be paused/resumed via API
+- **Tip:** Use `Twilio.CURRENT` as recordingSid to reference the active recording without knowing its SID
 
 ### TTS Voice Tier Selection
 

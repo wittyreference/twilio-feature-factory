@@ -1,5 +1,5 @@
 // ABOUTME: Deep validation helper for verifying Twilio API operations beyond 200 OK.
-// ABOUTME: Checks resource status, debugger alerts, call events, Voice Insights, Function logs, and Sync callbacks.
+// ABOUTME: Checks resource status, debugger alerts, call events, Voice/Conference Insights, Function logs, and Sync callbacks.
 
 import type { Twilio } from 'twilio';
 
@@ -18,13 +18,15 @@ export interface CheckResult {
 export interface ValidationResult {
   success: boolean;
   resourceSid: string;
-  resourceType: 'message' | 'call' | 'verification' | 'task';
+  resourceType: 'message' | 'call' | 'verification' | 'task' | 'conference';
   primaryStatus: string;
   checks: {
     resourceStatus: CheckResult;
     debuggerAlerts: CheckResult;
     callEvents?: CheckResult;
     voiceInsights?: CheckResult;
+    conferenceInsights?: CheckResult;
+    conferenceParticipantInsights?: CheckResult;
     functionLogs?: CheckResult;
     studioLogs?: CheckResult;
     syncCallbacks?: CheckResult;
@@ -64,6 +66,7 @@ const DEFAULT_OPTIONS: Required<Omit<ValidationOptions, 'syncServiceSid' | 'serv
 const MESSAGE_TERMINAL_STATUSES = ['delivered', 'undelivered', 'failed', 'read'];
 const CALL_TERMINAL_STATUSES = ['completed', 'busy', 'failed', 'no-answer', 'canceled'];
 const VERIFICATION_TERMINAL_STATUSES = ['approved', 'canceled', 'expired'];
+const CONFERENCE_TERMINAL_STATUSES = ['completed'];
 
 /**
  * Deep validator for Twilio API operations.
@@ -291,6 +294,77 @@ export class DeepValidator {
     };
   }
 
+  /**
+   * Validates a conference by checking status, debugger alerts, and Conference Insights.
+   *
+   * TIMING NOTE: Conference Insights summaries are NOT available immediately after conference end.
+   * - Partial data: Available within ~2 minutes after end (no SLA guarantee)
+   * - Final data: Locked and immutable 30 minutes after conference end
+   * Check processingState in response: 'partial' or 'complete'
+   */
+  async validateConference(
+    conferenceSid: string,
+    options: ValidationOptions = {}
+  ): Promise<ValidationResult> {
+    const opts = { ...DEFAULT_OPTIONS, ...options };
+    const startTime = Date.now();
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    // Run initial checks in parallel
+    const [statusCheck, alertCheck, syncCheck] = await Promise.all([
+      this.checkConferenceStatus(conferenceSid, opts),
+      this.checkDebuggerAlerts(conferenceSid, opts),
+      opts.syncServiceSid
+        ? this.checkSyncCallbacks('conference', conferenceSid, opts.syncServiceSid)
+        : Promise.resolve({ passed: true, message: 'Sync check skipped (no service SID)' }),
+    ]);
+
+    // Check Conference Insights if conference is terminal
+    let conferenceInsightsCheck: CheckResult | undefined;
+    let participantInsightsCheck: CheckResult | undefined;
+    const status = (statusCheck.data as { status?: string })?.status;
+    if (status && CONFERENCE_TERMINAL_STATUSES.includes(status)) {
+      // Note: Insights may not be available immediately - check timing in response
+      conferenceInsightsCheck = await this.checkConferenceInsights(conferenceSid);
+      participantInsightsCheck = await this.checkConferenceParticipantInsights(conferenceSid);
+    }
+
+    // Check Function logs if configured
+    let functionLogsCheck: CheckResult | undefined;
+    if (opts.serverlessServiceSid) {
+      functionLogsCheck = await this.checkFunctionLogs(conferenceSid, opts.serverlessServiceSid);
+    }
+
+    // Aggregate errors
+    if (!statusCheck.passed) errors.push(statusCheck.message);
+    if (!alertCheck.passed) errors.push(alertCheck.message);
+    if (syncCheck && !syncCheck.passed) errors.push(syncCheck.message);
+    if (conferenceInsightsCheck && !conferenceInsightsCheck.passed) warnings.push(conferenceInsightsCheck.message);
+    if (participantInsightsCheck && !participantInsightsCheck.passed) warnings.push(participantInsightsCheck.message);
+    if (functionLogsCheck && !functionLogsCheck.passed) warnings.push(functionLogsCheck.message);
+
+    const success = statusCheck.passed && alertCheck.passed;
+
+    return {
+      success,
+      resourceSid: conferenceSid,
+      resourceType: 'conference',
+      primaryStatus: status || 'unknown',
+      checks: {
+        resourceStatus: statusCheck,
+        debuggerAlerts: alertCheck,
+        conferenceInsights: conferenceInsightsCheck,
+        conferenceParticipantInsights: participantInsightsCheck,
+        syncCallbacks: syncCheck,
+        functionLogs: functionLogsCheck,
+      },
+      errors,
+      warnings,
+      duration: Date.now() - startTime,
+    };
+  }
+
   // ---- Private check methods ----
 
   private async checkMessageStatus(
@@ -434,6 +508,176 @@ export class DeepValidator {
       return {
         passed: false,
         message: `Failed to fetch task: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  private async checkConferenceStatus(
+    sid: string,
+    opts: typeof DEFAULT_OPTIONS & ValidationOptions
+  ): Promise<CheckResult> {
+    try {
+      let conference = await this.client.conferences(sid).fetch();
+      let status = conference.status;
+
+      if (opts.waitForTerminal && !CONFERENCE_TERMINAL_STATUSES.includes(status)) {
+        const deadline = Date.now() + opts.timeout;
+        while (Date.now() < deadline && !CONFERENCE_TERMINAL_STATUSES.includes(status)) {
+          await this.sleep(opts.pollInterval);
+          conference = await this.client.conferences(sid).fetch();
+          status = conference.status;
+        }
+      }
+
+      const isSuccess = ['init', 'in-progress', 'completed'].includes(status);
+
+      return {
+        passed: isSuccess,
+        message: `Conference status: ${status}`,
+        data: {
+          status,
+          friendlyName: conference.friendlyName,
+          region: conference.region,
+          reasonConferenceEnded: conference.reasonConferenceEnded,
+          callSidEndingConference: conference.callSidEndingConference,
+        },
+      };
+    } catch (error) {
+      return {
+        passed: false,
+        message: `Failed to fetch conference: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * Checks Conference Insights summary.
+   * NOTE: Data not available immediately after conference end.
+   * - Partial data: ~2 min after end
+   * - Final data: 30 min after end (locked)
+   */
+  private async checkConferenceInsights(conferenceSid: string): Promise<CheckResult> {
+    try {
+      const summary = await this.client.insights.v1.conferences(conferenceSid).fetch();
+      const summaryData = summary as unknown as {
+        processingState?: string;
+        status?: string;
+        durationSeconds?: number;
+        maxParticipants?: number;
+        uniqueParticipants?: number;
+        endReason?: string;
+        tags?: string[];
+      };
+
+      // Check for any error-related end reasons
+      const hasIssues = summaryData.endReason &&
+        ['participant-with-end-conference-on-exit-left', 'last-participant-left'].includes(summaryData.endReason) === false &&
+        summaryData.endReason !== 'conference-ended-via-api';
+
+      // Check for error tags if available
+      const hasErrorTags = summaryData.tags?.some((tag) =>
+        tag.toLowerCase().includes('error') || tag.toLowerCase().includes('failed')
+      );
+
+      const processingNote = summaryData.processingState === 'partial'
+        ? ' (partial data - final in 30min)'
+        : '';
+
+      return {
+        passed: !hasIssues && !hasErrorTags,
+        message: hasIssues || hasErrorTags
+          ? `Conference Insights found issues: ${summaryData.endReason}${processingNote}`
+          : `Conference Insights: ${summaryData.processingState || 'complete'}${processingNote}`,
+        data: {
+          processingState: summaryData.processingState,
+          durationSeconds: summaryData.durationSeconds,
+          maxParticipants: summaryData.maxParticipants,
+          uniqueParticipants: summaryData.uniqueParticipants,
+          endReason: summaryData.endReason,
+          tags: summaryData.tags,
+        },
+      };
+    } catch (error) {
+      const err = error as { code?: number; message?: string };
+      // 404 or similar means insights not yet available
+      if (err.code === 20404) {
+        return {
+          passed: true,
+          message: 'Conference Insights not yet available (may need ~2 min after conference end)',
+        };
+      }
+      return {
+        passed: true,
+        message: `Conference Insights not available: ${err.message || String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * Checks Conference Insights for all participants.
+   * NOTE: Data not available immediately after conference end.
+   */
+  private async checkConferenceParticipantInsights(conferenceSid: string): Promise<CheckResult> {
+    try {
+      const participants = await this.client.insights.v1
+        .conferences(conferenceSid)
+        .conferenceParticipants.list({ limit: 50 });
+
+      if (participants.length === 0) {
+        return {
+          passed: true,
+          message: 'No participant insights available yet',
+        };
+      }
+
+      // Check for participants with issues
+      const participantsWithIssues = participants.filter((p) => {
+        const pData = p as unknown as {
+          callStatus?: string;
+          properties?: { quality_issues?: string[] };
+        };
+        return pData.callStatus === 'failed' ||
+          (pData.properties?.quality_issues && pData.properties.quality_issues.length > 0);
+      });
+
+      const processingStates = participants.map((p) => {
+        const pData = p as unknown as { processingState?: string };
+        return pData.processingState;
+      });
+      const allComplete = processingStates.every((s) => s === 'complete');
+      const processingNote = allComplete ? '' : ' (some data still processing)';
+
+      if (participantsWithIssues.length > 0) {
+        return {
+          passed: false,
+          message: `${participantsWithIssues.length}/${participants.length} participants had issues${processingNote}`,
+          data: {
+            totalParticipants: participants.length,
+            participantsWithIssues: participantsWithIssues.length,
+            processingStates,
+          },
+        };
+      }
+
+      return {
+        passed: true,
+        message: `${participants.length} participants, no issues detected${processingNote}`,
+        data: {
+          totalParticipants: participants.length,
+          processingStates,
+        },
+      };
+    } catch (error) {
+      const err = error as { code?: number; message?: string };
+      if (err.code === 20404) {
+        return {
+          passed: true,
+          message: 'Conference participant insights not yet available',
+        };
+      }
+      return {
+        passed: true,
+        message: `Conference participant insights not available: ${err.message || String(error)}`,
       };
     }
   }

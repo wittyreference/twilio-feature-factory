@@ -75,22 +75,41 @@ For each operation, the validator runs multiple checks:
 | resourceStatus | `taskrouter.v1.workspaces(ws).tasks(tid).fetch()` | Task status check |
 | debuggerAlerts | `monitor.alerts.list()` | No alerts related to workspace |
 
+### Conferences
+
+| Check | Source | What It Validates |
+|-------|--------|-------------------|
+| resourceStatus | `conferences(sid).fetch()` | Conference status (init/in-progress/completed) |
+| debuggerAlerts | `monitor.alerts.list()` | No alerts related to this conference SID |
+| conferenceInsights | `insights.v1.conferences(sid).fetch()` | Conference Insights summary data |
+| conferenceParticipantInsights | `insights.v1.conferences(sid).conferenceParticipants.list()` | Participant-level insights data |
+| functionLogs | Serverless API | Function logs related to conference (if configured) |
+
+**⚠️ Conference Insights Timing:**
+- Summaries are NOT available immediately after conference end
+- Partial data: ~2 minutes after conference end (no SLA)
+- Final data: Locked and immutable 30 minutes after end
+- The validator gracefully handles 404 responses when data isn't ready yet
+- Check `processingState` field in response for data completeness
+
 ## ValidationResult Structure
 
 ```typescript
 interface ValidationResult {
   success: boolean;          // Overall pass/fail
   resourceSid: string;       // SID being validated
-  resourceType: string;      // 'message' | 'call' | 'verification' | 'task'
+  resourceType: string;      // 'message' | 'call' | 'verification' | 'task' | 'conference'
   primaryStatus: string;     // Current status from API
   checks: {
     resourceStatus: CheckResult;
     debuggerAlerts: CheckResult;
-    callEvents?: CheckResult;      // Calls only
-    voiceInsights?: CheckResult;   // Calls only
-    syncCallbacks?: CheckResult;   // If Sync configured
-    functionLogs?: CheckResult;    // If Serverless configured
-    studioLogs?: CheckResult;      // If Studio configured
+    callEvents?: CheckResult;                    // Calls only
+    voiceInsights?: CheckResult;                 // Calls only
+    conferenceInsights?: CheckResult;            // Conferences only
+    conferenceParticipantInsights?: CheckResult; // Conferences only
+    syncCallbacks?: CheckResult;                 // If Sync configured
+    functionLogs?: CheckResult;                  // If Serverless configured
+    studioLogs?: CheckResult;                    // If Studio configured
   };
   errors: string[];          // Hard failures
   warnings: string[];        // Soft issues

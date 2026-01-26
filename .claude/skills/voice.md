@@ -94,14 +94,38 @@ ConversationRelay provides direct LLM integration over WebSocket. Dialogflow is 
 
 ### Recording Method Selection
 
-| Scenario | Method |
-|----------|--------|
-| Outbound API call | `Record` parameter in Calls API |
-| Incoming call, record immediately | `<Record>` verb before other TwiML |
-| `<Dial>` call leg | `record` attribute on `<Dial>` |
-| Conference call | `record` attribute on `<Conference>` or Participants API |
-| Per-participant in conference | `record` parameter in Participants API |
-| Elastic SIP Trunking | Configure at trunk level |
+**⚠️ CRITICAL DISTINCTION:** `<Record>` verb is NOT for recording calls - it's voicemail-style recording of caller input.
+
+**Two Categories of Recording:**
+
+**1. Voicemail-Style Recording (`<Record>` verb)**
+- Records caller's speech AFTER a prompt plays
+- Stops when caller stops talking (or hits limit)
+- Returns recording URL in callback
+- Use for: voicemail, leaving messages, capturing spoken responses
+```xml
+<Response>
+  <Say>Please leave a message after the beep.</Say>
+  <Record maxLength="60" action="/handle-recording" />
+</Response>
+```
+
+**2. Call Recording (records the entire call/leg)**
+
+| Scenario | Method | When to Use |
+|----------|--------|-------------|
+| Outbound call at creation | `Record` param in Calls API | Know you want to record when placing call |
+| Mid-call via TwiML | `<Start><Record>` verb | Start recording during call flow |
+| Mid-call via API | Recordings API (`start_call_recording`) | Start/pause/resume/stop programmatically |
+| `<Dial>` leg | `record` attribute on `<Dial>` | Record the dialed party leg |
+| Conference | `record` attribute on `<Conference>` | Record entire conference mix |
+| Conference per-participant | `record` param in Participants API | Record specific participant |
+| Elastic SIP Trunking | Trunk-level config | Record all trunk traffic |
+
+**Recording Control (API-started recordings only):**
+- `start_call_recording` - Start recording active call
+- `update_call_recording` - Pause (skip/silence), resume, or stop
+- Recordings started via TwiML cannot be paused/resumed via API
 
 ### TTS Voice Tier Selection
 
@@ -503,10 +527,12 @@ Context for what customers are asking for today:
 
 - [functions/voice/CLAUDE.md](/functions/voice/CLAUDE.md) - TwiML verb reference
 - [functions/conversation-relay/CLAUDE.md](/functions/conversation-relay/CLAUDE.md) - Real-time Voice AI
-- [Voice MCP Tools](/agents/mcp-servers/twilio/src/tools/voice.ts) - 22 tools including:
+- [Voice MCP Tools](/agents/mcp-servers/twilio/src/tools/voice.ts) - 29 tools including:
   - Call management: `get_call_logs`, `make_call`, `get_call`, `update_call`
-  - Conferences: `list_conferences`, `get_conference`, `update_conference`, `list_conference_participants`, `get_conference_participant`, `update_conference_participant`, `add_participant_to_conference`
-  - Recordings: `get_recording`, `list_call_recordings`, `list_conference_recordings`
+  - Recordings (account-level): `get_recording`, `list_recordings`, `delete_recording`
+  - Recordings (call-level): `list_call_recordings`, `start_call_recording`, `update_call_recording`, `delete_call_recording`
+  - Conferences: `list_conferences`, `get_conference`, `update_conference`, `list_conference_participants`, `get_conference_participant`, `update_conference_participant`, `add_participant_to_conference`, `list_conference_recordings`
+  - Media Streams: `start_call_stream`, `stop_call_stream`
   - Voice Insights: `get_call_summary`, `list_call_events`, `list_call_metrics`
   - Conference Insights: `get_conference_summary`, `list_conference_participant_summaries`, `get_conference_participant_summary`
   - Transcriptions: `list_recording_transcriptions`, `get_transcription`

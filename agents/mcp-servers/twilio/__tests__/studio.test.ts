@@ -217,5 +217,56 @@ describe('studioTools', () => {
       },
       15000
     );
+
+    itWithCredentials(
+      'get_flow should return flow details when flow exists',
+      async () => {
+        const listTool = tools.find(t => t.name === 'list_studio_flows')!;
+        const getTool = tools.find(t => t.name === 'get_flow')!;
+
+        // First list flows
+        const listResult = await listTool.handler({ limit: 1 });
+        const listResponse = JSON.parse(listResult.content[0].text);
+
+        if (listResponse.count > 0) {
+          const flowSid = listResponse.flows[0].sid;
+
+          // Then get the specific flow
+          const getResult = await getTool.handler({ flowSid });
+          const getResponse = JSON.parse(getResult.content[0].text);
+
+          expect(getResponse.success).toBe(true);
+          expect(getResponse.sid).toBe(flowSid);
+          expect(getResponse.friendlyName).toBeDefined();
+          expect(getResponse.status).toBeDefined();
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
+      'list_executions should return executions for a flow',
+      async () => {
+        const listFlowsTool = tools.find(t => t.name === 'list_studio_flows')!;
+        const listExecTool = tools.find(t => t.name === 'list_executions')!;
+
+        // First list flows
+        const flowsResult = await listFlowsTool.handler({ limit: 1 });
+        const flowsResponse = JSON.parse(flowsResult.content[0].text);
+
+        if (flowsResponse.count > 0) {
+          const flowSid = flowsResponse.flows[0].sid;
+
+          // Then list executions for that flow
+          const execResult = await listExecTool.handler({ flowSid, limit: 5 });
+          const execResponse = JSON.parse(execResult.content[0].text);
+
+          expect(execResponse.success).toBe(true);
+          expect(execResponse.count).toBeGreaterThanOrEqual(0);
+          expect(Array.isArray(execResponse.executions)).toBe(true);
+        }
+      },
+      20000
+    );
   });
 });

@@ -167,5 +167,74 @@ describe('trunkingTools', () => {
       },
       15000
     );
+
+    itWithCredentials(
+      'get_sip_trunk should return trunk details when trunks exist',
+      async () => {
+        const listTool = tools.find(t => t.name === 'list_sip_trunks')!;
+        const getTool = tools.find(t => t.name === 'get_sip_trunk')!;
+
+        const listResult = await listTool.handler({ limit: 1 });
+        const listResponse = JSON.parse(listResult.content[0].text);
+
+        if (listResponse.count > 0) {
+          const trunkSid = listResponse.trunks[0].sid;
+
+          const getResult = await getTool.handler({ trunkSid });
+          const getResponse = JSON.parse(getResult.content[0].text);
+
+          expect(getResponse.success).toBe(true);
+          expect(getResponse.sid).toBe(trunkSid);
+          expect(getResponse.friendlyName).toBeDefined();
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
+      'list_origination_urls should return origination URLs for a trunk',
+      async () => {
+        const listTrunksTool = tools.find(t => t.name === 'list_sip_trunks')!;
+        const listUrlsTool = tools.find(t => t.name === 'list_origination_urls')!;
+
+        const trunksResult = await listTrunksTool.handler({ limit: 1 });
+        const trunksResponse = JSON.parse(trunksResult.content[0].text);
+
+        if (trunksResponse.count > 0) {
+          const trunkSid = trunksResponse.trunks[0].sid;
+
+          const urlsResult = await listUrlsTool.handler({ trunkSid, limit: 10 });
+          const urlsResponse = JSON.parse(urlsResult.content[0].text);
+
+          expect(urlsResponse.success).toBe(true);
+          expect(urlsResponse.count).toBeGreaterThanOrEqual(0);
+          expect(Array.isArray(urlsResponse.originationUrls)).toBe(true);
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
+      'list_trunk_phone_numbers should return phone numbers for a trunk',
+      async () => {
+        const listTrunksTool = tools.find(t => t.name === 'list_sip_trunks')!;
+        const listNumbersTool = tools.find(t => t.name === 'list_trunk_phone_numbers')!;
+
+        const trunksResult = await listTrunksTool.handler({ limit: 1 });
+        const trunksResponse = JSON.parse(trunksResult.content[0].text);
+
+        if (trunksResponse.count > 0) {
+          const trunkSid = trunksResponse.trunks[0].sid;
+
+          const numbersResult = await listNumbersTool.handler({ trunkSid, limit: 10 });
+          const numbersResponse = JSON.parse(numbersResult.content[0].text);
+
+          expect(numbersResponse.success).toBe(true);
+          expect(numbersResponse.count).toBeGreaterThanOrEqual(0);
+          expect(Array.isArray(numbersResponse.phoneNumbers)).toBe(true);
+        }
+      },
+      20000
+    );
   });
 });

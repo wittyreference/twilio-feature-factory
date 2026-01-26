@@ -170,5 +170,52 @@ describe('videoTools', () => {
       },
       15000
     );
+
+    itWithCredentials(
+      'get_room should return room details when rooms exist',
+      async () => {
+        const listTool = tools.find(t => t.name === 'list_video_rooms')!;
+        const getTool = tools.find(t => t.name === 'get_room')!;
+
+        const listResult = await listTool.handler({ limit: 1 });
+        const listResponse = JSON.parse(listResult.content[0].text);
+
+        if (listResponse.count > 0) {
+          const roomSid = listResponse.rooms[0].sid;
+
+          const getResult = await getTool.handler({ roomSid });
+          const getResponse = JSON.parse(getResult.content[0].text);
+
+          expect(getResponse.success).toBe(true);
+          expect(getResponse.sid).toBe(roomSid);
+          expect(getResponse.uniqueName).toBeDefined();
+          expect(getResponse.status).toBeDefined();
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
+      'list_room_participants should return participants for a room',
+      async () => {
+        const listRoomsTool = tools.find(t => t.name === 'list_video_rooms')!;
+        const listParticipantsTool = tools.find(t => t.name === 'list_room_participants')!;
+
+        const roomsResult = await listRoomsTool.handler({ limit: 1 });
+        const roomsResponse = JSON.parse(roomsResult.content[0].text);
+
+        if (roomsResponse.count > 0) {
+          const roomSid = roomsResponse.rooms[0].sid;
+
+          const participantsResult = await listParticipantsTool.handler({ roomSid, limit: 10 });
+          const participantsResponse = JSON.parse(participantsResult.content[0].text);
+
+          expect(participantsResponse.success).toBe(true);
+          expect(participantsResponse.count).toBeGreaterThanOrEqual(0);
+          expect(Array.isArray(participantsResponse.participants)).toBe(true);
+        }
+      },
+      20000
+    );
   });
 });

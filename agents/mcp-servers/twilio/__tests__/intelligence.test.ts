@@ -157,6 +157,29 @@ describe('intelligenceTools', () => {
     );
 
     itWithCredentials(
+      'get_intelligence_service should return service details when services exist',
+      async () => {
+        const listTool = tools.find(t => t.name === 'list_intelligence_services')!;
+        const getTool = tools.find(t => t.name === 'get_intelligence_service')!;
+
+        const listResult = await listTool.handler({ limit: 1 });
+        const listResponse = JSON.parse(listResult.content[0].text);
+
+        if (listResponse.count > 0) {
+          const serviceSid = listResponse.services[0].sid;
+
+          const getResult = await getTool.handler({ serviceSid });
+          const getResponse = JSON.parse(getResult.content[0].text);
+
+          expect(getResponse.success).toBe(true);
+          expect(getResponse.sid).toBe(serviceSid);
+          expect(getResponse.friendlyName).toBeDefined();
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
       'list_transcripts should return transcripts',
       async () => {
         const tool = tools.find(t => t.name === 'list_transcripts')!;
@@ -170,6 +193,29 @@ describe('intelligenceTools', () => {
         expect(Array.isArray(response.transcripts)).toBe(true);
       },
       15000
+    );
+
+    itWithCredentials(
+      'get_transcript should return transcript details when transcripts exist',
+      async () => {
+        const listTool = tools.find(t => t.name === 'list_transcripts')!;
+        const getTool = tools.find(t => t.name === 'get_transcript')!;
+
+        const listResult = await listTool.handler({ limit: 1 });
+        const listResponse = JSON.parse(listResult.content[0].text);
+
+        if (listResponse.count > 0) {
+          const transcriptSid = listResponse.transcripts[0].sid;
+
+          const getResult = await getTool.handler({ transcriptSid });
+          const getResponse = JSON.parse(getResult.content[0].text);
+
+          expect(getResponse.success).toBe(true);
+          expect(getResponse.sid).toBe(transcriptSid);
+          expect(getResponse.status).toBeDefined();
+        }
+      },
+      20000
     );
   });
 });

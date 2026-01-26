@@ -158,5 +158,53 @@ describe('pricingTools', () => {
       },
       15000
     );
+
+    itWithCredentials(
+      'list_messaging_pricing_countries should return countries',
+      async () => {
+        const tool = tools.find(t => t.name === 'list_messaging_pricing_countries')!;
+
+        const result = await tool.handler({ limit: 10 });
+
+        expect(result.content).toHaveLength(1);
+        const response = JSON.parse(result.content[0].text);
+        expect(response.success).toBe(true);
+        expect(response.count).toBeGreaterThan(0);
+        expect(Array.isArray(response.countries)).toBe(true);
+      },
+      15000
+    );
+
+    itWithCredentials(
+      'get_messaging_pricing_country should return US pricing',
+      async () => {
+        const tool = tools.find(t => t.name === 'get_messaging_pricing_country')!;
+
+        const result = await tool.handler({ isoCountry: 'US' });
+
+        expect(result.content).toHaveLength(1);
+        const response = JSON.parse(result.content[0].text);
+        expect(response.success).toBe(true);
+        expect(response.country).toBe('United States');
+        expect(response.isoCountry).toBe('US');
+      },
+      15000
+    );
+
+    itWithCredentials(
+      'list_phone_number_pricing_countries should return countries',
+      async () => {
+        const tool = tools.find(t => t.name === 'list_phone_number_pricing_countries')!;
+
+        const result = await tool.handler({ limit: 10 });
+
+        expect(result.content).toHaveLength(1);
+        const response = JSON.parse(result.content[0].text);
+        expect(response.success).toBe(true);
+        expect(response.count).toBeGreaterThan(0);
+        expect(Array.isArray(response.countries)).toBe(true);
+      },
+      15000
+    );
   });
 });

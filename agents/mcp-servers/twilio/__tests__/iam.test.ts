@@ -139,5 +139,44 @@ describe('iamTools', () => {
       },
       15000
     );
+
+    itWithCredentials(
+      'get_api_key should return key details when keys exist',
+      async () => {
+        const listTool = tools.find(t => t.name === 'list_api_keys')!;
+        const getTool = tools.find(t => t.name === 'get_api_key')!;
+
+        const listResult = await listTool.handler({ limit: 1 });
+        const listResponse = JSON.parse(listResult.content[0].text);
+
+        if (listResponse.count > 0) {
+          const keySid = listResponse.apiKeys[0].sid;
+
+          const getResult = await getTool.handler({ keySid });
+          const getResponse = JSON.parse(getResult.content[0].text);
+
+          expect(getResponse.success).toBe(true);
+          expect(getResponse.sid).toBe(keySid);
+          expect(getResponse.friendlyName).toBeDefined();
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
+      'list_signing_keys should return signing keys list',
+      async () => {
+        const tool = tools.find(t => t.name === 'list_signing_keys')!;
+
+        const result = await tool.handler({ limit: 5 });
+
+        expect(result.content).toHaveLength(1);
+        const response = JSON.parse(result.content[0].text);
+        expect(response.success).toBe(true);
+        expect(response.count).toBeGreaterThanOrEqual(0);
+        expect(Array.isArray(response.signingKeys)).toBe(true);
+      },
+      15000
+    );
   });
 });

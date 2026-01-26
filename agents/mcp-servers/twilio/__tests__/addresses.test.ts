@@ -194,5 +194,52 @@ describe('addressesTools', () => {
       },
       15000
     );
+
+    itWithCredentials(
+      'get_address should return address details when addresses exist',
+      async () => {
+        const listTool = tools.find(t => t.name === 'list_addresses')!;
+        const getTool = tools.find(t => t.name === 'get_address')!;
+
+        const listResult = await listTool.handler({ limit: 1 });
+        const listResponse = JSON.parse(listResult.content[0].text);
+
+        if (listResponse.count > 0) {
+          const addressSid = listResponse.addresses[0].sid;
+
+          const getResult = await getTool.handler({ addressSid });
+          const getResponse = JSON.parse(getResult.content[0].text);
+
+          expect(getResponse.success).toBe(true);
+          expect(getResponse.sid).toBe(addressSid);
+          expect(getResponse.customerName).toBeDefined();
+          expect(getResponse.isoCountry).toBeDefined();
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
+      'list_address_phone_numbers should return phone numbers for an address',
+      async () => {
+        const listAddressesTool = tools.find(t => t.name === 'list_addresses')!;
+        const listNumbersTool = tools.find(t => t.name === 'list_address_phone_numbers')!;
+
+        const addressesResult = await listAddressesTool.handler({ limit: 1 });
+        const addressesResponse = JSON.parse(addressesResult.content[0].text);
+
+        if (addressesResponse.count > 0) {
+          const addressSid = addressesResponse.addresses[0].sid;
+
+          const numbersResult = await listNumbersTool.handler({ addressSid, limit: 10 });
+          const numbersResponse = JSON.parse(numbersResult.content[0].text);
+
+          expect(numbersResponse.success).toBe(true);
+          expect(numbersResponse.count).toBeGreaterThanOrEqual(0);
+          expect(Array.isArray(numbersResponse.phoneNumbers)).toBe(true);
+        }
+      },
+      20000
+    );
   });
 });

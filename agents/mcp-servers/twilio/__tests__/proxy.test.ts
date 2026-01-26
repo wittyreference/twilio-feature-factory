@@ -198,23 +198,66 @@ describe('proxyTools', () => {
   describe('API integration', () => {
     const itWithCredentials = hasRealCredentials ? it : it.skip;
 
-    // Note: Proxy services may incur costs, so we only test list operations
     itWithCredentials(
-      'list_proxy_sessions should handle service not found gracefully',
+      'list_proxy_services should return services list',
       async () => {
-        const tool = tools.find(t => t.name === 'list_proxy_sessions')!;
+        const tool = tools.find(t => t.name === 'list_proxy_services')!;
 
-        try {
-          await tool.handler({
-            serviceSid: 'KS00000000000000000000000000000000',
-            limit: 5,
-          });
-        } catch (error) {
-          // Expected - service doesn't exist
-          expect((error as Error).message).toMatch(/not found|20404/i);
-        }
+        const result = await tool.handler({ limit: 5 });
+
+        expect(result.content).toHaveLength(1);
+        const response = JSON.parse(result.content[0].text);
+        expect(response.success).toBe(true);
+        expect(response.count).toBeGreaterThanOrEqual(0);
+        expect(Array.isArray(response.services)).toBe(true);
       },
       15000
+    );
+
+    itWithCredentials(
+      'get_proxy_service should return service details when services exist',
+      async () => {
+        const listTool = tools.find(t => t.name === 'list_proxy_services')!;
+        const getTool = tools.find(t => t.name === 'get_proxy_service')!;
+
+        const listResult = await listTool.handler({ limit: 1 });
+        const listResponse = JSON.parse(listResult.content[0].text);
+
+        if (listResponse.count > 0) {
+          const serviceSid = listResponse.services[0].sid;
+
+          const getResult = await getTool.handler({ serviceSid });
+          const getResponse = JSON.parse(getResult.content[0].text);
+
+          expect(getResponse.success).toBe(true);
+          expect(getResponse.sid).toBe(serviceSid);
+          expect(getResponse.uniqueName).toBeDefined();
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
+      'list_proxy_sessions should return sessions for a service',
+      async () => {
+        const listServicesTool = tools.find(t => t.name === 'list_proxy_services')!;
+        const listSessionsTool = tools.find(t => t.name === 'list_proxy_sessions')!;
+
+        const servicesResult = await listServicesTool.handler({ limit: 1 });
+        const servicesResponse = JSON.parse(servicesResult.content[0].text);
+
+        if (servicesResponse.count > 0) {
+          const serviceSid = servicesResponse.services[0].sid;
+
+          const sessionsResult = await listSessionsTool.handler({ serviceSid, limit: 5 });
+          const sessionsResponse = JSON.parse(sessionsResult.content[0].text);
+
+          expect(sessionsResponse.success).toBe(true);
+          expect(sessionsResponse.count).toBeGreaterThanOrEqual(0);
+          expect(Array.isArray(sessionsResponse.sessions)).toBe(true);
+        }
+      },
+      20000
     );
   });
 });

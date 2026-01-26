@@ -220,9 +220,72 @@ describe('messagingServicesTools', () => {
   });
 
   describe('API integration', () => {
-    const itWithCredentials = hasRealCredentials && TEST_CREDENTIALS.messagingServiceSid ? it : it.skip;
+    const itWithCredentials = hasRealCredentials ? it : it.skip;
+    const itWithMessagingService = hasRealCredentials && TEST_CREDENTIALS.messagingServiceSid ? it : it.skip;
 
     itWithCredentials(
+      'list_messaging_services should return services list',
+      async () => {
+        const tool = tools.find(t => t.name === 'list_messaging_services')!;
+
+        const result = await tool.handler({ limit: 5 });
+
+        expect(result.content).toHaveLength(1);
+        const response = JSON.parse(result.content[0].text);
+        expect(response.success).toBe(true);
+        expect(response.count).toBeGreaterThanOrEqual(0);
+        expect(Array.isArray(response.services)).toBe(true);
+      },
+      15000
+    );
+
+    itWithCredentials(
+      'get_messaging_service should return service details when service exists',
+      async () => {
+        const listTool = tools.find(t => t.name === 'list_messaging_services')!;
+        const getTool = tools.find(t => t.name === 'get_messaging_service')!;
+
+        const listResult = await listTool.handler({ limit: 1 });
+        const listResponse = JSON.parse(listResult.content[0].text);
+
+        if (listResponse.count > 0) {
+          const serviceSid = listResponse.services[0].sid;
+
+          const getResult = await getTool.handler({ serviceSid });
+          const getResponse = JSON.parse(getResult.content[0].text);
+
+          expect(getResponse.success).toBe(true);
+          expect(getResponse.sid).toBe(serviceSid);
+          expect(getResponse.friendlyName).toBeDefined();
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
+      'list_phone_numbers_in_service should return numbers for a service',
+      async () => {
+        const listServicesTool = tools.find(t => t.name === 'list_messaging_services')!;
+        const listNumbersTool = tools.find(t => t.name === 'list_phone_numbers_in_service')!;
+
+        const servicesResult = await listServicesTool.handler({ limit: 1 });
+        const servicesResponse = JSON.parse(servicesResult.content[0].text);
+
+        if (servicesResponse.count > 0) {
+          const serviceSid = servicesResponse.services[0].sid;
+
+          const numbersResult = await listNumbersTool.handler({ serviceSid, limit: 10 });
+          const numbersResponse = JSON.parse(numbersResult.content[0].text);
+
+          expect(numbersResponse.success).toBe(true);
+          expect(numbersResponse.count).toBeGreaterThanOrEqual(0);
+          expect(Array.isArray(numbersResponse.phoneNumbers)).toBe(true);
+        }
+      },
+      20000
+    );
+
+    itWithMessagingService(
       'get_a2p_status should return A2P registration details',
       async () => {
         const tool = tools.find(t => t.name === 'get_a2p_status')!;

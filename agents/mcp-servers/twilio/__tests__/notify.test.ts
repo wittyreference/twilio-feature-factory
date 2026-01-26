@@ -204,5 +204,51 @@ describe('notifyTools', () => {
       },
       15000
     );
+
+    itWithCredentials(
+      'get_notify_service should return service details when services exist',
+      async () => {
+        const listTool = tools.find(t => t.name === 'list_notify_services')!;
+        const getTool = tools.find(t => t.name === 'get_notify_service')!;
+
+        const listResult = await listTool.handler({ limit: 1 });
+        const listResponse = JSON.parse(listResult.content[0].text);
+
+        if (listResponse.count > 0) {
+          const serviceSid = listResponse.services[0].sid;
+
+          const getResult = await getTool.handler({ serviceSid });
+          const getResponse = JSON.parse(getResult.content[0].text);
+
+          expect(getResponse.success).toBe(true);
+          expect(getResponse.sid).toBe(serviceSid);
+          expect(getResponse.friendlyName).toBeDefined();
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
+      'list_notify_bindings should return bindings for a service',
+      async () => {
+        const listServicesTool = tools.find(t => t.name === 'list_notify_services')!;
+        const listBindingsTool = tools.find(t => t.name === 'list_notify_bindings')!;
+
+        const servicesResult = await listServicesTool.handler({ limit: 1 });
+        const servicesResponse = JSON.parse(servicesResult.content[0].text);
+
+        if (servicesResponse.count > 0) {
+          const serviceSid = servicesResponse.services[0].sid;
+
+          const bindingsResult = await listBindingsTool.handler({ serviceSid, limit: 10 });
+          const bindingsResponse = JSON.parse(bindingsResult.content[0].text);
+
+          expect(bindingsResponse.success).toBe(true);
+          expect(bindingsResponse.count).toBeGreaterThanOrEqual(0);
+          expect(Array.isArray(bindingsResponse.bindings)).toBe(true);
+        }
+      },
+      20000
+    );
   });
 });

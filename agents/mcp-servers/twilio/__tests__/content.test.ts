@@ -187,5 +187,28 @@ describe('contentTools', () => {
       },
       15000
     );
+
+    itWithCredentials(
+      'get_content_template should return template details when templates exist',
+      async () => {
+        const listTool = tools.find(t => t.name === 'list_content_templates')!;
+        const getTool = tools.find(t => t.name === 'get_content_template')!;
+
+        const listResult = await listTool.handler({ limit: 1 });
+        const listResponse = JSON.parse(listResult.content[0].text);
+
+        if (listResponse.count > 0) {
+          const contentSid = listResponse.templates[0].sid;
+
+          const getResult = await getTool.handler({ contentSid });
+          const getResponse = JSON.parse(getResult.content[0].text);
+
+          expect(getResponse.success).toBe(true);
+          expect(getResponse.sid).toBe(contentSid);
+          expect(getResponse.friendlyName).toBeDefined();
+        }
+      },
+      20000
+    );
   });
 });

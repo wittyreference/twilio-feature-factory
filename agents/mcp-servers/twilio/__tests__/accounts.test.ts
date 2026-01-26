@@ -187,5 +187,53 @@ describe('accountsTools', () => {
       },
       15000
     );
+
+    itWithCredentials(
+      'list_accounts should return accounts list',
+      async () => {
+        const tool = tools.find(t => t.name === 'list_accounts')!;
+
+        const result = await tool.handler({ limit: 5 });
+
+        expect(result.content).toHaveLength(1);
+        const response = JSON.parse(result.content[0].text);
+        expect(response.success).toBe(true);
+        expect(response.count).toBeGreaterThanOrEqual(0);
+        expect(Array.isArray(response.accounts)).toBe(true);
+      },
+      15000
+    );
+
+    itWithCredentials(
+      'list_usage_records should return usage data',
+      async () => {
+        const tool = tools.find(t => t.name === 'list_usage_records')!;
+
+        const result = await tool.handler({ limit: 10 });
+
+        expect(result.content).toHaveLength(1);
+        const response = JSON.parse(result.content[0].text);
+        expect(response.success).toBe(true);
+        expect(response.count).toBeGreaterThanOrEqual(0);
+        expect(Array.isArray(response.usageRecords)).toBe(true);
+      },
+      15000
+    );
+
+    itWithCredentials(
+      'list_usage_triggers should return triggers list',
+      async () => {
+        const tool = tools.find(t => t.name === 'list_usage_triggers')!;
+
+        const result = await tool.handler({ limit: 5 });
+
+        expect(result.content).toHaveLength(1);
+        const response = JSON.parse(result.content[0].text);
+        expect(response.success).toBe(true);
+        expect(response.count).toBeGreaterThanOrEqual(0);
+        expect(Array.isArray(response.usageTriggers)).toBe(true);
+      },
+      15000
+    );
   });
 });

@@ -262,5 +262,97 @@ describe('serverlessTools', () => {
       },
       15000
     );
+
+    itWithCredentials(
+      'get_service should return service details when service exists',
+      async () => {
+        const listTool = tools.find(t => t.name === 'list_services')!;
+        const getTool = tools.find(t => t.name === 'get_service')!;
+
+        const listResult = await listTool.handler({ limit: 1 });
+        const listResponse = JSON.parse(listResult.content[0].text);
+
+        if (listResponse.count > 0) {
+          const serviceSid = listResponse.services[0].sid;
+
+          const getResult = await getTool.handler({ serviceSid });
+          const getResponse = JSON.parse(getResult.content[0].text);
+
+          expect(getResponse.success).toBe(true);
+          expect(getResponse.sid).toBe(serviceSid);
+          expect(getResponse.friendlyName).toBeDefined();
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
+      'list_functions should return functions for a service',
+      async () => {
+        const listServicesTool = tools.find(t => t.name === 'list_services')!;
+        const listFunctionsTool = tools.find(t => t.name === 'list_functions')!;
+
+        const servicesResult = await listServicesTool.handler({ limit: 1 });
+        const servicesResponse = JSON.parse(servicesResult.content[0].text);
+
+        if (servicesResponse.count > 0) {
+          const serviceSid = servicesResponse.services[0].sid;
+
+          const functionsResult = await listFunctionsTool.handler({ serviceSid, limit: 10 });
+          const functionsResponse = JSON.parse(functionsResult.content[0].text);
+
+          expect(functionsResponse.success).toBe(true);
+          expect(functionsResponse.count).toBeGreaterThanOrEqual(0);
+          expect(Array.isArray(functionsResponse.functions)).toBe(true);
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
+      'list_environments should return environments for a service',
+      async () => {
+        const listServicesTool = tools.find(t => t.name === 'list_services')!;
+        const listEnvsTool = tools.find(t => t.name === 'list_environments')!;
+
+        const servicesResult = await listServicesTool.handler({ limit: 1 });
+        const servicesResponse = JSON.parse(servicesResult.content[0].text);
+
+        if (servicesResponse.count > 0) {
+          const serviceSid = servicesResponse.services[0].sid;
+
+          const envsResult = await listEnvsTool.handler({ serviceSid });
+          const envsResponse = JSON.parse(envsResult.content[0].text);
+
+          expect(envsResponse.success).toBe(true);
+          expect(envsResponse.count).toBeGreaterThanOrEqual(0);
+          expect(Array.isArray(envsResponse.environments)).toBe(true);
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
+      'list_builds should return builds for a service',
+      async () => {
+        const listServicesTool = tools.find(t => t.name === 'list_services')!;
+        const listBuildsTool = tools.find(t => t.name === 'list_builds')!;
+
+        const servicesResult = await listServicesTool.handler({ limit: 1 });
+        const servicesResponse = JSON.parse(servicesResult.content[0].text);
+
+        if (servicesResponse.count > 0) {
+          const serviceSid = servicesResponse.services[0].sid;
+
+          const buildsResult = await listBuildsTool.handler({ serviceSid, limit: 5 });
+          const buildsResponse = JSON.parse(buildsResult.content[0].text);
+
+          expect(buildsResponse.success).toBe(true);
+          expect(buildsResponse.count).toBeGreaterThanOrEqual(0);
+          expect(Array.isArray(buildsResponse.builds)).toBe(true);
+        }
+      },
+      20000
+    );
   });
 });

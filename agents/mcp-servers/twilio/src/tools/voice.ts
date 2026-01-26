@@ -1,5 +1,5 @@
 // ABOUTME: Twilio voice tools for call operations.
-// ABOUTME: Provides call management, conferences, recordings, insights, and transcriptions.
+// ABOUTME: Provides call management, conferences, recordings, media streams, insights, and transcriptions.
 
 import { z } from 'zod';
 import type { TwilioContext } from '../index.js';
@@ -898,6 +898,120 @@ export function voiceTools(context: TwilioContext) {
   );
 
   // ============================================
+  // Media Streams Tools
+  // ============================================
+  // IMPORTANT: There are TWO types of media streams in Twilio:
+  //
+  // 1. <Start><Stream> (Unidirectional) - API equivalent below
+  //    - Your WebSocket RECEIVES audio only
+  //    - Tracks: inbound_track, outbound_track, or both_tracks
+  //    - Up to 4 streams per call
+  //    - TwiML continues executing after stream starts
+  //    - Use for: real-time transcription, monitoring, analytics
+  //
+  // 2. <Connect><Stream> (Bidirectional) - TwiML only, no API equivalent
+  //    - Your WebSocket RECEIVES AND SENDS audio
+  //    - Only inbound track available
+  //    - Only 1 stream per call
+  //    - BLOCKS TwiML execution until WebSocket closes
+  //    - Use for: AI voice agents, interactive dialogue
+  //
+  // The tools below manage UNIDIRECTIONAL streams via the API.
+  // For bidirectional streams, use TwiML with <Connect><Stream>.
+
+  const startCallStream = createTool(
+    'start_call_stream',
+    'Start a unidirectional media stream on an active call. ' +
+      'Forks audio to your WebSocket for real-time transcription, monitoring, or analytics. ' +
+      'This is the API equivalent of <Start><Stream> in TwiML. ' +
+      'For bidirectional streams (AI agents), use TwiML with <Connect><Stream> instead. ' +
+      'Up to 4 streams per call. Requires secure WebSocket (wss://, port 443). ' +
+      'Audio format: mulaw 8000Hz, base64-encoded.',
+    z.object({
+      callSid: z.string().startsWith('CA').describe('Call SID (starts with CA)'),
+      url: z.string().url().describe('WebSocket URL to stream audio to (must be wss://)'),
+      name: z.string().optional().describe('Optional name for the stream (for stopping by name later)'),
+      track: z.enum(['inbound_track', 'outbound_track', 'both_tracks']).optional().default('inbound_track')
+        .describe('Which audio track(s) to stream. inbound=caller, outbound=callee'),
+      statusCallback: z.string().url().optional().describe('URL for stream status callbacks'),
+      statusCallbackMethod: z.enum(['GET', 'POST']).optional().default('POST').describe('HTTP method for status callbacks'),
+      parameters: z.array(z.object({
+        name: z.string().describe('Parameter name'),
+        value: z.string().describe('Parameter value'),
+      })).max(10).optional().describe('Custom parameters to pass to WebSocket (max 10)'),
+    }),
+    async ({ callSid, url, name, track, statusCallback, statusCallbackMethod, parameters }) => {
+      const createParams: {
+        url: string;
+        name?: string;
+        track?: 'inbound_track' | 'outbound_track' | 'both_tracks';
+        statusCallback?: string;
+        statusCallbackMethod?: string;
+        [key: string]: string | undefined;
+      } = {
+        url,
+      };
+
+      if (name) createParams.name = name;
+      if (track) createParams.track = track;
+      if (statusCallback) createParams.statusCallback = statusCallback;
+      if (statusCallbackMethod) createParams.statusCallbackMethod = statusCallbackMethod;
+
+      // Add custom parameters (API supports up to 99, we limit to 10 for simplicity)
+      if (parameters) {
+        parameters.forEach((param, index) => {
+          createParams[`parameter${index + 1}.name`] = param.name;
+          createParams[`parameter${index + 1}.value`] = param.value;
+        });
+      }
+
+      const stream = await client.calls(callSid).streams.create(createParams);
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            message: 'Media stream started',
+            sid: stream.sid,
+            callSid: stream.callSid,
+            name: stream.name,
+            status: stream.status,
+            dateUpdated: stream.dateUpdated,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const stopCallStream = createTool(
+    'stop_call_stream',
+    'Stop a media stream on a call. Use the stream SID returned from start_call_stream.',
+    z.object({
+      callSid: z.string().startsWith('CA').describe('Call SID (starts with CA)'),
+      streamSid: z.string().startsWith('MZ').describe('Stream SID (starts with MZ)'),
+    }),
+    async ({ callSid, streamSid }) => {
+      const stream = await client.calls(callSid).streams(streamSid).update({ status: 'stopped' });
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            message: 'Media stream stopped',
+            sid: stream.sid,
+            callSid: stream.callSid,
+            name: stream.name,
+            status: stream.status,
+            dateUpdated: stream.dateUpdated,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  // ============================================
   // Conference Recording Tools
   // ============================================
 
@@ -957,6 +1071,9 @@ export function voiceTools(context: TwilioContext) {
     updateConferenceParticipant,
     addParticipantToConference,
     listConferenceRecordings,
+    // Media Streams (unidirectional - for bidirectional, use TwiML <Connect><Stream>)
+    startCallStream,
+    stopCallStream,
     // Voice Insights
     getCallSummary,
     listCallEvents,

@@ -62,8 +62,8 @@ describe('voiceTools', () => {
   });
 
   describe('tool structure', () => {
-    it('should return an array of 22 tools', () => {
-      expect(tools).toHaveLength(22);
+    it('should return an array of 24 tools', () => {
+      expect(tools).toHaveLength(24);
     });
 
     // Core call tools
@@ -212,6 +212,25 @@ describe('voiceTools', () => {
       const tool = tools.find(t => t.name === 'get_conference_participant_summary');
       expect(tool).toBeDefined();
       expect(tool?.description).toContain('Conference Insights');
+      expect(typeof tool?.handler).toBe('function');
+    });
+
+    // Media Streams tools
+    // NOTE: These tools manage UNIDIRECTIONAL streams (API equivalent of <Start><Stream>).
+    // For BIDIRECTIONAL streams (AI agents), use TwiML with <Connect><Stream>.
+    it('should have start_call_stream tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'start_call_stream');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('unidirectional media stream');
+      expect(tool?.description).toContain('<Start><Stream>');
+      expect(tool?.description).toContain('<Connect><Stream>');
+      expect(typeof tool?.handler).toBe('function');
+    });
+
+    it('should have stop_call_stream tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'stop_call_stream');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('Stop a media stream');
       expect(typeof tool?.handler).toBe('function');
     });
 
@@ -707,6 +726,111 @@ describe('voiceTools', () => {
         const invalid = schema.safeParse({
           conferenceSid: 'CFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
           participantSid: 'XXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(invalid.success).toBe(false);
+      });
+    });
+
+    // Media Streams schema tests
+    describe('start_call_stream schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'start_call_stream');
+        schema = tool!.inputSchema;
+      });
+
+      it('should require call SID and WebSocket URL', () => {
+        const valid = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          url: 'wss://example.com/stream',
+        });
+        expect(valid.success).toBe(true);
+
+        const missingUrl = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(missingUrl.success).toBe(false);
+      });
+
+      it('should require call SID starting with CA', () => {
+        const invalid = schema.safeParse({
+          callSid: 'XXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          url: 'wss://example.com/stream',
+        });
+        expect(invalid.success).toBe(false);
+      });
+
+      it('should validate track enum', () => {
+        const inbound = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          url: 'wss://example.com/stream',
+          track: 'inbound_track',
+        });
+        expect(inbound.success).toBe(true);
+
+        const both = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          url: 'wss://example.com/stream',
+          track: 'both_tracks',
+        });
+        expect(both.success).toBe(true);
+
+        const invalid = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          url: 'wss://example.com/stream',
+          track: 'invalid_track',
+        });
+        expect(invalid.success).toBe(false);
+      });
+
+      it('should accept optional parameters array', () => {
+        const withParams = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          url: 'wss://example.com/stream',
+          parameters: [
+            { name: 'key1', value: 'value1' },
+            { name: 'key2', value: 'value2' },
+          ],
+        });
+        expect(withParams.success).toBe(true);
+      });
+
+      it('should limit parameters to 10', () => {
+        const tooManyParams = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          url: 'wss://example.com/stream',
+          parameters: Array(11).fill({ name: 'key', value: 'value' }),
+        });
+        expect(tooManyParams.success).toBe(false);
+      });
+    });
+
+    describe('stop_call_stream schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'stop_call_stream');
+        schema = tool!.inputSchema;
+      });
+
+      it('should require both call SID and stream SID', () => {
+        const valid = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          streamSid: 'MZxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(valid.success).toBe(true);
+
+        const missingStream = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(missingStream.success).toBe(false);
+      });
+
+      it('should require stream SID starting with MZ', () => {
+        const invalid = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          streamSid: 'XXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
         });
         expect(invalid.success).toBe(false);
       });

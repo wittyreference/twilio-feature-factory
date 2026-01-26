@@ -23,6 +23,13 @@ import { contentTools } from './tools/content.js';
 import { voiceConfigTools } from './tools/voice-config.js';
 import { regulatoryTools } from './tools/regulatory.js';
 import { mediaTools } from './tools/media.js';
+// P3 tools
+import { trunkingTools } from './tools/trunking.js';
+import { accountsTools } from './tools/accounts.js';
+import { iamTools } from './tools/iam.js';
+import { pricingTools } from './tools/pricing.js';
+import { notifyTools } from './tools/notify.js';
+import { addressesTools } from './tools/addresses.js';
 
 export interface TwilioMcpServerConfig {
   accountSid?: string;
@@ -96,6 +103,13 @@ export function createTwilioMcpServer(config: TwilioMcpServerConfig = {}) {
       ...voiceConfigTools(context),
       ...regulatoryTools(context),
       ...mediaTools(context),
+      // P3 tools
+      ...trunkingTools(context),
+      ...accountsTools(context),
+      ...iamTools(context),
+      ...pricingTools(context),
+      ...notifyTools(context),
+      ...addressesTools(context),
     ],
   };
 }
@@ -122,6 +136,13 @@ export { contentTools } from './tools/content.js';
 export { voiceConfigTools } from './tools/voice-config.js';
 export { regulatoryTools } from './tools/regulatory.js';
 export { mediaTools } from './tools/media.js';
+// P3 tool exports
+export { trunkingTools } from './tools/trunking.js';
+export { accountsTools } from './tools/accounts.js';
+export { iamTools } from './tools/iam.js';
+export { pricingTools } from './tools/pricing.js';
+export { notifyTools } from './tools/notify.js';
+export { addressesTools } from './tools/addresses.js';
 
 // Export validation utilities
 export {

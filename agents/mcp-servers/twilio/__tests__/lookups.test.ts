@@ -82,7 +82,7 @@ describe('lookupsTools', () => {
       it('should accept optional fields array', () => {
         const withFields = schema.safeParse({
           phoneNumber: '+15551234567',
-          fields: ['carrier', 'line_type_intelligence'],
+          fields: ['caller_name', 'line_type_intelligence'],
         });
         expect(withFields.success).toBe(true);
       });
@@ -90,7 +90,7 @@ describe('lookupsTools', () => {
       it('should validate fields enum values', () => {
         const validFields = schema.safeParse({
           phoneNumber: '+15551234567',
-          fields: ['carrier'],
+          fields: ['validation'],
         });
         expect(validFields.success).toBe(true);
 
@@ -165,19 +165,19 @@ describe('lookupsTools', () => {
     );
 
     itWithCredentials(
-      'lookup_phone_number with carrier field should return carrier info',
+      'lookup_phone_number with line_type_intelligence field should return line type info',
       async () => {
         const tool = tools.find(t => t.name === 'lookup_phone_number')!;
 
         const result = await tool.handler({
           phoneNumber: TEST_CREDENTIALS.toNumber,
-          fields: ['carrier'],
+          fields: ['line_type_intelligence'],
         });
 
         expect(result.content).toHaveLength(1);
         const response = JSON.parse(result.content[0].text);
         expect(response.success).toBe(true);
-        expect(response.carrier).toBeDefined();
+        expect(response.lineTypeIntelligence).toBeDefined();
       },
       15000
     );

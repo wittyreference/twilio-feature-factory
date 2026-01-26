@@ -21,10 +21,10 @@ export function lookupsTools(context: TwilioContext) {
 
   const lookupPhoneNumber = createTool(
     'lookup_phone_number',
-    'Look up information about a phone number including carrier, line type, and caller name.',
+    'Look up information about a phone number including line type, caller name, and validation.',
     z.object({
       phoneNumber: z.string().describe('Phone number to look up (E.164 format recommended)'),
-      fields: z.array(z.enum(['carrier', 'caller_name', 'line_type_intelligence']))
+      fields: z.array(z.enum(['validation', 'caller_name', 'line_type_intelligence', 'line_status']))
         .optional()
         .describe('Optional data packages to include (each has additional cost)'),
     }),
@@ -54,14 +54,14 @@ export function lookupsTools(context: TwilioContext) {
       if (lookup.callingCountryCode) {
         result.callingCountryCode = lookup.callingCountryCode;
       }
-      if (lookupData.carrier) {
-        result.carrier = lookupData.carrier;
-      }
       if (lookupData.callerName) {
         result.callerName = lookupData.callerName;
       }
       if (lookupData.lineTypeIntelligence) {
         result.lineTypeIntelligence = lookupData.lineTypeIntelligence;
+      }
+      if (lookupData.lineStatus) {
+        result.lineStatus = lookupData.lineStatus;
       }
 
       return {

@@ -729,7 +729,7 @@ Questions we haven't resolved yet:
 | 2026-01-25 | 5b | D2 | Credential safety hook implemented | commit 1185739 |
 | 2026-01-25 | 5c | - | Orchestrator unit tests (36 tests) | commit dcab566 |
 | 2026-01-25 | 5c | - | Workflow integration tests (43 tests) | commit 4134491 |
-| 2026-01-25 | 5d | D6 | P1 MCP tools complete (13 tools, 51 tests) | commit ba6d5c6 |
+| 2026-01-25 | 5d | D6 | P1 MCP tools complete (13 tools, 51 tests) | commit 888c220 |
 
 ---
 

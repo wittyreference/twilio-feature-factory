@@ -359,7 +359,7 @@ Voice MCP tools expanded from 22 to 29 tools (246 total MCP tools):
 | 2026-01-25 | 7 | Phase 4 Voice AI Builder Session 1: Directory setup, generators (twiml-handler, websocket-server, llm-integration), base templates, types.ts, 70 unit tests. |
 | 2026-01-25 | 7b | Phase 4 Voice AI Builder Session 2: voice-ai skill, use case configs (basic-assistant, customer-service, appointment-booking), architect/spec agent updates, 54 new tests. 124 total voice-ai-builder tests. |
 | 2026-01-25 | 7c | Skills audit: Updated memory-systems.md (D14, D8, D16), multi-agent-patterns.md (D4, D7), context-fundamentals.md (doc-map). Created deep-validation.md and tdd-workflow.md skills. |
-| 2026-01-26 | 7d | Voice testing complete: voice-integration.test.ts (13 tests - conference flows, call transfer patterns, media streams, Voice Insights), websocket-protocol.test.js (20 tests - ConversationRelay message schema validation). |
+| 2026-01-26 | 7d | Voice testing complete: voice-integration.test.ts (13 tests - conference flows, call transfer patterns, media streams, Voice Insights), websocket-protocol.test.js (20 tests - ConversationRelay message schema validation), E2E ConversationRelay test (live call with Claude-powered AI agent). |
 
 ---
 

@@ -63,7 +63,38 @@ Maintain a mental summary after each major action:
 
 ## Project Memory (Persistent)
 
-Information that persists across sessions via files.
+Information that persists across sessions via files and Twilio Sync.
+
+### Twilio Sync for Agent State (D8)
+
+Use Twilio Sync Documents for state that needs to persist across webhook invocations or sessions:
+
+```javascript
+// Store agent state
+const syncService = client.sync.v1.services(context.SYNC_SERVICE_SID);
+await syncService.documents.create({
+  uniqueName: `agent-state-${sessionId}`,
+  data: {
+    workflowPhase: 'dev',
+    testsWritten: ['unit/voice.test.js'],
+    decisions: ['Use Conference for warm transfer'],
+    lastUpdated: new Date().toISOString()
+  },
+  ttl: 86400  // 24hr TTL for ephemeral state
+});
+
+// Retrieve state
+const doc = await syncService.documents(`agent-state-${sessionId}`).fetch();
+const state = doc.data;
+```
+
+**When to use Sync vs files:**
+
+| Storage | Use When |
+|---------|----------|
+| Sync Documents | Webhook state, cross-function sharing, real-time updates |
+| Git/files | Code, configuration, permanent documentation |
+| In-context | Current session only, will be lost on restart |
 
 ### CLAUDE.md as Project Memory
 
@@ -209,19 +240,34 @@ logStateTransition(event.CallSid, 'menu', 'transfer', { digit: event.Digits });
 
 Track progress through development workflows.
 
-### Subagent Activity Log
+### Git as Source of Truth (D14)
 
-The template logs subagent activity to `.claude/logs/subagent-activity.log`:
+Per project design decisions, git history is the primary activity log:
+- Commits capture what changed and why
+- `todo.md` captures session progress
+- `learnings.md` captures discoveries (capture → promote → clear)
+- `DESIGN_DECISIONS.md` captures architectural rationale
+
+```bash
+# What was done recently
+git log --oneline -10
+
+# What files changed for a feature
+git log --name-only --oneline --grep="voice IVR"
+
+# Diff since last tag/checkpoint
+git diff HEAD~5 --name-only
+```
+
+### Documentation Flywheel (D16)
+
+The documentation flywheel uses file-based communication:
+- Hooks write suggestions to `.claude-dev/pending-actions.md`
+- Agent reads file before commits
+- File is cleared after actions addressed
 
 ```
-[2024-01-15 10:23:45] Subagent completed
-  Branch: feature/voice-ivr
-  Directory: /Users/.../twilio-claude-prototyping
----
-[2024-01-15 10:45:12] Subagent completed
-  Branch: feature/voice-ivr
-  Directory: /Users/.../twilio-claude-prototyping
----
+Hook runs → pending-actions.md → Agent reads → Takes action → Clears file
 ```
 
 ### Workflow State Tracking

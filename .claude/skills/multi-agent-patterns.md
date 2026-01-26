@@ -10,6 +10,45 @@ This skill describes orchestration and coordination patterns for Twilio developm
 | Peer-to-Peer | Parallel work | Debugging + fixing simultaneously |
 | Hierarchical | Complex features | Multi-channel solutions |
 | Evaluator | Quality gates | Code review with standards |
+| TDD Pipeline | Code quality | Red → Green → Refactor |
+
+## Cross-Cutting Concerns
+
+### Human Approval Gates (D4)
+
+The project operates in "Highly Supervised" autonomy mode. Human approval is required at key checkpoints:
+
+```
+architect → [APPROVAL] → spec → [APPROVAL] → test-gen → dev → qa → review → [APPROVAL] → docs
+```
+
+Approval gates pause execution until human confirms:
+- Architecture decisions are sound
+- Specifications are correct
+- Code is ready for merge
+
+### TDD Enforcement (D7)
+
+All development workflows enforce Test-Driven Development via pre-phase hooks:
+
+1. **test-gen** must create tests that **fail** initially (Red phase)
+2. **tdd-enforcement hook** runs BEFORE dev phase and verifies:
+   - Tests exist (`testsCreated > 0`)
+   - Tests are FAILING
+3. **dev** is blocked with `TDD VIOLATION` if tests pass or don't exist
+4. **dev** implements minimal code to make tests pass (Green phase)
+5. **review** validates TDD was followed
+
+```typescript
+// Pre-phase hooks in workflow definition
+{
+  agent: 'dev',
+  name: 'TDD Green Phase',
+  prePhaseHooks: ['tdd-enforcement'],  // Blocks if tests don't fail
+}
+```
+
+See `.claude/skills/tdd-workflow.md` for detailed TDD patterns.
 
 ## Orchestrator Pattern (Default)
 

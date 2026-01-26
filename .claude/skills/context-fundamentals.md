@@ -145,6 +145,19 @@ Omit:
 
 5. **Use references**: Instead of loading full files, reference them: "See `functions/voice/CLAUDE.md` for TwiML patterns"
 
+6. **Consult doc-map first**: Check `.claude/references/doc-map.md` before starting work to identify which docs to load for the current operation
+
+## Documentation Flywheel (D16)
+
+The project uses a file-based documentation flywheel:
+
+1. **Before acting**: Consult doc-map.md to identify relevant docs
+2. **During work**: Hooks track files changed
+3. **After completing**: Hooks write suggestions to `pending-actions.md`
+4. **Before commits**: Read `pending-actions.md` and address suggestions
+
+This ensures knowledge is captured and promoted to permanent documentation.
+
 ## Anti-Patterns to Avoid
 
 - Loading all function files "just in case"

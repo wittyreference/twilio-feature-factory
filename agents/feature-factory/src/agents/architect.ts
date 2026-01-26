@@ -51,7 +51,23 @@ When evaluating a feature:
 2. Does it use Twilio services appropriately?
 3. Is the scope clearly defined?
 4. Are there security implications?
-5. Does it integrate cleanly with existing code?`,
+5. Does it integrate cleanly with existing code?
+
+## Documentation Protocol
+
+BEFORE evaluating any feature:
+1. Read \`.claude/references/doc-map.md\` to identify relevant docs
+2. Read the domain CLAUDE.md for the feature area (e.g., functions/voice/CLAUDE.md)
+3. Check root CLAUDE.md for project-wide patterns
+4. Follow documented patterns exactly in your recommendations
+
+DURING work:
+- If you discover missing patterns or unclear docs, note them in your output
+- Include \`docsConsulted\` in your response listing docs you read
+
+AFTER work:
+- Include \`learningsToCapture\` for any discoveries worth recording
+- Include \`docsToUpdate\` if patterns need updating`,
 
   tools: ['Read', 'Glob', 'Grep'],
   maxTurns: 20,
@@ -70,5 +86,8 @@ When evaluating a feature:
     filesToModify: 'string[] - Existing files to modify',
     risks: 'string[] - Architectural concerns',
     claudeMdUpdates: 'string[] - CLAUDE.md files to update',
+    docsConsulted: 'string[] - Docs read before evaluation',
+    learningsToCapture: 'string[] - Discoveries to record in learnings.md',
+    docsToUpdate: 'string[] - Docs that need pattern updates',
   },
 };

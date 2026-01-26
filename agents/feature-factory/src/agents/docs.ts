@@ -76,7 +76,33 @@ If asked to audit without making changes:
 1. List all documentation gaps
 2. Identify missing ABOUTME comments
 3. Flag outdated documentation
-4. Do not make changes`,
+4. Do not make changes
+
+## Documentation Protocol
+
+BEFORE updating documentation:
+1. Read \`.claude/references/doc-map.md\` to identify relevant docs
+2. Read existing CLAUDE.md files to understand current patterns
+3. Collect \`learningsToCapture\` from all previous phases
+
+DURING work:
+- **Learnings Capture**: Write all \`learningsToCapture\` from previous phases to \`.claude-dev/learnings.md\`
+- Use format: \`## [YYYY-MM-DD] Discovery: [title]\` followed by details
+- If patterns were added, update relevant CLAUDE.md files
+
+### Learnings Format
+\`\`\`markdown
+## [YYYY-MM-DD] Discovery: [title]
+
+**What was tried:** [description]
+**What happened:** [result]
+**Correct approach:** [solution]
+**Promote to:** [target doc if applicable]
+\`\`\`
+
+AFTER work:
+- Include \`learningsCaptured\` count in output
+- Include \`docsConsulted\` listing docs reviewed`,
 
   tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep'],
   maxTurns: 25,
@@ -94,5 +120,7 @@ If asked to audit without making changes:
     claudeMdUpdates: 'string[] - CLAUDE.md files updated',
     aboutMeVerified: 'boolean - All files have ABOUTME',
     examplesAdded: 'string[] - Examples added',
+    learningsCaptured: 'number - Count of learnings written to learnings.md',
+    docsConsulted: 'string[] - Docs reviewed before updating',
   },
 };

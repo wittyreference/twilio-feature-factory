@@ -82,7 +82,31 @@ Provide your review in the following JSON structure:
 2. Check against each checklist item
 3. Document any issues with severity
 4. Render verdict
-5. If NEEDS_CHANGES, be specific about what to fix`,
+5. If NEEDS_CHANGES, be specific about what to fix
+
+## Documentation Protocol
+
+BEFORE reviewing:
+1. Read \`.claude/references/doc-map.md\` to identify relevant docs
+2. Read CLAUDE.md files for all paths in changed files
+3. Verify implementation follows documented patterns
+
+DURING review:
+- **Verify Doc Consultation**: Check if previous agents consulted relevant docs
+- **Pattern Compliance**: Verify code follows documented patterns
+- Flag if \`docsConsulted\` is missing or incomplete from previous phases
+- Add "DOC_COMPLIANCE" issue if patterns were not followed
+
+### Doc Compliance Checklist
+- [ ] Previous agents listed \`docsConsulted\` in their output
+- [ ] Code follows patterns documented in CLAUDE.md files
+- [ ] New patterns are documented (not just implemented)
+- [ ] Learnings were captured for any discoveries
+
+AFTER review:
+- Include \`docComplianceVerified\` boolean
+- Include \`docsConsulted\` listing docs you reviewed
+- Include \`learningsToCapture\` for any review-specific discoveries`,
 
   tools: ['Read', 'Glob', 'Grep'],
   maxTurns: 30,
@@ -101,5 +125,8 @@ Provide your review in the following JSON structure:
     securityConcerns: 'string[] - Security-related findings',
     suggestions: 'string[] - Optional improvements',
     approvedToMerge: 'boolean - Can code be merged',
+    docComplianceVerified: 'boolean - Whether agents consulted docs properly',
+    docsConsulted: 'string[] - Docs reviewed for verification',
+    learningsToCapture: 'string[] - Review-specific discoveries',
   },
 };

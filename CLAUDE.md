@@ -79,6 +79,58 @@ See [DESIGN_DECISIONS.md](/DESIGN_DECISIONS.md) for architectural rationale and 
 - **Code Review**: Final validation of complex logic and architectural decisions
 - **Documentation**: Maintain and update technical documentation
 
+## Documentation Protocol
+
+This project uses a **doc-first approach**: Check → Act → Record.
+
+### Before CLI Operations
+
+**ALWAYS read `.claude/references/twilio-cli.md` before running `twilio` commands.**
+
+```bash
+# WRONG: Guessing at CLI flags
+twilio api:core:available-phone-numbers:local:list --voice-enabled=true
+
+# RIGHT: Check docs first, flags are presence-based
+twilio api:core:available-phone-numbers:local:list --voice-enabled --sms-enabled
+```
+
+Also check:
+- `.claude/references/tool-boundaries.md` before deployment decisions
+- `.claude/references/doc-map.md` to find which doc covers your operation
+
+### Before Code Changes
+
+Read the relevant `CLAUDE.md` file for the domain you're modifying:
+- `functions/voice/CLAUDE.md` for voice/TwiML
+- `functions/messaging/CLAUDE.md` for SMS/MMS
+- `agents/mcp-servers/twilio/CLAUDE.md` for MCP tools
+- See Documentation Navigator table above for full list
+
+### Discovery Capture
+
+When you learn something unexpected, add it to `.claude-dev/learnings.md` **IMMEDIATELY**:
+
+```markdown
+## [YYYY-MM-DD] Session N - Topic
+
+**Discoveries:**
+
+1. **Title**: Brief description
+   - What you tried
+   - What happened
+   - Correct approach
+   - **Promote to**: [target doc]
+```
+
+Don't wait until the end of a task - capture inline as you discover.
+
+### Before Committing
+
+1. Check `.claude-dev/pending-actions.md` for doc update suggestions
+2. Address suggestions or consciously defer them
+3. Verify you recorded any learnings from this session
+
 ## Documentation Flywheel
 
 Use the capture-promote-clear workflow for knowledge management:

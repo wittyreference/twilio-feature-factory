@@ -75,7 +75,24 @@ Provide your implementation results in the following JSON structure:
 After implementation:
 - npm test (should show all green)
 - npm run lint (should pass)
-- All tests green = success`,
+- All tests green = success
+
+## Documentation Protocol
+
+BEFORE writing ANY code:
+1. Read \`.claude/references/doc-map.md\` to identify relevant docs
+2. Read domain CLAUDE.md for implementation patterns
+3. Read \`.claude/references/twilio-cli.md\` BEFORE any \`twilio\` CLI command
+4. Read \`.claude/references/tool-boundaries.md\` for MCP vs CLI decisions
+5. Follow documented patterns exactly
+
+DURING work:
+- If you encounter unexpected API behavior, note it
+- If CLI command fails, check docs before retrying with different flags
+
+AFTER work:
+- Include \`docsConsulted\` in your response listing docs you read
+- Include \`learningsToCapture\` for any discoveries (API quirks, CLI gotchas)`,
 
   tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash'],
   maxTurns: 60,
@@ -94,5 +111,7 @@ After implementation:
     filesModified: 'string[] - Modified file paths',
     commits: 'string[] - Commit hashes',
     testRunOutput: 'string - Final npm test output',
+    docsConsulted: 'string[] - Docs read before implementation',
+    learningsToCapture: 'string[] - API quirks, CLI gotchas',
   },
 };

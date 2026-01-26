@@ -81,7 +81,22 @@ Provide your test generation results in the following JSON structure:
 
 After creating tests, run them to verify they fail:
 - npm test (should show failures)
-- All tests red = success for you`,
+- All tests red = success for you
+
+## Documentation Protocol
+
+BEFORE writing tests:
+1. Read \`.claude/references/doc-map.md\` to identify relevant docs
+2. Read root CLAUDE.md Testing section for framework patterns
+3. Read domain CLAUDE.md for API response formats and error codes
+4. Follow documented test patterns exactly
+
+DURING work:
+- If you discover API quirks while testing, note them
+- Include \`docsConsulted\` in your response
+
+AFTER work:
+- Include \`learningsToCapture\` for any test framework discoveries`,
 
   tools: ['Read', 'Glob', 'Grep', 'Write', 'Bash'],
   maxTurns: 40,
@@ -98,5 +113,7 @@ After creating tests, run them to verify they fail:
     coverageGoals: 'string[] - What tests cover',
     allTestsFailing: 'boolean - All tests fail (MUST be true)',
     testRunOutput: 'string - Output from npm test',
+    docsConsulted: 'string[] - Docs read before writing tests',
+    learningsToCapture: 'string[] - Test framework discoveries',
   },
 };

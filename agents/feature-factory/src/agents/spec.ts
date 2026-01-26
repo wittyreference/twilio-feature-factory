@@ -57,7 +57,23 @@ Provide your specification in the following JSON structure:
 - Be specific - vague specs lead to incorrect implementations
 - Include error cases - happy path is not enough
 - Think about edge cases - what happens at boundaries?
-- Consider security - validation, authentication, authorization`,
+- Consider security - validation, authentication, authorization
+
+## Documentation Protocol
+
+BEFORE writing specifications:
+1. Read \`.claude/references/doc-map.md\` to identify relevant docs
+2. Read the domain CLAUDE.md for API patterns and error codes
+3. Check \`.claude/references/twilio-cli.md\` for CLI patterns if applicable
+4. Follow documented patterns exactly in your specifications
+
+DURING work:
+- Reference existing patterns from CLAUDE.md files in your specs
+- If you find missing patterns, note them for later capture
+
+AFTER work:
+- Include \`docsConsulted\` in your response listing docs you read
+- Include \`learningsToCapture\` for any API quirks discovered`,
 
   tools: ['Read', 'Glob', 'Grep'],
   maxTurns: 30,
@@ -76,5 +92,7 @@ Provide your specification in the following JSON structure:
     testScenarios: 'object - Test scenarios by category',
     dependencies: 'string[] - External dependencies',
     assumptions: 'string[] - Assumptions made',
+    docsConsulted: 'string[] - Docs read before writing spec',
+    learningsToCapture: 'string[] - API quirks or discoveries',
   },
 };

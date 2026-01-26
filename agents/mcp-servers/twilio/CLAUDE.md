@@ -4,10 +4,10 @@ This directory contains the Model Context Protocol (MCP) server that exposes Twi
 
 ## Purpose
 
-The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **220 tools across 25 modules** covering:
+The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **236 tools across 25 modules** covering:
 
 - **Messaging**: SMS/MMS, messaging services, content templates, notifications
-- **Voice**: Call logs, recordings, BYOC trunks, dialing permissions, SIP trunking
+- **Voice**: Call management, conferences, recordings, Voice Insights, transcriptions, BYOC trunks, SIP trunking
 - **Phone Numbers**: Management, regulatory bundles, lookups, addresses
 - **Identity**: Verification, TrustHub profiles, trust products, IAM (API keys)
 - **Routing**: TaskRouter, Studio flows, Proxy number masking
@@ -23,7 +23,7 @@ src/
 ├── index.ts              # Main MCP server entry point
 └── tools/
     ├── messaging.ts      # SMS/MMS operations (P0)
-    ├── voice.ts          # Call logs and recordings (P0)
+    ├── voice.ts          # Calls, conferences, insights, transcription (P0)
     ├── phone-numbers.ts  # Phone number management (P0)
     ├── verify.ts         # Verification API (P0)
     ├── sync.ts           # Real-time state sync (P0)
@@ -105,13 +105,29 @@ for await (const message of query({
 | `get_message_logs` | Retrieve message history |
 | `get_message_status` | Check delivery status |
 
-### Voice Tools
+### Voice Tools - 19 tools
 
 | Tool | Description |
 |------|-------------|
 | `get_call_logs` | Retrieve call history |
 | `make_call` | Initiate an outbound call |
 | `get_recording` | Fetch call recording |
+| `get_call` | Get detailed call information |
+| `update_call` | Modify in-progress call (redirect, end) |
+| `list_call_recordings` | List recordings for a call |
+| `list_conferences` | List conferences with filtering |
+| `get_conference` | Get conference details |
+| `update_conference` | Update/end a conference |
+| `list_conference_participants` | List participants in conference |
+| `get_conference_participant` | Get participant details |
+| `update_conference_participant` | Mute, hold, or coach participant |
+| `add_participant_to_conference` | Add participant via Participants API |
+| `list_conference_recordings` | List conference recordings |
+| `get_call_summary` | Voice Insights call summary |
+| `list_call_events` | Voice Insights call events |
+| `list_call_metrics` | Voice Insights quality metrics |
+| `list_recording_transcriptions` | List transcriptions for recording |
+| `get_transcription` | Get transcription text |
 
 ### Phone Number Tools
 

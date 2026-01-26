@@ -1,5 +1,5 @@
 // ABOUTME: Twilio voice tools for call operations.
-// ABOUTME: Provides get_call_logs, make_call, and get_recording tools.
+// ABOUTME: Provides call management, conferences, recordings, insights, and transcriptions.
 
 import { z } from 'zod';
 import type { TwilioContext } from '../index.js';
@@ -141,5 +141,675 @@ export function voiceTools(context: TwilioContext) {
     }
   );
 
-  return [getCallLogs, makeCall, getRecording];
+  // ============================================
+  // Conference Tools
+  // ============================================
+
+  const listConferences = createTool(
+    'list_conferences',
+    'List conferences with optional filtering by status, friendly name, or date range.',
+    z.object({
+      limit: z.number().min(1).max(100).optional().default(20).describe('Max results (1-100, default 20)'),
+      status: z.enum(['init', 'in-progress', 'completed']).optional().describe('Filter by conference status'),
+      friendlyName: z.string().optional().describe('Filter by exact friendly name'),
+      dateCreatedAfter: z.string().datetime().optional().describe('Filter conferences created after this ISO datetime'),
+      dateCreatedBefore: z.string().datetime().optional().describe('Filter conferences created before this ISO datetime'),
+    }),
+    async ({ limit, status, friendlyName, dateCreatedAfter, dateCreatedBefore }) => {
+      const filters: {
+        limit: number;
+        status?: 'init' | 'in-progress' | 'completed';
+        friendlyName?: string;
+        dateCreatedAfter?: Date;
+        dateCreatedBefore?: Date;
+      } = { limit: limit || 20 };
+
+      if (status) filters.status = status;
+      if (friendlyName) filters.friendlyName = friendlyName;
+      if (dateCreatedAfter) filters.dateCreatedAfter = new Date(dateCreatedAfter);
+      if (dateCreatedBefore) filters.dateCreatedBefore = new Date(dateCreatedBefore);
+
+      const conferences = await client.conferences.list(filters);
+
+      const formatted = conferences.map((c) => ({
+        sid: c.sid,
+        friendlyName: c.friendlyName,
+        status: c.status,
+        region: c.region,
+        dateCreated: c.dateCreated,
+        dateUpdated: c.dateUpdated,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ success: true, count: formatted.length, conferences: formatted }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const getConference = createTool(
+    'get_conference',
+    'Get detailed information about a specific conference.',
+    z.object({
+      conferenceSid: z.string().startsWith('CF').describe('Conference SID (starts with CF)'),
+    }),
+    async ({ conferenceSid }) => {
+      const conference = await client.conferences(conferenceSid).fetch();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: conference.sid,
+            friendlyName: conference.friendlyName,
+            status: conference.status,
+            region: conference.region,
+            reasonConferenceEnded: conference.reasonConferenceEnded,
+            callSidEndingConference: conference.callSidEndingConference,
+            dateCreated: conference.dateCreated,
+            dateUpdated: conference.dateUpdated,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const updateConference = createTool(
+    'update_conference',
+    'Update a conference (e.g., end it by setting status to completed).',
+    z.object({
+      conferenceSid: z.string().startsWith('CF').describe('Conference SID (starts with CF)'),
+      status: z.enum(['completed']).describe('Set to completed to end the conference'),
+      announceUrl: z.string().url().optional().describe('URL for announcement TwiML to play to all participants'),
+      announceMethod: z.enum(['GET', 'POST']).optional().describe('HTTP method for announceUrl'),
+    }),
+    async ({ conferenceSid, status, announceUrl, announceMethod }) => {
+      const updateParams: {
+        status: 'completed';
+        announceUrl?: string;
+        announceMethod?: 'GET' | 'POST';
+      } = { status };
+
+      if (announceUrl) updateParams.announceUrl = announceUrl;
+      if (announceMethod) updateParams.announceMethod = announceMethod;
+
+      const conference = await client.conferences(conferenceSid).update(updateParams);
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: conference.sid,
+            status: conference.status,
+            friendlyName: conference.friendlyName,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const listConferenceParticipants = createTool(
+    'list_conference_participants',
+    'List participants in a conference.',
+    z.object({
+      conferenceSid: z.string().startsWith('CF').describe('Conference SID (starts with CF)'),
+      limit: z.number().min(1).max(100).optional().default(50).describe('Max results (1-100, default 50)'),
+      muted: z.boolean().optional().describe('Filter by muted status'),
+      hold: z.boolean().optional().describe('Filter by hold status'),
+    }),
+    async ({ conferenceSid, limit, muted, hold }) => {
+      const filters: {
+        limit: number;
+        muted?: boolean;
+        hold?: boolean;
+      } = { limit: limit || 50 };
+
+      if (muted !== undefined) filters.muted = muted;
+      if (hold !== undefined) filters.hold = hold;
+
+      const participants = await client.conferences(conferenceSid).participants.list(filters);
+
+      const formatted = participants.map((p) => ({
+        callSid: p.callSid,
+        label: p.label,
+        muted: p.muted,
+        hold: p.hold,
+        coaching: p.coaching,
+        status: p.status,
+        startConferenceOnEnter: p.startConferenceOnEnter,
+        endConferenceOnExit: p.endConferenceOnExit,
+        dateCreated: p.dateCreated,
+        dateUpdated: p.dateUpdated,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ success: true, count: formatted.length, participants: formatted }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const getConferenceParticipant = createTool(
+    'get_conference_participant',
+    'Get details about a specific participant in a conference.',
+    z.object({
+      conferenceSid: z.string().startsWith('CF').describe('Conference SID (starts with CF)'),
+      callSid: z.string().startsWith('CA').describe('Call SID of the participant (starts with CA)'),
+    }),
+    async ({ conferenceSid, callSid }) => {
+      const participant = await client.conferences(conferenceSid).participants(callSid).fetch();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            callSid: participant.callSid,
+            conferenceSid: participant.conferenceSid,
+            label: participant.label,
+            muted: participant.muted,
+            hold: participant.hold,
+            coaching: participant.coaching,
+            status: participant.status,
+            startConferenceOnEnter: participant.startConferenceOnEnter,
+            endConferenceOnExit: participant.endConferenceOnExit,
+            dateCreated: participant.dateCreated,
+            dateUpdated: participant.dateUpdated,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const updateConferenceParticipant = createTool(
+    'update_conference_participant',
+    'Update a participant (mute, hold, or coach).',
+    z.object({
+      conferenceSid: z.string().startsWith('CF').describe('Conference SID (starts with CF)'),
+      callSid: z.string().startsWith('CA').describe('Call SID of the participant (starts with CA)'),
+      muted: z.boolean().optional().describe('Mute or unmute the participant'),
+      hold: z.boolean().optional().describe('Place on hold or resume'),
+      holdUrl: z.string().url().optional().describe('URL for hold music TwiML'),
+      holdMethod: z.enum(['GET', 'POST']).optional().describe('HTTP method for holdUrl'),
+      coaching: z.boolean().optional().describe('Enable coaching mode (hear without being heard by others)'),
+      callSidToCoach: z.string().startsWith('CA').optional().describe('Call SID to coach (required when coaching=true)'),
+      endConferenceOnExit: z.boolean().optional().describe('End conference when participant leaves'),
+    }),
+    async ({ conferenceSid, callSid, muted, hold, holdUrl, holdMethod, coaching, callSidToCoach, endConferenceOnExit }) => {
+      const updateParams: {
+        muted?: boolean;
+        hold?: boolean;
+        holdUrl?: string;
+        holdMethod?: 'GET' | 'POST';
+        coaching?: boolean;
+        callSidToCoach?: string;
+        endConferenceOnExit?: boolean;
+      } = {};
+
+      if (muted !== undefined) updateParams.muted = muted;
+      if (hold !== undefined) updateParams.hold = hold;
+      if (holdUrl) updateParams.holdUrl = holdUrl;
+      if (holdMethod) updateParams.holdMethod = holdMethod;
+      if (coaching !== undefined) updateParams.coaching = coaching;
+      if (callSidToCoach) updateParams.callSidToCoach = callSidToCoach;
+      if (endConferenceOnExit !== undefined) updateParams.endConferenceOnExit = endConferenceOnExit;
+
+      const participant = await client.conferences(conferenceSid).participants(callSid).update(updateParams);
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            callSid: participant.callSid,
+            muted: participant.muted,
+            hold: participant.hold,
+            coaching: participant.coaching,
+            status: participant.status,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const addParticipantToConference = createTool(
+    'add_participant_to_conference',
+    'Add a new participant to an existing conference using the Participants API.',
+    z.object({
+      conferenceSid: z.string().startsWith('CF').describe('Conference SID (starts with CF)'),
+      to: phoneNumberSchema.describe('Phone number to dial in E.164 format'),
+      from: phoneNumberSchema.optional().describe('Caller ID (defaults to configured number)'),
+      label: z.string().optional().describe('Label for the participant'),
+      earlyMedia: z.boolean().optional().default(true).describe('Enable early media (ringback tones)'),
+      beep: z.enum(['true', 'false', 'onEnter', 'onExit']).optional().describe('Play beep on join/leave'),
+      muted: z.boolean().optional().default(false).describe('Join muted'),
+      hold: z.boolean().optional().default(false).describe('Join on hold'),
+      startConferenceOnEnter: z.boolean().optional().default(true).describe('Start conference when this participant joins'),
+      endConferenceOnExit: z.boolean().optional().default(false).describe('End conference when this participant leaves'),
+      coaching: z.boolean().optional().describe('Join in coaching mode'),
+      callSidToCoach: z.string().startsWith('CA').optional().describe('Call SID to coach'),
+      record: z.boolean().optional().describe('Record participant audio'),
+    }),
+    async ({ conferenceSid, to, from, label, earlyMedia, beep, muted, hold, startConferenceOnEnter, endConferenceOnExit, coaching, callSidToCoach, record }) => {
+      const createParams: {
+        to: string;
+        from: string;
+        label?: string;
+        earlyMedia?: boolean;
+        beep?: string;
+        muted?: boolean;
+        hold?: boolean;
+        startConferenceOnEnter?: boolean;
+        endConferenceOnExit?: boolean;
+        coaching?: boolean;
+        callSidToCoach?: string;
+        record?: boolean;
+      } = {
+        to,
+        from: from || defaultFromNumber,
+      };
+
+      if (label) createParams.label = label;
+      if (earlyMedia !== undefined) createParams.earlyMedia = earlyMedia;
+      if (beep) createParams.beep = beep;
+      if (muted !== undefined) createParams.muted = muted;
+      if (hold !== undefined) createParams.hold = hold;
+      if (startConferenceOnEnter !== undefined) createParams.startConferenceOnEnter = startConferenceOnEnter;
+      if (endConferenceOnExit !== undefined) createParams.endConferenceOnExit = endConferenceOnExit;
+      if (coaching !== undefined) createParams.coaching = coaching;
+      if (callSidToCoach) createParams.callSidToCoach = callSidToCoach;
+      if (record !== undefined) createParams.record = record;
+
+      const participant = await client.conferences(conferenceSid).participants.create(createParams);
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            callSid: participant.callSid,
+            conferenceSid: participant.conferenceSid,
+            label: participant.label,
+            muted: participant.muted,
+            hold: participant.hold,
+            status: participant.status,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  // ============================================
+  // Call Control Tools
+  // ============================================
+
+  const getCall = createTool(
+    'get_call',
+    'Get detailed information about a specific call.',
+    z.object({
+      callSid: z.string().startsWith('CA').describe('Call SID (starts with CA)'),
+    }),
+    async ({ callSid }) => {
+      const call = await client.calls(callSid).fetch();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: call.sid,
+            parentCallSid: call.parentCallSid,
+            to: call.to,
+            from: call.from,
+            status: call.status,
+            direction: call.direction,
+            duration: call.duration,
+            answeredBy: call.answeredBy,
+            callerName: call.callerName,
+            startTime: call.startTime,
+            endTime: call.endTime,
+            forwardedFrom: call.forwardedFrom,
+            price: call.price,
+            priceUnit: call.priceUnit,
+            groupSid: call.groupSid,
+            trunkSid: call.trunkSid,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const updateCall = createTool(
+    'update_call',
+    'Modify an in-progress call (redirect, end, or play announcement).',
+    z.object({
+      callSid: z.string().startsWith('CA').describe('Call SID (starts with CA)'),
+      status: z.enum(['completed', 'canceled']).optional().describe('Set to completed/canceled to end the call'),
+      url: z.string().url().optional().describe('URL for new TwiML to execute'),
+      method: z.enum(['GET', 'POST']).optional().describe('HTTP method for URL'),
+      twiml: z.string().optional().describe('Raw TwiML to execute'),
+    }).refine((data) => data.status || data.url || data.twiml, {
+      message: 'At least one of status, url, or twiml must be provided',
+    }),
+    async ({ callSid, status, url, method, twiml }) => {
+      const updateParams: {
+        status?: 'completed' | 'canceled';
+        url?: string;
+        method?: 'GET' | 'POST';
+        twiml?: string;
+      } = {};
+
+      if (status) updateParams.status = status;
+      if (url) updateParams.url = url;
+      if (method) updateParams.method = method;
+      if (twiml) updateParams.twiml = twiml;
+
+      const call = await client.calls(callSid).update(updateParams);
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: call.sid,
+            status: call.status,
+            to: call.to,
+            from: call.from,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const listCallRecordings = createTool(
+    'list_call_recordings',
+    'List all recordings for a specific call.',
+    z.object({
+      callSid: z.string().startsWith('CA').describe('Call SID (starts with CA)'),
+      limit: z.number().min(1).max(100).optional().default(20).describe('Max results (1-100, default 20)'),
+    }),
+    async ({ callSid, limit }) => {
+      const recordings = await client.calls(callSid).recordings.list({ limit: limit || 20 });
+
+      const formatted = recordings.map((r) => ({
+        sid: r.sid,
+        callSid: r.callSid,
+        duration: r.duration,
+        channels: r.channels,
+        status: r.status,
+        source: r.source,
+        dateCreated: r.dateCreated,
+        mediaUrl: `https://api.twilio.com${r.uri.replace('.json', '.mp3')}`,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ success: true, count: formatted.length, recordings: formatted }, null, 2),
+        }],
+      };
+    }
+  );
+
+  // ============================================
+  // Voice Insights Tools
+  // ============================================
+
+  const getCallSummary = createTool(
+    'get_call_summary',
+    'Get Voice Insights summary for a call (quality metrics, edge location, etc.).',
+    z.object({
+      callSid: z.string().startsWith('CA').describe('Call SID (starts with CA)'),
+    }),
+    async ({ callSid }) => {
+      const summary = await client.insights.v1.calls(callSid).summary().fetch();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            callSid: summary.callSid,
+            callType: summary.callType,
+            callState: summary.callState,
+            processingState: summary.processingState,
+            duration: summary.duration,
+            connectDuration: summary.connectDuration,
+            from: summary.from,
+            to: summary.to,
+            carrierEdge: summary.carrierEdge,
+            clientEdge: summary.clientEdge,
+            sdkEdge: summary.sdkEdge,
+            sipEdge: summary.sipEdge,
+            tags: summary.tags,
+            attributes: summary.attributes,
+            properties: summary.properties,
+            startTime: summary.startTime,
+            endTime: summary.endTime,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const listCallEvents = createTool(
+    'list_call_events',
+    'List Voice Insights events for a call (ringing, answered, etc.).',
+    z.object({
+      callSid: z.string().startsWith('CA').describe('Call SID (starts with CA)'),
+      limit: z.number().min(1).max(100).optional().default(50).describe('Max results (1-100, default 50)'),
+      edge: z.enum(['unknown_edge', 'carrier_edge', 'sip_edge', 'sdk_edge', 'client_edge']).optional().describe('Filter by edge'),
+    }),
+    async ({ callSid, limit, edge }) => {
+      const filters: {
+        limit: number;
+        edge?: 'unknown_edge' | 'carrier_edge' | 'sip_edge' | 'sdk_edge' | 'client_edge';
+      } = { limit: limit || 50 };
+
+      if (edge) filters.edge = edge;
+
+      const events = await client.insights.v1.calls(callSid).events.list(filters);
+
+      const formatted = events.map((e) => ({
+        timestamp: e.timestamp,
+        callSid: e.callSid,
+        accountSid: e.accountSid,
+        edge: e.edge,
+        group: e.group,
+        level: e.level,
+        name: e.name,
+        carrierEdge: e.carrierEdge,
+        sipEdge: e.sipEdge,
+        sdkEdge: e.sdkEdge,
+        clientEdge: e.clientEdge,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ success: true, count: formatted.length, events: formatted }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const listCallMetrics = createTool(
+    'list_call_metrics',
+    'List Voice Insights metrics for a call (jitter, packet loss, latency).',
+    z.object({
+      callSid: z.string().startsWith('CA').describe('Call SID (starts with CA)'),
+      limit: z.number().min(1).max(100).optional().default(50).describe('Max results (1-100, default 50)'),
+      edge: z.enum(['unknown_edge', 'carrier_edge', 'sip_edge', 'sdk_edge', 'client_edge']).optional().describe('Filter by edge'),
+      direction: z.enum(['unknown', 'inbound', 'outbound', 'both']).optional().describe('Filter by direction'),
+    }),
+    async ({ callSid, limit, edge, direction }) => {
+      const filters: {
+        limit: number;
+        edge?: 'unknown_edge' | 'carrier_edge' | 'sip_edge' | 'sdk_edge' | 'client_edge';
+        direction?: 'unknown' | 'inbound' | 'outbound' | 'both';
+      } = { limit: limit || 50 };
+
+      if (edge) filters.edge = edge;
+      if (direction) filters.direction = direction;
+
+      const metrics = await client.insights.v1.calls(callSid).metrics.list(filters);
+
+      const formatted = metrics.map((m) => ({
+        timestamp: m.timestamp,
+        callSid: m.callSid,
+        accountSid: m.accountSid,
+        edge: m.edge,
+        direction: m.direction,
+        carrierEdge: m.carrierEdge,
+        sipEdge: m.sipEdge,
+        sdkEdge: m.sdkEdge,
+        clientEdge: m.clientEdge,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ success: true, count: formatted.length, metrics: formatted }, null, 2),
+        }],
+      };
+    }
+  );
+
+  // ============================================
+  // Transcription Tools
+  // ============================================
+
+  const listRecordingTranscriptions = createTool(
+    'list_recording_transcriptions',
+    'List transcriptions for a recording.',
+    z.object({
+      recordingSid: z.string().startsWith('RE').describe('Recording SID (starts with RE)'),
+      limit: z.number().min(1).max(100).optional().default(20).describe('Max results (1-100, default 20)'),
+    }),
+    async ({ recordingSid, limit }) => {
+      const transcriptions = await client.recordings(recordingSid).transcriptions.list({ limit: limit || 20 });
+
+      const formatted = transcriptions.map((t) => ({
+        sid: t.sid,
+        recordingSid: t.recordingSid,
+        status: t.status,
+        duration: t.duration,
+        dateCreated: t.dateCreated,
+        dateUpdated: t.dateUpdated,
+        price: t.price,
+        priceUnit: t.priceUnit,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ success: true, count: formatted.length, transcriptions: formatted }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const getTranscription = createTool(
+    'get_transcription',
+    'Get transcription details and text.',
+    z.object({
+      transcriptionSid: z.string().startsWith('TR').describe('Transcription SID (starts with TR)'),
+    }),
+    async ({ transcriptionSid }) => {
+      const transcription = await client.transcriptions(transcriptionSid).fetch();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: transcription.sid,
+            recordingSid: transcription.recordingSid,
+            status: transcription.status,
+            transcriptionText: transcription.transcriptionText,
+            duration: transcription.duration,
+            dateCreated: transcription.dateCreated,
+            dateUpdated: transcription.dateUpdated,
+            price: transcription.price,
+            priceUnit: transcription.priceUnit,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  // ============================================
+  // Conference Recording Tools
+  // ============================================
+
+  const listConferenceRecordings = createTool(
+    'list_conference_recordings',
+    'List recordings for a specific conference.',
+    z.object({
+      conferenceSid: z.string().startsWith('CF').describe('Conference SID (starts with CF)'),
+      limit: z.number().min(1).max(100).optional().default(20).describe('Max results (1-100, default 20)'),
+      status: z.enum(['in-progress', 'paused', 'stopped', 'processing', 'completed', 'absent']).optional().describe('Filter by recording status'),
+    }),
+    async ({ conferenceSid, limit, status }) => {
+      const filters: {
+        limit: number;
+        status?: 'in-progress' | 'paused' | 'stopped' | 'processing' | 'completed' | 'absent';
+      } = { limit: limit || 20 };
+
+      if (status) filters.status = status;
+
+      const recordings = await client.conferences(conferenceSid).recordings.list(filters);
+
+      const formatted = recordings.map((r) => ({
+        sid: r.sid,
+        conferenceSid: r.conferenceSid,
+        duration: r.duration,
+        channels: r.channels,
+        status: r.status,
+        source: r.source,
+        dateCreated: r.dateCreated,
+        mediaUrl: `https://api.twilio.com${r.uri.replace('.json', '.mp3')}`,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ success: true, count: formatted.length, recordings: formatted }, null, 2),
+        }],
+      };
+    }
+  );
+
+  return [
+    // Core call tools
+    getCallLogs,
+    makeCall,
+    getRecording,
+    // Call control
+    getCall,
+    updateCall,
+    listCallRecordings,
+    // Conference tools
+    listConferences,
+    getConference,
+    updateConference,
+    listConferenceParticipants,
+    getConferenceParticipant,
+    updateConferenceParticipant,
+    addParticipantToConference,
+    listConferenceRecordings,
+    // Voice Insights
+    getCallSummary,
+    listCallEvents,
+    listCallMetrics,
+    // Transcription
+    listRecordingTranscriptions,
+    getTranscription,
+  ];
 }

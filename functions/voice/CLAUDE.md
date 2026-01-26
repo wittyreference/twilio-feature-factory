@@ -166,6 +166,55 @@ if (conferences.length > 0) {
 }
 ```
 
+## TwiML Control Model
+
+**Critical**: Only ONE TwiML document controls a call at any given time.
+
+### Key Implications
+
+1. **Updating participant TwiML exits current state**: If a participant is in a conference and you update their call with new TwiML, they immediately exit the conference and execute the new TwiML.
+
+2. **Conference teardown risk**: If the exiting participant had `endConferenceOnExit=true`, the entire conference tears down - appearing as a "dropped call" to other participants.
+
+3. **Call transfer in conference context**: "Transfer" means adding a new participant to the existing conference, NOT replacing TwiML. The original parties stay in the conference.
+
+### Safe Conference Transfer Pattern
+
+```javascript
+// "Transfer" a call by adding a new party to the conference
+// Original caller and agent stay in conference with the new party
+
+// 1. Agent is on call with customer in conference "support-12345"
+// 2. Agent wants to bring in specialist
+
+// Add specialist to existing conference (they join, nobody leaves)
+await client.conferences('support-12345')
+  .participants
+  .create({
+    from: context.TWILIO_PHONE_NUMBER,
+    to: specialistNumber,
+    startConferenceOnEnter: true,  // Start immediately
+    endConferenceOnExit: false     // Don't end when they leave
+  });
+
+// 3. All three parties now in conference
+// 4. Agent can drop off by having their participant removed:
+await client.conferences('support-12345')
+  .participants(agentCallSid)
+  .update({ status: 'completed' });
+```
+
+### Dangerous Pattern (Avoid)
+
+```javascript
+// DON'T: Update participant with new TwiML - exits them from conference
+await client.calls(participantCallSid)
+  .update({
+    twiml: '<Response><Dial>+15551234567</Dial></Response>'
+  });
+// This removes them from conference and may tear it down!
+```
+
 ## File Naming Conventions
 
 - `*.js` - Public endpoints (no signature validation)

@@ -239,6 +239,38 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 - [ ] Update package.json with workspaces
 - [ ] Update .claude/settings.json with agent hooks
 
+### Documentation Flywheel for Shipped Product
+
+Copy flywheel from meta tooling (`.claude-dev/`) to shipped product (`.claude/`).
+Keep meta implementation intact - COPY, don't move.
+
+- [ ] Copy doc-update-check.sh from .claude-dev/hooks/ to .claude/hooks/
+- [ ] Copy session-summary.sh from .claude-dev/hooks/ to .claude/hooks/
+- [ ] Update all paths in COPIED scripts (point to .claude/, not .claude-dev/)
+- [ ] Create empty .claude/pending-actions.md template
+- [ ] Create empty .claude/learnings.md template
+- [ ] Update settings.json to register shipped flywheel hooks
+- [ ] Update Feature Factory agent prompts (reference .claude/ paths)
+- [ ] Test: Meta flywheel still works (our dev workflow unchanged)
+- [ ] Test: Shipped flywheel works independently (fresh clone)
+- [ ] Test: No cross-contamination between meta and shipped
+
+### Meta Project Sanitization (Pre-Ship)
+
+Remove all meta project content before shipping. Shipped repo should be a clean template.
+
+- [ ] Remove MC's personal preferences from CLAUDE.md ("Interaction" section)
+- [ ] Remove "Our relationship" section from CLAUDE.md
+- [ ] Remove all .claude-dev/ path references from CLAUDE.md
+- [ ] Empty DESIGN_DECISIONS.md (keep template headers only)
+- [ ] Empty todo.md (keep template headers only)
+- [ ] Empty .claude/pending-actions.md (empty template)
+- [ ] Empty .claude/learnings.md (empty template)
+- [ ] Remove session-specific content from any docs
+- [ ] Verify .claude-dev/ stays gitignored (never ships)
+- [ ] Final review: grep for "MC", ".claude-dev", session-specific content
+- [ ] Verify no meta project references remain in shipped code
+
 ---
 
 ## Voice Capabilities Expansion (Cross-Cutting)

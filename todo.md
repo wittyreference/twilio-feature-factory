@@ -51,12 +51,12 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 - [x] routing/taskrouter - create_task, list_tasks, get_task_status, list_workers, list_workflows
 - [x] monitoring/debugger - get_debugger_logs, analyze_errors, get_usage_records
 
-### P1 Tools (High Value)
+### P1 Tools (High Value) ✅
 
-- [ ] identity/lookups - lookup_phone_number, check_fraud_risk (v2)
-- [ ] routing/studio - list_studio_flows, trigger_flow, get_execution_status (v2)
-- [ ] messaging/services - create_messaging_service, add_number_to_service, get_a2p_status
-- [ ] serverless - list_services, list_functions, create_build
+- [x] identity/lookups - lookup_phone_number, check_fraud_risk (v2)
+- [x] routing/studio - list_studio_flows, trigger_flow, get_execution_status (v2)
+- [x] messaging/services - create_messaging_service, add_number_to_service, get_a2p_status
+- [x] serverless - list_services, list_functions, list_environments, get_build_status
 
 ### P2 Tools (Specialized)
 
@@ -87,7 +87,7 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 - [x] Write unit tests for P0 tools (messaging, voice, phone-numbers)
 - [x] Write unit tests for P0 tools (verify, sync, taskrouter, debugger)
 - [x] Write integration tests for P0 tools with real Twilio APIs (102 tests passing)
-- [ ] Write unit tests for P1 tools (lookups, studio, messaging-services, serverless)
+- [x] Write unit tests for P1 tools (lookups, studio, messaging-services, serverless) - 51 tests
 - [ ] Write unit tests for P2 tools as implemented (8 modules)
 - [ ] Write unit tests for P3 tools as implemented (10 modules)
 - [ ] Write integration tests for P1-P3 tools as implemented
@@ -271,6 +271,7 @@ Voice is the most complex Twilio domain - stateful, real-time, with many archite
 | 2026-01-25 | 5 | Voice skill complete (500 lines): Use Case Ladder, decision frameworks, all use cases, gotchas, 2026 themes |
 | 2026-01-25 | 5b | Session persistence, TDD enforcement hook, credential safety hook (113 tests) |
 | 2026-01-25 | 5c | Orchestrator unit tests (36 tests), workflow integration tests (43 tests), 192 total Feature Factory tests |
+| 2026-01-25 | 5d | P1 MCP tools: lookups, studio, messaging-services, serverless (13 tools, 51 unit tests, 159 total MCP tests) |
 
 ---
 

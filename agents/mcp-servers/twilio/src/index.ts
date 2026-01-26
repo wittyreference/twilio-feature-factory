@@ -9,6 +9,11 @@ import { verifyTools } from './tools/verify.js';
 import { syncTools } from './tools/sync.js';
 import { taskrouterTools } from './tools/taskrouter.js';
 import { debuggerTools } from './tools/debugger.js';
+// P1 tools
+import { lookupsTools } from './tools/lookups.js';
+import { studioTools } from './tools/studio.js';
+import { messagingServicesTools } from './tools/messaging-services.js';
+import { serverlessTools } from './tools/serverless.js';
 
 export interface TwilioMcpServerConfig {
   accountSid?: string;
@@ -60,6 +65,7 @@ export function createTwilioMcpServer(config: TwilioMcpServerConfig = {}) {
     name: 'twilio-tools',
     version: '1.0.0',
     tools: [
+      // P0 tools
       ...messagingTools(context),
       ...voiceTools(context),
       ...phoneNumberTools(context),
@@ -67,10 +73,16 @@ export function createTwilioMcpServer(config: TwilioMcpServerConfig = {}) {
       ...syncTools(context),
       ...taskrouterTools(context),
       ...debuggerTools(context),
+      // P1 tools
+      ...lookupsTools(context),
+      ...studioTools(context),
+      ...messagingServicesTools(context),
+      ...serverlessTools(context),
     ],
   };
 }
 
+// P0 tool exports
 export { messagingTools } from './tools/messaging.js';
 export { voiceTools } from './tools/voice.js';
 export { phoneNumberTools } from './tools/phone-numbers.js';
@@ -78,6 +90,11 @@ export { verifyTools } from './tools/verify.js';
 export { syncTools } from './tools/sync.js';
 export { taskrouterTools } from './tools/taskrouter.js';
 export { debuggerTools } from './tools/debugger.js';
+// P1 tool exports
+export { lookupsTools } from './tools/lookups.js';
+export { studioTools } from './tools/studio.js';
+export { messagingServicesTools } from './tools/messaging-services.js';
+export { serverlessTools } from './tools/serverless.js';
 
 // Export validation utilities
 export {

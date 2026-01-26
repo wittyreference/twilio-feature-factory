@@ -20,13 +20,17 @@ The Twilio MCP Server enables Claude agents to interact with real Twilio infrast
 src/
 ├── index.ts              # Main MCP server entry point
 └── tools/
-    ├── messaging.ts      # SMS/MMS operations
-    ├── voice.ts          # Call logs and recordings
-    ├── phone-numbers.ts  # Phone number management
-    ├── verify.ts         # Verification API
-    ├── sync.ts           # Real-time state sync
-    ├── taskrouter.ts     # Task routing
-    └── debugger.ts       # Error logs and analysis
+    ├── messaging.ts      # SMS/MMS operations (P0)
+    ├── voice.ts          # Call logs and recordings (P0)
+    ├── phone-numbers.ts  # Phone number management (P0)
+    ├── verify.ts         # Verification API (P0)
+    ├── sync.ts           # Real-time state sync (P0)
+    ├── taskrouter.ts     # Task routing (P0)
+    ├── debugger.ts       # Error logs and analysis (P0)
+    ├── lookups.ts        # Phone intelligence (P1)
+    ├── studio.ts         # Flow builder (P1)
+    ├── messaging-services.ts  # Sender pools, A2P (P1)
+    └── serverless.ts     # Functions management (P1)
 ```
 
 ## Tool Naming Convention
@@ -134,6 +138,38 @@ for await (const message of query({
 | `get_debugger_logs` | Fetch recent error logs |
 | `analyze_errors` | Analyze error patterns |
 | `get_usage_records` | Retrieve usage data |
+
+### Lookups Tools (P1)
+
+| Tool | Description |
+|------|-------------|
+| `lookup_phone_number` | Get carrier, line type, caller name |
+| `check_fraud_risk` | Check SIM swap, SMS pumping risk |
+
+### Studio Tools (P1)
+
+| Tool | Description |
+|------|-------------|
+| `list_studio_flows` | List all Studio flows |
+| `trigger_flow` | Trigger flow execution via REST |
+| `get_execution_status` | Get execution details and steps |
+
+### Messaging Services Tools (P1)
+
+| Tool | Description |
+|------|-------------|
+| `create_messaging_service` | Create sender pool service |
+| `add_number_to_service` | Add phone number to pool |
+| `get_a2p_status` | Get A2P 10DLC registration status |
+
+### Serverless Tools (P1)
+
+| Tool | Description |
+|------|-------------|
+| `list_services` | List serverless services |
+| `list_functions` | List functions in a service |
+| `list_environments` | List deployment environments |
+| `get_build_status` | Get build deployment status |
 
 ## Testing
 

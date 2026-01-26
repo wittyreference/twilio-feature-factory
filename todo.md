@@ -257,14 +257,25 @@ Voice is the most complex Twilio domain - stateful, real-time, with many archite
 - [x] Add common call flow patterns with examples
 - [x] Capture edge cases and gotchas
 
-### MCP Tool Expansion (After Feature Factory)
+### MCP Tool Expansion ✅
 
-- [ ] Conference tools (create_conference, add_participant, remove_participant, end_conference)
-- [ ] Call control tools (hold, mute, transfer, update_call)
-- [ ] Transcription tools (configure_realtime_transcription, get_transcription)
-- [ ] Voice Insights tools (get_call_summary, get_call_metrics)
-- [ ] Voice configuration (get_dialing_permissions, configure_byoc)
-- [ ] SIP trunking (create_sip_trunk, configure_origination)
+Voice MCP tools expanded from 22 to 29 tools (246 total MCP tools):
+
+- [x] Conference tools - list_conferences, get_conference, update_conference, list_conference_participants, get_conference_participant, update_conference_participant, add_participant_to_conference, list_conference_recordings
+- [x] Call control tools - get_call, update_call (hold, mute, redirect, end)
+- [x] Recording tools - get_recording, list_recordings, delete_recording, list_call_recordings, start_call_recording, update_call_recording (pause/resume/stop), delete_call_recording
+- [x] Transcription tools - list_recording_transcriptions, get_transcription
+- [x] Voice Insights tools - get_call_summary, list_call_events, list_call_metrics
+- [x] Conference Insights tools - get_conference_summary, list_conference_participant_summaries, get_conference_participant_summary
+- [x] Media Streams tools - start_call_stream, stop_call_stream
+- [x] Voice configuration (P2) - 14 tools including dialing permissions, BYOC trunks, connection policies
+- [x] SIP trunking (P3) - 17 tools for Elastic SIP Trunking
+
+### Deep Validation ✅
+
+- [x] DeepValidator.validateCall() - Call Events, Voice Insights (Summary, Events, Metrics), Debugger
+- [x] DeepValidator.validateConference() - Conference Insights (Summary, Participant Summaries)
+- [x] Timing documentation - partial ~2 min, final 30 min after end
 
 ### Testing
 
@@ -298,6 +309,7 @@ Voice is the most complex Twilio domain - stateful, real-time, with many archite
 | 2026-01-25 | 5g | P3 tools complete: trunking (17), accounts (13), iam (8), pricing (7), notify (10), addresses (6). Total: 220 tools across 25 modules. 338 MCP tests passing. |
 | 2026-01-25 | 5h | P1-P3 integration tests: 31 new tests across 13 files. Tests verify list→get chains and nested resources. 369 total MCP tests. |
 | 2026-01-25 | 5i | E2E workflow tests: 7 multi-tool chain tests (account, monitoring, lookup, messaging, voice, serverless, cross-domain). Phase 1 complete. 376 tests. |
+| 2026-01-25 | 6 | Voice MCP expansion: Conference Insights in DeepValidator, Media Streams tools, Recording tools expansion (29 voice tools, 246 total). Documentation self-correction mechanism (assertion verification). |
 
 ---
 

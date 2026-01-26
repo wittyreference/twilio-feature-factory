@@ -26,7 +26,17 @@ if [ -x "$DEV_HOOK" ]; then
     "$DEV_HOOK"
 fi
 
+# Check for pending documentation actions
+PENDING_ACTIONS="$PROJECT_ROOT/.claude-dev/pending-actions.md"
+NOTIFICATION_MSG="Ready for your input"
+if [ -f "$PENDING_ACTIONS" ]; then
+    ACTION_COUNT=$(grep -c "^\- \[" "$PENDING_ACTIONS" 2>/dev/null || echo "0")
+    if [ "$ACTION_COUNT" -gt 0 ]; then
+        NOTIFICATION_MSG="Ready - $ACTION_COUNT pending doc action(s)"
+    fi
+fi
+
 # Send notification
-notify_user "Claude Code" "Ready for your input"
+notify_user "Claude Code" "$NOTIFICATION_MSG"
 
 exit 0

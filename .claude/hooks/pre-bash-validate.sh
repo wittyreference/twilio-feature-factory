@@ -45,12 +45,33 @@ if echo "$COMMAND" | grep -qE "^git\s+commit"; then
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-    # Call dev doc-update-check if it exists
+    # Call dev doc-update-check if it exists (this updates pending-actions.md)
     DEV_HOOK="$PROJECT_ROOT/.claude-dev/hooks/doc-update-check.sh"
     if [ -x "$DEV_HOOK" ]; then
         # Clear debounce so it always runs for commits
         rm -f "$PROJECT_ROOT/.claude-dev/.last-doc-check" 2>/dev/null
         "$DEV_HOOK"
+    fi
+
+    # Display pending documentation actions if any exist
+    PENDING_ACTIONS="$PROJECT_ROOT/.claude-dev/pending-actions.md"
+    if [ -f "$PENDING_ACTIONS" ]; then
+        # Count non-empty, non-header lines (actual action items)
+        ACTION_COUNT=$(grep -c "^\- \[" "$PENDING_ACTIONS" 2>/dev/null || echo "0")
+        if [ "$ACTION_COUNT" -gt 0 ]; then
+            echo "" >&2
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+            echo "📝 PENDING DOCUMENTATION ACTIONS ($ACTION_COUNT items)" >&2
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+            echo "" >&2
+            # Show the action items (lines starting with "- [")
+            grep "^\- \[" "$PENDING_ACTIONS" >&2
+            echo "" >&2
+            echo "Review .claude-dev/pending-actions.md and update docs before committing." >&2
+            echo "Clear the file after addressing actions." >&2
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+            echo "" >&2
+        fi
     fi
 fi
 

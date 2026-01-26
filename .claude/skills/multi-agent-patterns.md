@@ -14,7 +14,7 @@ This skill describes orchestration and coordination patterns for Twilio developm
 
 ## Cross-Cutting Concerns
 
-### Human Approval Gates (D4)
+### Human Approval Gates
 
 The project operates in "Highly Supervised" autonomy mode. Human approval is required at key checkpoints:
 
@@ -27,7 +27,7 @@ Approval gates pause execution until human confirms:
 - Specifications are correct
 - Code is ready for merge
 
-### TDD Enforcement (D7)
+### TDD Enforcement
 
 All development workflows enforce Test-Driven Development via pre-phase hooks:
 

@@ -2,7 +2,7 @@
 
 This skill covers Test-Driven Development enforcement in the Feature Factory pipeline. Load this skill when working on feature development or debugging TDD-related issues.
 
-## Why TDD Matters (D7)
+## Why TDD Matters
 
 Agents will generate code. TDD ensures quality without manual review of every line:
 
@@ -337,7 +337,6 @@ Review agent checks TDD was followed:
 
 ## Related Documentation
 
-- [D7 in DESIGN_DECISIONS.md](/DESIGN_DECISIONS.md) - TDD enforcement decision
 - [Feature Factory CLAUDE.md](/agents/feature-factory/CLAUDE.md) - Workflow details
 - [tdd-enforcement.ts](/agents/feature-factory/src/hooks/tdd-enforcement.ts) - Hook implementation
 - [Multi-agent patterns](/.claude/skills/multi-agent-patterns.md) - Orchestration patterns

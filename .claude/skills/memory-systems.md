@@ -65,7 +65,7 @@ Maintain a mental summary after each major action:
 
 Information that persists across sessions via files and Twilio Sync.
 
-### Twilio Sync for Agent State (D8)
+### Twilio Sync for Agent State
 
 Use Twilio Sync Documents for state that needs to persist across webhook invocations or sessions:
 
@@ -240,9 +240,9 @@ logStateTransition(event.CallSid, 'menu', 'transfer', { digit: event.Digits });
 
 Track progress through development workflows.
 
-### Git as Source of Truth (D14)
+### Git as Source of Truth
 
-Per project design decisions, git history is the primary activity log:
+Git history is the primary activity log:
 - Commits capture what changed and why
 - `todo.md` captures session progress
 - `learnings.md` captures discoveries (capture → promote → clear)
@@ -259,7 +259,7 @@ git log --name-only --oneline --grep="voice IVR"
 git diff HEAD~5 --name-only
 ```
 
-### Documentation Flywheel (D16)
+### Documentation Flywheel
 
 The documentation flywheel uses file-based communication:
 - Hooks write suggestions to `.claude-dev/pending-actions.md`

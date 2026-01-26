@@ -2,7 +2,7 @@
 
 This skill covers validation patterns that go beyond simple API response checking. Load this skill when testing Twilio integrations or building validation into workflows.
 
-## Why Deep Validation Matters (D13)
+## Why Deep Validation Matters
 
 A 200 OK from Twilio API doesn't guarantee success. The operation may be queued but:
 - TwiML validation could fail later
@@ -288,7 +288,6 @@ if (validation.success) {
 
 ## Related Documentation
 
-- [D13 in DESIGN_DECISIONS.md](/DESIGN_DECISIONS.md) - Deep validation pattern decision
 - [DeepValidator source](/agents/mcp-servers/twilio/src/validation/deep-validator.ts)
 - [Callback functions](/functions/callbacks/CLAUDE.md)
-- [Voice skill](/agents/.claude/skills/voice.md) - Voice-specific validation
+- [Voice skill](/.claude/skills/voice.md) - Voice-specific validation

@@ -147,7 +147,7 @@ Omit:
 
 6. **Consult doc-map first**: Check `.claude/references/doc-map.md` before starting work to identify which docs to load for the current operation
 
-## Documentation Flywheel (D16)
+## Documentation Flywheel
 
 The project uses a file-based documentation flywheel:
 

@@ -359,4 +359,181 @@ describe('E2E Workflows', () => {
       45000
     );
   });
+
+  describe('Conference Investigation Workflow', () => {
+    itWithCredentials(
+      'should chain conference list → details → participants → recordings',
+      async () => {
+        // Step 1: List conferences
+        const listTool = voice.find(t => t.name === 'list_conferences')!;
+        const listResult = await listTool.handler({ limit: 10 });
+        const listResponse = JSON.parse(listResult.content[0].text);
+
+        expect(listResponse.success).toBe(true);
+        expect(Array.isArray(listResponse.conferences)).toBe(true);
+
+        if (listResponse.count > 0) {
+          const conference = listResponse.conferences[0];
+          const conferenceSid = conference.sid;
+
+          // Step 2: Get conference details
+          const getTool = voice.find(t => t.name === 'get_conference')!;
+          const getResult = await getTool.handler({ conferenceSid });
+          const getResponse = JSON.parse(getResult.content[0].text);
+
+          expect(getResponse.success).toBe(true);
+          expect(getResponse.sid).toBe(conferenceSid);
+          expect(getResponse.friendlyName).toBeDefined();
+
+          // Step 3: List participants
+          const participantsTool = voice.find(t => t.name === 'list_conference_participants')!;
+          const participantsResult = await participantsTool.handler({ conferenceSid, limit: 20 });
+          const participantsResponse = JSON.parse(participantsResult.content[0].text);
+
+          expect(participantsResponse.success).toBe(true);
+          expect(Array.isArray(participantsResponse.participants)).toBe(true);
+
+          // Step 4: List conference recordings
+          const recordingsTool = voice.find(t => t.name === 'list_conference_recordings')!;
+          const recordingsResult = await recordingsTool.handler({ conferenceSid, limit: 10 });
+          const recordingsResponse = JSON.parse(recordingsResult.content[0].text);
+
+          expect(recordingsResponse.success).toBe(true);
+          expect(Array.isArray(recordingsResponse.recordings)).toBe(true);
+
+          console.log(
+            `Conference "${conference.friendlyName}" (${conferenceSid}):\n` +
+              `  - Status: ${conference.status}\n` +
+              `  - Participants: ${participantsResponse.count}\n` +
+              `  - Recordings: ${recordingsResponse.count}`
+          );
+        }
+      },
+      45000
+    );
+  });
+
+  describe('Call Insights Workflow', () => {
+    itWithCredentials(
+      'should chain call logs → call details → Voice Insights summary → events',
+      async () => {
+        // Step 1: Get recent completed calls
+        const logsTool = voice.find(t => t.name === 'get_call_logs')!;
+        const logsResult = await logsTool.handler({ limit: 10, status: 'completed' });
+        const logsResponse = JSON.parse(logsResult.content[0].text);
+
+        expect(logsResponse.success).toBe(true);
+        expect(Array.isArray(logsResponse.calls)).toBe(true);
+
+        if (logsResponse.count > 0) {
+          const call = logsResponse.calls[0];
+          const callSid = call.sid;
+
+          // Step 2: Get call details
+          const callTool = voice.find(t => t.name === 'get_call')!;
+          const callResult = await callTool.handler({ callSid });
+          const callResponse = JSON.parse(callResult.content[0].text);
+
+          expect(callResponse.success).toBe(true);
+          expect(callResponse.sid).toBe(callSid);
+
+          // Step 3: Get Voice Insights summary
+          // NOTE: Insights may not be available for very recent calls (~2 min for partial, 30 min for final)
+          const summaryTool = voice.find(t => t.name === 'get_call_summary')!;
+          try {
+            const summaryResult = await summaryTool.handler({ callSid });
+            const summaryResponse = JSON.parse(summaryResult.content[0].text);
+
+            expect(summaryResponse.success).toBe(true);
+            expect(summaryResponse.callSid).toBe(callSid);
+            // processingState indicates if data is partial or complete
+            expect(['partial', 'complete']).toContain(summaryResponse.processingState);
+
+            // Step 4: Get call events
+            const eventsTool = voice.find(t => t.name === 'list_call_events')!;
+            const eventsResult = await eventsTool.handler({ callSid, limit: 20 });
+            const eventsResponse = JSON.parse(eventsResult.content[0].text);
+
+            expect(eventsResponse.success).toBe(true);
+            expect(Array.isArray(eventsResponse.events)).toBe(true);
+
+            console.log(
+              `Call ${callSid} Insights:\n` +
+                `  - Processing State: ${summaryResponse.processingState}\n` +
+                `  - Duration: ${summaryResponse.duration}s\n` +
+                `  - Call State: ${summaryResponse.callState}\n` +
+                `  - Events: ${eventsResponse.count}`
+            );
+          } catch (error) {
+            // Insights may not be available for all calls
+            const err = error as { code?: number; message?: string };
+            console.log(`Voice Insights not available for ${callSid}: ${err.message || err.code}`);
+          }
+        }
+      },
+      45000
+    );
+  });
+
+  describe('Conference Insights Workflow', () => {
+    // NOTE: Conference Insights follow same timing as Voice Insights:
+    // - Partial data available ~2 min after conference end
+    // - Final data locked 30 min after conference end
+    // Check processingState in response for data completeness.
+
+    itWithCredentials(
+      'should chain conference list → Conference Insights summary → participant summaries',
+      async () => {
+        // Step 1: List completed conferences
+        const listTool = voice.find(t => t.name === 'list_conferences')!;
+        const listResult = await listTool.handler({ limit: 10, status: 'completed' });
+        const listResponse = JSON.parse(listResult.content[0].text);
+
+        expect(listResponse.success).toBe(true);
+        expect(Array.isArray(listResponse.conferences)).toBe(true);
+
+        if (listResponse.count > 0) {
+          const conference = listResponse.conferences[0];
+          const conferenceSid = conference.sid;
+
+          // Step 2: Get Conference Insights summary
+          const summaryTool = voice.find(t => t.name === 'get_conference_summary')!;
+          try {
+            const summaryResult = await summaryTool.handler({ conferenceSid });
+            const summaryResponse = JSON.parse(summaryResult.content[0].text);
+
+            expect(summaryResponse.success).toBe(true);
+            expect(summaryResponse.conferenceSid).toBe(conferenceSid);
+            // processingState indicates if data is partial or complete
+            if (summaryResponse.processingState) {
+              expect(['partial', 'complete']).toContain(summaryResponse.processingState);
+            }
+
+            // Step 3: List participant summaries
+            const participantsTool = voice.find(t => t.name === 'list_conference_participant_summaries')!;
+            const participantsResult = await participantsTool.handler({ conferenceSid, limit: 20 });
+            const participantsResponse = JSON.parse(participantsResult.content[0].text);
+
+            expect(participantsResponse.success).toBe(true);
+            expect(Array.isArray(participantsResponse.participants)).toBe(true);
+
+            console.log(
+              `Conference Insights for "${summaryResponse.friendlyName}":\n` +
+                `  - Processing State: ${summaryResponse.processingState || 'unknown'}\n` +
+                `  - Duration: ${summaryResponse.durationSeconds}s\n` +
+                `  - Max Participants: ${summaryResponse.maxParticipants}\n` +
+                `  - Unique Participants: ${summaryResponse.uniqueParticipants}\n` +
+                `  - End Reason: ${summaryResponse.endReason}\n` +
+                `  - Participant Summaries: ${participantsResponse.count}`
+            );
+          } catch (error) {
+            // Conference Insights may not be available for all conferences
+            const err = error as { code?: number; message?: string };
+            console.log(`Conference Insights not available for ${conferenceSid}: ${err.message || err.code}`);
+          }
+        }
+      },
+      45000
+    );
+  });
 });

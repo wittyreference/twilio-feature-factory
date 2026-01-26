@@ -62,8 +62,8 @@ describe('voiceTools', () => {
   });
 
   describe('tool structure', () => {
-    it('should return an array of 24 tools', () => {
-      expect(tools).toHaveLength(24);
+    it('should return an array of 29 tools', () => {
+      expect(tools).toHaveLength(29);
     });
 
     // Core call tools
@@ -110,6 +110,47 @@ describe('voiceTools', () => {
       const tool = tools.find(t => t.name === 'list_call_recordings');
       expect(tool).toBeDefined();
       expect(tool?.description).toContain('recordings for a specific call');
+      expect(typeof tool?.handler).toBe('function');
+    });
+
+    // Account-level recording tools
+    it('should have list_recordings tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'list_recordings');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('all recordings in the account');
+      expect(typeof tool?.handler).toBe('function');
+    });
+
+    it('should have delete_recording tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'delete_recording');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('Delete a recording');
+      expect(tool?.description).toContain('soft-deleted');
+      expect(typeof tool?.handler).toBe('function');
+    });
+
+    // Active call recording control tools
+    it('should have start_call_recording tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'start_call_recording');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('Start recording an active call');
+      expect(tool?.description).toContain('StartCallRecordingAPI');
+      expect(typeof tool?.handler).toBe('function');
+    });
+
+    it('should have update_call_recording tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'update_call_recording');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('Pause');
+      expect(tool?.description).toContain('resume');
+      expect(tool?.description).toContain('stop');
+      expect(typeof tool?.handler).toBe('function');
+    });
+
+    it('should have delete_call_recording tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'delete_call_recording');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('Delete a specific recording');
       expect(typeof tool?.handler).toBe('function');
     });
 
@@ -833,6 +874,188 @@ describe('voiceTools', () => {
           streamSid: 'XXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
         });
         expect(invalid.success).toBe(false);
+      });
+    });
+
+    // Recording tools schema tests
+    describe('list_recordings schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'list_recordings');
+        schema = tool!.inputSchema;
+      });
+
+      it('should have sensible defaults', () => {
+        const result = schema.safeParse({});
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.limit).toBe(20);
+          expect(result.data.includeSoftDeleted).toBe(false);
+        }
+      });
+
+      it('should accept optional filters', () => {
+        const result = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          conferenceSid: 'CFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          includeSoftDeleted: true,
+        });
+        expect(result.success).toBe(true);
+      });
+    });
+
+    describe('delete_recording schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'delete_recording');
+        schema = tool!.inputSchema;
+      });
+
+      it('should require recording SID starting with RE', () => {
+        const valid = schema.safeParse({
+          recordingSid: 'RExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(valid.success).toBe(true);
+
+        const invalid = schema.safeParse({
+          recordingSid: 'XXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(invalid.success).toBe(false);
+      });
+    });
+
+    describe('start_call_recording schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'start_call_recording');
+        schema = tool!.inputSchema;
+      });
+
+      it('should require call SID', () => {
+        const valid = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(valid.success).toBe(true);
+
+        const missing = schema.safeParse({});
+        expect(missing.success).toBe(false);
+      });
+
+      it('should validate recordingChannels enum', () => {
+        const mono = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          recordingChannels: 'mono',
+        });
+        expect(mono.success).toBe(true);
+
+        const dual = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          recordingChannels: 'dual',
+        });
+        expect(dual.success).toBe(true);
+
+        const invalid = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          recordingChannels: 'stereo',
+        });
+        expect(invalid.success).toBe(false);
+      });
+
+      it('should validate recordingTrack enum', () => {
+        const validTracks = ['inbound', 'outbound', 'both'];
+        for (const track of validTracks) {
+          const result = schema.safeParse({
+            callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+            recordingTrack: track,
+          });
+          expect(result.success).toBe(true);
+        }
+      });
+    });
+
+    describe('update_call_recording schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'update_call_recording');
+        schema = tool!.inputSchema;
+      });
+
+      it('should require call SID, recording SID, and status', () => {
+        const valid = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          recordingSid: 'RExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          status: 'paused',
+        });
+        expect(valid.success).toBe(true);
+
+        const missingStatus = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          recordingSid: 'RExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(missingStatus.success).toBe(false);
+      });
+
+      it('should validate status enum', () => {
+        const validStatuses = ['in-progress', 'paused', 'stopped'];
+        for (const status of validStatuses) {
+          const result = schema.safeParse({
+            callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+            recordingSid: 'RExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+            status,
+          });
+          expect(result.success).toBe(true);
+        }
+
+        const invalid = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          recordingSid: 'RExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          status: 'invalid',
+        });
+        expect(invalid.success).toBe(false);
+      });
+
+      it('should validate pauseBehavior enum', () => {
+        const skip = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          recordingSid: 'RExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          status: 'paused',
+          pauseBehavior: 'skip',
+        });
+        expect(skip.success).toBe(true);
+
+        const silence = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          recordingSid: 'RExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          status: 'paused',
+          pauseBehavior: 'silence',
+        });
+        expect(silence.success).toBe(true);
+      });
+    });
+
+    describe('delete_call_recording schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'delete_call_recording');
+        schema = tool!.inputSchema;
+      });
+
+      it('should require both call SID and recording SID', () => {
+        const valid = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          recordingSid: 'RExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(valid.success).toBe(true);
+
+        const missingRecording = schema.safeParse({
+          callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(missingRecording.success).toBe(false);
       });
     });
   });

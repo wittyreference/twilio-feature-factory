@@ -4,7 +4,7 @@ This directory contains the Model Context Protocol (MCP) server that exposes Twi
 
 ## Purpose
 
-The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **241 tools across 25 modules** covering:
+The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **246 tools across 25 modules** covering:
 
 - **Messaging**: SMS/MMS, messaging services, content templates, notifications
 - **Voice**: Call management, conferences, recordings, media streams, Voice Insights, transcriptions, BYOC trunks, SIP trunking
@@ -105,7 +105,7 @@ for await (const message of query({
 | `get_message_logs` | Retrieve message history |
 | `get_message_status` | Check delivery status |
 
-### Voice Tools - 24 tools
+### Voice Tools - 29 tools
 
 | Tool | Description |
 |------|-------------|
@@ -115,6 +115,11 @@ for await (const message of query({
 | `get_call` | Get detailed call information |
 | `update_call` | Modify in-progress call (redirect, end) |
 | `list_call_recordings` | List recordings for a call |
+| `list_recordings` | List all recordings in account with filters |
+| `delete_recording` | Delete a recording (soft delete) |
+| `start_call_recording` | Start recording an active call |
+| `update_call_recording` | Pause/resume/stop a recording |
+| `delete_call_recording` | Delete a call recording |
 | `list_conferences` | List conferences with filtering |
 | `get_conference` | Get conference details |
 | `update_conference` | Update/end a conference |
@@ -133,6 +138,16 @@ for await (const message of query({
 | `get_conference_participant_summary` | Single participant summary |
 | `list_recording_transcriptions` | List transcriptions for recording |
 | `get_transcription` | Get transcription text |
+
+**Recording Methods (by source):**
+| Source | How Created | Control API |
+|--------|-------------|-------------|
+| `DialVerb` | `<Dial record=...>` in TwiML | N/A (TwiML-based) |
+| `RecordVerb` | `<Record>` verb in TwiML | N/A (TwiML-based) |
+| `OutboundAPI` | `Record` param in Calls API | N/A (at call create) |
+| `StartCallRecordingAPI` | `start_call_recording` | `update_call_recording` |
+| `Conference` | `record` on `<Conference>` | Conference API |
+| `Trunking` | Elastic SIP Trunk config | Trunk API |
 
 **Media Streams:**
 - `start_call_stream` starts UNIDIRECTIONAL streams (API equivalent of `<Start><Stream>`)

@@ -21,3 +21,16 @@ export {
   generateWebSocketServer,
   generateLLMIntegration,
 } from './generators/index.js';
+
+// Use Case Configurations
+export type { UseCaseType } from './use-cases/index.js';
+export {
+  useCaseConfigs,
+  getUseCaseConfig,
+  getAvailableUseCases,
+  basicAssistantConfig,
+  customerServiceConfig,
+  customerServiceTools,
+  appointmentBookingConfig,
+  appointmentBookingTools,
+} from './use-cases/index.js';

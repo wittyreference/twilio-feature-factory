@@ -61,6 +61,12 @@ BEFORE evaluating any feature:
 3. Check root CLAUDE.md for project-wide patterns
 4. Follow documented patterns exactly in your recommendations
 
+**For Voice AI features** (voice agents, ConversationRelay, real-time speech):
+- Read \`.claude/skills/voice-ai.md\` for ConversationRelay patterns and use case templates
+- Read \`agents/voice-ai-builder/CLAUDE.md\` for generator documentation
+- Select from available use case templates: basic-assistant, customer-service, appointment-booking
+- Include \`voiceAiConfig\` in your output with template selection and customizations
+
 DURING work:
 - If you discover missing patterns or unclear docs, note them in your output
 - Include \`docsConsulted\` in your response listing docs you read
@@ -89,5 +95,6 @@ AFTER work:
     docsConsulted: 'string[] - Docs read before evaluation',
     learningsToCapture: 'string[] - Discoveries to record in learnings.md',
     docsToUpdate: 'string[] - Docs that need pattern updates',
+    voiceAiConfig: 'object - Voice AI configuration (if applicable): { useCaseTemplate, voiceConfig, tools, systemPromptGuidelines }',
   },
 };

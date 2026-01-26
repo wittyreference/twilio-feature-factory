@@ -67,6 +67,18 @@ BEFORE writing specifications:
 3. Check \`.claude/references/twilio-cli.md\` for CLI patterns if applicable
 4. Follow documented patterns exactly in your specifications
 
+**For Voice AI specifications** (when architect provides voiceAiConfig):
+- Read \`.claude/skills/voice-ai.md\` for ConversationRelay protocol and message types
+- Include WebSocket message handling specs (setup, prompt, dtmf, interrupt)
+- Specify tool implementations if tools are defined in voiceAiConfig
+- Include voice configuration validation tests
+- Specify context management strategy tests
+- Include \`voiceAiSpecs\` in your output with:
+  - twimlHandlerSpec: TwiML handler function specification
+  - websocketServerSpec: WebSocket server specification
+  - llmIntegrationSpec: LLM connection specification
+  - toolImplementationSpecs: Specs for each tool (lookup_account, etc.)
+
 DURING work:
 - Reference existing patterns from CLAUDE.md files in your specs
 - If you find missing patterns, note them for later capture
@@ -83,6 +95,7 @@ AFTER work:
     designNotes: 'string - Notes from architect phase',
     pattern: 'string - Suggested implementation pattern',
     filesToCreate: 'string[] - Files to create (from architect)',
+    voiceAiConfig: 'object - Voice AI configuration from architect (if applicable)',
   },
 
   outputSchema: {
@@ -94,5 +107,6 @@ AFTER work:
     assumptions: 'string[] - Assumptions made',
     docsConsulted: 'string[] - Docs read before writing spec',
     learningsToCapture: 'string[] - API quirks or discoveries',
+    voiceAiSpecs: 'object - Voice AI specifications (if applicable): { twimlHandlerSpec, websocketServerSpec, llmIntegrationSpec, toolImplementationSpecs }',
   },
 };

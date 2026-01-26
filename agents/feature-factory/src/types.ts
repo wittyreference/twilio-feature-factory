@@ -9,6 +9,7 @@ export type AgentType =
   | 'spec'
   | 'test-gen'
   | 'dev'
+  | 'qa'
   | 'review'
   | 'docs';
 
@@ -411,7 +412,7 @@ export interface SessionMetadata {
 /**
  * Hook types that can run before or after phases
  */
-export type HookType = 'tdd-enforcement' | 'credential-safety';
+export type HookType = 'tdd-enforcement' | 'credential-safety' | 'coverage-threshold';
 
 /**
  * Context passed to a hook when executing

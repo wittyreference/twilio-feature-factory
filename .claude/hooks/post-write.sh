@@ -1,12 +1,38 @@
 #!/bin/bash
-# ABOUTME: Post-write hook for auto-linting JavaScript files.
-# ABOUTME: Runs ESLint with auto-fix after Write/Edit operations on JS files.
+# ABOUTME: Post-write hook for auto-linting and session file tracking.
+# ABOUTME: Tracks all files touched during session for documentation flywheel.
 
 FILE_PATH="${CLAUDE_TOOL_INPUT_FILE_PATH:-}"
 
 # Exit early if no file path
 if [ -z "$FILE_PATH" ]; then
     exit 0
+fi
+
+# ============================================
+# SESSION FILE TRACKING (for doc flywheel)
+# ============================================
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+SESSION_FILE="$PROJECT_ROOT/.claude-dev/.session-files"
+SESSION_START="$PROJECT_ROOT/.claude-dev/.session-start"
+
+# Initialize session start time if not set
+if [ ! -f "$SESSION_START" ]; then
+    date +%s > "$SESSION_START"
+fi
+
+# Track this file (append if not already present)
+# Make path relative to project root for consistency
+REL_PATH="${FILE_PATH#$PROJECT_ROOT/}"
+if [ -n "$REL_PATH" ]; then
+    # Create session file if it doesn't exist
+    touch "$SESSION_FILE" 2>/dev/null
+    # Add file if not already tracked (with timestamp)
+    if ! grep -qF "$REL_PATH" "$SESSION_FILE" 2>/dev/null; then
+        echo "$(date +%s)|$REL_PATH" >> "$SESSION_FILE"
+    fi
 fi
 
 # Only process JavaScript files

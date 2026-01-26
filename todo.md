@@ -163,33 +163,32 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 
 ---
 
-## Phase 3: QA Agent (2-3 sessions)
+## Phase 3: QA Agent (2-3 sessions) ✅
 
-### Setup
+**Scope Change:** Integrated QA capabilities into Feature Factory as a subagent rather than standalone agent. This provides better workflow integration and shared context.
 
-- [ ] Set up agents/qa-agent/ directory structure
-- [ ] Create package.json and tsconfig.json
-- [ ] Create CLAUDE.md for the QA Agent
+### QA Subagent (agents/feature-factory/src/agents/qa.ts) ✅
 
-### Analyzers
+- [x] QA agent configuration with test execution, coverage, TwiML validation, security scanning
+- [x] Integration into new-feature workflow (between dev and review phases)
+- [x] Coverage-threshold pre-phase hook (80% enforcement)
+- [x] Unit tests for QA agent configuration
+- [x] Integration tests for QA workflow phase
 
-- [ ] Implement coverage analyzer
-- [ ] Implement TwiML validator
-- [ ] Implement security analyzer
+### Capabilities Implemented ✅
 
-### Generators
+- [x] **Test execution** - npm test with coverage reporting
+- [x] **Coverage analysis** - Gap detection, 80% threshold enforcement
+- [x] **TwiML validation** - Pattern detection (Gather timeout, Redirect loops, etc.)
+- [x] **Security scanning** - Credential exposure, injection vulnerabilities
+- [x] **Deep validation** - MCP tool integration for SID validation
+- [x] **Verdict system** - PASSED, NEEDS_ATTENTION, FAILED
 
-- [ ] Implement test case generator
+### Deferred to Future Sessions
 
-### Runners
-
-- [ ] Implement Jest runner
-- [ ] Implement Newman runner
-
-### CLI & Testing
-
-- [ ] Build CLI interface
-- [ ] Write tests for QA Agent
+- [ ] Standalone QA CLI (if needed beyond Feature Factory)
+- [ ] Newman runner integration
+- [ ] Test case generator
 
 ---
 
@@ -310,6 +309,7 @@ Voice MCP tools expanded from 22 to 29 tools (246 total MCP tools):
 | 2026-01-25 | 5h | P1-P3 integration tests: 31 new tests across 13 files. Tests verify list→get chains and nested resources. 369 total MCP tests. |
 | 2026-01-25 | 5i | E2E workflow tests: 7 multi-tool chain tests (account, monitoring, lookup, messaging, voice, serverless, cross-domain). Phase 1 complete. 376 tests. |
 | 2026-01-25 | 6 | Voice MCP expansion: Conference Insights in DeepValidator, Media Streams tools, Recording tools expansion (29 voice tools, 246 total). Documentation self-correction mechanism (assertion verification). |
+| 2026-01-25 | 6b | Documentation flywheel fix (file-based hook→agent communication). QA agent integrated into Feature Factory (test execution, coverage, TwiML validation, security scanning). Coverage-threshold hook. 210 Feature Factory tests passing. |
 
 ---
 
@@ -319,7 +319,7 @@ Items to revisit in future sessions:
 
 - [ ] **Evaluate pre-commit doc reminder effectiveness** (added 2026-01-23): After a few sessions, check if the pre-commit reminder is actually prompting doc updates or being ignored. Consider escalating to interactive prompt if reminders aren't working.
 
-- [ ] **Documentation flywheel mechanism review** (added 2026-01-23): Hooks are firing but output may not be reaching agent context. Need to verify hook output is actionable - consider writing to a file the agent reads vs stdout/stderr. Critical for Feature Factory users building Twilio apps. Revisit before going deep into development pipeline.
+- [x] **Documentation flywheel mechanism review** (added 2026-01-23, **addressed 2026-01-25**): Hooks were outputting to stdout/stderr which didn't reach agent context. Fixed with file-based communication: hooks write to `.claude-dev/pending-actions.md`, pre-commit hook displays pending actions, notify hook mentions count. See D16 in DESIGN_DECISIONS.md.
 
 ---
 

@@ -10,7 +10,7 @@ The Feature Factory coordinates specialized subagents in TDD-enforced developmen
 Developer: "Add SMS verification to user signup"
     ↓
 Feature Factory Pipeline:
-    architect → spec → test-gen → dev → review → docs
+    architect → spec → test-gen → dev → qa → review → docs
     ↓
 Ready for deployment (human approved at checkpoints)
 ```
@@ -32,13 +32,15 @@ src/
 │   ├── spec.ts           # Detailed specifications
 │   ├── test-gen.ts       # TDD Red Phase (failing tests)
 │   ├── dev.ts            # TDD Green Phase (implementation)
+│   ├── qa.ts             # Test execution, coverage, security
 │   ├── review.ts         # Code review, security audit
 │   └── docs.ts           # Documentation updates
 ├── workflows/            # Pipeline definitions
 │   └── new-feature.ts    # Full TDD pipeline
 └── hooks/                # Pre-phase quality gates
     ├── index.ts          # Hook registry and execution
-    └── tdd-enforcement.ts # Verifies tests exist and FAIL before dev
+    ├── tdd-enforcement.ts # Verifies tests exist and FAIL before dev
+    └── coverage-threshold.ts # Enforces 80% coverage before QA
 ```
 
 ## Subagent Roles
@@ -49,6 +51,7 @@ src/
 | **spec** | Detailed specifications | Read, Glob, Grep, Write | Yes |
 | **test-gen** | Write failing tests (TDD Red) | Read, Glob, Write, Bash | No |
 | **dev** | Implement to pass tests (TDD Green) | Read, Write, Edit, Bash | No |
+| **qa** | Test execution, coverage, security | Read, Glob, Grep, Bash | No |
 | **review** | Code review, security audit | Read, Glob, Grep | Yes |
 | **docs** | Documentation updates | Read, Write, Edit | No |
 
@@ -62,8 +65,9 @@ Full TDD pipeline for new Twilio features:
 2. **spec** - Creates detailed specification with test scenarios
 3. **test-gen** - Writes failing tests (must fail initially)
 4. **dev** - Implements minimal code to pass tests
-5. **review** - Validates code quality and security
-6. **docs** - Updates documentation
+5. **qa** - Test execution, coverage analysis, security scanning
+6. **review** - Validates code quality and security
+7. **docs** - Updates documentation
 
 Human approval required after: architect, spec, review
 

@@ -3,12 +3,14 @@
 
 import type { HookConfig, HookType, HookContext, HookResult } from '../types.js';
 import { tddEnforcementHook } from './tdd-enforcement.js';
+import { coverageThresholdHook } from './coverage-threshold.js';
 
 /**
  * Registry of all available hooks
  */
 const hookRegistry: Map<HookType, HookConfig> = new Map([
   ['tdd-enforcement', tddEnforcementHook],
+  ['coverage-threshold', coverageThresholdHook],
 ]);
 
 /**
@@ -60,6 +62,7 @@ export function hasHook(hookType: HookType): boolean {
 
 // Re-export the individual hooks for direct use
 export { tddEnforcementHook } from './tdd-enforcement.js';
+export { coverageThresholdHook } from './coverage-threshold.js';
 
 // Re-export credential safety validation (tool-level, not pre-phase)
 export {

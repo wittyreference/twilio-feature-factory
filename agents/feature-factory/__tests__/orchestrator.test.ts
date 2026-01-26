@@ -92,6 +92,22 @@ const VALID_DEV_OUTPUT = {
   testRunOutput: 'All tests passed',
 };
 
+const VALID_QA_OUTPUT = {
+  testsRun: 10,
+  testsPassed: 10,
+  testsFailed: 0,
+  testOutput: 'All tests passed',
+  coveragePercent: 85,
+  coverageGaps: [],
+  coverageMeetsThreshold: true,
+  securityIssues: [],
+  twimlIssues: [],
+  deepValidationResults: [],
+  verdict: 'PASSED',
+  summary: 'All quality checks passed',
+  recommendations: [],
+};
+
 const VALID_REVIEW_OUTPUT = {
   verdict: 'APPROVED',
   summary: 'Code looks good',
@@ -198,7 +214,7 @@ describe('FeatureFactoryOrchestrator', () => {
       const startEvent = events[0] as WorkflowStartedEvent;
       expect(startEvent.workflow).toBe('new-feature');
       expect(startEvent.description).toBe('Test feature');
-      expect(startEvent.totalPhases).toBe(6); // architect, spec, test-gen, dev, review, docs
+      expect(startEvent.totalPhases).toBe(7); // architect, spec, test-gen, dev, qa, review, docs
     });
 
     it('should emit phase-started and phase-completed events', async () => {
@@ -208,6 +224,7 @@ describe('FeatureFactoryOrchestrator', () => {
         .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
 
@@ -240,6 +257,7 @@ describe('FeatureFactoryOrchestrator', () => {
         .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
 
@@ -270,6 +288,7 @@ describe('FeatureFactoryOrchestrator', () => {
         .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
 
@@ -374,6 +393,7 @@ describe('FeatureFactoryOrchestrator', () => {
         .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
 
@@ -404,6 +424,7 @@ describe('FeatureFactoryOrchestrator', () => {
         .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
 
@@ -481,6 +502,7 @@ describe('FeatureFactoryOrchestrator', () => {
         .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
 
@@ -526,6 +548,7 @@ describe('FeatureFactoryOrchestrator', () => {
         .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
 
@@ -591,6 +614,7 @@ describe('FeatureFactoryOrchestrator', () => {
         .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
 
@@ -619,6 +643,7 @@ describe('FeatureFactoryOrchestrator', () => {
         .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
 
@@ -668,12 +693,14 @@ describe('FeatureFactoryOrchestrator', () => {
         .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
 
@@ -733,6 +760,7 @@ describe('FeatureFactoryOrchestrator', () => {
         .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
 
@@ -787,6 +815,7 @@ describe('FeatureFactoryOrchestrator', () => {
         .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
 
@@ -821,6 +850,7 @@ describe('FeatureFactoryOrchestrator', () => {
         .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
 
@@ -949,6 +979,7 @@ describe('FeatureFactoryOrchestrator', () => {
         .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
         .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
 

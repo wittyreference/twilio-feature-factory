@@ -55,6 +55,7 @@ describe('Feature Factory Integration', () => {
       'spec',
       'test-gen',
       'dev',
+      'qa',
       'review',
       'docs',
     ];
@@ -415,7 +416,7 @@ describe('Workflow Integration', () => {
       const workflow = getWorkflow('new-feature');
 
       // Required agents in order
-      const expectedAgents = ['architect', 'spec', 'test-gen', 'dev', 'review', 'docs'];
+      const expectedAgents = ['architect', 'spec', 'test-gen', 'dev', 'qa', 'review', 'docs'];
       const actualAgents = workflow.phases.map(p => p.agent);
 
       expect(actualAgents).toEqual(expectedAgents);
@@ -772,6 +773,7 @@ describe('End-to-End Component Validation', () => {
       'spec',
       'test-gen',
       'dev',
+      'qa',
       'review',
       'docs',
     ];

@@ -6,6 +6,7 @@ import { architectAgent } from './architect.js';
 import { specAgent } from './spec.js';
 import { testGenAgent } from './test-gen.js';
 import { devAgent } from './dev.js';
+import { qaAgent } from './qa.js';
 import { reviewAgent } from './review.js';
 import { docsAgent } from './docs.js';
 
@@ -17,6 +18,7 @@ export const agents: Record<AgentType, AgentConfig> = {
   spec: specAgent,
   'test-gen': testGenAgent,
   dev: devAgent,
+  qa: qaAgent,
   review: reviewAgent,
   docs: docsAgent,
 };
@@ -37,6 +39,7 @@ export {
   specAgent,
   testGenAgent,
   devAgent,
+  qaAgent,
   reviewAgent,
   docsAgent,
 };

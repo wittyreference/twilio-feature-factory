@@ -8,6 +8,7 @@ import {
   listHooks,
   hasHook,
   tddEnforcementHook,
+  coverageThresholdHook,
   validateCredentials,
   shouldSkipValidation,
 } from '../src/hooks/index.js';
@@ -16,6 +17,12 @@ import {
   type TestRunResult,
   type TestRunner,
 } from '../src/hooks/tdd-enforcement.js';
+import {
+  createCoverageThresholdHook,
+  DEFAULT_COVERAGE_THRESHOLD,
+  type CoverageResult,
+  type CoverageRunner,
+} from '../src/hooks/coverage-threshold.js';
 import type { HookContext, WorkflowState, AgentResult } from '../src/types.js';
 
 /**
@@ -70,12 +77,47 @@ function createMockTestRunner(result: TestRunResult): TestRunner {
   return async (_workingDirectory: string) => result;
 }
 
+/**
+ * Create a successful dev phase result
+ */
+function createDevResult(
+  allTestsPassing: boolean = true,
+  success: boolean = true
+): AgentResult {
+  return {
+    agent: 'dev',
+    success,
+    output: {
+      allTestsPassing,
+      testRunOutput: 'All tests passed',
+    },
+    filesCreated: ['src/feature.ts'],
+    filesModified: [],
+    commits: ['abc123'],
+    costUsd: 0.2,
+    turnsUsed: 10,
+  };
+}
+
+/**
+ * Create a mock coverage runner for testing
+ */
+function createMockCoverageRunner(result: CoverageResult): CoverageRunner {
+  return async (_workingDirectory: string) => result;
+}
+
 describe('Hook Infrastructure', () => {
   describe('getHook', () => {
     it('should return tdd-enforcement hook', () => {
       const hook = getHook('tdd-enforcement');
       expect(hook).toBeDefined();
       expect(hook?.name).toBe('tdd-enforcement');
+    });
+
+    it('should return coverage-threshold hook', () => {
+      const hook = getHook('coverage-threshold');
+      expect(hook).toBeDefined();
+      expect(hook?.name).toBe('coverage-threshold');
     });
 
     it('should return undefined for unknown hook', () => {
@@ -88,14 +130,16 @@ describe('Hook Infrastructure', () => {
   describe('listHooks', () => {
     it('should list all available hooks', () => {
       const hooks = listHooks();
-      expect(hooks.length).toBeGreaterThan(0);
+      expect(hooks.length).toBeGreaterThanOrEqual(2);
       expect(hooks.some(h => h.name === 'tdd-enforcement')).toBe(true);
+      expect(hooks.some(h => h.name === 'coverage-threshold')).toBe(true);
     });
   });
 
   describe('hasHook', () => {
-    it('should return true for existing hook', () => {
+    it('should return true for existing hooks', () => {
       expect(hasHook('tdd-enforcement')).toBe(true);
+      expect(hasHook('coverage-threshold')).toBe(true);
     });
 
     it('should return false for unknown hook', () => {
@@ -357,7 +401,7 @@ describe('TDD Enforcement Hook', () => {
       });
 
       // Capture console.log
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
       const hook = createTddEnforcementHook(mockRunner);
       await hook.execute(context);
@@ -371,6 +415,316 @@ describe('TDD Enforcement Hook', () => {
   });
 });
 
+// ============================================================================
+// Coverage Threshold Hook Tests
+// ============================================================================
+
+describe('Coverage Threshold Hook', () => {
+  describe('Pre-conditions', () => {
+    it('should fail if dev phase has not run', async () => {
+      const context = createMockContext({
+        previousPhaseResults: {},
+      });
+
+      const result = await coverageThresholdHook.execute(context);
+
+      expect(result.passed).toBe(false);
+      expect(result.error).toContain('dev phase has not run');
+    });
+
+    it('should fail if dev phase failed', async () => {
+      const context = createMockContext({
+        previousPhaseResults: {
+          dev: createDevResult(true, false),
+        },
+      });
+
+      const result = await coverageThresholdHook.execute(context);
+
+      expect(result.passed).toBe(false);
+      expect(result.error).toContain('dev phase failed');
+    });
+
+    it('should fail if tests are not passing', async () => {
+      const context = createMockContext({
+        previousPhaseResults: {
+          dev: createDevResult(false, true),
+        },
+      });
+
+      const result = await coverageThresholdHook.execute(context);
+
+      expect(result.passed).toBe(false);
+      expect(result.error).toContain('tests are not passing');
+    });
+  });
+
+  describe('Coverage Analysis', () => {
+    it('should pass when coverage meets threshold', async () => {
+      const context = createMockContext({
+        previousPhaseResults: {
+          dev: createDevResult(true, true),
+        },
+      });
+
+      const mockRunner = createMockCoverageRunner({
+        success: true,
+        coveragePercent: 85,
+        statementCoverage: 90,
+        branchCoverage: 80,
+        functionCoverage: 95,
+        lineCoverage: 88,
+        uncoveredFiles: [],
+        rawOutput: 'Coverage summary...',
+      });
+
+      const hook = createCoverageThresholdHook(mockRunner);
+      const result = await hook.execute(context);
+
+      expect(result.passed).toBe(true);
+      expect(result.data?.coveragePercent).toBe(85);
+    });
+
+    it('should fail when coverage is below threshold', async () => {
+      const context = createMockContext({
+        previousPhaseResults: {
+          dev: createDevResult(true, true),
+        },
+      });
+
+      const mockRunner = createMockCoverageRunner({
+        success: true,
+        coveragePercent: 65,
+        statementCoverage: 70,
+        branchCoverage: 60,
+        functionCoverage: 75,
+        lineCoverage: 68,
+        uncoveredFiles: [
+          { file: 'handler.js', coverage: 50, uncoveredLines: [10, 20, 30] },
+        ],
+        rawOutput: 'Coverage summary...',
+      });
+
+      const hook = createCoverageThresholdHook(mockRunner);
+      const result = await hook.execute(context);
+
+      expect(result.passed).toBe(false);
+      expect(result.error).toContain('Coverage threshold not met');
+      expect(result.error).toContain('65.0%');
+      expect(result.error).toContain(`${DEFAULT_COVERAGE_THRESHOLD}%`);
+    });
+
+    it('should report uncovered files when below threshold', async () => {
+      const context = createMockContext({
+        previousPhaseResults: {
+          dev: createDevResult(true, true),
+        },
+      });
+
+      const mockRunner = createMockCoverageRunner({
+        success: true,
+        coveragePercent: 70,
+        statementCoverage: 75,
+        branchCoverage: 65,
+        functionCoverage: 80,
+        lineCoverage: 72,
+        uncoveredFiles: [
+          { file: 'handler.js', coverage: 50, uncoveredLines: [10, 20] },
+          { file: 'utils.js', coverage: 60, uncoveredLines: [5, 15] },
+        ],
+        rawOutput: 'Coverage summary...',
+      });
+
+      const hook = createCoverageThresholdHook(mockRunner);
+      const result = await hook.execute(context);
+
+      expect(result.passed).toBe(false);
+      expect(result.data?.uncoveredFiles).toHaveLength(2);
+      expect(result.warnings).toBeDefined();
+      expect(result.warnings?.[0]).toContain('handler.js');
+    });
+
+    it('should handle coverage runner errors', async () => {
+      const context = createMockContext({
+        previousPhaseResults: {
+          dev: createDevResult(true, true),
+        },
+      });
+
+      const mockRunner = createMockCoverageRunner({
+        success: false,
+        coveragePercent: 0,
+        statementCoverage: 0,
+        branchCoverage: 0,
+        functionCoverage: 0,
+        lineCoverage: 0,
+        uncoveredFiles: [],
+        rawOutput: '',
+        error: 'Could not parse coverage data',
+      });
+
+      const hook = createCoverageThresholdHook(mockRunner);
+      const result = await hook.execute(context);
+
+      expect(result.passed).toBe(false);
+      expect(result.error).toContain('Could not parse coverage data');
+    });
+
+    it('should pass with exactly threshold coverage', async () => {
+      const context = createMockContext({
+        previousPhaseResults: {
+          dev: createDevResult(true, true),
+        },
+      });
+
+      const mockRunner = createMockCoverageRunner({
+        success: true,
+        coveragePercent: 80,
+        statementCoverage: 82,
+        branchCoverage: 78,
+        functionCoverage: 85,
+        lineCoverage: 80,
+        uncoveredFiles: [],
+        rawOutput: 'Coverage summary...',
+      });
+
+      const hook = createCoverageThresholdHook(mockRunner);
+      const result = await hook.execute(context);
+
+      expect(result.passed).toBe(true);
+    });
+
+    it('should allow custom threshold', async () => {
+      const context = createMockContext({
+        previousPhaseResults: {
+          dev: createDevResult(true, true),
+        },
+      });
+
+      const mockRunner = createMockCoverageRunner({
+        success: true,
+        coveragePercent: 65,
+        statementCoverage: 70,
+        branchCoverage: 60,
+        functionCoverage: 75,
+        lineCoverage: 68,
+        uncoveredFiles: [],
+        rawOutput: 'Coverage summary...',
+      });
+
+      // Custom threshold of 60%
+      const hook = createCoverageThresholdHook(mockRunner, 60);
+      const result = await hook.execute(context);
+
+      expect(result.passed).toBe(true);
+      expect(result.data?.threshold).toBe(60);
+    });
+  });
+
+  describe('Hook Metadata', () => {
+    it('should have correct name', () => {
+      expect(coverageThresholdHook.name).toBe('coverage-threshold');
+    });
+
+    it('should have description', () => {
+      expect(coverageThresholdHook.description).toBeTruthy();
+      expect(coverageThresholdHook.description.length).toBeGreaterThan(10);
+    });
+
+    it('should have execute function', () => {
+      expect(typeof coverageThresholdHook.execute).toBe('function');
+    });
+  });
+
+  describe('Verbose Mode', () => {
+    it('should log when verbose is enabled', async () => {
+      const context = createMockContext({
+        previousPhaseResults: {
+          dev: createDevResult(true, true),
+        },
+        verbose: true,
+      });
+
+      const mockRunner = createMockCoverageRunner({
+        success: true,
+        coveragePercent: 85,
+        statementCoverage: 90,
+        branchCoverage: 80,
+        functionCoverage: 95,
+        lineCoverage: 88,
+        uncoveredFiles: [],
+        rawOutput: 'Coverage summary...',
+      });
+
+      // Capture console.log
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+      const hook = createCoverageThresholdHook(mockRunner);
+      await hook.execute(context);
+
+      expect(consoleSpy).toHaveBeenCalled();
+      const logCalls = consoleSpy.mock.calls.map((call: unknown[]) => call[0]);
+      expect(
+        logCalls.some(
+          (msg: unknown) =>
+            typeof msg === 'string' && msg.includes('[coverage-threshold]')
+        )
+      ).toBe(true);
+
+      consoleSpy.mockRestore();
+    });
+  });
+});
+
+describe('createCoverageThresholdHook', () => {
+  it('should create a valid hook config', () => {
+    const mockRunner = createMockCoverageRunner({
+      success: true,
+      coveragePercent: 85,
+      statementCoverage: 90,
+      branchCoverage: 80,
+      functionCoverage: 95,
+      lineCoverage: 88,
+      uncoveredFiles: [],
+      rawOutput: 'Coverage summary...',
+    });
+
+    const hook = createCoverageThresholdHook(mockRunner);
+
+    expect(hook.name).toBe('coverage-threshold');
+    expect(hook.description).toBeTruthy();
+    expect(typeof hook.execute).toBe('function');
+  });
+
+  it('should use the provided coverage runner', async () => {
+    const context = createMockContext({
+      previousPhaseResults: {
+        dev: createDevResult(true, true),
+      },
+    });
+
+    let runnerCalled = false;
+    const customRunner: CoverageRunner = async (_workingDirectory) => {
+      runnerCalled = true;
+      return {
+        success: true,
+        coveragePercent: 85,
+        statementCoverage: 90,
+        branchCoverage: 80,
+        functionCoverage: 95,
+        lineCoverage: 88,
+        uncoveredFiles: [],
+        rawOutput: 'Coverage summary...',
+      };
+    };
+
+    const hook = createCoverageThresholdHook(customRunner);
+    await hook.execute(context);
+
+    expect(runnerCalled).toBe(true);
+  });
+});
+
 describe('Workflow Integration', () => {
   it('should be configured on dev phase in new-feature workflow', async () => {
     // Import the workflow to verify hook is configured
@@ -380,6 +734,16 @@ describe('Workflow Integration', () => {
 
     expect(devPhase).toBeDefined();
     expect(devPhase?.prePhaseHooks).toContain('tdd-enforcement');
+  });
+
+  it('should be configured on qa phase in new-feature workflow', async () => {
+    // Import the workflow to verify hook is configured
+    const { newFeatureWorkflow } = await import('../src/workflows/new-feature.js');
+
+    const qaPhase = newFeatureWorkflow.phases.find(p => p.agent === 'qa');
+
+    expect(qaPhase).toBeDefined();
+    expect(qaPhase?.prePhaseHooks).toContain('coverage-threshold');
   });
 });
 

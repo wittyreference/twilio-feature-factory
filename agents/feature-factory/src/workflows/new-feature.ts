@@ -1,5 +1,5 @@
 // ABOUTME: New feature workflow definition for Feature Factory.
-// ABOUTME: Full TDD pipeline: architect → spec → test-gen → dev → review → docs.
+// ABOUTME: Full TDD pipeline: architect → spec → test-gen → dev → qa → review → docs.
 
 import type { AgentResult, Workflow } from '../types.js';
 
@@ -11,8 +11,9 @@ import type { AgentResult, Workflow } from '../types.js';
  * 2. spec - Detailed specification with test scenarios
  * 3. test-gen - Write failing tests (TDD Red Phase)
  * 4. dev - Implement to pass tests (TDD Green Phase)
- * 5. review - Code review and security audit
- * 6. docs - Documentation updates
+ * 5. qa - Test execution, coverage, security scanning
+ * 6. review - Code review and security audit
+ * 7. docs - Documentation updates
  *
  * Human approval required after: architect, spec, review
  */
@@ -90,6 +91,28 @@ export const newFeatureWorkflow: Workflow = {
       validation: (result: AgentResult) => {
         // All tests must pass
         return result.output.allTestsPassing === true;
+      },
+    },
+    {
+      agent: 'qa',
+      name: 'Quality Assurance',
+      approvalRequired: false, // Automated analysis
+      prePhaseHooks: ['coverage-threshold'], // Enforce 80% coverage
+      nextPhaseInput: (result: AgentResult) => ({
+        qaVerdict: result.output.verdict,
+        qaSummary: result.output.summary,
+        testsRun: result.output.testsRun,
+        testsPassed: result.output.testsPassed,
+        testsFailed: result.output.testsFailed,
+        coveragePercent: result.output.coveragePercent,
+        coverageGaps: result.output.coverageGaps,
+        securityIssues: result.output.securityIssues,
+        twimlIssues: result.output.twimlIssues,
+        recommendations: result.output.recommendations,
+      }),
+      validation: (result: AgentResult) => {
+        // QA must not have a FAILED verdict
+        return result.output.verdict !== 'FAILED';
       },
     },
     {

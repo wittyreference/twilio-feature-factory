@@ -110,7 +110,7 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 - [x] Write unit tests for P1 tools (lookups, studio, messaging-services, serverless) - 40 tools total
 - [x] Write unit tests for P2 tools (8 modules, 97 tools) - 275 total MCP tests passing
 - [x] Write unit tests for P3 tools (6 modules, 61 tools) - 338 total MCP tests passing
-- [ ] Write integration tests for P1-P3 tools as implemented
+- [x] Write integration tests for P1-P3 tools - 369 total MCP tests (31 new integration tests)
 - [ ] E2E test workflow with full MCP tool chain
 
 ---
@@ -296,6 +296,7 @@ Voice is the most complex Twilio domain - stateful, real-time, with many archite
 | 2026-01-25 | 5e | P2 MCP tools: intelligence, video, proxy, trusthub, content, voice-config, regulatory, media (28 tools, 116 tests, 275 total MCP tests) |
 | 2026-01-25 | 5f | P1/P2 comprehensive coverage: expanded P1 from 13→40 tools, P2 from 28→97 tools. Total: 137 tools across 12 modules. P3 detailed plan added. |
 | 2026-01-25 | 5g | P3 tools complete: trunking (17), accounts (13), iam (8), pricing (7), notify (10), addresses (6). Total: 220 tools across 25 modules. 338 MCP tests passing. |
+| 2026-01-25 | 5h | P1-P3 integration tests: 31 new tests across 13 files. Tests verify list→get chains and nested resources. 369 total MCP tests. |
 
 ---
 

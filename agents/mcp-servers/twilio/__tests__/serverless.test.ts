@@ -40,8 +40,8 @@ describe('serverlessTools', () => {
   });
 
   describe('tool structure', () => {
-    it('should return an array of 4 tools', () => {
-      expect(tools).toHaveLength(4);
+    it('should return an array of 15 tools', () => {
+      expect(tools).toHaveLength(15);
     });
 
     it('should have list_services tool with correct metadata', () => {

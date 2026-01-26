@@ -14,6 +14,15 @@ import { lookupsTools } from './tools/lookups.js';
 import { studioTools } from './tools/studio.js';
 import { messagingServicesTools } from './tools/messaging-services.js';
 import { serverlessTools } from './tools/serverless.js';
+// P2 tools
+import { intelligenceTools } from './tools/intelligence.js';
+import { videoTools } from './tools/video.js';
+import { proxyTools } from './tools/proxy.js';
+import { trusthubTools } from './tools/trusthub.js';
+import { contentTools } from './tools/content.js';
+import { voiceConfigTools } from './tools/voice-config.js';
+import { regulatoryTools } from './tools/regulatory.js';
+import { mediaTools } from './tools/media.js';
 
 export interface TwilioMcpServerConfig {
   accountSid?: string;
@@ -78,6 +87,15 @@ export function createTwilioMcpServer(config: TwilioMcpServerConfig = {}) {
       ...studioTools(context),
       ...messagingServicesTools(context),
       ...serverlessTools(context),
+      // P2 tools
+      ...intelligenceTools(context),
+      ...videoTools(context),
+      ...proxyTools(context),
+      ...trusthubTools(context),
+      ...contentTools(context),
+      ...voiceConfigTools(context),
+      ...regulatoryTools(context),
+      ...mediaTools(context),
     ],
   };
 }
@@ -95,6 +113,15 @@ export { lookupsTools } from './tools/lookups.js';
 export { studioTools } from './tools/studio.js';
 export { messagingServicesTools } from './tools/messaging-services.js';
 export { serverlessTools } from './tools/serverless.js';
+// P2 tool exports
+export { intelligenceTools } from './tools/intelligence.js';
+export { videoTools } from './tools/video.js';
+export { proxyTools } from './tools/proxy.js';
+export { trusthubTools } from './tools/trusthub.js';
+export { contentTools } from './tools/content.js';
+export { voiceConfigTools } from './tools/voice-config.js';
+export { regulatoryTools } from './tools/regulatory.js';
+export { mediaTools } from './tools/media.js';
 
 // Export validation utilities
 export {

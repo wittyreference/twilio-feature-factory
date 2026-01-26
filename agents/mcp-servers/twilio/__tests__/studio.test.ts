@@ -41,8 +41,8 @@ describe('studioTools', () => {
   });
 
   describe('tool structure', () => {
-    it('should return an array of 3 tools', () => {
-      expect(tools).toHaveLength(3);
+    it('should return an array of 9 tools', () => {
+      expect(tools).toHaveLength(9);
     });
 
     it('should have list_studio_flows tool with correct metadata', () => {

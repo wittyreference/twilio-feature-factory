@@ -41,8 +41,8 @@ describe('messagingServicesTools', () => {
   });
 
   describe('tool structure', () => {
-    it('should return an array of 3 tools', () => {
-      expect(tools).toHaveLength(3);
+    it('should return an array of 14 tools', () => {
+      expect(tools).toHaveLength(14);
     });
 
     it('should have create_messaging_service tool with correct metadata', () => {

@@ -1,0 +1,220 @@
+// ABOUTME: Unit tests for Twilio Proxy tools.
+// ABOUTME: Tests tool structure, schema validation, and API integration with real credentials.
+
+import { proxyTools, TwilioContext } from '../src/index';
+import Twilio from 'twilio';
+import { z } from 'zod';
+
+const TEST_CREDENTIALS = {
+  accountSid: process.env.TWILIO_ACCOUNT_SID || '',
+  authToken: process.env.TWILIO_AUTH_TOKEN || '',
+  fromNumber: process.env.TWILIO_PHONE_NUMBER || '',
+};
+
+const hasRealCredentials =
+  TEST_CREDENTIALS.accountSid.startsWith('AC') &&
+  TEST_CREDENTIALS.authToken.length > 0 &&
+  TEST_CREDENTIALS.fromNumber.startsWith('+');
+
+function createTestContext(): TwilioContext {
+  const client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+  return {
+    client,
+    defaultFromNumber: TEST_CREDENTIALS.fromNumber,
+  };
+}
+
+interface Tool {
+  name: string;
+  description: string;
+  inputSchema: z.ZodType;
+  handler: (params: unknown) => Promise<{ content: Array<{ type: 'text'; text: string }> }>;
+}
+
+describe('proxyTools', () => {
+  let tools: Tool[];
+
+  beforeAll(() => {
+    tools = proxyTools(createTestContext()) as Tool[];
+  });
+
+  describe('tool structure', () => {
+    it('should return an array of 17 tools', () => {
+      expect(tools).toHaveLength(17);
+    });
+
+    it('should have create_proxy_service tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'create_proxy_service');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('Proxy');
+      expect(tool?.inputSchema).toBeDefined();
+      expect(typeof tool?.handler).toBe('function');
+    });
+
+    it('should have create_proxy_session tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'create_proxy_session');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('session');
+      expect(tool?.inputSchema).toBeDefined();
+      expect(typeof tool?.handler).toBe('function');
+    });
+
+    it('should have add_proxy_participant tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'add_proxy_participant');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('participant');
+      expect(tool?.inputSchema).toBeDefined();
+      expect(typeof tool?.handler).toBe('function');
+    });
+
+    it('should have list_proxy_sessions tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'list_proxy_sessions');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('session');
+      expect(tool?.inputSchema).toBeDefined();
+      expect(typeof tool?.handler).toBe('function');
+    });
+  });
+
+  describe('schema validation', () => {
+    describe('create_proxy_service schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'create_proxy_service');
+        schema = tool!.inputSchema;
+      });
+
+      it('should require uniqueName', () => {
+        const result = schema.safeParse({});
+        expect(result.success).toBe(false);
+      });
+
+      it('should accept uniqueName', () => {
+        const result = schema.safeParse({ uniqueName: 'test-service' });
+        expect(result.success).toBe(true);
+      });
+
+      it('should have default geoMatchLevel', () => {
+        const result = schema.safeParse({ uniqueName: 'test' });
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.geoMatchLevel).toBe('country');
+        }
+      });
+
+      it('should validate geoMatchLevel enum', () => {
+        const valid = schema.safeParse({ uniqueName: 'test', geoMatchLevel: 'area-code' });
+        expect(valid.success).toBe(true);
+
+        const invalid = schema.safeParse({ uniqueName: 'test', geoMatchLevel: 'invalid' });
+        expect(invalid.success).toBe(false);
+      });
+    });
+
+    describe('create_proxy_session schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'create_proxy_session');
+        schema = tool!.inputSchema;
+      });
+
+      it('should require serviceSid', () => {
+        const result = schema.safeParse({});
+        expect(result.success).toBe(false);
+      });
+
+      it('should validate serviceSid starts with KS', () => {
+        const valid = schema.safeParse({ serviceSid: 'KS12345678901234567890123456789012' });
+        expect(valid.success).toBe(true);
+
+        const invalid = schema.safeParse({ serviceSid: 'XX12345678901234567890123456789012' });
+        expect(invalid.success).toBe(false);
+      });
+
+      it('should have default mode', () => {
+        const result = schema.safeParse({ serviceSid: 'KS12345678901234567890123456789012' });
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.mode).toBe('voice-and-message');
+        }
+      });
+    });
+
+    describe('add_proxy_participant schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'add_proxy_participant');
+        schema = tool!.inputSchema;
+      });
+
+      it('should require serviceSid, sessionSid, and identifier', () => {
+        const result = schema.safeParse({});
+        expect(result.success).toBe(false);
+      });
+
+      it('should validate sessionSid starts with KC', () => {
+        const valid = schema.safeParse({
+          serviceSid: 'KS12345678901234567890123456789012',
+          sessionSid: 'KC12345678901234567890123456789012',
+          identifier: '+15551234567',
+        });
+        expect(valid.success).toBe(true);
+
+        const invalid = schema.safeParse({
+          serviceSid: 'KS12345678901234567890123456789012',
+          sessionSid: 'XX12345678901234567890123456789012',
+          identifier: '+15551234567',
+        });
+        expect(invalid.success).toBe(false);
+      });
+    });
+
+    describe('list_proxy_sessions schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'list_proxy_sessions');
+        schema = tool!.inputSchema;
+      });
+
+      it('should require serviceSid', () => {
+        const result = schema.safeParse({});
+        expect(result.success).toBe(false);
+      });
+
+      it('should have default limit', () => {
+        const result = schema.safeParse({ serviceSid: 'KS12345678901234567890123456789012' });
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.limit).toBe(20);
+        }
+      });
+    });
+  });
+
+  describe('API integration', () => {
+    const itWithCredentials = hasRealCredentials ? it : it.skip;
+
+    // Note: Proxy services may incur costs, so we only test list operations
+    itWithCredentials(
+      'list_proxy_sessions should handle service not found gracefully',
+      async () => {
+        const tool = tools.find(t => t.name === 'list_proxy_sessions')!;
+
+        try {
+          await tool.handler({
+            serviceSid: 'KS00000000000000000000000000000000',
+            limit: 5,
+          });
+        } catch (error) {
+          // Expected - service doesn't exist
+          expect((error as Error).message).toMatch(/not found|20404/i);
+        }
+      },
+      15000
+    );
+  });
+});

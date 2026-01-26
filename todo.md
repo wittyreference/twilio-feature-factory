@@ -11,11 +11,11 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 
 ## Phase 1: Twilio MCP Server (4-5 sessions)
 
-**Scope:** 29 tool modules across 20+ Twilio APIs (excluding EOL/deprecated)
-- **P0 (Core):** 7 modules ✅ implemented
-- **P1 (High Value):** 4 modules - in progress
-- **P2 (Specialized):** 8 modules - planned
-- **P3 (Edge Cases):** 10 modules - planned
+**Scope:** 160+ tools across 19 modules covering 20+ Twilio APIs (excluding EOL/deprecated)
+- **P0 (Core):** 7 modules ✅ (22 tools)
+- **P1 (High Value):** 4 modules ✅ (40 tools)
+- **P2 (Specialized):** 8 modules ✅ (97 tools)
+- **P3 (Edge Cases):** 10 modules planned (~85 tools)
 
 ### Setup
 
@@ -51,46 +51,88 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for architectural rationale.
 - [x] routing/taskrouter - create_task, list_tasks, get_task_status, list_workers, list_workflows
 - [x] monitoring/debugger - get_debugger_logs, analyze_errors, get_usage_records
 
-### P1 Tools (High Value) ✅
+### P1 Tools (High Value) ✅ - 40 tools
 
-- [x] identity/lookups - lookup_phone_number, check_fraud_risk (v2)
-- [x] routing/studio - list_studio_flows, trigger_flow, get_execution_status (v2)
-- [x] messaging/services - create_messaging_service, add_number_to_service, get_a2p_status
-- [x] serverless - list_services, list_functions, list_environments, get_build_status
+- [x] identity/lookups (2 tools) - lookup_phone_number, check_fraud_risk (v2)
+- [x] routing/studio (9 tools) - list_studio_flows, get_flow, trigger_flow, list_executions, get_execution_status, delete_execution, get_execution_context, list_execution_steps, get_step_context (v2)
+- [x] messaging/services (14 tools) - create_messaging_service, list_messaging_services, get_messaging_service, update_messaging_service, delete_messaging_service, add_number_to_service, list_phone_numbers_in_service, remove_number_from_service, list_alpha_senders, add_alpha_sender, remove_alpha_sender, list_short_codes, add_short_code, get_a2p_status
+- [x] serverless (15 tools) - list_services, get_service, list_functions, get_function, list_function_versions, list_environments, get_build_status, list_builds, list_assets, list_asset_versions, list_variables, create_variable, update_variable, delete_variable, list_logs
 
-### P2 Tools (Specialized)
+### P2 Tools (Specialized) ✅ - 97 tools
 
-- [ ] intelligence/conversation - transcribe_recording, analyze_sentiment (v2)
-- [ ] video - create_video_room, list_room_participants
-- [ ] routing/proxy - create_proxy_session, add_participant
-- [ ] identity/trusthub - create_business_profile, register_a2p_brand
-- [ ] messaging/content - create_content_template, list_content_templates
-- [ ] voice/configuration - get_dialing_permissions, configure_byoc
-- [ ] phone-numbers/bundles - create_regulatory_bundle, port_number
-- [ ] media - process_media, generate_thumbnail (planned)
+- [x] intelligence/conversation (8 tools) - list_intelligence_services, get_intelligence_service, list_transcripts, get_transcript, delete_transcript, list_sentences, list_operator_results, get_transcript_media (v2)
+- [x] video (10 tools) - create_video_room, list_video_rooms, get_room, update_room (end), list_room_participants, get_participant, update_participant (disconnect), list_room_recordings, list_subscribed_tracks, list_published_tracks
+- [x] routing/proxy (17 tools) - create_proxy_service, list_proxy_services, get_proxy_service, update_proxy_service, delete_proxy_service, create_proxy_session, list_proxy_sessions, get_proxy_session, update_proxy_session, delete_proxy_session, add_proxy_participant, list_proxy_participants, remove_proxy_participant, list_proxy_interactions, list_proxy_phone_numbers, add_proxy_phone_number, remove_proxy_phone_number
+- [x] identity/trusthub (17 tools) - create_customer_profile, list_customer_profiles, get_customer_profile, update_customer_profile, delete_customer_profile, list_customer_profile_entity_assignments, create_customer_profile_entity_assignment, delete_customer_profile_entity_assignment, list_trust_products, get_trust_product, create_trust_product, update_trust_product, delete_trust_product, list_policies, list_end_users, create_end_user, list_supporting_documents
+- [x] messaging/content (4 tools) - create_content_template, list_content_templates, get_content_template, delete_content_template
+- [x] voice/configuration (14 tools) - get_dialing_permissions, list_dialing_permissions_countries, list_byoc_trunks, get_byoc_trunk, create_byoc_trunk, update_byoc_trunk, delete_byoc_trunk, list_connection_policies, create_connection_policy, get_connection_policy, delete_connection_policy, list_connection_policy_targets, create_connection_policy_target, delete_connection_policy_target
+- [x] phone-numbers/bundles (16 tools) - list_regulatory_bundles, get_bundle_status, create_regulatory_bundle, update_regulatory_bundle, delete_regulatory_bundle, list_bundle_item_assignments, create_bundle_item_assignment, delete_bundle_item_assignment, list_supporting_documents, get_supporting_document, create_supporting_document, update_supporting_document, delete_supporting_document, list_regulations, list_regulatory_end_users, create_regulatory_end_user
+- [x] media (10 tools) - list_video_recordings, get_video_recording, delete_video_recording, list_compositions, get_composition, create_composition, delete_composition, list_composition_hooks, create_composition_hook, delete_composition_hook
 
-### P3 Tools (Edge Cases)
+### P3 Tools (Edge Cases) - Comprehensive Coverage Plan
 
-- [ ] voice/trunking - create_sip_trunk, configure_origination
-- [ ] account/accounts - list_accounts, create_subaccount
-- [ ] account/iam - create_api_key, list_api_keys, manage_roles
-- [ ] account/oauth - create_oauth_token, refresh_token
-- [ ] monitoring/events - create_event_sink, list_event_types
-- [ ] monitoring/exports - create_export_job, get_export_status
-- [ ] monitoring/pricing - get_voice_pricing, get_sms_pricing
-- [ ] intelligence/knowledge - create_knowledge_base, query_knowledge
-- [ ] phone-numbers/routes - configure_inbound_routes (planned)
-- [ ] notify - send_push_notification, register_device
+Estimated: 80-100 tools across 10 modules. Each module to have full CRUD where applicable.
+
+- [ ] **voice/trunking (15 tools)**
+  - SIP Domains: list_sip_domains, get_sip_domain, create_sip_domain, update_sip_domain, delete_sip_domain
+  - IP Access Control Lists: list_ip_access_control_lists, create_ip_access_control_list, delete_ip_access_control_list
+  - Credential Lists: list_credential_lists, create_credential_list, delete_credential_list
+  - IP Records: list_ip_records, create_ip_record, delete_ip_record
+  - SIP Trunk Registration: list_sip_registrations
+
+- [ ] **account/accounts (10 tools)**
+  - Accounts: list_accounts, get_account, create_subaccount, update_account, suspend_account, close_account
+  - Usage: get_account_balance, list_usage_records, list_usage_triggers, create_usage_trigger
+
+- [ ] **account/iam (12 tools)**
+  - API Keys: list_api_keys, get_api_key, create_api_key, update_api_key, delete_api_key
+  - Roles: list_roles, get_role, create_role, update_role, delete_role
+  - Permissions: list_permissions, assign_permission
+
+- [ ] **account/oauth (6 tools)**
+  - Tokens: create_oauth_token, refresh_token, revoke_token
+  - Token Info: get_token_info, list_authorized_apps, revoke_app_authorization
+
+- [ ] **monitoring/events (10 tools)**
+  - Event Streams: list_event_sinks, get_event_sink, create_event_sink, update_event_sink, delete_event_sink
+  - Subscriptions: list_subscriptions, create_subscription, delete_subscription
+  - Types: list_event_types, get_event_type
+
+- [ ] **monitoring/exports (8 tools)**
+  - Jobs: list_export_jobs, get_export_job, create_export_job, delete_export_job
+  - Configurations: get_export_configuration, update_export_configuration
+  - Days: list_export_days, get_export_day
+
+- [ ] **monitoring/pricing (8 tools)**
+  - Voice: get_voice_pricing_country, list_voice_pricing_countries, get_voice_pricing_number
+  - SMS: get_sms_pricing_country, list_sms_pricing_countries
+  - Phone Numbers: get_phone_number_pricing_country, list_phone_number_pricing_countries
+  - Messaging: get_messaging_pricing_country
+
+- [ ] **intelligence/knowledge (8 tools)** - Voice Intelligence v2 Knowledge extension
+  - Knowledge Bases: list_knowledge_bases, get_knowledge_base, create_knowledge_base, update_knowledge_base, delete_knowledge_base
+  - Sources: list_knowledge_sources, create_knowledge_source, delete_knowledge_source
+
+- [ ] **phone-numbers/incoming (10 tools)** - Extended management
+  - Porting: list_port_in_requests, get_port_in_request, create_port_in_request
+  - Address Requirements: list_address_requirements, get_address_requirement
+  - Addresses: list_addresses, get_address, create_address, update_address, delete_address
+
+- [ ] **notify (8 tools)** - Push notifications
+  - Services: list_notify_services, get_notify_service, create_notify_service, delete_notify_service
+  - Bindings: list_bindings, create_binding, delete_binding
+  - Notifications: send_notification
 
 ### Testing
 
 - [x] Write unit tests for P0 tools (messaging, voice, phone-numbers)
 - [x] Write unit tests for P0 tools (verify, sync, taskrouter, debugger)
 - [x] Write integration tests for P0 tools with real Twilio APIs (102 tests passing)
-- [x] Write unit tests for P1 tools (lookups, studio, messaging-services, serverless) - 51 tests
-- [ ] Write unit tests for P2 tools as implemented (8 modules)
-- [ ] Write unit tests for P3 tools as implemented (10 modules)
+- [x] Write unit tests for P1 tools (lookups, studio, messaging-services, serverless) - 40 tools total
+- [x] Write unit tests for P2 tools (8 modules, 97 tools) - 275 total MCP tests passing
+- [ ] Write unit tests for P3 tools as implemented (10 modules, ~85 tools)
 - [ ] Write integration tests for P1-P3 tools as implemented
+- [ ] E2E test workflow with full MCP tool chain
 
 ---
 
@@ -272,6 +314,8 @@ Voice is the most complex Twilio domain - stateful, real-time, with many archite
 | 2026-01-25 | 5b | Session persistence, TDD enforcement hook, credential safety hook (113 tests) |
 | 2026-01-25 | 5c | Orchestrator unit tests (36 tests), workflow integration tests (43 tests), 192 total Feature Factory tests |
 | 2026-01-25 | 5d | P1 MCP tools: lookups, studio, messaging-services, serverless (13 tools, 51 unit tests, 159 total MCP tests) |
+| 2026-01-25 | 5e | P2 MCP tools: intelligence, video, proxy, trusthub, content, voice-config, regulatory, media (28 tools, 116 tests, 275 total MCP tests) |
+| 2026-01-25 | 5f | P1/P2 comprehensive coverage: expanded P1 from 13→40 tools, P2 from 28→97 tools. Total: 137 tools across 12 modules. P3 detailed plan added. |
 
 ---
 

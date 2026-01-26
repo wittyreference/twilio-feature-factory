@@ -1,5 +1,5 @@
 // ABOUTME: Twilio Studio v2 tools for flow management.
-// ABOUTME: Provides list_studio_flows, trigger_flow, and get_execution_status tools.
+// ABOUTME: Provides comprehensive flow and execution management tools.
 
 import { z } from 'zod';
 import type { TwilioContext } from '../index.js';
@@ -147,5 +147,211 @@ export function studioTools(context: TwilioContext) {
     }
   );
 
-  return [listStudioFlows, triggerFlow, getExecutionStatus];
+  const getFlow = createTool(
+    'get_flow',
+    'Get details of a specific Studio flow.',
+    z.object({
+      flowSid: z.string().startsWith('FW').describe('Studio Flow SID (starts with FW)'),
+    }),
+    async ({ flowSid }) => {
+      const flow = await client.studio.v2.flows(flowSid).fetch();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: flow.sid,
+            friendlyName: flow.friendlyName,
+            status: flow.status,
+            revision: flow.revision,
+            commitMessage: flow.commitMessage,
+            valid: flow.valid,
+            errors: flow.errors,
+            webhookUrl: flow.webhookUrl,
+            dateCreated: flow.dateCreated,
+            dateUpdated: flow.dateUpdated,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const listExecutions = createTool(
+    'list_executions',
+    'List executions for a Studio flow.',
+    z.object({
+      flowSid: z.string().startsWith('FW').describe('Studio Flow SID (starts with FW)'),
+      status: z.enum(['active', 'ended']).optional().describe('Filter by execution status'),
+      dateCreatedFrom: z.string().optional().describe('Filter by creation date (ISO 8601)'),
+      dateCreatedTo: z.string().optional().describe('Filter by creation date (ISO 8601)'),
+      limit: z.number().min(1).max(100).default(20).describe('Maximum executions to return'),
+    }),
+    async ({ flowSid, status, dateCreatedFrom, dateCreatedTo, limit }) => {
+      const params: Record<string, unknown> = { limit };
+      if (status) params.status = status;
+      if (dateCreatedFrom) params.dateCreatedFrom = new Date(dateCreatedFrom);
+      if (dateCreatedTo) params.dateCreatedTo = new Date(dateCreatedTo);
+
+      const executions = await client.studio.v2
+        .flows(flowSid)
+        .executions.list(params);
+
+      const result = executions.map(e => ({
+        sid: e.sid,
+        status: e.status,
+        contactChannelAddress: e.contactChannelAddress,
+        dateCreated: e.dateCreated,
+        dateUpdated: e.dateUpdated,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            flowSid,
+            count: result.length,
+            executions: result,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const deleteExecution = createTool(
+    'delete_execution',
+    'Delete a Studio flow execution.',
+    z.object({
+      flowSid: z.string().startsWith('FW').describe('Studio Flow SID (starts with FW)'),
+      executionSid: z.string().startsWith('FN').describe('Execution SID (starts with FN)'),
+    }),
+    async ({ flowSid, executionSid }) => {
+      await client.studio.v2
+        .flows(flowSid)
+        .executions(executionSid)
+        .remove();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            deleted: true,
+            flowSid,
+            executionSid,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const getExecutionContext = createTool(
+    'get_execution_context',
+    'Get the context (variables and data) of a Studio execution.',
+    z.object({
+      flowSid: z.string().startsWith('FW').describe('Studio Flow SID (starts with FW)'),
+      executionSid: z.string().startsWith('FN').describe('Execution SID (starts with FN)'),
+    }),
+    async ({ flowSid, executionSid }) => {
+      const context = await client.studio.v2
+        .flows(flowSid)
+        .executions(executionSid)
+        .executionContext()
+        .fetch();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            flowSid,
+            executionSid,
+            context: context.context,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const listExecutionSteps = createTool(
+    'list_execution_steps',
+    'List all steps in a Studio execution.',
+    z.object({
+      flowSid: z.string().startsWith('FW').describe('Studio Flow SID (starts with FW)'),
+      executionSid: z.string().startsWith('FN').describe('Execution SID (starts with FN)'),
+      limit: z.number().min(1).max(100).default(50).describe('Maximum steps to return'),
+    }),
+    async ({ flowSid, executionSid, limit }) => {
+      const steps = await client.studio.v2
+        .flows(flowSid)
+        .executions(executionSid)
+        .steps.list({ limit });
+
+      const result = steps.map(step => ({
+        sid: step.sid,
+        name: step.name,
+        transitionedFrom: step.transitionedFrom,
+        transitionedTo: step.transitionedTo,
+        dateCreated: step.dateCreated,
+        dateUpdated: step.dateUpdated,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            flowSid,
+            executionSid,
+            count: result.length,
+            steps: result,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const getStepContext = createTool(
+    'get_step_context',
+    'Get the context (input/output) of a specific execution step.',
+    z.object({
+      flowSid: z.string().startsWith('FW').describe('Studio Flow SID (starts with FW)'),
+      executionSid: z.string().startsWith('FN').describe('Execution SID (starts with FN)'),
+      stepSid: z.string().startsWith('FT').describe('Step SID (starts with FT)'),
+    }),
+    async ({ flowSid, executionSid, stepSid }) => {
+      const stepContext = await client.studio.v2
+        .flows(flowSid)
+        .executions(executionSid)
+        .steps(stepSid)
+        .stepContext()
+        .fetch();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            flowSid,
+            executionSid,
+            stepSid,
+            context: stepContext.context,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  return [
+    listStudioFlows,
+    getFlow,
+    triggerFlow,
+    listExecutions,
+    getExecutionStatus,
+    deleteExecution,
+    getExecutionContext,
+    listExecutionSteps,
+    getStepContext,
+  ];
 }

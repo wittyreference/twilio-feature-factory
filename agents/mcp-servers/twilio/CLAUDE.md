@@ -30,7 +30,15 @@ src/
     ├── lookups.ts        # Phone intelligence (P1)
     ├── studio.ts         # Flow builder (P1)
     ├── messaging-services.ts  # Sender pools, A2P (P1)
-    └── serverless.ts     # Functions management (P1)
+    ├── serverless.ts     # Functions management (P1)
+    ├── intelligence.ts   # Transcripts, conversation analysis (P2)
+    ├── video.ts          # Video rooms, participants (P2)
+    ├── proxy.ts          # Number masking (P2)
+    ├── trusthub.ts       # Business identity, compliance (P2)
+    ├── content.ts        # Message templates (P2)
+    ├── voice-config.ts   # Dialing permissions, BYOC (P2)
+    ├── regulatory.ts     # Regulatory bundles (P2)
+    └── media.ts          # Video recordings, compositions (P2)
 ```
 
 ## Tool Naming Convention
@@ -170,6 +178,74 @@ for await (const message of query({
 | `list_functions` | List functions in a service |
 | `list_environments` | List deployment environments |
 | `get_build_status` | Get build deployment status |
+
+### Intelligence Tools (P2)
+
+| Tool | Description |
+|------|-------------|
+| `list_intelligence_services` | List available Intelligence services |
+| `list_transcripts` | List transcripts in account |
+| `get_transcript` | Get transcript details |
+
+### Video Tools (P2)
+
+| Tool | Description |
+|------|-------------|
+| `create_video_room` | Create a video room |
+| `list_video_rooms` | List video rooms |
+| `list_room_participants` | List participants in a room |
+
+### Proxy Tools (P2)
+
+| Tool | Description |
+|------|-------------|
+| `create_proxy_service` | Create number masking service |
+| `create_proxy_session` | Create masked session |
+| `add_proxy_participant` | Add participant to session |
+| `list_proxy_sessions` | List sessions in service |
+
+### TrustHub Tools (P2)
+
+| Tool | Description |
+|------|-------------|
+| `create_customer_profile` | Create customer profile |
+| `list_customer_profiles` | List customer profiles |
+| `list_trust_products` | List trust products (A2P brands) |
+| `list_policies` | List compliance policies |
+
+### Content Tools (P2)
+
+| Tool | Description |
+|------|-------------|
+| `create_content_template` | Create message template |
+| `list_content_templates` | List templates |
+| `get_content_template` | Get template details |
+
+### Voice Config Tools (P2)
+
+| Tool | Description |
+|------|-------------|
+| `get_dialing_permissions` | Get country dialing permissions |
+| `list_dialing_permissions_countries` | List countries with permissions |
+| `list_byoc_trunks` | List BYOC trunks |
+| `create_byoc_trunk` | Create BYOC trunk |
+
+### Regulatory Tools (P2)
+
+| Tool | Description |
+|------|-------------|
+| `list_regulatory_bundles` | List regulatory bundles |
+| `get_bundle_status` | Get bundle status |
+| `list_supporting_documents` | List supporting documents |
+| `list_regulations` | List available regulations |
+
+### Media Tools (P2)
+
+| Tool | Description |
+|------|-------------|
+| `list_video_recordings` | List video recordings |
+| `get_video_recording` | Get recording details |
+| `list_compositions` | List video compositions |
 
 ## Testing
 

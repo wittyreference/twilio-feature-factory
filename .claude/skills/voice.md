@@ -320,7 +320,14 @@ WHEN USING CONFERENCE (add these):
 □ Conference Insights Participant Summary - per-participant metrics, join/leave times
 ```
 
-**Feature Factory Enforcement:** Dev and review agents MUST verify all applicable checks pass.
+**⚠️ Voice/Conference Insights Timing:**
+Summaries are NOT immediately available after call/conference ends:
+- **Partial data:** ~2 minutes after end (no SLA guarantee)
+- **Final data:** Locked and immutable 30 minutes after end
+- Check `processingState` field: `'partial'` vs `'complete'`
+- DeepValidator handles 404 gracefully when data not yet available
+
+**Feature Factory Enforcement:** Dev and review agents MUST verify all applicable checks pass. Use `DeepValidator.validateCall()` for calls and `DeepValidator.validateConference()` for conferences.
 
 ### Trust & Answer Rates
 
@@ -496,5 +503,12 @@ Context for what customers are asking for today:
 
 - [functions/voice/CLAUDE.md](/functions/voice/CLAUDE.md) - TwiML verb reference
 - [functions/conversation-relay/CLAUDE.md](/functions/conversation-relay/CLAUDE.md) - Real-time Voice AI
-- [Voice MCP Tools](/agents/mcp-servers/twilio/src/tools/voice.ts) - get_call_logs, make_call, get_recording
+- [Voice MCP Tools](/agents/mcp-servers/twilio/src/tools/voice.ts) - 22 tools including:
+  - Call management: `get_call_logs`, `make_call`, `get_call`, `update_call`
+  - Conferences: `list_conferences`, `get_conference`, `update_conference`, `list_conference_participants`, `get_conference_participant`, `update_conference_participant`, `add_participant_to_conference`
+  - Recordings: `get_recording`, `list_call_recordings`, `list_conference_recordings`
+  - Voice Insights: `get_call_summary`, `list_call_events`, `list_call_metrics`
+  - Conference Insights: `get_conference_summary`, `list_conference_participant_summaries`, `get_conference_participant_summary`
+  - Transcriptions: `list_recording_transcriptions`, `get_transcription`
+- [DeepValidator](/agents/mcp-servers/twilio/src/validation/deep-validator.ts) - `validateCall()` and `validateConference()` methods
 - [Twilio Voice Docs](https://www.twilio.com/docs/voice) - Official reference

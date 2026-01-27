@@ -4,7 +4,7 @@ This directory contains autonomous agents built on the Claude Agent SDK and MCP 
 
 ## Overview
 
-The agents in this directory are part of the **Twilio Agent Factory** meta-project - tooling that helps developers prototype Twilio applications faster using AI assistance.
+The agents in this directory provide AI-assisted development tooling that helps developers prototype Twilio applications faster.
 
 **Important**: These agents are development-time tooling. They are NOT part of the core Twilio prototyping functions in `functions/`. See [Architecture Separation](#architecture-separation) below.
 
@@ -13,10 +13,8 @@ The agents in this directory are part of the **Twilio Agent Factory** meta-proje
 | Agent | Status | Description |
 |-------|--------|-------------|
 | [Twilio MCP Server](mcp-servers/twilio/) | **Implemented** | MCP server exposing Twilio APIs as tools for Claude agents |
-| Feature Factory | Planned (Phase 2) | Orchestrates development workflows with specialized subagents |
-| QA Agent | Planned (Phase 3) | Automated testing, coverage analysis, and security validation |
-| Voice AI Builder | Planned (Phase 4) | Generates TwiML handlers and WebSocket servers for voice AI |
-| Doc Generator | Planned (Phase 5) | Generates API docs and architecture diagrams |
+| [Feature Factory](feature-factory/) | **Implemented** | Orchestrates development workflows with specialized subagents |
+| [Voice AI Builder](voice-ai-builder/) | **Implemented** | Generates TwiML handlers and WebSocket servers for voice AI |
 
 ## Twilio MCP Server
 
@@ -51,14 +49,20 @@ See [mcp-servers/twilio/src/validation/CLAUDE.md](mcp-servers/twilio/src/validat
 
 ```text
 twilio-agent-factory/
-├── functions/          ← CORE TWILIO PROTOTYPING (production code)
-│   ├── voice/              Serverless handlers that run on Twilio
-│   ├── messaging/          infrastructure. These are standalone.
-│   └── callbacks/
+├── functions/              ← TWILIO SERVERLESS (production code)
+│   ├── voice/                  Voice call handlers (TwiML)
+│   ├── messaging/              SMS/MMS handlers
+│   ├── conversation-relay/     Real-time voice AI
+│   ├── verify/                 Phone verification
+│   ├── sync/                   State synchronization
+│   ├── taskrouter/             Skills-based routing
+│   ├── callbacks/              Status callback handlers
+│   └── helpers/                Shared utilities
 │
-└── agents/             ← META-PROJECT (Agent Factory)
-    └── mcp-servers/twilio/   Development tooling that helps BUILD
-                              the functions. NOT deployed to Twilio.
+└── agents/                 ← AI DEVELOPMENT TOOLING
+    ├── mcp-servers/twilio/     MCP server wrapping Twilio APIs
+    ├── feature-factory/        Orchestrated development workflows
+    └── voice-ai-builder/       Voice AI application generator
 ```
 
 **Coupling rules**:
@@ -103,12 +107,12 @@ npm run setup   # From project root
 
 See [scripts/CLAUDE.md](/scripts/CLAUDE.md) for details.
 
-## Roadmap
+## Implementation Status
 
-See [todo.md](/todo.md) for the full implementation roadmap:
+All core agents are implemented:
 
-- **Phase 1** (Current): Twilio MCP Server - P0 tools complete, P1-P3 in progress
-- **Phase 2**: Feature Factory - Orchestrated development workflows
-- **Phase 3**: QA Agent - Automated testing and validation
-- **Phase 4**: Voice AI Builder - Voice application scaffolding
-- **Phase 5**: Documentation & Polish
+- **Twilio MCP Server**: Complete with P0 tools (messaging, voice, verify, sync, taskrouter, debugger)
+- **Feature Factory**: Complete with orchestrator and specialized subagents
+- **Voice AI Builder**: Complete with TwiML and WebSocket server generators
+
+See individual agent directories for detailed documentation.

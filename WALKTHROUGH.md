@@ -155,7 +155,7 @@ ngrok --version
 
 ```bash
 # Navigate to your project
-cd twilio-claude-prototyping
+cd twilio-agent-factory
 
 # Install dependencies
 npm install
@@ -548,7 +548,7 @@ Combine both workflows for maximum flexibility: use documents for planning, then
 Open your terminal and start Claude Code in the project directory:
 
 ```bash
-cd twilio-claude-prototyping
+cd twilio-agent-factory
 claude
 ```
 

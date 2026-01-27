@@ -1,6 +1,6 @@
-# Twilio Claude Code Prototyping Template
+# Twilio Agent Factory
 
-A GitHub template repository optimized for rapid Twilio CPaaS prototyping with Claude Code.
+A template repository for building Twilio applications with AI-assisted development using Claude Code.
 
 ## Features
 
@@ -25,8 +25,8 @@ A GitHub template repository optimized for rapid Twilio CPaaS prototyping with C
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/wittyreference/twilio-claude-prototyping.git
-   cd twilio-claude-prototyping
+   git clone https://github.com/wittyreference/twilio-agent-factory.git
+   cd twilio-agent-factory
    ```
 
 2. **Install dependencies**
@@ -78,7 +78,12 @@ A GitHub template repository optimized for rapid Twilio CPaaS prototyping with C
 │   ├── sync/                # Real-time state synchronization
 │   ├── taskrouter/          # Task routing to workers
 │   ├── messaging-services/  # Sender pools, compliance
+│   ├── callbacks/           # Status callback handlers
 │   └── helpers/             # Shared private functions
+├── agents/                  # AI development tooling
+│   ├── mcp-servers/twilio/  # MCP server for Twilio APIs
+│   ├── feature-factory/     # Development workflow orchestration
+│   └── voice-ai-builder/    # Voice AI app generator
 ├── __tests__/               # Test suites
 └── postman/                 # Newman E2E collections
 ```

@@ -22,16 +22,21 @@ functions/
 └── helpers/            # Shared private utilities
 ```
 
-### Meta-Project: Agent Factory (`agents/`)
+### AI Development Tooling (`agents/`)
 
-Autonomous agent infrastructure built on Claude Agent SDK and MCP. This is development/meta tooling, not production code.
+Autonomous agent infrastructure built on Claude Agent SDK and MCP. These are AI-assisted development tools, not production Twilio serverless code.
 
 ```text
 agents/
-└── mcp-servers/twilio/ # MCP server wrapping Twilio APIs as tools
-    ├── src/tools/      # Tool implementations (messaging, voice, etc.)
-    ├── src/validation/ # Deep validation helpers
-    └── __tests__/      # MCP-specific tests
+├── mcp-servers/twilio/  # MCP server wrapping Twilio APIs as tools
+│   ├── src/tools/       # Tool implementations (messaging, voice, etc.)
+│   ├── src/validation/  # Deep validation helpers
+│   └── __tests__/       # MCP-specific tests
+├── feature-factory/     # Orchestrated development workflows
+│   └── src/agents/      # Specialized subagent configurations
+└── voice-ai-builder/    # Voice AI application generator
+    ├── src/generators/  # TwiML and WebSocket generators
+    └── templates/       # Application templates
 ```
 
 ### Architecture Separation
@@ -373,7 +378,7 @@ npm run deploy:prod          # Deploy to production
 ### Directory Structure
 
 ```text
-twilio-claude-prototyping/
+twilio-agent-factory/
 ├── .claude/commands/        # Custom slash commands for subagents
 ├── .github/
 │   ├── prompts/             # Agent-assisted pipeline prompts
@@ -386,7 +391,12 @@ twilio-claude-prototyping/
 │   ├── sync/                # Real-time state synchronization
 │   ├── taskrouter/          # Task routing to workers
 │   ├── messaging-services/  # Sender pools, compliance
+│   ├── callbacks/           # Status callback handlers
 │   └── helpers/             # Shared private functions
+├── agents/                  # AI development tooling
+│   ├── mcp-servers/twilio/  # MCP server for Twilio APIs
+│   ├── feature-factory/     # Development workflow orchestration
+│   └── voice-ai-builder/    # Voice AI app generator
 ├── assets/                  # Static assets
 ├── __tests__/
 │   ├── unit/                # Unit tests

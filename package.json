@@ -1,5 +1,5 @@
 {
-  "name": "twilio-claude-prototyping",
+  "name": "twilio-agent-factory",
   "version": "1.0.0",
   "description": "Twilio CPaaS prototyping template optimized for Claude Code",
   "main": "index.js",

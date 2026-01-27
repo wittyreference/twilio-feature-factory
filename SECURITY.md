@@ -12,7 +12,7 @@
 
 ### Preferred Method
 
-Use [GitHub's private vulnerability reporting](https://github.com/wittyreference/twilio-claude-prototyping/security/advisories/new) to submit a report.
+Use [GitHub's private vulnerability reporting](https://github.com/wittyreference/twilio-agent-factory/security/advisories/new) to submit a report.
 
 ### What to Include
 

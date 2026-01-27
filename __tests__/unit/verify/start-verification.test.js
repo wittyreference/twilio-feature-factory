@@ -1,5 +1,26 @@
 // ABOUTME: Unit tests for the start-verification protected function.
-// ABOUTME: Tests verification initiation via Twilio Verify API.
+// ABOUTME: Tests verification initiation via Twilio Verify API with mocked responses.
+
+// Mock the Twilio client
+const mockVerificationsCreate = jest.fn();
+
+jest.mock('twilio', () => {
+  const TwilioMock = jest.fn(() => ({
+    verify: {
+      v2: {
+        services: jest.fn(() => ({
+          verifications: {
+            create: mockVerificationsCreate,
+          },
+        })),
+      },
+    },
+  }));
+
+  return TwilioMock;
+});
+
+const Twilio = require('twilio');
 
 const { handler } = require('../../../functions/verify/start-verification.protected');
 
@@ -8,17 +29,27 @@ describe('start-verification handler', () => {
   let callback;
 
   beforeEach(() => {
+    jest.clearAllMocks();
+
+    // Mock successful verification
+    mockVerificationsCreate.mockResolvedValue({
+      status: 'pending',
+      channel: 'sms',
+      to: '+15551234567',
+    });
+
     context = {
-      ...global.createTestContext(),
-      TWILIO_VERIFY_SERVICE_SID: process.env.TWILIO_VERIFY_SERVICE_SID || 'VA_TEST_SID'
+      TWILIO_VERIFY_SERVICE_SID: 'VA1234567890abcdef1234567890abcdef',
+      getTwilioClient: () => new Twilio(),
     };
+
     callback = jest.fn();
   });
 
   it('should return error when "to" parameter is missing', async () => {
-    const event = global.createTestEvent({
-      channel: 'sms'
-    });
+    const event = {
+      channel: 'sms',
+    };
 
     await handler(context, event, callback);
 
@@ -29,13 +60,13 @@ describe('start-verification handler', () => {
 
   it('should return error when TWILIO_VERIFY_SERVICE_SID is not configured', async () => {
     const contextWithoutService = {
-      ...global.createTestContext(),
-      TWILIO_VERIFY_SERVICE_SID: undefined
+      ...context,
+      TWILIO_VERIFY_SERVICE_SID: undefined,
     };
 
-    const event = global.createTestEvent({
-      to: '+15551234567'
-    });
+    const event = {
+      to: '+15551234567',
+    };
 
     await handler(contextWithoutService, event, callback);
 
@@ -45,10 +76,10 @@ describe('start-verification handler', () => {
   });
 
   it('should return error for invalid channel', async () => {
-    const event = global.createTestEvent({
+    const event = {
       to: '+15551234567',
-      channel: 'invalid_channel'
-    });
+      channel: 'invalid_channel',
+    };
 
     await handler(context, event, callback);
 
@@ -58,16 +89,16 @@ describe('start-verification handler', () => {
   });
 
   it('should default to SMS channel when not specified', async () => {
-    if (!process.env.TWILIO_VERIFY_SERVICE_SID) {
-      console.log('Skipping real Verify test - TWILIO_VERIFY_SERVICE_SID not configured');
-      return;
-    }
-
-    const event = global.createTestEvent({
-      to: '+15005550006'
-    });
+    const event = {
+      to: '+15551234567',
+    };
 
     await handler(context, event, callback);
+
+    expect(mockVerificationsCreate).toHaveBeenCalledWith({
+      to: '+15551234567',
+      channel: 'sms',
+    });
 
     const [error, response] = callback.mock.calls[0];
     expect(error).toBeNull();
@@ -76,17 +107,17 @@ describe('start-verification handler', () => {
   });
 
   it('should start verification with SMS channel', async () => {
-    if (!process.env.TWILIO_VERIFY_SERVICE_SID) {
-      console.log('Skipping real Verify test - TWILIO_VERIFY_SERVICE_SID not configured');
-      return;
-    }
-
-    const event = global.createTestEvent({
-      to: '+15005550006',
-      channel: 'sms'
-    });
+    const event = {
+      to: '+15551234567',
+      channel: 'sms',
+    };
 
     await handler(context, event, callback);
+
+    expect(mockVerificationsCreate).toHaveBeenCalledWith({
+      to: '+15551234567',
+      channel: 'sms',
+    });
 
     const [error, response] = callback.mock.calls[0];
     expect(error).toBeNull();
@@ -95,20 +126,71 @@ describe('start-verification handler', () => {
   });
 
   it('should start verification with call channel', async () => {
-    if (!process.env.TWILIO_VERIFY_SERVICE_SID) {
-      console.log('Skipping real Verify test - TWILIO_VERIFY_SERVICE_SID not configured');
-      return;
-    }
-
-    const event = global.createTestEvent({
-      to: '+15005550006',
-      channel: 'call'
+    mockVerificationsCreate.mockResolvedValue({
+      status: 'pending',
+      channel: 'call',
+      to: '+15551234567',
     });
 
+    const event = {
+      to: '+15551234567',
+      channel: 'call',
+    };
+
     await handler(context, event, callback);
+
+    expect(mockVerificationsCreate).toHaveBeenCalledWith({
+      to: '+15551234567',
+      channel: 'call',
+    });
 
     const [error, response] = callback.mock.calls[0];
     expect(error).toBeNull();
     expect(response.success).toBe(true);
+  });
+
+  it('should start verification with email channel', async () => {
+    mockVerificationsCreate.mockResolvedValue({
+      status: 'pending',
+      channel: 'email',
+      to: 'test@example.com',
+    });
+
+    const event = {
+      to: 'test@example.com',
+      channel: 'email',
+    };
+
+    await handler(context, event, callback);
+
+    expect(mockVerificationsCreate).toHaveBeenCalledWith({
+      to: 'test@example.com',
+      channel: 'email',
+    });
+
+    const [error, response] = callback.mock.calls[0];
+    expect(error).toBeNull();
+    expect(response.success).toBe(true);
+  });
+
+  it('should return the full verification response', async () => {
+    mockVerificationsCreate.mockResolvedValue({
+      status: 'pending',
+      channel: 'sms',
+      to: '+15551234567',
+    });
+
+    const event = {
+      to: '+15551234567',
+      channel: 'sms',
+    };
+
+    await handler(context, event, callback);
+
+    const [, response] = callback.mock.calls[0];
+    expect(response.success).toBe(true);
+    expect(response.status).toBe('pending');
+    expect(response.channel).toBe('sms');
+    expect(response.to).toBe('+15551234567');
   });
 });

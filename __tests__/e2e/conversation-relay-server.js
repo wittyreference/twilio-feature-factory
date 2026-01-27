@@ -19,6 +19,7 @@ require('dotenv').config();
  * Environment Variables:
  *   ANTHROPIC_API_KEY - Required for Claude integration
  *   PORT - Server port (default: 8080)
+ *   FINALIZE_URL - URL to POST transcript on call end (optional)
  */
 
 const { WebSocketServer } = require('ws');
@@ -27,6 +28,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 // Configuration
 const PORT = process.env.PORT || 8080;
 const MAX_TURNS = 10;
+const FINALIZE_URL = process.env.FINALIZE_URL; // e.g., https://your-domain.twil.io/finalize-demo
 
 // System prompt for the AI agent
 const SYSTEM_PROMPT = `You are a helpful AI assistant taking a phone call.
@@ -65,18 +67,72 @@ class CallContext {
   }
 
   addUserMessage(text) {
-    this.messages.push({ role: 'user', content: text });
+    this.messages.push({
+      role: 'user',
+      content: text,
+      timestamp: new Date().toISOString(),
+    });
     this.turnCount++;
   }
 
   addAssistantMessage(text) {
-    this.messages.push({ role: 'assistant', content: text });
+    this.messages.push({
+      role: 'assistant',
+      content: text,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   getMessages() {
     // Sliding window to keep context manageable
     const WINDOW_SIZE = 20;
     return this.messages.slice(-WINDOW_SIZE);
+  }
+
+  getDuration() {
+    return (Date.now() - this.startTime) / 1000;
+  }
+
+  getTranscript() {
+    return this.messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+      timestamp: m.timestamp,
+    }));
+  }
+}
+
+// Post transcript to finalize endpoint
+async function postToFinalize(context) {
+  if (!FINALIZE_URL) {
+    console.log('[FINALIZE] No FINALIZE_URL configured, skipping transcript POST');
+    return;
+  }
+
+  try {
+    const payload = {
+      callSid: context.callSid,
+      from: context.from,
+      to: context.to,
+      transcript: context.getTranscript(),
+      duration: context.getDuration(),
+      turnCount: context.turnCount,
+    };
+
+    console.log(`[FINALIZE] POSTing transcript to ${FINALIZE_URL}`);
+
+    const response = await fetch(FINALIZE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+    console.log(`[FINALIZE] Response: ${JSON.stringify(result)}`);
+  } catch (error) {
+    console.error(`[FINALIZE] Error posting transcript: ${error.message}`);
   }
 }
 
@@ -110,6 +166,7 @@ console.log(`
   ConversationRelay E2E Test Server
 =================================================
   Port: ${PORT}
+  Finalize URL: ${FINALIZE_URL || '(not configured)'}
 
   Next steps:
   1. Expose this server via ngrok:
@@ -120,6 +177,10 @@ console.log(`
   3. Run the E2E test:
      CONVERSATION_RELAY_URL=wss://xxx.ngrok.io \\
      node __tests__/e2e/conversation-relay-e2e.js
+
+  For full demo with transcript storage and SMS:
+     FINALIZE_URL=https://your-domain.twil.io/finalize-demo \\
+     node __tests__/e2e/conversation-relay-server.js
 =================================================
 `);
 
@@ -240,12 +301,15 @@ wss.on('connection', (ws) => {
     }
   });
 
-  ws.on('close', () => {
+  ws.on('close', async () => {
     if (context) {
-      const duration = ((Date.now() - context.startTime) / 1000).toFixed(1);
+      const duration = context.getDuration().toFixed(1);
       console.log(`\n[CONNECTION] Closed - Call ${context.callSid}`);
       console.log(`  Duration: ${duration}s`);
       console.log(`  Turns: ${context.turnCount}`);
+
+      // Post transcript to finalize endpoint
+      await postToFinalize(context);
     } else {
       console.log('\n[CONNECTION] Closed (no call context)');
     }

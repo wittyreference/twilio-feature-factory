@@ -12,7 +12,7 @@ jest.mock('twilio', () => {
       v1: {
         services: jest.fn(() => ({
           documents: Object.assign(
-            jest.fn((docName) => ({
+            jest.fn((_docName) => ({
               fetch: mockSyncFetch,
               update: mockSyncUpdate,
             })),

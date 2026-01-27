@@ -10,7 +10,7 @@ jest.mock('twilio', () => {
   const mockConferenceUpdate = jest.fn();
   const mockConferencesList = jest.fn();
 
-  const mockConferences = jest.fn((sidOrName) => ({
+  const mockConferences = jest.fn((_sidOrName) => ({
     update: mockConferenceUpdate
   }));
   mockConferences.list = mockConferencesList;

@@ -26,7 +26,7 @@ describe('Conference Integration Tests', () => {
   let context;
   let client;
   let createdConferenceName;
-  let createdCallSids = [];
+  const createdCallSids = [];
 
   // Longer timeout for real API calls
   jest.setTimeout(60000);
@@ -224,7 +224,7 @@ describe('Conference Integration Tests', () => {
 
   describe('Conference-based call transfer', () => {
     let transferConferenceName;
-    let transferCallSids = [];
+    const transferCallSids = [];
 
     afterAll(async () => {
       // Clean up transfer test calls

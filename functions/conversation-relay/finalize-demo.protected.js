@@ -165,7 +165,8 @@ exports.handler = async function (context, event, callback) {
  */
 function generateSimpleSummary(transcript, duration, turnCount) {
   const userMessages = transcript.filter((m) => m.role === 'user');
-  const aiMessages = transcript.filter((m) => m.role === 'assistant');
+  // Note: Could filter aiMessages = transcript.filter(m => m.role === 'assistant')
+  // for AI-side analysis if needed
 
   // Extract key topics from user messages
   const topics = userMessages

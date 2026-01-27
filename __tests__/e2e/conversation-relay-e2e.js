@@ -40,11 +40,11 @@ const config = {
 function validateConfig() {
   const missing = [];
 
-  if (!config.accountSid?.startsWith('AC')) missing.push('TWILIO_ACCOUNT_SID');
-  if (!config.authToken) missing.push('TWILIO_AUTH_TOKEN');
-  if (!config.fromNumber?.startsWith('+')) missing.push('TWILIO_PHONE_NUMBER');
-  if (!config.toNumber?.startsWith('+')) missing.push('TEST_PHONE_NUMBER');
-  if (!config.relayUrl?.startsWith('wss://')) missing.push('CONVERSATION_RELAY_URL (must start with wss://)');
+  if (!config.accountSid?.startsWith('AC')) {missing.push('TWILIO_ACCOUNT_SID');}
+  if (!config.authToken) {missing.push('TWILIO_AUTH_TOKEN');}
+  if (!config.fromNumber?.startsWith('+')) {missing.push('TWILIO_PHONE_NUMBER');}
+  if (!config.toNumber?.startsWith('+')) {missing.push('TEST_PHONE_NUMBER');}
+  if (!config.relayUrl?.startsWith('wss://')) {missing.push('CONVERSATION_RELAY_URL (must start with wss://)');}
 
   if (missing.length > 0) {
     console.error('\n[ERROR] Missing or invalid environment variables:');

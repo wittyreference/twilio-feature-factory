@@ -194,7 +194,7 @@ wss.on('connection', (ws) => {
       const timestamp = new Date().toISOString().slice(11, 23);
 
       switch (message.type) {
-        case 'setup':
+        case 'setup': {
           context = new CallContext(
             message.callSid,
             message.streamSid,
@@ -213,6 +213,7 @@ wss.on('connection', (ws) => {
           ws.send(JSON.stringify({ type: 'text', token: greeting }));
           context.addAssistantMessage(greeting);
           break;
+        }
 
         case 'prompt':
           if (!context) {
@@ -245,7 +246,7 @@ wss.on('connection', (ws) => {
               console.log(`[${timestamp}] End trigger detected`);
               ws.send(JSON.stringify({
                 type: 'text',
-                token: "Thank you for testing the ConversationRelay system. Goodbye!"
+                token: 'Thank you for testing the ConversationRelay system. Goodbye!'
               }));
               setTimeout(() => {
                 ws.send(JSON.stringify({ type: 'end' }));
@@ -274,12 +275,12 @@ wss.on('connection', (ws) => {
             if (message.digit === '0') {
               ws.send(JSON.stringify({
                 type: 'text',
-                token: "You pressed zero. In a real system, I would transfer you to an operator."
+                token: 'You pressed zero. In a real system, I would transfer you to an operator.'
               }));
             } else if (message.digit === '#') {
               ws.send(JSON.stringify({
                 type: 'text',
-                token: "You pressed pound. Ending the call now. Goodbye!"
+                token: 'You pressed pound. Ending the call now. Goodbye!'
               }));
               setTimeout(() => {
                 ws.send(JSON.stringify({ type: 'end' }));

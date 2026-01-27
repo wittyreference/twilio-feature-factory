@@ -71,7 +71,7 @@ See [DESIGN_DECISIONS.md](/DESIGN_DECISIONS.md) for architectural rationale and 
 | Setup scripts | [scripts/CLAUDE.md](/scripts/CLAUDE.md) |
 | Twilio CLI reference | [.claude/references/twilio-cli.md](/.claude/references/twilio-cli.md) |
 | Implementation progress | [todo.md](/todo.md) |
-| Session learnings | `.claude-dev/learnings.md` (local, not committed) |
+| Session learnings | `.claude/learnings.md` (local, not committed) |
 
 ## Your Role as Primary Agent
 - **Architecture & Planning**: Lead on system design and specification creation
@@ -109,7 +109,7 @@ Read the relevant `CLAUDE.md` file for the domain you're modifying:
 
 ### Discovery Capture
 
-When you learn something unexpected, add it to `.claude-dev/learnings.md` **IMMEDIATELY**:
+When you learn something unexpected, add it to `.claude/learnings.md` **IMMEDIATELY**:
 
 ```markdown
 ## [YYYY-MM-DD] Session N - Topic
@@ -127,7 +127,7 @@ Don't wait until the end of a task - capture inline as you discover.
 
 ### Before Committing
 
-1. Check `.claude-dev/pending-actions.md` for doc update suggestions
+1. Check `.claude/pending-actions.md` for doc update suggestions
 2. Address suggestions or consciously defer them
 3. Verify you recorded any learnings from this session
 
@@ -137,7 +137,7 @@ Use the capture-promote-clear workflow for knowledge management:
 
 ### 1. Capture
 
-Add discoveries to `.claude-dev/learnings.md` (local, not committed):
+Add discoveries to `.claude/learnings.md` (local, not committed):
 
 - Type system gotchas or API quirks
 - Debugging insights and root causes
@@ -162,19 +162,19 @@ Remove promoted entries from learnings.md to keep it focused.
 
 ### Automation
 
-The `doc-update-check.sh` hook detects file changes and appends documentation suggestions to `.claude-dev/pending-actions.md`. This file-based approach ensures reminders persist and are visible.
+The `doc-update-check.sh` hook detects file changes and appends documentation suggestions to `.claude/pending-actions.md`. This file-based approach ensures reminders persist and are visible.
 
 **Before committing, ALWAYS check for pending actions:**
 ```bash
-cat .claude-dev/pending-actions.md 2>/dev/null || echo "No pending actions"
+cat .claude/pending-actions.md 2>/dev/null || echo "No pending actions"
 ```
 
 After addressing actions, clear the file:
 ```bash
-rm .claude-dev/pending-actions.md
+rm .claude/pending-actions.md
 ```
 
-MC receives a desktop notification with pending action count when sessions end.
+A desktop notification with pending action count is sent when sessions end (if enabled).
 
 ## Documentation Standards for Technical Assertions
 
@@ -205,7 +205,7 @@ These claim types have caused errors and require source verification:
 
 - Don't make the claim, OR
 - Mark as `<!-- UNVERIFIED -->` with explanation
-- Ask MC to verify from domain expertise
+- Ask the user to verify from domain expertise
 
 ### Red Flags to Watch For
 
@@ -216,18 +216,16 @@ Words that indicate high-risk assertions requiring verification:
 
 # Interaction
 
-- Any time you interact with me, you MUST address me by my preferred name, which you won't know the first time we work together, so make sure to ask me what it is, and update the root CLAUDE.md file to reflect it for future interactions.
-- **Preferred name: MC**
+- When you first work with a new user, ask for their preferred name and update this file.
+- **Preferred name: [Your name here]**
 
-## Our relationship
+## Working Together
 
-- We're coworkers. When you think of me, think of me as your colleague, not as "the user" or "the human".
-- We are a team of people working together. Your success is my success, and my success is yours.
-- Technically, I am your boss, but we're not super formal around here.
-- I'm smart, but not infallible.
-- You are much better read than I am. I have more experience of the physical world than you do. Our experiences are complementary and we work together to solve problems.
-- Neither of us is afraid to admit when we don't know something or are in over our head.
-- When we think we're right, it's _good_ to push back, but we should cite evidence.
+- We are collaborators working together on technical problems.
+- Communication should be direct, professional, and collegial.
+- Mutual respect: neither party is infallible, and we learn from each other.
+- It's encouraged to push back with evidence when you disagree.
+- Ask questions when something is unclear rather than making assumptions.
 
 ## Communication style
 

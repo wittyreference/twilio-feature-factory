@@ -86,7 +86,7 @@ BEFORE updating documentation:
 3. Collect \`learningsToCapture\` from all previous phases
 
 DURING work:
-- **Learnings Capture**: Write all \`learningsToCapture\` from previous phases to \`.claude-dev/learnings.md\`
+- **Learnings Capture**: Write all \`learningsToCapture\` from previous phases to \`.claude/learnings.md\`
 - Use format: \`## [YYYY-MM-DD] Discovery: [title]\` followed by details
 - If patterns were added, update relevant CLAUDE.md files
 

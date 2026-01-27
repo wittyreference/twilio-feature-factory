@@ -6,7 +6,7 @@ Quick lookup for which documentation to check BEFORE taking action. This enforce
 
 1. **CHECK** the relevant doc below before any operation
 2. **ACT** using the documented patterns exactly
-3. **RECORD** discoveries to `.claude-dev/learnings.md` if patterns are missing or wrong
+3. **RECORD** discoveries to `.claude/learnings.md` if patterns are missing or wrong
 
 ---
 
@@ -69,14 +69,14 @@ If you don't know which doc to check:
 
 1. **Start with root `CLAUDE.md`** - Has documentation navigator table
 2. **Check this file** - Scan tables above for keywords
-3. **If still unclear** - Add a question to `.claude-dev/learnings.md` under "Open Questions"
+3. **If still unclear** - Add a question to `.claude/learnings.md` under "Open Questions"
 
 ---
 
 ## Recording Discoveries
 
 When you find:
-- **Missing patterns**: Add to `.claude-dev/learnings.md`, then update the relevant doc
+- **Missing patterns**: Add to `.claude/learnings.md`, then update the relevant doc
 - **Wrong patterns**: Fix the doc immediately, note in learnings
 - **API quirks**: Add to learnings for review and promotion
 - **CLI gotchas**: Update `.claude/references/twilio-cli.md`

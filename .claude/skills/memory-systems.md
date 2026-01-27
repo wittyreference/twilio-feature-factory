@@ -262,7 +262,7 @@ git diff HEAD~5 --name-only
 ### Documentation Flywheel
 
 The documentation flywheel uses file-based communication:
-- Hooks write suggestions to `.claude-dev/pending-actions.md`
+- Hooks write suggestions to `.claude/pending-actions.md`
 - Agent reads file before commits
 - File is cleared after actions addressed
 

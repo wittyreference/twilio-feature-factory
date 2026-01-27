@@ -56,6 +56,72 @@ This separation ensures:
 
 See [DESIGN_DECISIONS.md](/DESIGN_DECISIONS.md) for architectural rationale and [.claude/references/tool-boundaries.md](/.claude/references/tool-boundaries.md) for MCP vs CLI vs Functions guidance.
 
+## Development Tools Architecture
+
+This project provides specialized tools for Claude Code to build Twilio applications.
+
+### How It Works
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│  Claude Code (Interactive Orchestrator)                         │
+│  ───────────────────────────────────────────────────────────────│
+│  Plan mode → User approval → Execution                          │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                    invokes as needed
+                              │
+    ┌─────────────────────────┼─────────────────────────┐
+    │                         │                         │
+    ▼                         ▼                         ▼
+┌─────────────┐       ┌─────────────┐       ┌─────────────────┐
+│ Slash Cmds  │       │ MCP Server  │       │ Voice AI Builder│
+│ ────────────│       │ ────────────│       │ ────────────────│
+│ /architect  │       │ Twilio APIs │       │ Code generators │
+│ /spec       │       │ as tools    │       │ for voice apps  │
+│ /test-gen   │       │             │       │                 │
+│ /dev        │       │ • Send SMS  │       │ • TwiML handlers│
+│ /review     │       │ • Make calls│       │ • WebSocket svrs│
+│ /docs       │       │ • Query logs│       │ • Templates     │
+└─────────────┘       └─────────────┘       └─────────────────┘
+
+         OR (for headless automation)
+
+┌─────────────────────────────────────────────────────────────────┐
+│  Feature Factory (Claude Agent SDK)                             │
+│  ───────────────────────────────────────────────────────────────│
+│  npx feature-factory new-feature "task"                         │
+│  CI/CD pipelines, programmatic access                           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### When to Use What
+
+**Claude Code (Interactive):**
+- Working in the CLI interactively
+- Need plan mode + approval workflow
+- Want to invoke slash commands as needed
+
+**Feature Factory (Headless):**
+- CI/CD automation
+- Programmatic access
+- Running workflows without human interaction
+
+### MCP Server (`agents/mcp-servers/twilio/`)
+
+Exposes Twilio APIs as tools:
+
+- **P0-P3 (220+ tools)**: Messaging, Voice, Verify, Sync, TaskRouter, Debugger, Phone Numbers, and more
+
+### Terminology
+
+| Term | Definition |
+|------|------------|
+| **Slash Command** | Specialized tool implementing a development role (`/architect`, `/dev`) |
+| **MCP Server** | Model Context Protocol server exposing Twilio APIs as tools |
+| **Deep Validation** | Verification beyond HTTP 200 (check delivery status, debugger alerts) |
+| **Agentic Loop** | Claude API call → tool use → result → repeat until task complete |
+
 ## Documentation Navigator
 
 | Looking for... | Location |
@@ -547,6 +613,49 @@ This project uses Claude Code hooks to automate enforcement of coding standards.
 ### Hook Scripts Location
 
 All hook scripts are in `.claude/hooks/` and can be modified to adjust behavior.
+
+## Extended Thinking Configuration
+
+This project enables maximum extended thinking tokens (63,999) for complex reasoning tasks. This is configured in `.claude/settings.json`:
+
+```json
+{
+  "env": {
+    "MAX_THINKING_TOKENS": "63999"
+  }
+}
+```
+
+### What Extended Thinking Does
+
+Extended thinking allocates part of Claude's output budget for internal reasoning before responding. Higher values provide:
+
+- More space to explore multiple solution approaches
+- Room for thorough edge case analysis
+- Better performance on complex architectural decisions
+- Ability to self-correct during reasoning
+
+### Adjusting or Disabling
+
+| Setting | Effect |
+|---------|--------|
+| `"63999"` | Maximum thinking (current setting) |
+| `"31999"` | Default when enabled |
+| `"10000"` | Reduced thinking (faster, cheaper) |
+| `"0"` | Disabled (no extended thinking) |
+
+To reduce costs or speed up simple tasks, lower the value in `.claude/settings.json` or override per-session:
+
+```bash
+MAX_THINKING_TOKENS=10000 claude
+```
+
+### In-Session Controls
+
+- **`Option+T`** (macOS) / **`Alt+T`** (Windows/Linux) - Toggle thinking on/off
+- **`Ctrl+O`** - View thinking process in verbose mode
+
+**Note**: You're billed for all thinking tokens used. Higher values = higher cost for complex tasks.
 
 ## Environment Variables
 

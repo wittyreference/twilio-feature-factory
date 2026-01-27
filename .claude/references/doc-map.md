@@ -1,6 +1,38 @@
 # Documentation Reference Map
 
-Quick lookup for which documentation to check BEFORE taking action. This enforces doc-first behavior.
+Quick lookup for which documentation to check BEFORE taking action.
+
+## Documentation Index
+
+### By Topic
+
+| Topic | Primary Doc | Related |
+|-------|-------------|---------|
+| Project overview | [README.md](/README.md) | [CLAUDE.md](/CLAUDE.md) |
+| Agent architecture | [agents/README.md](/agents/README.md) | [feature-factory/CLAUDE.md](/agents/feature-factory/CLAUDE.md) |
+| MCP Server tools | [agents/mcp-servers/twilio/CLAUDE.md](/agents/mcp-servers/twilio/CLAUDE.md) | [API_REFERENCE.md](/agents/mcp-servers/twilio/docs/API_REFERENCE.md) |
+| Voice AI Builder | [agents/voice-ai-builder/CLAUDE.md](/agents/voice-ai-builder/CLAUDE.md) | [conversation-relay/CLAUDE.md](/functions/conversation-relay/CLAUDE.md) |
+| Deep validation | [validation/CLAUDE.md](/agents/mcp-servers/twilio/src/validation/CLAUDE.md) | - |
+| Twilio CLI | [twilio-cli.md](/.claude/references/twilio-cli.md) | - |
+| Tool boundaries | [tool-boundaries.md](/.claude/references/tool-boundaries.md) | - |
+| Getting started | [WALKTHROUGH.md](/WALKTHROUGH.md) | - |
+
+### By Directory
+
+**Root**: README.md, CLAUDE.md, WALKTHROUGH.md, DESIGN_DECISIONS.md
+
+**Agents** (`agents/`):
+- `agents/README.md` - Architecture overview
+- `agents/mcp-servers/twilio/CLAUDE.md` - MCP Server (P0 tools implemented)
+- `agents/feature-factory/CLAUDE.md` - Feature Factory orchestrator
+- `agents/voice-ai-builder/CLAUDE.md` - Voice AI generators
+
+**Functions** (`functions/`): Each domain has its own CLAUDE.md
+- voice, messaging, conversation-relay, verify, sync, taskrouter, callbacks, messaging-services
+
+**References** (`.claude/references/`): twilio-cli.md, tool-boundaries.md, doc-map.md
+
+---
 
 ## Principle: Check → Act → Record
 

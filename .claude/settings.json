@@ -69,5 +69,8 @@
       "WebSearch",
       "WebFetch"
     ]
+  },
+  "env": {
+    "MAX_THINKING_TOKENS": "63999"
   }
 }

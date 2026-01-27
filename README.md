@@ -1,26 +1,60 @@
 # Twilio Agent Factory
 
-A template repository for building Twilio applications with AI-assisted development using Claude Code.
+Build Twilio applications with AI-assisted development using Claude Code.
 
-## Features
+## What This Is
 
-- **Twilio Serverless Functions** - Pre-configured for Voice, Messaging, Conversation Relay, Verify, Sync, TaskRouter, and Messaging Services
-- **Test-Driven Development** - Jest for unit/integration tests, Newman for E2E
-- **CI/CD Pipeline** - GitHub Actions for testing and deployment
-- **Claude Code Optimized** - Custom slash commands, CLAUDE.md hierarchy, CLI reference, and specialized subagents
+Twilio Agent Factory provides **specialized AI tools** for building Twilio applications. Claude Code orchestrates the development process—you describe what you want, approve the plan, and Claude Code invokes the right tools to build it.
+
+```text
+You: "Add SMS verification to user signup"
+    ↓
+Claude Code creates a plan (plan mode)
+    ↓
+You approve
+    ↓
+Claude Code executes using slash commands, MCP tools, and skills
+    ↓
+Working Twilio app
+```
+
+## The Architecture
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│  Claude Code (Interactive Orchestrator)                         │
+│  ───────────────────────────────────────────────────────────────│
+│  Plan mode → User approval → Execution                          │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                    invokes as needed
+                              │
+    ┌─────────────────────────┼─────────────────────────┐
+    │                         │                         │
+    ▼                         ▼                         ▼
+┌─────────────┐       ┌─────────────┐       ┌─────────────────┐
+│ Slash Cmds  │       │ MCP Server  │       │ Voice AI Builder│
+│ ────────────│       │ ────────────│       │ ────────────────│
+│ /architect  │       │ Twilio APIs │       │ Code generators │
+│ /spec       │       │ as tools    │       │ for voice apps  │
+│ /test-gen   │       │             │       │                 │
+│ /dev        │       │ • Send SMS  │       │ • TwiML handlers│
+│ /review     │       │ • Make calls│       │ • WebSocket svrs│
+│ /docs       │       │ • Query logs│       │ • Templates     │
+└─────────────┘       └─────────────┘       └─────────────────┘
+```
+
+### How It Works
+
+1. Describe what you want in Claude Code
+2. Claude Code enters plan mode, explores the codebase, designs an approach
+3. You review and approve the plan
+4. Claude Code executes, invoking:
+   - **Slash commands** (`/architect`, `/dev`, etc.) for specialized development tasks
+   - **MCP tools** for Twilio API operations (send SMS, query logs, etc.)
+   - **Skills** for domain knowledge (voice patterns, context management)
 
 ## Quick Start
-
-> **New to this template?** See [WALKTHROUGH.md](WALKTHROUGH.md) for a comprehensive guide that walks you through building your first Twilio Voice app using the full AI-assisted pipeline in about 20 minutes.
-
-### Prerequisites
-
-- Node.js 18-22 installed (Twilio Serverless does not support versions beyond 22)
-- Twilio account with Account SID and Auth Token
-- Twilio CLI installed (`npm install -g twilio-cli`)
-- Twilio Serverless plugin (`twilio plugins:install @twilio-labs/plugin-serverless`)
-
-### Setup
 
 1. **Clone the repository**
 
@@ -35,57 +69,126 @@ A template repository for building Twilio applications with AI-assisted developm
    npm install
    ```
 
-3. **Configure environment variables**
+3. **Configure environment**
 
    ```bash
    cp .env.example .env
    ```
 
-   Edit `.env` with your Twilio credentials:
+   Add your Twilio credentials to `.env`:
+   - `TWILIO_ACCOUNT_SID`
+   - `TWILIO_AUTH_TOKEN`
+   - `TWILIO_PHONE_NUMBER`
 
-   ```text
-   TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   TWILIO_AUTH_TOKEN=your_auth_token
-   TWILIO_PHONE_NUMBER=+1xxxxxxxxxx
-   ```
-
-4. **Start local development server**
+4. **Start development server**
 
    ```bash
    npm start
    ```
 
-   Your functions will be available at `http://localhost:3000`
+5. **Build your first app**
 
-5. **Run tests**
+   In Claude Code, describe what you want:
 
-   ```bash
-   npm test
    ```
+   "Add a voice IVR that routes callers to sales or support"
+   ```
+
+   Or follow [WALKTHROUGH.md](WALKTHROUGH.md) for a guided tutorial.
+
+## Available Tools
+
+### Development Commands
+
+Specialized agents for different development phases:
+
+| Command | What It Does |
+|---------|--------------|
+| `/architect [topic]` | Design review and pattern selection |
+| `/spec [feature]` | Create technical specifications |
+| `/test-gen [feature]` | Generate failing tests (TDD Red Phase) |
+| `/dev [task]` | Implement to pass tests (TDD Green Phase) |
+| `/review` | Code review and security audit |
+| `/docs` | Update documentation |
+
+### Utility Commands
+
+| Command | What It Does |
+|---------|--------------|
+| `/twilio-docs [topic]` | Search Twilio documentation |
+| `/twilio-logs` | Analyze Twilio debugger logs |
+| `/deploy [env]` | Deploy with validation checks |
+
+### MCP Server
+
+Twilio APIs exposed as tools Claude Code can invoke:
+
+- **Messaging**: Send SMS/MMS, query logs
+- **Voice**: Call logs, initiate calls, recordings
+- **Phone Numbers**: List, configure webhooks, search
+- **Verify**: Start/check verifications
+- **Sync**: Documents for state synchronization
+- **TaskRouter**: Create tasks, list workers
+- **Debugger**: Error logs, usage records
+
+## Headless Automation
+
+For CI/CD pipelines or programmatic access, the **Feature Factory** can run workflows without Claude Code:
+
+```bash
+npx feature-factory new-feature "add SMS verification"
+```
+
+This is useful for:
+- Automated development pipelines
+- Scheduled code generation
+- Integration with other tools
+
+See [agents/README.md](agents/README.md) for details.
+
+## What's Implemented vs Planned
+
+### Implemented ✓
+
+**Development Tools**
+- 7 specialized slash commands (architect, spec, test-gen, dev, qa, review, docs)
+- MCP Server with 220+ Twilio API tools (P0-P3 complete)
+- Voice AI Builder with TwiML and WebSocket generators
+
+**Serverless Functions**
+- Voice, Messaging, Verify, Sync, TaskRouter, Conversation Relay
+
+### Planned 🚧
+
+**Additional Workflows**
+- `bug-fix` workflow (logs → architect → test → dev → review)
+- `refactor` workflow (test → architect → dev → review)
+
+**Autonomous Workers**
+- Event-driven agents that respond to validation failures
+- Background workers for continuous verification
 
 ## Project Structure
 
 ```text
-├── .claude/commands/        # Custom slash commands for Claude Code
-├── .github/
-│   ├── prompts/             # Agent-assisted pipeline prompts
-│   └── workflows/           # GitHub Actions CI/CD
+twilio-agent-factory/
 ├── functions/               # Twilio serverless functions
-│   ├── voice/               # Voice call handlers
+│   ├── voice/               # Voice call handlers (TwiML)
 │   ├── messaging/           # SMS/MMS handlers
 │   ├── conversation-relay/  # Real-time voice AI
 │   ├── verify/              # Phone verification
-│   ├── sync/                # Real-time state synchronization
-│   ├── taskrouter/          # Task routing to workers
-│   ├── messaging-services/  # Sender pools, compliance
-│   ├── callbacks/           # Status callback handlers
-│   └── helpers/             # Shared private functions
+│   ├── sync/                # State synchronization
+│   ├── taskrouter/          # Skills-based routing
+│   └── callbacks/           # Status callback handlers
 ├── agents/                  # AI development tooling
 │   ├── mcp-servers/twilio/  # MCP server for Twilio APIs
-│   ├── feature-factory/     # Development workflow orchestration
+│   ├── feature-factory/     # Headless workflow orchestration
 │   └── voice-ai-builder/    # Voice AI app generator
-├── __tests__/               # Test suites
-└── postman/                 # Newman E2E collections
+├── .claude/                 # Claude Code configuration
+│   ├── commands/            # Slash command definitions
+│   ├── hooks/               # Automation hooks
+│   └── skills/              # Context engineering skills
+└── __tests__/               # Test suites
 ```
 
 ## Available Scripts
@@ -94,320 +197,35 @@ A template repository for building Twilio applications with AI-assisted developm
 |---------|-------------|
 | `npm start` | Start local development server |
 | `npm test` | Run unit and integration tests |
-| `npm run test:e2e` | Run Newman E2E tests |
-| `npm run test:coverage` | Run tests with coverage report |
 | `npm run lint` | Check for linting errors |
 | `npm run deploy:dev` | Deploy to dev environment |
 | `npm run deploy:prod` | Deploy to production |
 
-## Twilio Capabilities
+## Safety Features
 
-### Voice
+Claude Code hooks protect your code automatically:
 
-Handle incoming calls with TwiML:
+- **Credential blocking** - Prevents hardcoded Twilio SIDs and tokens
+- **ABOUTME enforcement** - Requires documentation comments on new functions
+- **Auto-lint** - Runs ESLint with auto-fix on save
+- **Deploy validation** - Runs tests and lint before deployment
+- **Git safety** - Blocks `--no-verify` and force push to main
 
-```javascript
-// functions/voice/incoming-call.js
-exports.handler = async (context, event, callback) => {
-  const twiml = new Twilio.twiml.VoiceResponse();
-  twiml.say('Hello from your Twilio prototype!');
-  return callback(null, twiml);
-};
-```
+## Prerequisites
 
-### Messaging
+- Node.js 18-22 (Twilio Serverless requirement)
+- Twilio CLI (`npm install -g twilio-cli`)
+- Twilio Serverless plugin (`twilio plugins:install @twilio-labs/plugin-serverless`)
+- Claude Code
 
-Handle incoming SMS:
+## Resources
 
-```javascript
-// functions/messaging/incoming-sms.js
-exports.handler = async (context, event, callback) => {
-  const twiml = new Twilio.twiml.MessagingResponse();
-  twiml.message(`You said: ${event.Body}`);
-  return callback(null, twiml);
-};
-```
-
-### Conversation Relay
-
-Connect calls to AI/LLM backends:
-
-```javascript
-// functions/conversation-relay/relay-handler.js
-exports.handler = async (context, event, callback) => {
-  const twiml = new Twilio.twiml.VoiceResponse();
-  const connect = twiml.connect();
-  connect.conversationRelay({
-    url: 'wss://your-websocket-server.com/relay',
-    voice: 'Polly.Amy'
-  });
-  return callback(null, twiml);
-};
-```
-
-### Verify
-
-Phone number verification:
-
-```javascript
-// functions/verify/start-verification.protected.js
-exports.handler = async (context, event, callback) => {
-  const client = context.getTwilioClient();
-  const verification = await client.verify.v2
-    .services(context.TWILIO_VERIFY_SERVICE_SID)
-    .verifications.create({ to: event.to, channel: 'sms' });
-  return callback(null, { success: true, status: verification.status });
-};
-```
-
-### Sync
-
-Real-time state synchronization across devices:
-
-```javascript
-// functions/sync/store-state.protected.js
-exports.handler = async (context, event, callback) => {
-  const client = context.getTwilioClient();
-  const doc = await client.sync.v1
-    .services(context.TWILIO_SYNC_SERVICE_SID)
-    .documents.create({
-      uniqueName: `call-${event.CallSid}`,
-      data: { stage: 'greeting', selections: [] },
-      ttl: 3600
-    });
-  return callback(null, { success: true, sid: doc.sid });
-};
-```
-
-### TaskRouter
-
-Skills-based routing to workers and agents:
-
-```javascript
-// functions/taskrouter/create-task.protected.js
-exports.handler = async (context, event, callback) => {
-  const client = context.getTwilioClient();
-  const task = await client.taskrouter.v1
-    .workspaces(context.TWILIO_TASKROUTER_WORKSPACE_SID)
-    .tasks.create({
-      workflowSid: context.TWILIO_TASKROUTER_WORKFLOW_SID,
-      attributes: JSON.stringify({ type: 'support', language: 'english' })
-    });
-  return callback(null, { success: true, taskSid: task.sid });
-};
-```
-
-### Messaging Services
-
-Sender pools, geographic matching, and A2P compliance:
-
-```javascript
-// functions/messaging-services/send-campaign.protected.js
-exports.handler = async (context, event, callback) => {
-  const client = context.getTwilioClient();
-  const message = await client.messages.create({
-    to: event.to,
-    messagingServiceSid: context.TWILIO_MESSAGING_SERVICE_SID,
-    body: event.body
-  });
-  return callback(null, { success: true, sid: message.sid });
-};
-```
-
-## Claude Code Integration
-
-This template is optimized for use with Claude Code. It includes:
-
-> **Step-by-step guide**: See [WALKTHROUGH.md](WALKTHROUGH.md) for a hands-on tutorial covering the full pipeline from idea to working application.
-
-### Two Development Workflows
-
-Choose based on your project needs:
-
-| Workflow | Best For | How It Works |
-|----------|----------|--------------|
-| **Document-Driven** | Complex projects, team collaboration, pause/resume | Use `.github/prompts/` templates to create artifacts |
-| **Subagent Pipeline** | Rapid prototyping, quick iterations | Use `/slash` commands for interactive development |
-| **Hybrid** (Recommended) | Production features | Documents for planning, subagents for execution |
-
-See [WALKTHROUGH.md Section 3](WALKTHROUGH.md#3-choosing-your-workflow) for detailed guidance on choosing your workflow.
-
-### Custom Slash Commands
-
-**Workflow Orchestration**
-
-- `/orchestrate [workflow] [task]` - Run full development pipelines
-
-**Development Subagents**
-
-- `/architect [topic]` - Design review, pattern selection, CLAUDE.md maintenance
-- `/spec [feature]` - Create detailed technical specifications
-- `/test-gen [feature]` - Generate failing tests (TDD Red Phase)
-- `/dev [task]` - Implement features to pass tests (TDD Green Phase)
-- `/review [target]` - Code review with security audit
-- `/test [scope]` - Run tests and validate coverage
-- `/docs [scope]` - Documentation updates and maintenance
-
-**Utility Commands**
-
-- `/twilio-docs [topic]` - Search Twilio documentation
-- `/twilio-logs` - Analyze Twilio debugger logs
-- `/deploy [env]` - Deploy with pre/post checks
-
-### Subagent Workflows
-
-Run complete development pipelines with `/orchestrate`:
-
-```text
-# New feature
-/orchestrate new-feature Add voice IVR menu
-
-# Bug fix
-/orchestrate bug-fix SMS webhook returns 500
-
-# Refactor
-/orchestrate refactor voice handlers
-```
-
-Or run subagents individually in sequence:
-
-```text
-/architect ──► /spec ──► /test-gen ──► /dev ──► /review ──► /test ──► /docs
-```
-
-See `.claude/workflows/README.md` for detailed workflow documentation.
-
-### Claude Code Hooks
-
-This template includes automated hooks that run during Claude Code sessions:
-
-| Hook | Trigger | Action |
-|------|---------|--------|
-| **Credential Safety** | Write/Edit | Blocks hardcoded Twilio SIDs and tokens |
-| **ABOUTME Enforcement** | Write | Requires ABOUTME comments on new function files |
-| **Auto-Lint** | Write/Edit | Runs ESLint with auto-fix on JS files |
-| **Git Safety** | Bash | Blocks `--no-verify` and force push to main |
-| **Deploy Validation** | Bash | Runs tests and lint before deployment |
-| **Notifications** | Stop | Desktop notification when Claude is ready |
-
-**Disabling Hooks**: To disable a hook, remove its entry from `.claude/settings.json`.
-
-### CLAUDE.md Hierarchy
-
-- Root `CLAUDE.md` contains project-wide standards
-- Subdirectory `CLAUDE.md` files provide API-specific context (Voice, Messaging, Verify, Sync, TaskRouter, Messaging Services)
-- `.claude/references/twilio-cli.md` provides comprehensive CLI command reference to reduce token usage
-
-### Context Engineering Skills
-
-The template includes skills for managing context in long development sessions:
-
-| Skill | Purpose |
-|-------|---------|
-| `context-fundamentals.md` | Core principles for context management |
-| `context-compression.md` | Summarize TwiML, payloads, and conversation history |
-| `multi-agent-patterns.md` | Orchestration strategies for complex features |
-| `memory-systems.md` | Track state across webhook invocations |
-
-Use `/context summarize` to compress context during long sessions, or `/context load` to expand context for new tasks.
-
-### Agent-Assisted Pipeline (Document-Driven Workflow)
-
-Located in `.github/prompts/`, these templates create persistent artifacts for complex projects:
-
-| Template | Purpose | Creates |
-|----------|---------|---------|
-| `brainstorm.md` | Explore ideas, select Twilio APIs | Concept document |
-| `plan.md` | Structure implementation phases | `prompt_plan.md`, `todo.md` |
-| `spec.md` | Detail function specifications | Specification document |
-| `execute.md` | Guide TDD implementation | Code with task tracking |
-
-Use these when you need shareable documents, team review, or pause/resume capability.
-
-## Testing
-
-All tests use real Twilio APIs (no mocks). Ensure your credentials are configured.
-
-### Unit Tests
-
-```bash
-npm test
-```
-
-### E2E Tests
-
-Start the local server, then run Newman:
-
-```bash
-npm start &
-npm run test:e2e
-```
-
-### Coverage
-
-```bash
-npm run test:coverage
-```
-
-## Deployment
-
-### Manual Deployment
-
-```bash
-# Deploy to dev
-npm run deploy:dev
-
-# Deploy to production
-npm run deploy:prod
-```
-
-### CI/CD
-
-GitHub Actions automatically:
-
-- Runs tests on every push/PR
-- Deploys to dev on push to `develop` branch
-- Deploys to production on push to `main` branch
-
-Configure these GitHub Secrets:
-
-- `TWILIO_ACCOUNT_SID`
-- `TWILIO_AUTH_TOKEN`
-- `TWILIO_API_KEY`
-- `TWILIO_API_SECRET`
-- `TWILIO_PHONE_NUMBER`
-- `TWILIO_VERIFY_SERVICE_SID`
-
-## Function Access Levels
-
-- `*.js` - Public (anyone can call)
-- `*.protected.js` - Protected (require valid Twilio signature)
-- `*.private.js` - Private (only callable from other functions)
-
-## Contributing
-
-1. Create a feature branch
-2. Write tests first (TDD)
-3. Implement the feature
-4. Ensure all tests pass
-5. Create a pull request
+- [WALKTHROUGH.md](WALKTHROUGH.md) - Build your first app (start here!)
+- [CLAUDE.md](CLAUDE.md) - Project standards and conventions
+- [agents/README.md](agents/README.md) - Agent architecture details
+- [Twilio Functions Docs](https://www.twilio.com/docs/serverless/functions-assets/functions)
+- [Claude Code](https://claude.ai/code)
 
 ## License
 
 MIT
-
-## Resources
-
-### In This Repository
-
-- [WALKTHROUGH.md](WALKTHROUGH.md) - Comprehensive pipeline tutorial (start here!)
-- [.claude/workflows/README.md](.claude/workflows/README.md) - Detailed subagent workflow documentation
-- [.claude/references/twilio-cli.md](.claude/references/twilio-cli.md) - Twilio CLI command reference
-- [CLAUDE.md](CLAUDE.md) - Project standards and AI agent instructions
-
-### External Documentation
-
-- [Twilio Functions Documentation](https://www.twilio.com/docs/serverless/functions-assets/functions)
-- [Twilio Serverless Toolkit](https://www.twilio.com/docs/labs/serverless-toolkit)
-- [Twilio CLI](https://www.twilio.com/docs/twilio-cli)
-- [Claude Code](https://claude.ai/code)

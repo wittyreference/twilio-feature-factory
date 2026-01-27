@@ -16,11 +16,71 @@ The agents in this directory provide AI-assisted development tooling that helps 
 | [Feature Factory](feature-factory/) | **Implemented** | Orchestrates development workflows with specialized subagents |
 | [Voice AI Builder](voice-ai-builder/) | **Implemented** | Generates TwiML handlers and WebSocket servers for voice AI |
 
+## When to Use What
+
+| Use Case | Tool | Why |
+|----------|------|-----|
+| Interactive development | **Claude Code** | Plan mode, approval workflow, invoke commands as needed |
+| CI/CD automation | **Feature Factory** | Headless execution, programmatic access |
+| Quick Twilio API calls | **MCP Server** | Direct tool access without workflow overhead |
+
+### Claude Code (Recommended for Interactive Work)
+
+When working in the CLI interactively, Claude Code is your orchestrator:
+
+1. Describe what you want
+2. Claude Code enters plan mode, explores codebase
+3. You approve the plan
+4. Claude Code executes using slash commands, MCP tools, skills
+
+### Feature Factory (For Automation)
+
+For CI/CD pipelines or programmatic access:
+
+```bash
+npx feature-factory new-feature "add SMS verification"
+```
+
+## Feature Factory
+
+**Location**: `feature-factory/`
+
+The Feature Factory is a **headless orchestrator** built on Claude Agent SDK. Use it when you need to run development workflows programmatically—without Claude Code.
+
+### How It Works
+
+```text
+npx feature-factory new-feature "add SMS verification"
+         │
+         ▼
+┌─────────────────────────────────────────────────────┐
+│  Feature Factory Orchestrator (agentic loop)        │
+│  Budget: $5 | Turns: 50 max | Sessions: Persistent  │
+└─────────────────────────────────────────────────────┘
+         │
+         ▼
+/architect → /spec → /test-gen → /dev → /review → /docs
+```
+
+Each phase invokes a specialized subagent with:
+
+- Claude API access (agentic loop)
+- Tool access: Read, Write, Glob, Grep, Bash, MCP tools
+- Role-specific prompts and constraints
+
+Human approval gates occur between phases (can be disabled for full automation).
+
+See [feature-factory/CLAUDE.md](feature-factory/CLAUDE.md) for full documentation.
+
 ## Twilio MCP Server
 
 **Location**: `mcp-servers/twilio/`
 
-The MCP server exposes Twilio API operations as standardized tools that Claude agents can invoke autonomously. Currently implements P0 (core) tools:
+The MCP server exposes Twilio API operations as standardized tools that Claude agents can invoke autonomously.
+
+### Implementation Status
+
+**P0 (Implemented)** - 7 modules:
 
 - **Messaging**: Send SMS/MMS, query message logs and status
 - **Voice**: Query call logs, initiate calls, fetch recordings
@@ -30,7 +90,12 @@ The MCP server exposes Twilio API operations as standardized tools that Claude a
 - **TaskRouter**: Create tasks, list workers and workflows
 - **Debugger**: Fetch error logs, analyze patterns, get usage records
 
-See [mcp-servers/twilio/CLAUDE.md](mcp-servers/twilio/CLAUDE.md) for full documentation.
+**P1-P3 (Planned)** - 18 additional modules including:
+- Conversations, Studio, Flex, Video, Notify
+- Messaging Services, A2P compliance, Regulatory
+- Programmable Wireless, Proxy, Voice Intelligence
+
+See [mcp-servers/twilio/CLAUDE.md](mcp-servers/twilio/CLAUDE.md) for full documentation and roadmap.
 
 ### Deep Validation
 
@@ -42,6 +107,22 @@ The MCP server includes a deep validation helper (`src/validation/`) that goes b
 - Sync callback data (if configured)
 
 See [mcp-servers/twilio/src/validation/CLAUDE.md](mcp-servers/twilio/src/validation/CLAUDE.md) for details.
+
+## Voice AI Builder
+
+**Location**: `voice-ai-builder/`
+
+Generates boilerplate code for voice AI applications using Twilio's Conversation Relay service.
+
+### What It Generates
+
+- **TwiML Handlers**: `<Connect><ConversationRelay>` responses with proper configuration
+- **WebSocket Servers**: Backend servers that handle the ConversationRelay protocol
+- **Templates**: Pre-built patterns for common voice AI use cases
+
+Use cases include customer service bots, voice-activated IVRs, and real-time transcription apps.
+
+See [voice-ai-builder/CLAUDE.md](voice-ai-builder/CLAUDE.md) for full documentation.
 
 ## Architecture Separation
 

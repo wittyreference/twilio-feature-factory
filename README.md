@@ -4,19 +4,41 @@ Build Twilio applications with AI-assisted development using Claude Code.
 
 ## What This Is
 
-Twilio Agent Factory provides **specialized AI tools** for building Twilio applications. Claude Code orchestrates the development process—you describe what you want, approve the plan, and Claude Code invokes the right tools to build it.
+Twilio Agent Factory is an **AI-powered development system** for building Twilio applications. You brainstorm your idea with Claude Code, approve an implementation plan, and autonomous agents build it for you.
+
+## The Development Workflow
 
 ```text
-You: "Add SMS verification to user signup"
-    ↓
-Claude Code creates a plan (plan mode)
-    ↓
-You approve
-    ↓
-Claude Code executes using slash commands, MCP tools, and skills
-    ↓
-Working Twilio app
+┌─────────────────────────────────────────────────────────────────┐
+│  1. BRAINSTORM                                                  │
+│     Reference .claude/references/brainstorm.md                  │
+│     Develop your concept iteratively with Claude Code           │
+│     Save output as concept.md                                   │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  2. PLAN                                                        │
+│     Claude Code enters plan mode automatically                  │
+│     Explores codebase, creates detailed implementation plan     │
+│     You review and approve                                      │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  3. EXECUTE                                                     │
+│     Autonomous agents run the pipeline:                         │
+│     /architect → /spec → /test-gen → /dev → /review → /docs    │
+│     Human approval gates at key checkpoints                     │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  4. VERIFY                                                      │
+│     Deep validation beyond HTTP 200                             │
+│     Test coverage enforcement (80%)                             │
+│     Documentation pipeline updates                              │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+**Extended Thinking**: This project configures `MAX_THINKING_TOKENS=63999` for deep reasoning during complex planning. See [CLAUDE.md](CLAUDE.md) for details.
 
 ## The Architecture
 
@@ -44,15 +66,15 @@ Working Twilio app
 └─────────────┘       └─────────────┘       └─────────────────┘
 ```
 
-### How It Works
+### What Agents Use
 
-1. Describe what you want in Claude Code
-2. Claude Code enters plan mode, explores the codebase, designs an approach
-3. You review and approve the plan
-4. Claude Code executes, invoking:
-   - **Slash commands** (`/architect`, `/dev`, etc.) for specialized development tasks
-   - **MCP tools** for Twilio API operations (send SMS, query logs, etc.)
-   - **Skills** for domain knowledge (voice patterns, context management)
+During execution, autonomous agents have access to:
+
+- **Slash commands** (`/architect`, `/dev`, etc.) - Specialized development roles
+- **MCP tools** - Twilio API operations (send SMS, query logs, etc.)
+- **Skills** - Domain knowledge (voice patterns, context management)
+- **Hooks** - Quality enforcement (TDD, security, credentials)
+- **CLAUDE.md hierarchy** - Context for each domain
 
 ## Quick Start
 
@@ -88,13 +110,16 @@ Working Twilio app
 
 5. **Build your first app**
 
-   In Claude Code, describe what you want:
+   In Claude Code, start by referencing the brainstorm template:
 
    ```
-   "Add a voice IVR that routes callers to sales or support"
+   "Using .claude/references/brainstorm.md, help me brainstorm
+   a voice IVR that routes callers to sales or support"
    ```
 
-   Or follow [WALKTHROUGH.md](WALKTHROUGH.md) for a guided tutorial.
+   Claude Code will help you develop the concept, then enter plan mode to create the implementation plan. Once approved, autonomous agents will build it.
+
+   See [WALKTHROUGH.md](WALKTHROUGH.md) for a detailed guided tutorial.
 
 ## Available Tools
 

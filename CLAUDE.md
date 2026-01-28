@@ -396,15 +396,40 @@ Words that indicate high-risk assertions requiring verification:
 - Packages are managed in `package.json`
 - Install test dependencies: `npm install --save-dev jest ts-jest @types/jest supertest newman`
 
-# Agent-Assisted Pipeline
+# Development Workflow
 
-This repository uses an agent-assisted pipeline with structured workflows:
+This repository uses a **brainstorm → plan → execute** workflow:
 
-- **Brainstorming**: Use `.github/prompts/brainstorm.md` with chat models for idea generation
-- **Specification**: Create detailed software specs in `spec.md`
-- **Planning**: Use `.github/prompts/plan.md` with reasoning models to generate `prompt_plan.md`
-- **Task Management**: Maintain task tracking in `todo.md` - always check off completed work
-- **Execution**: Follow prompts in `.github/prompts/` for code generation, GitHub issues, and task completion
+## Phase 1: Brainstorm
+
+Reference `.claude/references/brainstorm.md` to develop your concept:
+- Claude Code asks one question at a time
+- Iteratively refine the idea
+- Save output as `concept.md` for reference
+
+## Phase 2: Plan
+
+Claude Code automatically enters plan mode for complex tasks:
+- Explores the codebase using tools
+- Creates detailed implementation plan
+- User reviews and approves
+
+## Phase 3: Execute
+
+Approved plan triggers the autonomous agent pipeline:
+```
+/architect → /spec → /test-gen → /dev → /review → /docs
+```
+- Human approval gates at architect, spec, and review phases
+- TDD enforcement (tests must fail before implementation)
+- Deep validation beyond HTTP 200
+
+## Phase 4: Verify
+
+Continuous quality assurance:
+- Test coverage enforcement (80%)
+- Security scanning
+- Documentation pipeline updates
 
 # Workflow Requirements
 

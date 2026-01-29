@@ -3,23 +3,16 @@
 
 import type { Workflow, WorkflowType } from '../types.js';
 import { newFeatureWorkflow } from './new-feature.js';
+import { bugFixWorkflow } from './bug-fix.js';
+import { refactorWorkflow } from './refactor.js';
 
 /**
  * All available workflow definitions
  */
 export const workflows: Record<WorkflowType, Workflow> = {
   'new-feature': newFeatureWorkflow,
-  // Planned workflows (not yet implemented)
-  'bug-fix': {
-    name: 'bug-fix',
-    description: 'Bug fix pipeline (not yet implemented)',
-    phases: [],
-  },
-  refactor: {
-    name: 'refactor',
-    description: 'Refactoring pipeline (not yet implemented)',
-    phases: [],
-  },
+  'bug-fix': bugFixWorkflow,
+  refactor: refactorWorkflow,
 };
 
 /**
@@ -37,3 +30,5 @@ export function getWorkflow(workflowType: WorkflowType): Workflow {
 }
 
 export { newFeatureWorkflow };
+export { bugFixWorkflow };
+export { refactorWorkflow };

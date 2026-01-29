@@ -158,10 +158,17 @@ class TwilioSetup {
       });
 
       const choice = await question('\nSelect a number (1-5) or press Enter for first: ');
-      const index = choice ? parseInt(choice, 10) - 1 : 0;
+      const trimmedChoice = choice.trim();
 
-      if (index < 0 || index >= available.length) {
-        throw new Error('Invalid selection');
+      // Default to first option if empty, whitespace, or non-numeric
+      let index = 0;
+      if (trimmedChoice !== '') {
+        const parsed = parseInt(trimmedChoice, 10);
+        if (!isNaN(parsed) && parsed >= 1 && parsed <= available.length) {
+          index = parsed - 1;
+        } else {
+          logWarning(`Invalid selection "${trimmedChoice}", using first option`);
+        }
       }
 
       const selectedNumber = available[index];

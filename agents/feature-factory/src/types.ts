@@ -412,7 +412,7 @@ export interface SessionMetadata {
 /**
  * Hook types that can run before or after phases
  */
-export type HookType = 'tdd-enforcement' | 'credential-safety' | 'coverage-threshold';
+export type HookType = 'tdd-enforcement' | 'credential-safety' | 'coverage-threshold' | 'test-passing-enforcement';
 
 /**
  * Context passed to a hook when executing

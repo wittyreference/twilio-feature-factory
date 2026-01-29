@@ -91,7 +91,7 @@ describe('ConversationRelay Integration Tests', () => {
       expect(twiml).toContain('interruptible="true"');
     });
 
-    it('should configure transcription provider', async () => {
+    it('should use Deepgram transcription provider', async () => {
       const event = {};
       const callback = jest.fn();
 
@@ -99,7 +99,8 @@ describe('ConversationRelay Integration Tests', () => {
 
       const [, response] = callback.mock.calls[0];
       const twiml = response.toString();
-      expect(twiml).toContain('transcriptionProvider="google"');
+      expect(twiml).toContain('transcriptionProvider="deepgram"');
+      expect(twiml).toContain('speechModel="nova-3-general"');
     });
   });
 

@@ -64,6 +64,8 @@ Before starting, make sure you have:
 - [ ] **Claude Code** installed and configured
 - [ ] This repository cloned locally
 - [ ] **Twilio Sync Service** (created automatically by setup script)
+- [ ] **ngrok** installed for E2E testing (`brew install ngrok` or https://ngrok.com/download)
+- [ ] **Twilio CLI profile** configured for the correct account (`twilio profiles:list`)
 
 ### Verify Your Setup
 
@@ -73,6 +75,13 @@ node --version
 
 # Check Twilio CLI
 twilio --version
+
+# Check Twilio CLI profile (important: use correct account!)
+twilio profiles:list
+# If you need to switch: twilio profiles:use <profile-name>
+
+# Check ngrok
+ngrok --version
 
 # Check Claude Code
 claude --version
@@ -211,7 +220,7 @@ Claude Code will present a plan covering:
 **Files to create**:
 - `functions/voice/ai-assistant.js` - TwiML handler for incoming calls
 - `functions/conversation-relay/ai-assistant-ws.js` - WebSocket server
-- `functions/callbacks/recording-complete.protected.js` - Recording callback
+- `functions/conversation-relay/recording-complete.protected.js` - Recording callback
 - `functions/callbacks/transcription-complete.protected.js` - Transcription callback
 - `functions/helpers/send-summary.private.js` - SMS summary helper
 
@@ -322,7 +331,7 @@ Once approved, autonomous agents execute in sequence:
 ### Files Created
 - __tests__/unit/voice/ai-assistant.test.js
 - __tests__/unit/conversation-relay/ai-assistant-ws.test.js
-- __tests__/unit/callbacks/recording-complete.test.js
+- __tests__/unit/conversation-relay/recording-complete.test.js
 - __tests__/unit/callbacks/transcription-complete.test.js
 - __tests__/integration/voice/ai-assistant-flow.test.js
 
@@ -339,7 +348,7 @@ Once approved, autonomous agents execute in sequence:
 ### Files Created
 - functions/voice/ai-assistant.js
 - functions/conversation-relay/ai-assistant-ws.js
-- functions/callbacks/recording-complete.protected.js
+- functions/conversation-relay/recording-complete.protected.js
 - functions/callbacks/transcription-complete.protected.js
 - functions/helpers/send-summary.private.js
 
@@ -386,7 +395,7 @@ Expected output:
 ```
 PASS  __tests__/unit/voice/ai-assistant.test.js
 PASS  __tests__/unit/conversation-relay/ai-assistant-ws.test.js
-PASS  __tests__/unit/callbacks/recording-complete.test.js
+PASS  __tests__/unit/conversation-relay/recording-complete.test.js
 PASS  __tests__/unit/callbacks/transcription-complete.test.js
 PASS  __tests__/integration/voice/ai-assistant-flow.test.js
 
@@ -402,8 +411,65 @@ npm run deploy:dev
 
 Your webhook URLs:
 - Voice: `https://your-service-dev.twil.io/voice/ai-assistant`
-- WebSocket: `wss://your-service-dev.twil.io/conversation-relay/ai-assistant-ws`
 - Callbacks are automatically configured
+
+> **Important: WebSocket Server Hosting**
+>
+> Twilio serverless functions are HTTP request/response handlers - they **cannot** host WebSocket servers. ConversationRelay requires a WebSocket endpoint, which must be hosted externally.
+>
+> For E2E testing, use the local WebSocket server with ngrok (see below).
+> For production, host the WebSocket server on Railway, Fly.io, Render, or AWS.
+
+### Set Up Local WebSocket Server for E2E Testing
+
+ConversationRelay requires a WebSocket server to handle the AI conversation. For testing, run the server locally and expose it via ngrok.
+
+**Terminal 1 - Start the WebSocket server:**
+
+```bash
+# The E2E test server is included in the repo
+node __tests__/e2e/conversation-relay-server.js
+```
+
+You should see:
+```
+=================================================
+  ConversationRelay E2E Test Server
+=================================================
+  Port: 8080
+  Finalize URL: (not configured)
+```
+
+**Terminal 2 - Start ngrok tunnel:**
+
+```bash
+ngrok http 8080
+```
+
+Copy the HTTPS URL (e.g., `https://abc123.ngrok-free.dev`)
+
+**Terminal 3 - Update Twilio environment:**
+
+```bash
+# Convert https:// to wss:// for WebSocket URL
+twilio serverless:env:set \
+  --key CONVERSATION_RELAY_URL \
+  --value "wss://abc123.ngrok-free.dev" \
+  --environment dev-environment \
+  --service-sid <your-service-sid>
+```
+
+To find your service SID: `twilio serverless:list services`
+
+**Optional: Enable SMS Summary**
+
+To test the full flow with SMS summaries after calls:
+
+```bash
+# Restart WebSocket server with finalize URL
+FINALIZE_URL="https://your-service-dev.twil.io/conversation-relay/finalize-demo" \
+  node __tests__/e2e/conversation-relay-server.js
+```
 
 ### Configure Your Phone Number
 
@@ -411,6 +477,13 @@ Your webhook URLs:
 2. Navigate to Phone Numbers > Manage > Active Numbers
 3. Select your phone number
 4. Under "Voice & Fax", set "A Call Comes In" to your voice webhook URL
+
+Or via CLI:
+```bash
+twilio api:core:incoming-phone-numbers:update \
+  --sid <phone-number-sid> \
+  --voice-url "https://your-service-dev.twil.io/conversation-relay/ai-assistant-inbound"
+```
 
 ### Test It!
 
@@ -501,6 +574,26 @@ A: Check that the callback URL is publicly accessible and correctly configured. 
 **Q: SMS not received?**
 
 A: Verify the phone number is SMS-capable and check the Messaging logs in Twilio Console.
+
+**Q: Call connects but immediately says "application error"?**
+
+A: This usually means the TwiML handler failed. Check:
+1. Is the WebSocket server running? (`lsof -i :8080`)
+2. Is ngrok running? (`curl http://localhost:4040/api/tunnels`)
+3. Is `CONVERSATION_RELAY_URL` set correctly? (must be `wss://` not `https://`)
+4. Check Twilio debugger logs: `/twilio-logs` or Console > Monitor > Errors
+
+**Q: WebSocket server not receiving connections?**
+
+A: Common issues:
+1. ngrok URL expired (free tier URLs change each session)
+2. Firewall blocking WebSocket upgrade
+3. Wrong URL format in environment variable
+4. Test with: `wscat -c wss://your-ngrok-url.ngrok-free.dev`
+
+**Q: Deployed to wrong Twilio account?**
+
+A: Check your Twilio CLI profile: `twilio profiles:list`. Switch with `twilio profiles:use <name>`.
 
 ---
 

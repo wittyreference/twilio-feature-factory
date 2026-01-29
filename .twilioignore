@@ -1,0 +1,45 @@
+# ABOUTME: Excludes files from Twilio serverless deployment.
+# ABOUTME: Prevents .gitkeep and other non-deployable files from causing upload errors.
+
+# Git placeholder files
+.gitkeep
+**/.gitkeep
+
+# Development files
+.env.example
+*.md
+!functions/**/*.md
+
+# Test files
+__tests__/
+postman/
+*.test.js
+*.spec.js
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node modules (should be excluded anyway)
+node_modules/
+
+# Claude Code files
+.claude/
+.claude-dev/
+
+# Agents (not deployed to serverless)
+agents/
+
+# Scripts (not deployed)
+scripts/
+
+# Git
+.git/
+.gitignore

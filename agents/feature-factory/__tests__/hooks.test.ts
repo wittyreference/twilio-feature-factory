@@ -9,6 +9,7 @@ import {
   hasHook,
   tddEnforcementHook,
   coverageThresholdHook,
+  testPassingEnforcementHook,
   validateCredentials,
   shouldSkipValidation,
 } from '../src/hooks/index.js';
@@ -17,6 +18,11 @@ import {
   type TestRunResult,
   type TestRunner,
 } from '../src/hooks/tdd-enforcement.js';
+import {
+  createTestPassingEnforcementHook,
+  type TestRunResult as TestPassingRunResult,
+  type TestRunner as TestPassingRunner,
+} from '../src/hooks/test-passing-enforcement.js';
 import {
   createCoverageThresholdHook,
   DEFAULT_COVERAGE_THRESHOLD,
@@ -106,6 +112,13 @@ function createMockCoverageRunner(result: CoverageResult): CoverageRunner {
   return async (_workingDirectory: string) => result;
 }
 
+/**
+ * Create a mock test runner for test-passing-enforcement testing
+ */
+function createMockTestPassingRunner(result: TestPassingRunResult): TestPassingRunner {
+  return async (_workingDirectory: string) => result;
+}
+
 describe('Hook Infrastructure', () => {
   describe('getHook', () => {
     it('should return tdd-enforcement hook', () => {
@@ -120,6 +133,12 @@ describe('Hook Infrastructure', () => {
       expect(hook?.name).toBe('coverage-threshold');
     });
 
+    it('should return test-passing-enforcement hook', () => {
+      const hook = getHook('test-passing-enforcement');
+      expect(hook).toBeDefined();
+      expect(hook?.name).toBe('test-passing-enforcement');
+    });
+
     it('should return undefined for unknown hook', () => {
       // @ts-expect-error - Testing invalid hook type
       const hook = getHook('unknown-hook');
@@ -130,9 +149,10 @@ describe('Hook Infrastructure', () => {
   describe('listHooks', () => {
     it('should list all available hooks', () => {
       const hooks = listHooks();
-      expect(hooks.length).toBeGreaterThanOrEqual(2);
+      expect(hooks.length).toBeGreaterThanOrEqual(3);
       expect(hooks.some(h => h.name === 'tdd-enforcement')).toBe(true);
       expect(hooks.some(h => h.name === 'coverage-threshold')).toBe(true);
+      expect(hooks.some(h => h.name === 'test-passing-enforcement')).toBe(true);
     });
   });
 
@@ -140,6 +160,7 @@ describe('Hook Infrastructure', () => {
     it('should return true for existing hooks', () => {
       expect(hasHook('tdd-enforcement')).toBe(true);
       expect(hasHook('coverage-threshold')).toBe(true);
+      expect(hasHook('test-passing-enforcement')).toBe(true);
     });
 
     it('should return false for unknown hook', () => {
@@ -726,24 +747,102 @@ describe('createCoverageThresholdHook', () => {
 });
 
 describe('Workflow Integration', () => {
-  it('should be configured on dev phase in new-feature workflow', async () => {
-    // Import the workflow to verify hook is configured
-    const { newFeatureWorkflow } = await import('../src/workflows/new-feature.js');
+  describe('new-feature workflow', () => {
+    it('should be configured on dev phase in new-feature workflow', async () => {
+      const { newFeatureWorkflow } = await import('../src/workflows/new-feature.js');
 
-    const devPhase = newFeatureWorkflow.phases.find(p => p.agent === 'dev');
+      const devPhase = newFeatureWorkflow.phases.find(p => p.agent === 'dev');
 
-    expect(devPhase).toBeDefined();
-    expect(devPhase?.prePhaseHooks).toContain('tdd-enforcement');
+      expect(devPhase).toBeDefined();
+      expect(devPhase?.prePhaseHooks).toContain('tdd-enforcement');
+    });
+
+    it('should be configured on qa phase in new-feature workflow', async () => {
+      const { newFeatureWorkflow } = await import('../src/workflows/new-feature.js');
+
+      const qaPhase = newFeatureWorkflow.phases.find(p => p.agent === 'qa');
+
+      expect(qaPhase).toBeDefined();
+      expect(qaPhase?.prePhaseHooks).toContain('coverage-threshold');
+    });
   });
 
-  it('should be configured on qa phase in new-feature workflow', async () => {
-    // Import the workflow to verify hook is configured
-    const { newFeatureWorkflow } = await import('../src/workflows/new-feature.js');
+  describe('bug-fix workflow', () => {
+    it('should have tdd-enforcement on dev phase', async () => {
+      const { bugFixWorkflow } = await import('../src/workflows/bug-fix.js');
 
-    const qaPhase = newFeatureWorkflow.phases.find(p => p.agent === 'qa');
+      const devPhase = bugFixWorkflow.phases.find(p => p.agent === 'dev');
 
-    expect(qaPhase).toBeDefined();
-    expect(qaPhase?.prePhaseHooks).toContain('coverage-threshold');
+      expect(devPhase).toBeDefined();
+      expect(devPhase?.prePhaseHooks).toContain('tdd-enforcement');
+    });
+
+    it('should have correct phase order', async () => {
+      const { bugFixWorkflow } = await import('../src/workflows/bug-fix.js');
+
+      const agents = bugFixWorkflow.phases.map(p => p.agent);
+      expect(agents).toEqual(['architect', 'test-gen', 'dev', 'review', 'qa']);
+    });
+
+    it('should require approval after architect and review', async () => {
+      const { bugFixWorkflow } = await import('../src/workflows/bug-fix.js');
+
+      const approvalPhases = bugFixWorkflow.phases
+        .filter(p => p.approvalRequired)
+        .map(p => p.agent);
+
+      expect(approvalPhases).toEqual(['architect', 'review']);
+    });
+  });
+
+  describe('refactor workflow', () => {
+    it('should have test-passing-enforcement on qa baseline phase', async () => {
+      const { refactorWorkflow } = await import('../src/workflows/refactor.js');
+
+      const qaBaselinePhase = refactorWorkflow.phases.find(
+        p => p.agent === 'qa' && p.name === 'Test Baseline'
+      );
+
+      expect(qaBaselinePhase).toBeDefined();
+      expect(qaBaselinePhase?.prePhaseHooks).toContain('test-passing-enforcement');
+    });
+
+    it('should have test-passing-enforcement on dev phase', async () => {
+      const { refactorWorkflow } = await import('../src/workflows/refactor.js');
+
+      const devPhase = refactorWorkflow.phases.find(p => p.agent === 'dev');
+
+      expect(devPhase).toBeDefined();
+      expect(devPhase?.prePhaseHooks).toContain('test-passing-enforcement');
+    });
+
+    it('should have test-passing-enforcement on final qa phase', async () => {
+      const { refactorWorkflow } = await import('../src/workflows/refactor.js');
+
+      const qaFinalPhase = refactorWorkflow.phases.find(
+        p => p.agent === 'qa' && p.name === 'Final Verification'
+      );
+
+      expect(qaFinalPhase).toBeDefined();
+      expect(qaFinalPhase?.prePhaseHooks).toContain('test-passing-enforcement');
+    });
+
+    it('should have correct phase order', async () => {
+      const { refactorWorkflow } = await import('../src/workflows/refactor.js');
+
+      const agents = refactorWorkflow.phases.map(p => p.agent);
+      expect(agents).toEqual(['qa', 'architect', 'dev', 'review', 'qa']);
+    });
+
+    it('should require approval after architect and review', async () => {
+      const { refactorWorkflow } = await import('../src/workflows/refactor.js');
+
+      const approvalPhases = refactorWorkflow.phases
+        .filter(p => p.approvalRequired)
+        .map(p => p.agent);
+
+      expect(approvalPhases).toEqual(['architect', 'review']);
+    });
   });
 });
 
@@ -784,6 +883,215 @@ describe('createTddEnforcementHook', () => {
     };
 
     const hook = createTddEnforcementHook(customRunner);
+    await hook.execute(context);
+
+    expect(runnerCalled).toBe(true);
+  });
+});
+
+// ============================================================================
+// Test-Passing Enforcement Hook Tests
+// ============================================================================
+
+describe('Test-Passing Enforcement Hook', () => {
+  describe('Test Execution', () => {
+    it('should pass when all tests pass', async () => {
+      const context = createMockContext();
+
+      const mockRunner = createMockTestPassingRunner({
+        testsFound: true,
+        totalTests: 10,
+        passingTests: 10,
+        failingTests: 0,
+        rawOutput: 'Tests: 10 passed, 10 total',
+      });
+
+      const hook = createTestPassingEnforcementHook(mockRunner);
+      const result = await hook.execute(context);
+
+      expect(result.passed).toBe(true);
+      expect(result.data?.totalTests).toBe(10);
+      expect(result.data?.passingTests).toBe(10);
+      expect(result.data?.failingTests).toBe(0);
+    });
+
+    it('should fail when any tests fail (refactor violation)', async () => {
+      const context = createMockContext();
+
+      const mockRunner = createMockTestPassingRunner({
+        testsFound: true,
+        totalTests: 10,
+        passingTests: 8,
+        failingTests: 2,
+        rawOutput: 'Tests: 2 failed, 8 passed, 10 total',
+      });
+
+      const hook = createTestPassingEnforcementHook(mockRunner);
+      const result = await hook.execute(context);
+
+      expect(result.passed).toBe(false);
+      expect(result.error).toContain('REFACTOR SAFETY VIOLATION');
+      expect(result.error).toContain('2 tests failing');
+    });
+
+    it('should fail when all tests fail', async () => {
+      const context = createMockContext();
+
+      const mockRunner = createMockTestPassingRunner({
+        testsFound: true,
+        totalTests: 5,
+        passingTests: 0,
+        failingTests: 5,
+        rawOutput: 'Tests: 5 failed, 5 total',
+      });
+
+      const hook = createTestPassingEnforcementHook(mockRunner);
+      const result = await hook.execute(context);
+
+      expect(result.passed).toBe(false);
+      expect(result.error).toContain('REFACTOR SAFETY VIOLATION');
+      expect(result.error).toContain('5 tests failing');
+    });
+
+    it('should fail when no tests found', async () => {
+      const context = createMockContext();
+
+      const mockRunner = createMockTestPassingRunner({
+        testsFound: false,
+        totalTests: 0,
+        passingTests: 0,
+        failingTests: 0,
+        rawOutput: 'No tests found',
+      });
+
+      const hook = createTestPassingEnforcementHook(mockRunner);
+      const result = await hook.execute(context);
+
+      expect(result.passed).toBe(false);
+      expect(result.error).toContain('REFACTOR SAFETY VIOLATION');
+      expect(result.error).toContain('No tests found');
+      expect(result.error).toContain('safety baseline');
+    });
+
+    it('should handle test execution errors', async () => {
+      const context = createMockContext();
+
+      const mockRunner = createMockTestPassingRunner({
+        testsFound: false,
+        totalTests: 0,
+        passingTests: 0,
+        failingTests: 0,
+        rawOutput: '',
+        error: 'ENOENT: npm not found',
+      });
+
+      const hook = createTestPassingEnforcementHook(mockRunner);
+      const result = await hook.execute(context);
+
+      expect(result.passed).toBe(false);
+      expect(result.error).toContain('REFACTOR SAFETY VIOLATION');
+      expect(result.error).toContain('Could not run tests');
+      expect(result.error).toContain('ENOENT');
+    });
+
+    it('should include test counts in error data when failing', async () => {
+      const context = createMockContext();
+
+      const mockRunner = createMockTestPassingRunner({
+        testsFound: true,
+        totalTests: 20,
+        passingTests: 15,
+        failingTests: 5,
+        rawOutput: 'Tests: 5 failed, 15 passed, 20 total',
+      });
+
+      const hook = createTestPassingEnforcementHook(mockRunner);
+      const result = await hook.execute(context);
+
+      expect(result.passed).toBe(false);
+      expect(result.data?.totalTests).toBe(20);
+      expect(result.data?.passingTests).toBe(15);
+      expect(result.data?.failingTests).toBe(5);
+    });
+  });
+
+  describe('Hook Metadata', () => {
+    it('should have correct name', () => {
+      expect(testPassingEnforcementHook.name).toBe('test-passing-enforcement');
+    });
+
+    it('should have description', () => {
+      expect(testPassingEnforcementHook.description).toBeTruthy();
+      expect(testPassingEnforcementHook.description.length).toBeGreaterThan(10);
+    });
+
+    it('should have execute function', () => {
+      expect(typeof testPassingEnforcementHook.execute).toBe('function');
+    });
+  });
+
+  describe('Verbose Mode', () => {
+    it('should log when verbose is enabled', async () => {
+      const context = createMockContext({
+        verbose: true,
+      });
+
+      const mockRunner = createMockTestPassingRunner({
+        testsFound: true,
+        totalTests: 5,
+        passingTests: 5,
+        failingTests: 0,
+        rawOutput: 'Tests: 5 passed, 5 total',
+      });
+
+      // Capture console.log
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+      const hook = createTestPassingEnforcementHook(mockRunner);
+      await hook.execute(context);
+
+      expect(consoleSpy).toHaveBeenCalled();
+      const logCalls = consoleSpy.mock.calls.map((call: unknown[]) => call[0]);
+      expect(logCalls.some((msg: unknown) => typeof msg === 'string' && msg.includes('[test-passing-enforcement]'))).toBe(true);
+
+      consoleSpy.mockRestore();
+    });
+  });
+});
+
+describe('createTestPassingEnforcementHook', () => {
+  it('should create a valid hook config', () => {
+    const mockRunner = createMockTestPassingRunner({
+      testsFound: true,
+      totalTests: 5,
+      passingTests: 5,
+      failingTests: 0,
+      rawOutput: 'Tests: 5 passed, 5 total',
+    });
+
+    const hook = createTestPassingEnforcementHook(mockRunner);
+
+    expect(hook.name).toBe('test-passing-enforcement');
+    expect(hook.description).toBeTruthy();
+    expect(typeof hook.execute).toBe('function');
+  });
+
+  it('should use the provided test runner', async () => {
+    const context = createMockContext();
+
+    let runnerCalled = false;
+    const customRunner: TestPassingRunner = async (_workingDirectory) => {
+      runnerCalled = true;
+      return {
+        testsFound: true,
+        totalTests: 3,
+        passingTests: 3,
+        failingTests: 0,
+        rawOutput: 'Tests: 3 passed, 3 total',
+      };
+    };
+
+    const hook = createTestPassingEnforcementHook(customRunner);
     await hook.execute(context);
 
     expect(runnerCalled).toBe(true);

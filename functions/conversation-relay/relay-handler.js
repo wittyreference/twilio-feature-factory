@@ -8,14 +8,13 @@ exports.handler = async (context, event, callback) => {
 
   connect.conversationRelay({
     url: context.CONVERSATION_RELAY_URL || 'wss://your-websocket-server.com/relay',
+    transcriptionProvider: 'deepgram',
+    speechModel: 'nova-3-general',
     voice: 'Polly.Amy',
     language: 'en-US',
-    transcriptionProvider: 'google',
-    speechModel: 'telephony',
-    profanityFilter: 'true',
     dtmfDetection: 'true',
     interruptible: 'true',
-    interruptByDtmf: 'true'
+    interruptByDtmf: 'true',
   });
 
   return callback(null, twiml);

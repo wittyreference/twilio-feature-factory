@@ -36,11 +36,14 @@ src/
 │   ├── review.ts         # Code review, security audit
 │   └── docs.ts           # Documentation updates
 ├── workflows/            # Pipeline definitions
-│   └── new-feature.ts    # Full TDD pipeline
+│   ├── new-feature.ts    # Full TDD pipeline for new features
+│   ├── bug-fix.ts        # Diagnosis and fix pipeline
+│   └── refactor.ts       # Safe refactoring pipeline
 └── hooks/                # Pre-phase quality gates
     ├── index.ts          # Hook registry and execution
     ├── tdd-enforcement.ts # Verifies tests exist and FAIL before dev
-    └── coverage-threshold.ts # Enforces 80% coverage before QA
+    ├── coverage-threshold.ts # Enforces 80% coverage before QA
+    └── test-passing-enforcement.ts # Verifies all tests PASS (refactor safety)
 ```
 
 ## Subagent Roles
@@ -57,7 +60,7 @@ src/
 
 ## Workflows
 
-### new-feature (MVP)
+### new-feature
 
 Full TDD pipeline for new Twilio features:
 
@@ -71,15 +74,39 @@ Full TDD pipeline for new Twilio features:
 
 Human approval required after: architect, spec, review
 
-### bug-fix (Planned)
+### bug-fix
 
-Diagnosis and fix pipeline:
-`twilio-logs → architect → test-gen → dev → review`
+Diagnosis and fix pipeline for existing bugs:
 
-### refactor (Planned)
+1. **architect** - Root cause diagnosis and analysis
+2. **test-gen** - Writes regression tests that reproduce the bug (must FAIL)
+3. **dev** - Minimal fix to pass tests (TDD Green Phase)
+4. **review** - Validates fix is correct and minimal
+5. **qa** - Ensures no unintended side effects (regression check)
 
-Safe refactoring pipeline:
-`test → architect → dev → review → test`
+Human approval required after: architect, review
+
+Key differences from new-feature:
+- No spec phase (scope is the bug itself)
+- Architect does diagnosis, not design
+- Focus on minimal, targeted changes
+
+### refactor
+
+Safe refactoring pipeline that preserves behavior:
+
+1. **qa** (baseline) - Verifies all tests PASS before starting
+2. **architect** - Reviews refactoring rationale and scope
+3. **dev** - Implements refactoring, keeps tests green
+4. **review** - Validates code quality improvement
+5. **qa** (final) - Confirms no regressions
+
+Human approval required after: architect, review
+
+Key differences from new-feature:
+- Tests must PASS throughout (not TDD red-green)
+- No test-gen phase (uses existing tests as safety baseline)
+- `test-passing-enforcement` hook at multiple phases
 
 ## Configuration
 
@@ -99,6 +126,12 @@ interface FeatureFactoryConfig {
 ```bash
 # Run new feature pipeline
 npx feature-factory new-feature "Add SMS verification to signup"
+
+# Run bug-fix pipeline
+npx feature-factory bug-fix "Fix timeout error in verification flow"
+
+# Run refactor pipeline
+npx feature-factory refactor "Extract shared validation logic into utility module"
 
 # With options
 npx feature-factory new-feature "Add call recording" \
@@ -156,20 +189,44 @@ The pipeline enforces Test-Driven Development via pre-phase hooks:
 4. **dev** commits only when tests pass
 5. **review** validates TDD was followed
 
+## Refactor Safety
+
+The refactor workflow uses `test-passing-enforcement` to ensure behavior preservation:
+
+1. **test-passing-enforcement hook** verifies ALL tests pass before proceeding
+2. Runs at multiple checkpoints: baseline, after implementation, final verification
+3. Blocks with `REFACTOR SAFETY VIOLATION` if any test fails
+4. Ensures the refactoring doesn't break existing functionality
+
 ### Pre-Phase Hooks
 
 Workflow phases can specify `prePhaseHooks` that run before the agent starts:
 
 ```typescript
+// TDD: Tests must FAIL before implementation
 {
   agent: 'dev',
   name: 'TDD Green Phase',
   prePhaseHooks: ['tdd-enforcement'],  // Blocks if tests don't fail
-  // ...
+}
+
+// Refactor: Tests must PASS throughout
+{
+  agent: 'dev',
+  name: 'Refactor Implementation',
+  prePhaseHooks: ['test-passing-enforcement'],  // Blocks if tests fail
 }
 ```
 
 Hook failures emit `workflow-error` events and stop the workflow.
+
+### Available Hooks
+
+| Hook | Purpose | Used By |
+|------|---------|---------|
+| `tdd-enforcement` | Verifies tests FAIL before dev (TDD Red Phase) | new-feature, bug-fix |
+| `coverage-threshold` | Enforces 80% coverage | new-feature |
+| `test-passing-enforcement` | Verifies tests PASS (behavior preservation) | refactor |
 
 ## Credential Safety
 

@@ -66,12 +66,20 @@ describe('relay-handler', () => {
     expect(twiml).toContain('voice="Polly.Amy"');
   });
 
-  it('should enable transcription provider', async () => {
+  it('should use Deepgram transcription provider', async () => {
     await handler(context, event, callback);
 
     const [, response] = callback.mock.calls[0];
     const twiml = response.toString();
-    expect(twiml).toContain('transcriptionProvider="google"');
+    expect(twiml).toContain('transcriptionProvider="deepgram"');
+  });
+
+  it('should use nova-3-general speech model', async () => {
+    await handler(context, event, callback);
+
+    const [, response] = callback.mock.calls[0];
+    const twiml = response.toString();
+    expect(twiml).toContain('speechModel="nova-3-general"');
   });
 
   it('should enable interruptible mode', async () => {

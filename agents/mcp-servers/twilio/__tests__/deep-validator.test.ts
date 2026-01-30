@@ -957,4 +957,462 @@ describe('DeepValidator', () => {
       expect(result.errors.length).toBeGreaterThan(0);
     });
   });
+
+  // ==================== CONVERSATION RELAY VALIDATION ====================
+
+  describe('validateConversationRelay', () => {
+    // Mock WebSocket for testing - simpler version to avoid recursion
+    function createMockWebSocket(options: {
+      shouldConnect?: boolean;
+      shouldSendGreeting?: boolean;
+      greetingText?: string;
+      shouldSendResponse?: boolean;
+      responseText?: string;
+      shouldError?: boolean;
+      errorMessage?: string;
+    } = {}) {
+      const {
+        shouldConnect = true,
+        shouldSendGreeting = true,
+        greetingText = 'Hello, how can I help you?',
+        shouldSendResponse = false,
+        responseText = 'I can help with that.',
+        shouldError = false,
+        errorMessage = 'Connection refused',
+      } = options;
+
+      return class MockWebSocket {
+        onopen: (() => void) | null = null;
+        onmessage: ((event: { data: string }) => void) | null = null;
+        onerror: ((error: { message: string }) => void) | null = null;
+        onclose: (() => void) | null = null;
+        readyState = 0;
+        private closed = false;
+
+        constructor(_url: string) {
+          setTimeout(() => {
+            if (this.closed) return;
+            if (shouldError) {
+              if (this.onerror) this.onerror({ message: errorMessage });
+              return;
+            }
+            if (shouldConnect) {
+              this.readyState = 1;
+              if (this.onopen) this.onopen();
+            }
+          }, 5);
+        }
+
+        send(data: string) {
+          if (this.closed) return;
+          const msg = JSON.parse(data);
+
+          // After setup, send greeting
+          if (msg.type === 'setup' && shouldSendGreeting) {
+            setTimeout(() => {
+              if (this.closed) return;
+              if (this.onmessage) {
+                this.onmessage({ data: JSON.stringify({ type: 'text', token: greetingText }) });
+              }
+            }, 10);
+          }
+
+          // After prompt, send response
+          if (msg.type === 'prompt' && shouldSendResponse) {
+            setTimeout(() => {
+              if (this.closed) return;
+              if (this.onmessage) {
+                this.onmessage({ data: JSON.stringify({ type: 'text', token: responseText, last: true }) });
+              }
+            }, 15);
+          }
+        }
+
+        close() {
+          if (this.closed) return;
+          this.closed = true;
+          this.readyState = 3;
+          // Don't call onclose here - let the test control when/if it's called
+        }
+      };
+    }
+
+    it('should return error when WebSocket implementation is explicitly null', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      // Create a mock that throws on construction to simulate unavailable WebSocket
+      class ThrowingWebSocket {
+        constructor() {
+          throw new Error('WebSocket not supported in this environment');
+        }
+      }
+
+      const result = await validator.validateConversationRelay(
+        { url: 'wss://test.example.com/relay' },
+        ThrowingWebSocket
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors.some(e => e.includes('connect') || e.includes('WebSocket'))).toBe(true);
+    });
+
+    it('should successfully validate when greeting is received', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+      const MockWS = createMockWebSocket({ shouldSendGreeting: true });
+
+      const result = await validator.validateConversationRelay({
+        url: 'wss://test.example.com/relay',
+        timeout: 1000,
+      }, MockWS);
+
+      expect(result.success).toBe(true);
+      expect(result.connectionEstablished).toBe(true);
+      expect(result.greetingReceived).toBe(true);
+      expect(result.greetingText).toBe('Hello, how can I help you?');
+    });
+
+    it('should handle connection errors gracefully', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+      const MockWS = createMockWebSocket({ shouldError: true, errorMessage: 'Connection refused' });
+
+      const result = await validator.validateConversationRelay({
+        url: 'wss://test.example.com/relay',
+        timeout: 500,
+      }, MockWS);
+
+      expect(result.success).toBe(false);
+      expect(result.connectionEstablished).toBe(false);
+      expect(result.errors.some(e => e.includes('Connection refused'))).toBe(true);
+    });
+
+    it('should timeout when no greeting received', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+      const MockWS = createMockWebSocket({ shouldSendGreeting: false });
+
+      const result = await validator.validateConversationRelay({
+        url: 'wss://test.example.com/relay',
+        timeout: 50, // Very short timeout
+      }, MockWS);
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some(e => e.includes('Timeout'))).toBe(true);
+    }, 1000); // Increase Jest timeout for this test
+
+    it('should validate test message response when configured', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+      const MockWS = createMockWebSocket({
+        shouldSendGreeting: true,
+        shouldSendResponse: true,
+        responseText: 'I can help with that.',
+      });
+
+      const result = await validator.validateConversationRelay({
+        url: 'wss://test.example.com/relay',
+        timeout: 1000,
+        testMessage: 'Can you help me?',
+        validateLLMResponse: true,
+      }, MockWS);
+
+      expect(result.success).toBe(true);
+      expect(result.greetingReceived).toBe(true);
+      expect(result.responseReceived).toBe(true);
+      expect(result.responseText).toBe('I can help with that.');
+    });
+
+    it('should include validation duration', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+      const MockWS = createMockWebSocket({ shouldSendGreeting: true });
+
+      const result = await validator.validateConversationRelay({
+        url: 'wss://test.example.com/relay',
+        timeout: 1000,
+      }, MockWS);
+
+      expect(result.validationDuration).toBeGreaterThanOrEqual(0);
+      expect(typeof result.validationDuration).toBe('number');
+    });
+
+    it('should track protocol errors for invalid JSON', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      // Create a mock that sends invalid JSON
+      class BadJsonWebSocket {
+        onopen: (() => void) | null = null;
+        onmessage: ((event: { data: string }) => void) | null = null;
+        onerror: ((error: { message: string }) => void) | null = null;
+        onclose: (() => void) | null = null;
+        readyState = 0;
+        private closed = false;
+
+        constructor(_url: string) {
+          setTimeout(() => {
+            if (this.closed) return;
+            this.readyState = 1;
+            if (this.onopen) this.onopen();
+          }, 5);
+        }
+
+        send(_data: string) {
+          if (this.closed) return;
+          // Send invalid JSON after setup
+          setTimeout(() => {
+            if (this.closed) return;
+            if (this.onmessage) {
+              this.onmessage({ data: 'not valid json {{{' });
+            }
+          }, 10);
+        }
+
+        close() {
+          this.closed = true;
+          this.readyState = 3;
+        }
+      }
+
+      const result = await validator.validateConversationRelay({
+        url: 'wss://test.example.com/relay',
+        timeout: 100,
+        validateGreeting: true,
+      }, BadJsonWebSocket);
+
+      expect(result.protocolErrors.length).toBeGreaterThan(0);
+      expect(result.protocolErrors[0]).toContain('Invalid JSON');
+    });
+  });
+
+  // ==================== PREREQUISITE VALIDATION ====================
+
+  describe('validatePrerequisites', () => {
+    it('should return success when all required checks pass', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validatePrerequisites({
+        checks: [
+          {
+            name: 'Test Check 1',
+            required: true,
+            check: async () => ({ ok: true, message: 'Check 1 passed' }),
+          },
+          {
+            name: 'Test Check 2',
+            required: true,
+            check: async () => ({ ok: true, message: 'Check 2 passed' }),
+          },
+        ],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.results).toHaveLength(2);
+      expect(result.results.every(r => r.ok)).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('should return failure when required check fails', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validatePrerequisites({
+        checks: [
+          {
+            name: 'Pass Check',
+            required: true,
+            check: async () => ({ ok: true, message: 'Passed' }),
+          },
+          {
+            name: 'Fail Check',
+            required: true,
+            check: async () => ({ ok: false, message: 'Service not found' }),
+          },
+        ],
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toContain('Fail Check: Service not found');
+    });
+
+    it('should not fail for optional check failures', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validatePrerequisites({
+        checks: [
+          {
+            name: 'Required Pass',
+            required: true,
+            check: async () => ({ ok: true, message: 'Passed' }),
+          },
+          {
+            name: 'Optional Fail',
+            required: false,
+            check: async () => ({ ok: false, message: 'Not configured' }),
+          },
+        ],
+      });
+
+      expect(result.success).toBe(true); // Optional failure doesn't fail validation
+      expect(result.results[1].ok).toBe(false);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('should stop on first failure when configured', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+      let check2Ran = false;
+
+      const result = await validator.validatePrerequisites({
+        checks: [
+          {
+            name: 'Fail First',
+            required: true,
+            check: async () => ({ ok: false, message: 'Failed' }),
+          },
+          {
+            name: 'Second Check',
+            required: true,
+            check: async () => {
+              check2Ran = true;
+              return { ok: true, message: 'Passed' };
+            },
+          },
+        ],
+        stopOnFirstFailure: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(check2Ran).toBe(false);
+      expect(result.results).toHaveLength(1);
+    });
+
+    it('should handle check that throws error', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validatePrerequisites({
+        checks: [
+          {
+            name: 'Throws Error',
+            required: true,
+            check: async () => {
+              throw new Error('Unexpected error');
+            },
+          },
+        ],
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.results[0].ok).toBe(false);
+      expect(result.results[0].message).toContain('Check threw error');
+    });
+
+    it('should include validation duration', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validatePrerequisites({
+        checks: [
+          {
+            name: 'Quick Check',
+            required: true,
+            check: async () => ({ ok: true, message: 'Done' }),
+          },
+        ],
+      });
+
+      expect(result.validationDuration).toBeGreaterThanOrEqual(0);
+      expect(typeof result.validationDuration).toBe('number');
+    });
+  });
+
+  describe('prerequisiteChecks factory', () => {
+    it('should provide envVar check that validates env variable', async () => {
+      const check = DeepValidator.prerequisiteChecks.envVar('TEST_VAR', 'some-value');
+      const result = await check.check();
+
+      expect(result.ok).toBe(true);
+      expect(result.message).toContain('is set');
+    });
+
+    it('should provide envVar check that fails for missing value', async () => {
+      const check = DeepValidator.prerequisiteChecks.envVar('MISSING_VAR', undefined);
+      const result = await check.check();
+
+      expect(result.ok).toBe(false);
+      expect(result.message).toContain('not set');
+    });
+
+    it('should have intelligenceService factory method', () => {
+      const client = createMockClient();
+      const check = DeepValidator.prerequisiteChecks.intelligenceService(client as never, 'GA123');
+
+      expect(check.name).toBe('Conversational Intelligence Service');
+      expect(check.required).toBe(true);
+      expect(typeof check.check).toBe('function');
+    });
+
+    it('should have syncService factory method', () => {
+      const client = createMockClient();
+      const check = DeepValidator.prerequisiteChecks.syncService(client as never, 'IS123');
+
+      expect(check.name).toBe('Twilio Sync Service');
+      expect(check.required).toBe(true);
+    });
+
+    it('should have verifyService factory method', () => {
+      const client = createMockClient();
+      const check = DeepValidator.prerequisiteChecks.verifyService(client as never, 'VA123');
+
+      expect(check.name).toBe('Twilio Verify Service');
+      expect(check.required).toBe(true);
+    });
+
+    it('should have phoneNumber factory method', () => {
+      const client = createMockClient();
+      const check = DeepValidator.prerequisiteChecks.phoneNumber(client as never, '+15551234567');
+
+      expect(check.name).toBe('Phone Number Ownership');
+      expect(check.required).toBe(true);
+    });
+
+    it('should have serverlessService factory method', () => {
+      const client = createMockClient();
+      const check = DeepValidator.prerequisiteChecks.serverlessService(client as never, 'ZS123');
+
+      expect(check.name).toBe('Twilio Serverless Service');
+      expect(check.required).toBe(true);
+    });
+
+    it('should have taskRouterWorkspace factory method', () => {
+      const client = createMockClient();
+      const check = DeepValidator.prerequisiteChecks.taskRouterWorkspace(client as never, 'WS123');
+
+      expect(check.name).toBe('TaskRouter Workspace');
+      expect(check.required).toBe(true);
+    });
+
+    it('should have messagingService factory method', () => {
+      const client = createMockClient();
+      const check = DeepValidator.prerequisiteChecks.messagingService(client as never, 'MG123');
+
+      expect(check.name).toBe('Messaging Service');
+      expect(check.required).toBe(true);
+    });
+
+    it('should fail intelligenceService check when SID not provided', async () => {
+      const client = createMockClient();
+      const check = DeepValidator.prerequisiteChecks.intelligenceService(client as never, undefined);
+      const result = await check.check();
+
+      expect(result.ok).toBe(false);
+      expect(result.message).toContain('not set');
+    });
+  });
 });

@@ -18,4 +18,10 @@ export {
   type TranscriptValidationResult,
   type LanguageOperatorValidationOptions,
   type LanguageOperatorValidationResult,
+  // ConversationRelay and Prerequisite validation
+  type ConversationRelayValidationOptions,
+  type ConversationRelayValidationResult,
+  type PrerequisiteCheck,
+  type PrerequisiteValidationOptions,
+  type PrerequisiteValidationResult,
 } from './deep-validator.js';

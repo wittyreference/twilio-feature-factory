@@ -15,8 +15,8 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-SESSION_FILE="$PROJECT_ROOT/.claude-dev/.session-files"
-SESSION_START="$PROJECT_ROOT/.claude-dev/.session-start"
+SESSION_FILE="$PROJECT_ROOT/.claude/.session-files"
+SESSION_START="$PROJECT_ROOT/.claude/.session-start"
 
 # Initialize session start time if not set
 if [ ! -f "$SESSION_START" ]; then

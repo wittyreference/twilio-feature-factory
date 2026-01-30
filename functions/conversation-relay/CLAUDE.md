@@ -65,7 +65,7 @@ connect.conversationRelay({
   "type": "prompt",
   "voicePrompt": "Hello, I need help with my account",
   "confidence": 0.95,
-  "isFinal": true
+  "last": true
 }
 ```
 
@@ -124,7 +124,7 @@ wss.on('connection', (ws) => {
         break;
 
       case 'prompt':
-        if (message.isFinal) {
+        if (message.last) {
           // Process with your LLM
           const response = await processWithLLM(message.voicePrompt);
           ws.send(JSON.stringify({
@@ -168,6 +168,19 @@ async function processWithLLM(userMessage) {
 
   return response.content[0].text;
 }
+```
+
+**Anthropic Message Format Gotcha**: When passing conversation history to Anthropic's API, only `role` and `content` are allowed. Extra fields like `timestamp` will cause "Extra inputs are not permitted" errors:
+
+```javascript
+// WRONG - will fail if messages have extra fields
+messages: conversationHistory
+
+// CORRECT - strip to only role and content
+messages: conversationHistory.map(m => ({
+  role: m.role,
+  content: m.content
+}))
 ```
 
 ### OpenAI Integration

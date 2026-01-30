@@ -227,6 +227,77 @@ export interface LanguageOperatorValidationResult {
   validationDuration: number;
 }
 
+/**
+ * Options for ConversationRelay WebSocket validation.
+ */
+export interface ConversationRelayValidationOptions {
+  /** WebSocket URL to test (wss://...) */
+  url: string;
+  /** Connection timeout in ms. Default: 10000 */
+  timeout?: number;
+  /** Expect greeting on connect. Default: true */
+  validateGreeting?: boolean;
+  /** Optional test message to send */
+  testMessage?: string;
+  /** Expect LLM response to test message. Default: false (only if testMessage set) */
+  validateLLMResponse?: boolean;
+}
+
+/**
+ * Result from ConversationRelay validation.
+ */
+export interface ConversationRelayValidationResult {
+  success: boolean;
+  connectionEstablished: boolean;
+  setupReceived: boolean;
+  greetingReceived: boolean;
+  greetingText?: string;
+  responseReceived?: boolean;
+  responseText?: string;
+  protocolErrors: string[];
+  errors: string[];
+  validationDuration: number;
+}
+
+/**
+ * A single prerequisite check to run.
+ */
+export interface PrerequisiteCheck {
+  /** Human-readable name of the check */
+  name: string;
+  /** Function that performs the check */
+  check: () => Promise<{ ok: boolean; message: string }>;
+  /** If false, warn but don't fail validation */
+  required: boolean;
+}
+
+/**
+ * Options for prerequisite validation.
+ */
+export interface PrerequisiteValidationOptions {
+  /** Array of checks to perform */
+  checks: PrerequisiteCheck[];
+  /** Stop on first failure. Default: false */
+  stopOnFirstFailure?: boolean;
+}
+
+/**
+ * Result from prerequisite validation.
+ */
+export interface PrerequisiteValidationResult {
+  /** All required checks passed */
+  success: boolean;
+  /** Individual check results */
+  results: Array<{
+    name: string;
+    ok: boolean;
+    message: string;
+    required: boolean;
+  }>;
+  errors: string[];
+  validationDuration: number;
+}
+
 const DEFAULT_OPTIONS: Required<Omit<ValidationOptions, 'syncServiceSid' | 'serverlessServiceSid' | 'studioFlowSid'>> = {
   waitForTerminal: false,
   timeout: 30000,
@@ -1466,6 +1537,416 @@ export class DeepValidator {
       };
     }
   }
+
+  /**
+   * Validates a ConversationRelay WebSocket endpoint.
+   * Tests connection, setup handling, and greeting receipt.
+   *
+   * NOTE: This method requires the 'ws' package for WebSocket support.
+   * In a browser context or if WebSocket is available globally,
+   * you can provide it via the WebSocket parameter.
+   *
+   * @param options Configuration for the validation
+   * @param WebSocketImpl Optional WebSocket constructor (defaults to global WebSocket if available)
+   */
+  async validateConversationRelay(
+    options: ConversationRelayValidationOptions,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    WebSocketImpl?: any
+  ): Promise<ConversationRelayValidationResult> {
+    const startTime = Date.now();
+    const timeout = options.timeout ?? 10000;
+    const validateGreeting = options.validateGreeting ?? true;
+    const errors: string[] = [];
+    const protocolErrors: string[] = [];
+
+    // Try to get WebSocket - prefer provided impl, then global, then error
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const WS = WebSocketImpl || (typeof WebSocket !== 'undefined' ? WebSocket : null);
+
+    if (!WS) {
+      return {
+        success: false,
+        connectionEstablished: false,
+        setupReceived: false,
+        greetingReceived: false,
+        protocolErrors: [],
+        errors: ['WebSocket not available. Provide WebSocket implementation via second parameter or install "ws" package.'],
+        validationDuration: Date.now() - startTime,
+      };
+    }
+
+    return new Promise((resolve) => {
+      let connectionEstablished = false;
+      let setupReceived = false;
+      let greetingReceived = false;
+      let greetingText: string | undefined;
+      let responseReceived = false;
+      let responseText: string | undefined;
+      let testMessageSent = false;
+      let resolved = false; // Prevent multiple resolutions
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let ws: any;
+
+      const safeResolve = (result: ConversationRelayValidationResult) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timer);
+        if (ws && ws.close) ws.close();
+        resolve(result);
+      };
+
+      const timer = setTimeout(() => {
+        safeResolve({
+          success: false,
+          connectionEstablished,
+          setupReceived,
+          greetingReceived,
+          greetingText,
+          responseReceived,
+          responseText,
+          protocolErrors,
+          errors: [...errors, 'Timeout waiting for response'],
+          validationDuration: Date.now() - startTime,
+        });
+      }, timeout);
+
+      try {
+        ws = new WS(options.url);
+
+        ws.onopen = () => {
+          connectionEstablished = true;
+          // Send mock setup message
+          ws.send(JSON.stringify({
+            type: 'setup',
+            callSid: 'CA_test_' + Date.now(),
+            streamSid: 'MZ_test_' + Date.now(),
+            from: '+15551234567',
+            to: '+15559876543',
+          }));
+          setupReceived = true;
+        };
+
+        ws.onmessage = (event: { data: string | Buffer }) => {
+          try {
+            const dataStr = typeof event.data === 'string' ? event.data : String(event.data);
+            const msg = JSON.parse(dataStr);
+
+            if (msg.type === 'text') {
+              if (!greetingReceived) {
+                greetingReceived = true;
+                greetingText = msg.token;
+
+                if (options.testMessage && !testMessageSent) {
+                  testMessageSent = true;
+                  // Send test prompt with correct 'last' field (not 'isFinal')
+                  ws.send(JSON.stringify({
+                    type: 'prompt',
+                    voicePrompt: options.testMessage,
+                    last: true, // Correct field name per ConversationRelay protocol
+                  }));
+                } else if (!options.testMessage || !options.validateLLMResponse) {
+                  safeResolve({
+                    success: true,
+                    connectionEstablished: true,
+                    setupReceived: true,
+                    greetingReceived: true,
+                    greetingText,
+                    protocolErrors,
+                    errors,
+                    validationDuration: Date.now() - startTime,
+                  });
+                }
+              } else if (testMessageSent) {
+                responseReceived = true;
+                responseText = (responseText || '') + msg.token;
+
+                // If we got a response, consider validation successful
+                if (msg.last || responseText.length > 10) {
+                  safeResolve({
+                    success: true,
+                    connectionEstablished: true,
+                    setupReceived: true,
+                    greetingReceived: true,
+                    greetingText,
+                    responseReceived: true,
+                    responseText,
+                    protocolErrors,
+                    errors,
+                    validationDuration: Date.now() - startTime,
+                  });
+                }
+              }
+            }
+          } catch (e) {
+            const rawData = typeof event.data === 'string' ? event.data : String(event.data);
+            protocolErrors.push(`Invalid JSON: ${rawData.slice(0, 100)}`);
+          }
+        };
+
+        ws.onerror = (err: Error | { message?: string }) => {
+          const errMsg = err instanceof Error ? err.message : (err.message || 'Unknown WebSocket error');
+          errors.push(`WebSocket error: ${errMsg}`);
+          safeResolve({
+            success: false,
+            connectionEstablished: false,
+            setupReceived: false,
+            greetingReceived: false,
+            protocolErrors,
+            errors,
+            validationDuration: Date.now() - startTime,
+          });
+        };
+
+        ws.onclose = () => {
+          // If we haven't resolved yet and greeting validation was required but not received
+          if (validateGreeting && !greetingReceived) {
+            safeResolve({
+              success: false,
+              connectionEstablished,
+              setupReceived,
+              greetingReceived: false,
+              protocolErrors,
+              errors: [...errors, 'Connection closed before greeting received'],
+              validationDuration: Date.now() - startTime,
+            });
+          }
+        };
+      } catch (err) {
+        errors.push(`Failed to connect: ${err instanceof Error ? err.message : String(err)}`);
+        safeResolve({
+          success: false,
+          connectionEstablished: false,
+          setupReceived: false,
+          greetingReceived: false,
+          protocolErrors,
+          errors,
+          validationDuration: Date.now() - startTime,
+        });
+      }
+    });
+  }
+
+  /**
+   * Validates prerequisites before attempting an operation.
+   * Use factory methods from DeepValidator.prerequisiteChecks for common checks.
+   */
+  async validatePrerequisites(
+    options: PrerequisiteValidationOptions
+  ): Promise<PrerequisiteValidationResult> {
+    const startTime = Date.now();
+    const results: PrerequisiteValidationResult['results'] = [];
+    const errors: string[] = [];
+    const stopOnFirstFailure = options.stopOnFirstFailure ?? false;
+
+    for (const check of options.checks) {
+      try {
+        const result = await check.check();
+        results.push({
+          name: check.name,
+          ok: result.ok,
+          message: result.message,
+          required: check.required,
+        });
+
+        if (!result.ok && check.required) {
+          errors.push(`${check.name}: ${result.message}`);
+          if (stopOnFirstFailure) {
+            break;
+          }
+        }
+      } catch (e) {
+        const errMsg = e instanceof Error ? e.message : String(e);
+        results.push({
+          name: check.name,
+          ok: false,
+          message: `Check threw error: ${errMsg}`,
+          required: check.required,
+        });
+        if (check.required) {
+          errors.push(`${check.name}: Check threw error`);
+          if (stopOnFirstFailure) {
+            break;
+          }
+        }
+      }
+    }
+
+    const requiredPassed = results
+      .filter((r) => r.required)
+      .every((r) => r.ok);
+
+    return {
+      success: requiredPassed,
+      results,
+      errors,
+      validationDuration: Date.now() - startTime,
+    };
+  }
+
+  /**
+   * Factory methods for common prerequisite checks.
+   * Use with validatePrerequisites() method.
+   */
+  static prerequisiteChecks = {
+    /**
+     * Check that a Conversational Intelligence Service exists and is accessible.
+     */
+    intelligenceService: (client: Twilio, serviceSid?: string): PrerequisiteCheck => ({
+      name: 'Conversational Intelligence Service',
+      required: true,
+      check: async () => {
+        if (!serviceSid) {
+          return { ok: false, message: 'TWILIO_INTELLIGENCE_SERVICE_SID not set' };
+        }
+        try {
+          await client.intelligence.v2.services(serviceSid).fetch();
+          return { ok: true, message: `Service ${serviceSid} exists` };
+        } catch (e) {
+          const errMsg = e instanceof Error ? e.message : String(e);
+          return { ok: false, message: `Service ${serviceSid} not found or inaccessible: ${errMsg}` };
+        }
+      },
+    }),
+
+    /**
+     * Check that a Twilio Sync Service exists and is accessible.
+     */
+    syncService: (client: Twilio, serviceSid?: string): PrerequisiteCheck => ({
+      name: 'Twilio Sync Service',
+      required: true,
+      check: async () => {
+        if (!serviceSid) {
+          return { ok: false, message: 'TWILIO_SYNC_SERVICE_SID not set' };
+        }
+        try {
+          await client.sync.v1.services(serviceSid).fetch();
+          return { ok: true, message: `Sync service ${serviceSid} exists` };
+        } catch (e) {
+          const errMsg = e instanceof Error ? e.message : String(e);
+          return { ok: false, message: `Sync service ${serviceSid} not found: ${errMsg}` };
+        }
+      },
+    }),
+
+    /**
+     * Check that a Twilio Verify Service exists and is accessible.
+     */
+    verifyService: (client: Twilio, serviceSid?: string): PrerequisiteCheck => ({
+      name: 'Twilio Verify Service',
+      required: true,
+      check: async () => {
+        if (!serviceSid) {
+          return { ok: false, message: 'TWILIO_VERIFY_SERVICE_SID not set' };
+        }
+        try {
+          await client.verify.v2.services(serviceSid).fetch();
+          return { ok: true, message: `Verify service ${serviceSid} exists` };
+        } catch (e) {
+          const errMsg = e instanceof Error ? e.message : String(e);
+          return { ok: false, message: `Verify service ${serviceSid} not found: ${errMsg}` };
+        }
+      },
+    }),
+
+    /**
+     * Check that a phone number is owned by the account.
+     */
+    phoneNumber: (client: Twilio, phoneNumber?: string): PrerequisiteCheck => ({
+      name: 'Phone Number Ownership',
+      required: true,
+      check: async () => {
+        if (!phoneNumber) {
+          return { ok: false, message: 'TWILIO_PHONE_NUMBER not set' };
+        }
+        try {
+          const numbers = await client.incomingPhoneNumbers.list({ phoneNumber });
+          if (numbers.length === 0) {
+            return { ok: false, message: `Phone number ${phoneNumber} not found in account` };
+          }
+          return { ok: true, message: `Phone number ${phoneNumber} owned` };
+        } catch (e) {
+          const errMsg = e instanceof Error ? e.message : String(e);
+          return { ok: false, message: `Error checking phone number: ${errMsg}` };
+        }
+      },
+    }),
+
+    /**
+     * Check that a Serverless Service exists and is accessible.
+     */
+    serverlessService: (client: Twilio, serviceSid?: string): PrerequisiteCheck => ({
+      name: 'Twilio Serverless Service',
+      required: true,
+      check: async () => {
+        if (!serviceSid) {
+          return { ok: false, message: 'TWILIO_SERVERLESS_SERVICE_SID not set' };
+        }
+        try {
+          await client.serverless.v1.services(serviceSid).fetch();
+          return { ok: true, message: `Serverless service ${serviceSid} exists` };
+        } catch (e) {
+          const errMsg = e instanceof Error ? e.message : String(e);
+          return { ok: false, message: `Serverless service ${serviceSid} not found: ${errMsg}` };
+        }
+      },
+    }),
+
+    /**
+     * Check that a TaskRouter Workspace exists and is accessible.
+     */
+    taskRouterWorkspace: (client: Twilio, workspaceSid?: string): PrerequisiteCheck => ({
+      name: 'TaskRouter Workspace',
+      required: true,
+      check: async () => {
+        if (!workspaceSid) {
+          return { ok: false, message: 'TWILIO_TASKROUTER_WORKSPACE_SID not set' };
+        }
+        try {
+          await client.taskrouter.v1.workspaces(workspaceSid).fetch();
+          return { ok: true, message: `Workspace ${workspaceSid} exists` };
+        } catch (e) {
+          const errMsg = e instanceof Error ? e.message : String(e);
+          return { ok: false, message: `Workspace ${workspaceSid} not found: ${errMsg}` };
+        }
+      },
+    }),
+
+    /**
+     * Check that a Messaging Service exists and is accessible.
+     */
+    messagingService: (client: Twilio, serviceSid?: string): PrerequisiteCheck => ({
+      name: 'Messaging Service',
+      required: true,
+      check: async () => {
+        if (!serviceSid) {
+          return { ok: false, message: 'TWILIO_MESSAGING_SERVICE_SID not set' };
+        }
+        try {
+          await client.messaging.v1.services(serviceSid).fetch();
+          return { ok: true, message: `Messaging service ${serviceSid} exists` };
+        } catch (e) {
+          const errMsg = e instanceof Error ? e.message : String(e);
+          return { ok: false, message: `Messaging service ${serviceSid} not found: ${errMsg}` };
+        }
+      },
+    }),
+
+    /**
+     * Generic environment variable check (non-Twilio API).
+     */
+    envVar: (name: string, value?: string, required = true): PrerequisiteCheck => ({
+      name: `Environment Variable: ${name}`,
+      required,
+      check: async () => {
+        if (!value) {
+          return { ok: false, message: `${name} not set` };
+        }
+        return { ok: true, message: `${name} is set` };
+      },
+    }),
+  };
 
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));

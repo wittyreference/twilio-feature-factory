@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "twilio": {
+      "command": "node",
+      "args": ["agents/mcp-servers/twilio/dist/index.js"],
+      "env": {
+        "TWILIO_ACCOUNT_SID": "${TWILIO_ACCOUNT_SID}",
+        "TWILIO_AUTH_TOKEN": "${TWILIO_AUTH_TOKEN}",
+        "TWILIO_PHONE_NUMBER": "${TWILIO_PHONE_NUMBER}",
+        "TWILIO_VERIFY_SERVICE_SID": "${TWILIO_VERIFY_SERVICE_SID}",
+        "TWILIO_SYNC_SERVICE_SID": "${TWILIO_SYNC_SERVICE_SID}",
+        "TWILIO_TASKROUTER_WORKSPACE_SID": "${TWILIO_TASKROUTER_WORKSPACE_SID}",
+        "TWILIO_MESSAGING_SERVICE_SID": "${TWILIO_MESSAGING_SERVICE_SID}",
+        "TEST_PHONE_NUMBER": "${TEST_PHONE_NUMBER}"
+      }
+    }
+  }
+}

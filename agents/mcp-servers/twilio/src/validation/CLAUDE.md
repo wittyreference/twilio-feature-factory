@@ -230,6 +230,67 @@ const result = await validator.validateLanguageOperator('GT123', {
 | operatorName | - | Filter by operator name |
 | requireResults | true | Fail if no results found |
 
+### ConversationRelay (validateConversationRelay)
+
+Validate a ConversationRelay WebSocket endpoint:
+
+```typescript
+const result = await validator.validateConversationRelay({
+  url: 'wss://your-server.com/relay',
+  timeout: 10000,              // Connection timeout
+  validateGreeting: true,       // Expect greeting on connect
+  testMessage: 'Hello',         // Optional: send test prompt
+  validateLLMResponse: true,    // Expect response to test message
+}, WebSocketImplementation);    // Optional: provide WebSocket class
+
+// Result:
+// - success: true if validation passed
+// - connectionEstablished, setupReceived, greetingReceived
+// - greetingText: the greeting received
+// - responseReceived, responseText (if testMessage sent)
+// - protocolErrors[]: invalid JSON or protocol issues
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| url | required | WebSocket URL (wss://...) |
+| timeout | 10000 | Connection timeout (ms) |
+| validateGreeting | true | Expect greeting on connect |
+| testMessage | - | Send test prompt after greeting |
+| validateLLMResponse | false | Expect LLM response |
+
+**Note**: Uses correct `last` field (not `isFinal`) per ConversationRelay protocol.
+
+### Prerequisites (validatePrerequisites)
+
+Check that required services exist before operations:
+
+```typescript
+const result = await validator.validatePrerequisites({
+  checks: [
+    DeepValidator.prerequisiteChecks.intelligenceService(client, serviceSid),
+    DeepValidator.prerequisiteChecks.phoneNumber(client, phoneNumber),
+    DeepValidator.prerequisiteChecks.envVar('API_KEY', process.env.API_KEY),
+  ],
+  stopOnFirstFailure: false,
+});
+
+// Result:
+// - success: true if all required checks passed
+// - results[]: { name, ok, message, required }
+// - errors[]: failed required checks
+```
+
+Available factory methods:
+- `intelligenceService(client, serviceSid)` - Conversational Intelligence
+- `syncService(client, serviceSid)` - Twilio Sync
+- `verifyService(client, serviceSid)` - Twilio Verify
+- `phoneNumber(client, phoneNumber)` - Phone number ownership
+- `serverlessService(client, serviceSid)` - Serverless Functions
+- `taskRouterWorkspace(client, workspaceSid)` - TaskRouter
+- `messagingService(client, serviceSid)` - Messaging Service
+- `envVar(name, value, required)` - Environment variable
+
 ## ValidationResult Structure
 
 ```typescript

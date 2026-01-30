@@ -56,6 +56,177 @@ export interface ValidationOptions {
   studioFlowSid?: string;
 }
 
+// ===== New Validation Interfaces =====
+
+/**
+ * Options for account-wide debugger validation.
+ */
+export interface DebuggerValidationOptions {
+  /** How far back to look (seconds). Default: 300 (5 min) */
+  lookbackSeconds?: number;
+  /** Filter by log level. If not set, returns all levels. */
+  logLevel?: 'error' | 'warning' | 'notice' | 'debug';
+  /** Max alerts to return. Default: 100 */
+  limit?: number;
+  /** Optional: Only alerts for specific resource SID */
+  resourceSid?: string;
+  /** Optional: Only alerts for specific service SID */
+  serviceSid?: string;
+}
+
+/**
+ * Result from broad debugger validation (not resource-specific).
+ */
+export interface DebuggerValidationResult {
+  success: boolean;
+  totalAlerts: number;
+  errorAlerts: number;
+  warningAlerts: number;
+  alerts: Array<{
+    sid: string;
+    errorCode: string;
+    logLevel: string;
+    alertText: string;
+    resourceSid?: string;
+    serviceSid?: string;
+    dateCreated: Date;
+  }>;
+  timeRange: { start: Date; end: Date };
+  duration: number;
+}
+
+/**
+ * Options for serverless function log validation.
+ */
+export interface ServerlessLogsValidationOptions {
+  /** Serverless Service SID (required) */
+  serverlessServiceSid: string;
+  /** Environment name. Default: 'production' */
+  environment?: string;
+  /** How far back to look (seconds). Default: 300 */
+  lookbackSeconds?: number;
+  /** Filter by specific function SID */
+  functionSid?: string;
+  /** Filter by log level */
+  level?: 'error' | 'warn' | 'info';
+  /** Max logs to return. Default: 100 */
+  limit?: number;
+  /** Search for specific text in log messages */
+  searchText?: string;
+}
+
+/**
+ * Result from serverless function log validation.
+ */
+export interface ServerlessLogsValidationResult {
+  success: boolean;
+  totalLogs: number;
+  errorLogs: number;
+  warnLogs: number;
+  logs: Array<{
+    sid: string;
+    message: string;
+    level: string;
+    functionSid: string;
+    dateCreated: Date;
+  }>;
+  byFunction: Record<string, { total: number; errors: number; warns: number }>;
+  timeRange: { start: Date; end: Date };
+  duration: number;
+}
+
+/**
+ * Options for recording validation.
+ */
+export interface RecordingValidationOptions {
+  /** Wait for recording to complete. Default: true */
+  waitForCompleted?: boolean;
+  /** Maximum time to wait (ms). Default: 60000 */
+  timeout?: number;
+  /** Polling interval (ms). Default: 2000 */
+  pollInterval?: number;
+}
+
+/**
+ * Result from recording validation.
+ */
+export interface RecordingValidationResult {
+  success: boolean;
+  recordingSid: string;
+  callSid?: string;
+  conferenceSid?: string;
+  status: string;
+  duration?: number;
+  channels?: number;
+  source?: string;
+  mediaUrl?: string;
+  errorCode?: number;
+  errors: string[];
+  validationDuration: number;
+}
+
+/**
+ * Options for transcript validation.
+ */
+export interface TranscriptValidationOptions {
+  /** Wait for transcript to complete. Default: true */
+  waitForCompleted?: boolean;
+  /** Maximum time to wait (ms). Default: 120000 */
+  timeout?: number;
+  /** Polling interval (ms). Default: 5000 */
+  pollInterval?: number;
+  /** Check that sentences exist. Default: true */
+  checkSentences?: boolean;
+}
+
+/**
+ * Result from transcript validation.
+ */
+export interface TranscriptValidationResult {
+  success: boolean;
+  transcriptSid: string;
+  serviceSid: string;
+  status: string;
+  languageCode?: string;
+  duration?: number;
+  sentenceCount?: number;
+  redactionEnabled?: boolean;
+  errors: string[];
+  validationDuration: number;
+}
+
+/**
+ * Options for language operator validation.
+ */
+export interface LanguageOperatorValidationOptions {
+  /** Filter by operator type (e.g., 'text-generation') */
+  operatorType?: string;
+  /** Filter by operator name */
+  operatorName?: string;
+  /** Fail if no results. Default: true */
+  requireResults?: boolean;
+}
+
+/**
+ * Result from language operator validation.
+ */
+export interface LanguageOperatorValidationResult {
+  success: boolean;
+  transcriptSid: string;
+  operatorResults: Array<{
+    operatorSid: string;
+    operatorType: string;
+    name: string;
+    textGenerationResults?: unknown;
+    predictedLabel?: string;
+    predictedProbability?: number;
+    extractMatch?: boolean;
+    extractResults?: unknown;
+  }>;
+  errors: string[];
+  validationDuration: number;
+}
+
 const DEFAULT_OPTIONS: Required<Omit<ValidationOptions, 'syncServiceSid' | 'serverlessServiceSid' | 'studioFlowSid'>> = {
   waitForTerminal: false,
   timeout: 30000,
@@ -941,6 +1112,357 @@ export class DeepValidator {
       return {
         passed: true,
         message: `Could not check Studio logs: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  // ===== New Public Validation Methods =====
+
+  /**
+   * Validates account-wide debugger alerts for a time window.
+   * Use this to catch any errors that occurred after 200 OK responses.
+   */
+  async validateDebugger(
+    options: DebuggerValidationOptions = {}
+  ): Promise<DebuggerValidationResult> {
+    const startTime = Date.now();
+    const lookbackSeconds = options.lookbackSeconds ?? 300;
+    const limit = options.limit ?? 100;
+    const startDate = new Date(Date.now() - lookbackSeconds * 1000);
+    const endDate = new Date();
+
+    try {
+      // Fetch alerts with optional log level filter
+      const listParams: { startDate: Date; limit: number; logLevel?: string } = {
+        startDate,
+        limit,
+      };
+      if (options.logLevel) {
+        listParams.logLevel = options.logLevel;
+      }
+
+      const alerts = await this.client.monitor.v1.alerts.list(listParams);
+
+      // Filter by resourceSid/serviceSid if specified
+      let filteredAlerts = alerts;
+      if (options.resourceSid) {
+        filteredAlerts = filteredAlerts.filter(
+          (a) => a.resourceSid === options.resourceSid || a.alertText?.includes(options.resourceSid!)
+        );
+      }
+      if (options.serviceSid) {
+        filteredAlerts = filteredAlerts.filter(
+          (a) => a.serviceSid === options.serviceSid
+        );
+      }
+
+      const errorAlerts = filteredAlerts.filter((a) => a.logLevel === 'error');
+      const warningAlerts = filteredAlerts.filter((a) => a.logLevel === 'warning');
+
+      return {
+        success: errorAlerts.length === 0,
+        totalAlerts: filteredAlerts.length,
+        errorAlerts: errorAlerts.length,
+        warningAlerts: warningAlerts.length,
+        alerts: filteredAlerts.map((a) => ({
+          sid: a.sid,
+          errorCode: a.errorCode,
+          logLevel: a.logLevel,
+          alertText: a.alertText,
+          resourceSid: a.resourceSid,
+          serviceSid: a.serviceSid,
+          dateCreated: a.dateCreated,
+        })),
+        timeRange: { start: startDate, end: endDate },
+        duration: Date.now() - startTime,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        totalAlerts: 0,
+        errorAlerts: 0,
+        warningAlerts: 0,
+        alerts: [],
+        timeRange: { start: startDate, end: endDate },
+        duration: Date.now() - startTime,
+      };
+    }
+  }
+
+  /**
+   * Validates serverless function execution logs.
+   * Parses console.log(), console.error(), console.warn() output.
+   */
+  async validateServerlessFunctions(
+    options: ServerlessLogsValidationOptions
+  ): Promise<ServerlessLogsValidationResult> {
+    const startTime = Date.now();
+    const environment = options.environment ?? 'production';
+    const lookbackSeconds = options.lookbackSeconds ?? 300;
+    const limit = options.limit ?? 100;
+    const startDate = new Date(Date.now() - lookbackSeconds * 1000);
+    const endDate = new Date();
+
+    try {
+      // Build list params
+      const listParams: {
+        limit: number;
+        functionSid?: string;
+      } = { limit };
+
+      if (options.functionSid) {
+        listParams.functionSid = options.functionSid;
+      }
+
+      const logs = await this.client.serverless.v1
+        .services(options.serverlessServiceSid)
+        .environments(environment)
+        .logs.list(listParams);
+
+      // Filter by date (client-side since API may not support startDate)
+      let filteredLogs = logs.filter((log) => {
+        const logDate = new Date(log.dateCreated);
+        return logDate >= startDate && logDate <= endDate;
+      });
+
+      // Filter by level if specified
+      if (options.level) {
+        filteredLogs = filteredLogs.filter((log) => log.level === options.level);
+      }
+
+      // Filter by search text if specified
+      if (options.searchText) {
+        filteredLogs = filteredLogs.filter((log) =>
+          log.message?.toLowerCase().includes(options.searchText!.toLowerCase())
+        );
+      }
+
+      // Count by level
+      const errorLogs = filteredLogs.filter((log) => log.level === 'error');
+      const warnLogs = filteredLogs.filter((log) => log.level === 'warn');
+
+      // Group by function
+      const byFunction: Record<string, { total: number; errors: number; warns: number }> = {};
+      for (const log of filteredLogs) {
+        const fid = log.functionSid || 'unknown';
+        if (!byFunction[fid]) {
+          byFunction[fid] = { total: 0, errors: 0, warns: 0 };
+        }
+        byFunction[fid].total++;
+        if (log.level === 'error') byFunction[fid].errors++;
+        if (log.level === 'warn') byFunction[fid].warns++;
+      }
+
+      return {
+        success: errorLogs.length === 0,
+        totalLogs: filteredLogs.length,
+        errorLogs: errorLogs.length,
+        warnLogs: warnLogs.length,
+        logs: filteredLogs.map((log) => ({
+          sid: log.sid,
+          message: log.message,
+          level: log.level,
+          functionSid: log.functionSid,
+          dateCreated: log.dateCreated,
+        })),
+        byFunction,
+        timeRange: { start: startDate, end: endDate },
+        duration: Date.now() - startTime,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        totalLogs: 0,
+        errorLogs: 0,
+        warnLogs: 0,
+        logs: [],
+        byFunction: {},
+        timeRange: { start: startDate, end: endDate },
+        duration: Date.now() - startTime,
+      };
+    }
+  }
+
+  /**
+   * Validates a call recording by checking status and metadata.
+   */
+  async validateRecording(
+    recordingSid: string,
+    options: RecordingValidationOptions = {}
+  ): Promise<RecordingValidationResult> {
+    const startTime = Date.now();
+    const waitForCompleted = options.waitForCompleted ?? true;
+    const timeout = options.timeout ?? 60000;
+    const pollInterval = options.pollInterval ?? 2000;
+    const errors: string[] = [];
+
+    try {
+      let recording = await this.client.recordings(recordingSid).fetch();
+      let status = String(recording.status);
+
+      // Poll until completed if requested
+      const terminalRecordingStatuses = ['completed', 'failed', 'absent'];
+      if (waitForCompleted && !terminalRecordingStatuses.includes(status)) {
+        const deadline = Date.now() + timeout;
+        while (Date.now() < deadline && !terminalRecordingStatuses.includes(status)) {
+          await this.sleep(pollInterval);
+          recording = await this.client.recordings(recordingSid).fetch();
+          status = String(recording.status);
+        }
+      }
+
+      if (status === 'failed' || status === 'absent') {
+        errors.push(`Recording ${status}: ${recording.errorCode || 'unknown error'}`);
+      }
+
+      return {
+        success: status === 'completed',
+        recordingSid,
+        callSid: recording.callSid,
+        conferenceSid: recording.conferenceSid,
+        status,
+        duration: recording.duration ? parseInt(recording.duration) : undefined,
+        channels: recording.channels,
+        source: recording.source,
+        mediaUrl: `https://api.twilio.com${recording.uri.replace('.json', '.mp3')}`,
+        errorCode: recording.errorCode,
+        errors,
+        validationDuration: Date.now() - startTime,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        recordingSid,
+        status: 'error',
+        errors: [`Failed to fetch recording: ${error instanceof Error ? error.message : String(error)}`],
+        validationDuration: Date.now() - startTime,
+      };
+    }
+  }
+
+  /**
+   * Validates a Conversational Intelligence transcript.
+   */
+  async validateTranscript(
+    transcriptSid: string,
+    options: TranscriptValidationOptions = {}
+  ): Promise<TranscriptValidationResult> {
+    const startTime = Date.now();
+    const waitForCompleted = options.waitForCompleted ?? true;
+    const timeout = options.timeout ?? 120000;
+    const pollInterval = options.pollInterval ?? 5000;
+    const checkSentences = options.checkSentences ?? true;
+    const errors: string[] = [];
+
+    try {
+      let transcript = await this.client.intelligence.v2.transcripts(transcriptSid).fetch();
+      let status = transcript.status;
+
+      // Poll until completed if requested
+      const terminalStatuses = ['completed', 'failed', 'canceled', 'error'];
+      if (waitForCompleted && !terminalStatuses.includes(status)) {
+        const deadline = Date.now() + timeout;
+        while (Date.now() < deadline && !terminalStatuses.includes(status)) {
+          await this.sleep(pollInterval);
+          transcript = await this.client.intelligence.v2.transcripts(transcriptSid).fetch();
+          status = transcript.status;
+        }
+      }
+
+      if (['failed', 'canceled', 'error'].includes(status)) {
+        errors.push(`Transcript ${status}`);
+      }
+
+      // Check sentences if requested and completed
+      let sentenceCount: number | undefined;
+      if (checkSentences && status === 'completed') {
+        const sentences = await this.client.intelligence.v2
+          .transcripts(transcriptSid)
+          .sentences.list({ limit: 1000 });
+        sentenceCount = sentences.length;
+        if (sentenceCount === 0) {
+          errors.push('Transcript completed but has no sentences');
+        }
+      }
+
+      return {
+        success: status === 'completed' && errors.length === 0,
+        transcriptSid,
+        serviceSid: transcript.serviceSid,
+        status,
+        languageCode: transcript.languageCode,
+        duration: transcript.duration,
+        sentenceCount,
+        redactionEnabled: transcript.redaction,
+        errors,
+        validationDuration: Date.now() - startTime,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        transcriptSid,
+        serviceSid: '',
+        status: 'error',
+        errors: [`Failed to fetch transcript: ${error instanceof Error ? error.message : String(error)}`],
+        validationDuration: Date.now() - startTime,
+      };
+    }
+  }
+
+  /**
+   * Validates Language Operator results for a transcript.
+   */
+  async validateLanguageOperator(
+    transcriptSid: string,
+    options: LanguageOperatorValidationOptions = {}
+  ): Promise<LanguageOperatorValidationResult> {
+    const startTime = Date.now();
+    const requireResults = options.requireResults ?? true;
+    const errors: string[] = [];
+
+    try {
+      const operatorResults = await this.client.intelligence.v2
+        .transcripts(transcriptSid)
+        .operatorResults.list({ limit: 50 });
+
+      // Filter by operator type if specified
+      let filteredResults = operatorResults;
+      if (options.operatorType) {
+        filteredResults = filteredResults.filter((r) => r.operatorType === options.operatorType);
+      }
+      if (options.operatorName) {
+        filteredResults = filteredResults.filter((r) => r.name === options.operatorName);
+      }
+
+      if (requireResults && filteredResults.length === 0) {
+        errors.push('No operator results found for transcript');
+      }
+
+      const mappedResults = filteredResults.map((r) => ({
+        operatorSid: r.operatorSid,
+        operatorType: r.operatorType,
+        name: r.name,
+        textGenerationResults: r.textGenerationResults,
+        predictedLabel: r.predictedLabel,
+        predictedProbability: r.predictedProbability,
+        extractMatch: r.extractMatch,
+        extractResults: r.extractResults,
+      }));
+
+      return {
+        success: errors.length === 0 && filteredResults.length > 0,
+        transcriptSid,
+        operatorResults: mappedResults,
+        errors,
+        validationDuration: Date.now() - startTime,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        transcriptSid,
+        operatorResults: [],
+        errors: [`Failed to fetch operator results: ${error instanceof Error ? error.message : String(error)}`],
+        validationDuration: Date.now() - startTime,
       };
     }
   }

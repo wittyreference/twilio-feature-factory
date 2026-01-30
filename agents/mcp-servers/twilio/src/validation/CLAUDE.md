@@ -92,6 +92,144 @@ For each operation, the validator runs multiple checks:
 - The validator gracefully handles 404 responses when data isn't ready yet
 - Check `processingState` field in response for data completeness
 
+## Standalone Validation Methods
+
+These methods validate specific Twilio resources independently (not tied to a specific SID being validated):
+
+### Debugger (validateDebugger)
+
+Check for any debugger alerts in a time window:
+
+```typescript
+const result = await validator.validateDebugger({
+  lookbackSeconds: 300,     // Last 5 minutes (default)
+  logLevel: 'error',        // Filter by level
+  resourceSid: 'CA123',     // Optional: filter to specific resource
+});
+
+// Result:
+// - success: true if no error-level alerts
+// - totalAlerts, errorAlerts, warningAlerts: counts
+// - alerts[]: detailed alert data
+// - timeRange: { start, end }
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| lookbackSeconds | 300 | How far back to search |
+| logLevel | all | Filter: 'error', 'warning', 'notice', 'debug' |
+| limit | 100 | Max alerts to fetch |
+| resourceSid | - | Filter to specific resource |
+| serviceSid | - | Filter to specific service |
+
+### Serverless Logs (validateServerlessFunctions)
+
+Parse console.log output from Twilio Functions:
+
+```typescript
+const result = await validator.validateServerlessFunctions({
+  serverlessServiceSid: 'ZS123',  // Required
+  environment: 'production',       // Default
+  lookbackSeconds: 300,
+  functionSid: 'ZH456',           // Optional filter
+  searchText: 'error',            // Optional text search
+});
+
+// Result:
+// - success: true if no error-level logs
+// - totalLogs, errorLogs, warnLogs: counts
+// - logs[]: detailed log entries
+// - byFunction: grouped stats per function
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| serverlessServiceSid | required | Service to check |
+| environment | 'production' | Environment name |
+| lookbackSeconds | 300 | How far back to search |
+| functionSid | - | Filter to specific function |
+| level | all | Filter: 'error', 'warn', 'info' |
+| searchText | - | Filter by message content |
+
+### Recordings (validateRecording)
+
+Validate call/conference recording completion:
+
+```typescript
+const result = await validator.validateRecording('RE123', {
+  waitForCompleted: true,   // Poll until done
+  timeout: 60000,           // 1 minute max
+  pollInterval: 2000,       // Check every 2s
+});
+
+// Result:
+// - success: true if status is 'completed'
+// - recordingSid, callSid, conferenceSid
+// - status: 'in-progress', 'completed', 'failed', etc.
+// - duration: recording length in seconds
+// - mediaUrl: download URL (.mp3)
+// - errorCode: if failed
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| waitForCompleted | true | Poll until terminal status |
+| timeout | 60000 | Max wait time (ms) |
+| pollInterval | 2000 | Poll interval (ms) |
+
+### Transcripts (validateTranscript)
+
+Validate Conversational Intelligence transcript:
+
+```typescript
+const result = await validator.validateTranscript('GT123', {
+  waitForCompleted: true,   // Poll until done
+  timeout: 120000,          // 2 minutes for transcription
+  checkSentences: true,     // Verify sentences exist
+});
+
+// Result:
+// - success: true if status is 'completed' with sentences
+// - transcriptSid, serviceSid
+// - status: 'queued', 'in-progress', 'completed', 'failed'
+// - languageCode, duration, sentenceCount
+// - redactionEnabled: whether PII was redacted
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| waitForCompleted | true | Poll until terminal status |
+| timeout | 120000 | Max wait time (ms) |
+| pollInterval | 5000 | Poll interval (ms) |
+| checkSentences | true | Verify transcript has content |
+
+### Language Operators (validateLanguageOperator)
+
+Validate Language Operator results (summarization, classification, extraction):
+
+```typescript
+const result = await validator.validateLanguageOperator('GT123', {
+  operatorType: 'text-generation',  // Filter by type
+  operatorName: 'Call Summary',     // Filter by name
+  requireResults: true,             // Fail if no results
+});
+
+// Result:
+// - success: true if operators ran successfully
+// - transcriptSid
+// - operatorResults[]: array of operator outputs
+//   - operatorSid, operatorType, name
+//   - textGenerationResults (for summarization)
+//   - predictedLabel, predictedProbability (for classification)
+//   - extractMatch, extractResults (for extraction)
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| operatorType | - | Filter: 'text-generation', 'classification', 'extraction' |
+| operatorName | - | Filter by operator name |
+| requireResults | true | Fail if no results found |
+
 ## ValidationResult Structure
 
 ```typescript

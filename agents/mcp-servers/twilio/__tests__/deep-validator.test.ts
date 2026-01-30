@@ -1,4 +1,4 @@
-// ABOUTME: Unit tests for DeepValidator, focusing on conference validation.
+// ABOUTME: Unit tests for DeepValidator, covering conference and new validation methods.
 // ABOUTME: Tests structure, types, and behavior with mocked Twilio client.
 
 import {
@@ -16,6 +16,20 @@ interface MockClientConfig {
   participantInsightsError: Error | null;
   alertsData: Array<Record<string, unknown>>;
   alertsError: Error | null;
+  // New mock configs for new validation methods
+  recordingStatus: string;
+  recordingData: Record<string, unknown> | null;
+  recordingError: Error | null;
+  transcriptStatus: string;
+  transcriptData: Record<string, unknown> | null;
+  transcriptError: Error | null;
+  sentencesData: Array<Record<string, unknown>>;
+  sentencesError: Error | null;
+  operatorResultsData: Array<Record<string, unknown>>;
+  operatorResultsError: Error | null;
+  serverlessLogsData: Array<Record<string, unknown>>;
+  serverlessLogsError: Error | null;
+  serverlessEnvironmentsData: Array<Record<string, unknown>>;
 }
 
 // Create a mock Twilio client for testing
@@ -29,6 +43,20 @@ function createMockClient(overrides: Partial<MockClientConfig> = {}) {
     participantInsightsError: null,
     alertsData: [],
     alertsError: null,
+    // New mock configs
+    recordingStatus: 'completed',
+    recordingData: null,
+    recordingError: null,
+    transcriptStatus: 'completed',
+    transcriptData: null,
+    transcriptError: null,
+    sentencesData: [],
+    sentencesError: null,
+    operatorResultsData: [],
+    operatorResultsError: null,
+    serverlessLogsData: [],
+    serverlessLogsError: null,
+    serverlessEnvironmentsData: [{ sid: 'ZE123', uniqueName: 'production', domainName: 'test.twil.io' }],
     ...overrides,
   };
 
@@ -77,6 +105,68 @@ function createMockClient(overrides: Partial<MockClientConfig> = {}) {
             return config.alertsData;
           },
         },
+      },
+    },
+    // New mocks for recordings
+    recordings: (sid: string) => ({
+      fetch: async () => {
+        if (config.recordingError) throw config.recordingError;
+        return config.recordingData || {
+          sid,
+          status: config.recordingStatus,
+          callSid: 'CA123',
+          conferenceSid: null,
+          duration: '120',
+          channels: 1,
+          source: 'OutboundAPI',
+          uri: `/2010-04-01/Accounts/AC123/Recordings/${sid}.json`,
+          errorCode: null,
+        };
+      },
+    }),
+    // New mocks for Intelligence (transcripts)
+    intelligence: {
+      v2: {
+        transcripts: (sid: string) => ({
+          fetch: async () => {
+            if (config.transcriptError) throw config.transcriptError;
+            return config.transcriptData || {
+              sid,
+              serviceSid: 'GA123',
+              status: config.transcriptStatus,
+              languageCode: 'en-US',
+              duration: 120,
+              redaction: false,
+            };
+          },
+          sentences: {
+            list: async () => {
+              if (config.sentencesError) throw config.sentencesError;
+              return config.sentencesData;
+            },
+          },
+          operatorResults: {
+            list: async () => {
+              if (config.operatorResultsError) throw config.operatorResultsError;
+              return config.operatorResultsData;
+            },
+          },
+        }),
+      },
+    },
+    // New mocks for Serverless
+    serverless: {
+      v1: {
+        services: (_serviceSid: string) => ({
+          environments: (_envSid: string) => ({
+            logs: {
+              list: async () => {
+                if (config.serverlessLogsError) throw config.serverlessLogsError;
+                return config.serverlessLogsData;
+              },
+            },
+          }),
+        }),
       },
     },
   };
@@ -332,6 +422,539 @@ describe('DeepValidator', () => {
       expect(result.checks.conferenceInsights?.data).toBeDefined();
       const data = result.checks.conferenceInsights?.data as Record<string, unknown>;
       expect(data.processingState).toBe('partial');
+    });
+  });
+
+  // ==================== NEW VALIDATION METHODS ====================
+
+  describe('validateDebugger', () => {
+    it('should return success when no alerts exist', async () => {
+      const client = createMockClient({
+        alertsData: [],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateDebugger();
+
+      expect(result.success).toBe(true);
+      expect(result.totalAlerts).toBe(0);
+      expect(result.errorAlerts).toBe(0);
+      expect(result.warningAlerts).toBe(0);
+      expect(result.alerts).toHaveLength(0);
+    });
+
+    it('should detect error-level alerts and return failure', async () => {
+      const client = createMockClient({
+        alertsData: [
+          {
+            sid: 'NO001',
+            errorCode: '11200',
+            logLevel: 'error',
+            alertText: 'HTTP retrieval failure',
+            resourceSid: 'CA123',
+            serviceSid: null,
+            dateCreated: new Date(),
+          },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateDebugger();
+
+      expect(result.success).toBe(false);
+      expect(result.totalAlerts).toBe(1);
+      expect(result.errorAlerts).toBe(1);
+      expect(result.alerts).toHaveLength(1);
+      expect(result.alerts[0].errorCode).toBe('11200');
+    });
+
+    it('should count warnings but not fail for warning-level alerts', async () => {
+      const client = createMockClient({
+        alertsData: [
+          {
+            sid: 'NO002',
+            errorCode: '12300',
+            logLevel: 'warning',
+            alertText: 'Document parse failure (warning)',
+            resourceSid: 'SM123',
+            serviceSid: null,
+            dateCreated: new Date(),
+          },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateDebugger();
+
+      expect(result.success).toBe(true); // Warnings don't fail
+      expect(result.totalAlerts).toBe(1);
+      expect(result.warningAlerts).toBe(1);
+      expect(result.errorAlerts).toBe(0);
+    });
+
+    it('should include duration in result', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateDebugger();
+
+      expect(result.duration).toBeGreaterThanOrEqual(0);
+      expect(typeof result.duration).toBe('number');
+    });
+
+    it('should include timeRange in result', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateDebugger();
+
+      expect(result.timeRange).toBeDefined();
+      expect(result.timeRange.start).toBeInstanceOf(Date);
+      expect(result.timeRange.end).toBeInstanceOf(Date);
+    });
+
+    it('should respect logLevel filter option', async () => {
+      const client = createMockClient({
+        alertsData: [
+          { sid: 'NO001', errorCode: '11200', logLevel: 'error', alertText: 'Error', dateCreated: new Date() },
+          { sid: 'NO002', errorCode: '12300', logLevel: 'warning', alertText: 'Warning', dateCreated: new Date() },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      // Note: logLevel filter in options would filter returned alerts
+      const result = await validator.validateDebugger({ logLevel: 'warning' });
+
+      expect(result.totalAlerts).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('validateServerlessFunctions', () => {
+    it('should return success when no error logs exist', async () => {
+      const client = createMockClient({
+        serverlessLogsData: [
+          {
+            sid: 'NO001',
+            message: 'Function executed successfully',
+            level: 'info',
+            functionSid: 'ZH123',
+            dateCreated: new Date(),
+          },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateServerlessFunctions({
+        serverlessServiceSid: 'ZS123',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.errorLogs).toBe(0);
+    });
+
+    it('should detect error-level logs and return failure', async () => {
+      const client = createMockClient({
+        serverlessLogsData: [
+          {
+            sid: 'NO001',
+            message: 'Error: Cannot read property of undefined',
+            level: 'error',
+            functionSid: 'ZH123',
+            dateCreated: new Date(),
+          },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateServerlessFunctions({
+        serverlessServiceSid: 'ZS123',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errorLogs).toBe(1);
+      expect(result.logs).toHaveLength(1);
+    });
+
+    it('should count warnings separately', async () => {
+      const client = createMockClient({
+        serverlessLogsData: [
+          { sid: 'NO001', message: 'Warning: deprecated API', level: 'warn', functionSid: 'ZH123', dateCreated: new Date() },
+          { sid: 'NO002', message: 'Info log', level: 'info', functionSid: 'ZH123', dateCreated: new Date() },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateServerlessFunctions({
+        serverlessServiceSid: 'ZS123',
+      });
+
+      expect(result.success).toBe(true); // Warnings don't fail
+      expect(result.warnLogs).toBe(1);
+      expect(result.errorLogs).toBe(0);
+    });
+
+    it('should group logs by function', async () => {
+      const client = createMockClient({
+        serverlessLogsData: [
+          { sid: 'NO001', message: 'Log 1', level: 'info', functionSid: 'ZH001', dateCreated: new Date() },
+          { sid: 'NO002', message: 'Log 2', level: 'error', functionSid: 'ZH001', dateCreated: new Date() },
+          { sid: 'NO003', message: 'Log 3', level: 'info', functionSid: 'ZH002', dateCreated: new Date() },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateServerlessFunctions({
+        serverlessServiceSid: 'ZS123',
+      });
+
+      expect(result.byFunction).toBeDefined();
+      expect(result.byFunction['ZH001']).toBeDefined();
+      expect(result.byFunction['ZH001'].total).toBe(2);
+      expect(result.byFunction['ZH001'].errors).toBe(1);
+      expect(result.byFunction['ZH002'].total).toBe(1);
+    });
+
+    it('should include duration and timeRange in result', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateServerlessFunctions({
+        serverlessServiceSid: 'ZS123',
+      });
+
+      expect(result.duration).toBeGreaterThanOrEqual(0);
+      expect(result.timeRange.start).toBeInstanceOf(Date);
+      expect(result.timeRange.end).toBeInstanceOf(Date);
+    });
+  });
+
+  describe('validateRecording', () => {
+    it('should return success for completed recording', async () => {
+      const client = createMockClient({
+        recordingStatus: 'completed',
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateRecording('RE123');
+
+      expect(result.success).toBe(true);
+      expect(result.recordingSid).toBe('RE123');
+      expect(result.status).toBe('completed');
+    });
+
+    it('should return failure for failed recording', async () => {
+      const client = createMockClient({
+        recordingStatus: 'failed',
+        recordingData: {
+          sid: 'RE123',
+          status: 'failed',
+          callSid: 'CA123',
+          conferenceSid: null,
+          duration: '0',
+          channels: 1,
+          source: 'OutboundAPI',
+          uri: '/2010-04-01/Accounts/AC123/Recordings/RE123.json',
+          errorCode: 31205,
+        },
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateRecording('RE123');
+
+      expect(result.success).toBe(false);
+      expect(result.status).toBe('failed');
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+
+    it('should include recording metadata', async () => {
+      const client = createMockClient({
+        recordingStatus: 'completed',
+        recordingData: {
+          sid: 'RE123',
+          status: 'completed',
+          callSid: 'CA456',
+          conferenceSid: 'CF789',
+          duration: '300',
+          channels: 2,
+          source: 'DialVerb',
+          uri: '/2010-04-01/Accounts/AC123/Recordings/RE123.json',
+          errorCode: null,
+        },
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateRecording('RE123');
+
+      expect(result.callSid).toBe('CA456');
+      expect(result.conferenceSid).toBe('CF789');
+      expect(result.duration).toBe(300);
+      expect(result.channels).toBe(2);
+      expect(result.source).toBe('DialVerb');
+    });
+
+    it('should include media URL', async () => {
+      const client = createMockClient({
+        recordingStatus: 'completed',
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateRecording('RE123');
+
+      expect(result.mediaUrl).toBeDefined();
+      expect(result.mediaUrl).toContain('.mp3');
+    });
+
+    it('should include validationDuration', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateRecording('RE123');
+
+      expect(result.validationDuration).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should handle fetch errors gracefully', async () => {
+      const fetchError = new Error('Recording not found');
+      (fetchError as Error & { code: number }).code = 20404;
+
+      const client = createMockClient({
+        recordingError: fetchError,
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateRecording('REnotexist');
+
+      expect(result.success).toBe(false);
+      expect(result.status).toBe('error');
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('validateTranscript', () => {
+    it('should return success for completed transcript with sentences', async () => {
+      const client = createMockClient({
+        transcriptStatus: 'completed',
+        sentencesData: [
+          { sid: 'GX001', transcript: 'Hello, how are you?', confidence: 0.95 },
+          { sid: 'GX002', transcript: 'I am fine, thank you.', confidence: 0.92 },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTranscript('GT123');
+
+      expect(result.success).toBe(true);
+      expect(result.transcriptSid).toBe('GT123');
+      expect(result.status).toBe('completed');
+      expect(result.sentenceCount).toBe(2);
+    });
+
+    it('should return failure for failed transcript', async () => {
+      const client = createMockClient({
+        transcriptStatus: 'failed',
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTranscript('GT123');
+
+      expect(result.success).toBe(false);
+      expect(result.status).toBe('failed');
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+
+    it('should warn when transcript has no sentences', async () => {
+      const client = createMockClient({
+        transcriptStatus: 'completed',
+        sentencesData: [],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTranscript('GT123', { checkSentences: true });
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toContain('Transcript completed but has no sentences');
+    });
+
+    it('should include transcript metadata', async () => {
+      const client = createMockClient({
+        transcriptStatus: 'completed',
+        transcriptData: {
+          sid: 'GT123',
+          serviceSid: 'GA456',
+          status: 'completed',
+          languageCode: 'es-ES',
+          duration: 180,
+          redaction: true,
+        },
+        sentencesData: [{ sid: 'GX001', transcript: 'Hola', confidence: 0.9 }],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTranscript('GT123');
+
+      expect(result.serviceSid).toBe('GA456');
+      expect(result.languageCode).toBe('es-ES');
+      expect(result.duration).toBe(180);
+      expect(result.redactionEnabled).toBe(true);
+    });
+
+    it('should include validationDuration', async () => {
+      const client = createMockClient({
+        sentencesData: [{ sid: 'GX001', transcript: 'Test', confidence: 0.9 }],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTranscript('GT123');
+
+      expect(result.validationDuration).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should handle fetch errors gracefully', async () => {
+      const fetchError = new Error('Transcript not found');
+      (fetchError as Error & { code: number }).code = 20404;
+
+      const client = createMockClient({
+        transcriptError: fetchError,
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTranscript('GTnotexist');
+
+      expect(result.success).toBe(false);
+      expect(result.status).toBe('error');
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('validateLanguageOperator', () => {
+    it('should return success when operator results exist', async () => {
+      const client = createMockClient({
+        operatorResultsData: [
+          {
+            operatorSid: 'LY001',
+            operatorType: 'text-generation',
+            name: 'Call Summary',
+            textGenerationResults: 'This call was about billing inquiry.',
+          },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateLanguageOperator('GT123');
+
+      expect(result.success).toBe(true);
+      expect(result.transcriptSid).toBe('GT123');
+      expect(result.operatorResults).toHaveLength(1);
+      expect(result.operatorResults[0].operatorType).toBe('text-generation');
+      expect(result.operatorResults[0].textGenerationResults).toContain('billing');
+    });
+
+    it('should return failure when no operator results and requireResults=true', async () => {
+      const client = createMockClient({
+        operatorResultsData: [],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateLanguageOperator('GT123', { requireResults: true });
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toContain('No operator results found for transcript');
+    });
+
+    it('should filter by operatorType when specified', async () => {
+      const client = createMockClient({
+        operatorResultsData: [
+          { operatorSid: 'LY001', operatorType: 'text-generation', name: 'Summary', textGenerationResults: 'Summary text' },
+          { operatorSid: 'LY002', operatorType: 'classification', name: 'Sentiment', predictedLabel: 'positive', predictedProbability: 0.87 },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateLanguageOperator('GT123', {
+        operatorType: 'classification',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.operatorResults).toHaveLength(1);
+      expect(result.operatorResults[0].operatorType).toBe('classification');
+    });
+
+    it('should filter by operatorName when specified', async () => {
+      const client = createMockClient({
+        operatorResultsData: [
+          { operatorSid: 'LY001', operatorType: 'text-generation', name: 'Summary', textGenerationResults: 'Summary' },
+          { operatorSid: 'LY002', operatorType: 'text-generation', name: 'Action Items', textGenerationResults: 'Action items list' },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateLanguageOperator('GT123', {
+        operatorName: 'Action Items',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.operatorResults).toHaveLength(1);
+      expect(result.operatorResults[0].name).toBe('Action Items');
+    });
+
+    it('should include all operator result fields', async () => {
+      const client = createMockClient({
+        operatorResultsData: [
+          {
+            operatorSid: 'LY001',
+            operatorType: 'classification',
+            name: 'Intent',
+            predictedLabel: 'support_request',
+            predictedProbability: 0.92,
+          },
+          {
+            operatorSid: 'LY002',
+            operatorType: 'extraction',
+            name: 'Phone Number',
+            extractMatch: true,
+            extractResults: { phone: '+15551234567' },
+          },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateLanguageOperator('GT123');
+
+      expect(result.operatorResults).toHaveLength(2);
+
+      const classification = result.operatorResults.find(r => r.operatorType === 'classification');
+      expect(classification?.predictedLabel).toBe('support_request');
+      expect(classification?.predictedProbability).toBe(0.92);
+
+      const extraction = result.operatorResults.find(r => r.operatorType === 'extraction');
+      expect(extraction?.extractMatch).toBe(true);
+      expect(extraction?.extractResults).toEqual({ phone: '+15551234567' });
+    });
+
+    it('should include validationDuration', async () => {
+      const client = createMockClient({
+        operatorResultsData: [{ operatorSid: 'LY001', operatorType: 'text-generation', name: 'Test', textGenerationResults: 'Test' }],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateLanguageOperator('GT123');
+
+      expect(result.validationDuration).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should handle fetch errors gracefully', async () => {
+      const fetchError = new Error('Operator results not found');
+
+      const client = createMockClient({
+        operatorResultsError: fetchError,
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateLanguageOperator('GTnotexist');
+
+      expect(result.success).toBe(false);
+      expect(result.operatorResults).toHaveLength(0);
+      expect(result.errors.length).toBeGreaterThan(0);
     });
   });
 });

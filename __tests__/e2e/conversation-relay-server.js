@@ -86,7 +86,11 @@ class CallContext {
   getMessages() {
     // Sliding window to keep context manageable
     const WINDOW_SIZE = 20;
-    return this.messages.slice(-WINDOW_SIZE);
+    // Strip timestamp for Anthropic API (only role and content allowed)
+    return this.messages.slice(-WINDOW_SIZE).map((m) => ({
+      role: m.role,
+      content: m.content,
+    }));
   }
 
   getDuration() {
@@ -221,7 +225,8 @@ wss.on('connection', (ws) => {
             break;
           }
 
-          if (message.isFinal && message.voicePrompt) {
+          // Note: ConversationRelay uses 'last' not 'isFinal'
+          if (message.last && message.voicePrompt) {
             console.log(`[${timestamp}] USER: "${message.voicePrompt}" (confidence: ${message.confidence?.toFixed(2) || 'N/A'})`);
 
             // Check turn limit
@@ -262,7 +267,7 @@ wss.on('connection', (ws) => {
 
             console.log(`[${timestamp}] AI: "${response}"`);
             ws.send(JSON.stringify({ type: 'text', token: response }));
-          } else if (!message.isFinal) {
+          } else if (!message.last) {
             // Partial transcript - just log it
             console.log(`[${timestamp}] PARTIAL: "${message.voicePrompt || ''}"`);
           }

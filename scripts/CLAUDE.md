@@ -7,6 +7,7 @@ This directory contains CLI scripts for project setup and maintenance.
 | Script | Command | Purpose |
 |--------|---------|---------|
 | `setup.js` | `npm run setup` | Interactive setup for provisioning Twilio resources |
+| `enable-autonomous.sh` | `./scripts/enable-autonomous.sh` | Launch Claude Code in autonomous mode |
 
 ## Setup Script
 
@@ -99,3 +100,66 @@ twilio plugins:install @twilio-labs/plugin-serverless
 **Deployment fails**
 - Ensure you're logged into Twilio CLI: `twilio login`
 - Check for syntax errors in Functions: `npm run lint`
+
+## Enable Autonomous Script
+
+The `enable-autonomous.sh` script launches Claude Code with pre-approved permissions for unattended operation.
+
+### What It Does
+
+1. **Displays Warning**: Shows consequences of autonomous mode (real money, real calls)
+2. **Requires Acknowledgment**: User must type `I ACKNOWLEDGE THE RISKS`
+3. **Launches Claude Code**: Starts with expanded permissions
+4. **Creates Audit Log**: Logs session to `.claude/autonomous-sessions/`
+
+### Usage
+
+```bash
+# From project root
+./scripts/enable-autonomous.sh
+
+# With initial prompt
+./scripts/enable-autonomous.sh "Add SMS verification to signup"
+
+# Resume a conversation
+./scripts/enable-autonomous.sh --resume
+```
+
+### Pre-Approved Commands
+
+The script pre-approves these patterns (no permission prompts):
+
+| Category | Patterns |
+|----------|----------|
+| Testing | `npm test*`, `npx jest*` |
+| Building | `npm run build*`, `npx tsc*` |
+| Linting | `npm run lint*`, `npx eslint*` |
+| Twilio CLI | `twilio serverless:*`, `twilio api:*`, `twilio profiles:*` |
+| Git (safe) | `git add`, `git commit`, `git status`, `git diff`, `git log` |
+| File tools | `Read`, `Write`, `Edit`, `Glob`, `Grep` |
+| Web | `WebSearch`, `WebFetch` |
+| Agents | `Task`, `Skill` |
+
+### Still Blocked (Require Approval)
+
+- `git push --force`, `git reset --hard`
+- `rm -rf` and destructive operations
+- Network requests to unknown hosts
+- Any command not in the pre-approved list
+
+### Quality Gates (Always Enforced)
+
+Even in autonomous mode, Claude Code hooks still enforce:
+
+- **TDD**: Tests must fail first, then pass
+- **Linting**: Must pass before commit
+- **Credential safety**: No hardcoded secrets
+- **Git safety**: No `--no-verify`, no force push
+
+### Audit Logs
+
+Session logs are saved to `.claude/autonomous-sessions/autonomous-YYYYMMDD-HHMMSS.log` with:
+
+- Session start/end timestamps
+- Acknowledgment method
+- All tool invocations (via hooks)

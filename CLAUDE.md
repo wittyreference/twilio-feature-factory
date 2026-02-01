@@ -611,6 +611,73 @@ Run with: `/orchestrate refactor [target]`
 
 The `/dev` subagent verifies failing tests exist before implementing. See `.claude/workflows/README.md` for detailed workflow documentation.
 
+## Autonomous Mode
+
+Both Claude Code and Feature Factory support autonomous mode for unattended operation.
+
+### Why Autonomous Mode?
+
+Normal operation requires human approval at multiple points:
+- Permission prompts for bash commands, file writes, etc.
+- Phase approval prompts in Feature Factory workflows
+
+Autonomous mode pre-approves these prompts while **keeping all quality gates enforced**.
+
+### Quality Gates (Always Enforced)
+
+Even in autonomous mode, these gates are never bypassed:
+
+| Gate | Enforcement |
+|------|-------------|
+| TDD | Tests must fail first (Red), then pass (Green) |
+| Linting | Must pass before commit |
+| Coverage | 80% threshold |
+| Credential safety | No hardcoded secrets (AC..., SK..., tokens) |
+| Git safety | No `--no-verify`, no force push to main |
+
+### Claude Code Path
+
+Launch with pre-approved permissions:
+
+```bash
+./scripts/enable-autonomous.sh
+```
+
+This displays a warning, requires typing `I ACKNOWLEDGE THE RISKS`, then launches Claude Code with expanded permissions for testing, building, and safe git operations.
+
+**Pre-approved:**
+- `npm test`, `npm run lint`, `npm run build`
+- `twilio serverless:deploy`, `twilio api:*`
+- `git add`, `git commit`, `git status`, `git diff`
+- All file operations (Read, Write, Edit, Glob, Grep)
+
+**Still blocked:**
+- `git push --force`, `git reset --hard`
+- Destructive operations (`rm -rf`)
+- Arbitrary network requests
+
+Session logs saved to `.claude/autonomous-sessions/`.
+
+### Feature Factory Path
+
+Run workflows without approval prompts:
+
+```bash
+# Interactive
+npx feature-factory new-feature "task" --dangerously-autonomous
+
+# CI/CD
+FEATURE_FACTORY_AUTONOMOUS=true \
+FEATURE_FACTORY_AUTONOMOUS_ACKNOWLEDGED=true \
+npx feature-factory new-feature "task"
+```
+
+Removes budget/turn limits, auto-approves phase transitions.
+
+Session summary displayed at completion with test results, files modified, learnings captured.
+
+See [Feature Factory CLAUDE.md](/agents/feature-factory/CLAUDE.md) for full documentation.
+
 ## Claude Code Hooks
 
 This project uses Claude Code hooks to automate enforcement of coding standards. Hooks are configured in `.claude/settings.json`.

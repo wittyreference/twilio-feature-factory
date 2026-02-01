@@ -6,13 +6,13 @@
 export PROJECT_ROOT="${PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
 # Detect meta-development mode
-if [[ -d "$PROJECT_ROOT/.claude-dev" ]]; then
+if [[ -d "$PROJECT_ROOT/.meta" ]]; then
     export CLAUDE_META_MODE="true"
-    export CLAUDE_META_DIR="$PROJECT_ROOT/.claude-dev"
-    export CLAUDE_PENDING_ACTIONS="$PROJECT_ROOT/.claude-dev/pending-actions.md"
-    export CLAUDE_LEARNINGS="$PROJECT_ROOT/.claude-dev/learnings.md"
-    export CLAUDE_LOGS_DIR="$PROJECT_ROOT/.claude-dev/logs"
-    export CLAUDE_PLANS_DIR="$PROJECT_ROOT/.claude-dev/plans"
+    export CLAUDE_META_DIR="$PROJECT_ROOT/.meta"
+    export CLAUDE_PENDING_ACTIONS="$PROJECT_ROOT/.meta/pending-actions.md"
+    export CLAUDE_LEARNINGS="$PROJECT_ROOT/.meta/learnings.md"
+    export CLAUDE_LOGS_DIR="$PROJECT_ROOT/.meta/logs"
+    export CLAUDE_PLANS_DIR="$PROJECT_ROOT/.meta/plans"
 else
     export CLAUDE_META_MODE="false"
     export CLAUDE_META_DIR=""

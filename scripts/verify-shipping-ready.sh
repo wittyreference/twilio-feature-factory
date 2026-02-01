@@ -14,59 +14,59 @@ echo ""
 
 ERRORS=0
 
-# Check 1: settings.json should not have hard-coded .claude-dev references
-# (Environment detection in hooks is OK, but settings.json should not require .claude-dev)
+# Check 1: settings.json should not have hard-coded .meta/ references
+# (Environment detection in hooks is OK, but settings.json should not require .meta)
 echo "Checking .claude/settings.json..."
-if grep -q '\.claude-dev' .claude/settings.json 2>/dev/null; then
-    echo "  ✗ ERROR: .claude/settings.json contains .claude-dev reference"
-    echo "    This would fail for users who don't have .claude-dev/"
-    grep -n '\.claude-dev' .claude/settings.json | sed 's/^/    /'
+if grep -qE '\.meta/' .claude/settings.json 2>/dev/null; then
+    echo "  ✗ ERROR: .claude/settings.json contains .meta/ reference"
+    echo "    This would fail for users who don't have .meta/"
+    grep -nE '\.meta/' .claude/settings.json | sed 's/^/    /'
     ERRORS=$((ERRORS + 1))
 else
-    echo "  ✓ No hard-coded .claude-dev references"
+    echo "  ✓ No hard-coded .meta/ references"
 fi
 
-# Check 2: Shipped code (functions/, agents/) should not reference .claude-dev
+# Check 2: Shipped code (functions/, agents/) should not reference .meta/
 echo ""
 echo "Checking shipped code directories..."
-if grep -rq '\.claude-dev' functions/ agents/ 2>/dev/null; then
-    echo "  ✗ ERROR: Shipped code contains .claude-dev references"
-    grep -rn '\.claude-dev' functions/ agents/ 2>/dev/null | head -10 | sed 's/^/    /'
+if grep -rqE '\.meta/' functions/ agents/ 2>/dev/null; then
+    echo "  ✗ ERROR: Shipped code contains .meta/ references"
+    grep -rnE '\.meta/' functions/ agents/ 2>/dev/null | head -10 | sed 's/^/    /'
     ERRORS=$((ERRORS + 1))
 else
-    echo "  ✓ No .claude-dev references in functions/ or agents/"
+    echo "  ✓ No .meta/ references in functions/ or agents/"
 fi
 
-# Check 3: Root CLAUDE.md should not have .claude-dev paths (except in meta-separation docs)
+# Check 3: Root CLAUDE.md should not have .meta/ paths (except in meta-separation docs)
 echo ""
 echo "Checking CLAUDE.md..."
-# Allow references that are documenting the separation (like "gitignored .claude-dev")
-if grep '\.claude-dev' CLAUDE.md 2>/dev/null | grep -vq 'gitignore\|never ships\|meta-development'; then
-    echo "  ⚠ WARNING: CLAUDE.md may contain .claude-dev references"
+# Allow references that are documenting the separation (like "gitignored .meta/")
+if grep -E '\.meta/' CLAUDE.md 2>/dev/null | grep -vqE 'gitignore|never ships|meta-development|Meta-development'; then
+    echo "  ⚠ WARNING: CLAUDE.md may contain .meta/ references"
     echo "    Review these to ensure they're documentation, not dependencies:"
-    grep -n '\.claude-dev' CLAUDE.md | grep -v 'gitignore\|never ships\|meta-development' | sed 's/^/    /'
+    grep -nE '\.meta/' CLAUDE.md | grep -vE 'gitignore|never ships|meta-development|Meta-development' | sed 's/^/    /'
 else
     echo "  ✓ CLAUDE.md clean (or references are documentation only)"
 fi
 
-# Check 4: package.json should not reference .claude-dev
+# Check 4: package.json should not reference .meta/
 echo ""
 echo "Checking package.json..."
-if grep -q '\.claude-dev' package.json 2>/dev/null; then
-    echo "  ✗ ERROR: package.json contains .claude-dev reference"
-    grep -n '\.claude-dev' package.json | sed 's/^/    /'
+if grep -qE '\.meta/' package.json 2>/dev/null; then
+    echo "  ✗ ERROR: package.json contains .meta/ reference"
+    grep -nE '\.meta/' package.json | sed 's/^/    /'
     ERRORS=$((ERRORS + 1))
 else
-    echo "  ✓ No .claude-dev references in package.json"
+    echo "  ✓ No .meta/ references in package.json"
 fi
 
-# Check 5: Verify .claude-dev is in .gitignore
+# Check 5: Verify .meta/ is in .gitignore
 echo ""
 echo "Checking .gitignore..."
-if grep -q '^\.claude-dev/' .gitignore 2>/dev/null || grep -q '^\.claude-dev$' .gitignore 2>/dev/null; then
-    echo "  ✓ .claude-dev/ is properly gitignored"
+if grep -qE '^\.meta/?$' .gitignore 2>/dev/null; then
+    echo "  ✓ .meta/ is properly gitignored"
 else
-    echo "  ✗ ERROR: .claude-dev/ is not in .gitignore"
+    echo "  ✗ ERROR: .meta/ is not in .gitignore"
     ERRORS=$((ERRORS + 1))
 fi
 

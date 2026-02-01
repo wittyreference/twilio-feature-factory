@@ -711,12 +711,14 @@ All hook scripts are in `.claude/hooks/` and can be modified to adjust behavior.
 
 When a Claude Code session ends, the `archive-plan.sh` hook automatically preserves the current plan file.
 
-**Two versions of the hook exist:**
+**Environment-aware archival:**
 
-| Hook | Writes To | Purpose |
-|------|-----------|---------|
-| `.claude/hooks/archive-plan.sh` | `.claude/archive/plans/` | For users of this repo (shipped) |
-| `.claude-dev/hooks/archive-plan.sh` | `.claude-dev/plans/` | For meta-development (local only) |
+The hook detects the environment and archives to the appropriate location:
+
+| Environment | Writes To | Purpose |
+|-------------|-----------|---------|
+| Meta-development (`.meta/` exists) | `.meta/plans/` | Local plans (gitignored) |
+| Shipped product (no `.meta/`) | `.claude/archive/plans/` | User plans (committed) |
 
 **What gets archived:**
 - Plans modified within the last hour (likely from current session)
@@ -733,8 +735,6 @@ title: Plan Title From First Heading
 ```
 
 Plans are preserved for debugging, audit trails, and understanding decision history.
-
-**Note:** The settings.json points to `.claude-dev/hooks/archive-plan.sh` to keep meta-development plans separate from the shipped repo.
 
 ## Extended Thinking Configuration
 

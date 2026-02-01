@@ -1,6 +1,6 @@
 #!/bin/bash
 # ABOUTME: Documentation flywheel hook - suggests doc updates from multiple sources.
-# ABOUTME: Environment-aware: writes to .claude-dev/ (meta) or .claude/ (shipped).
+# ABOUTME: Environment-aware: writes to .meta/ (meta) or .claude/ (shipped).
 
 # This hook combines THREE sources for doc suggestions:
 # 1. Uncommitted files (git status) - catches pre-commit needs

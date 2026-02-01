@@ -1,6 +1,6 @@
 #!/bin/bash
 # ABOUTME: Archives the current plan file when a Claude Code session ends.
-# ABOUTME: Environment-aware: writes to .claude-dev/plans/ (meta) or .claude/archive/plans/ (shipped).
+# ABOUTME: Environment-aware: writes to .meta/plans/ (meta) or .claude/archive/plans/ (shipped).
 
 set -euo pipefail
 
@@ -9,10 +9,10 @@ CLAUDE_PLANS_DIR="$HOME/.claude/plans"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # Environment detection: meta-development mode vs shipped product
-if [[ -d "$PROJECT_ROOT/.claude-dev" ]]; then
-    # Meta mode: archive to local .claude-dev/plans/ (gitignored)
-    ARCHIVE_DIR="$PROJECT_ROOT/.claude-dev/plans"
-    LOG_DIR="$PROJECT_ROOT/.claude-dev/logs"
+if [[ -d "$PROJECT_ROOT/.meta" ]]; then
+    # Meta mode: archive to local .meta/plans/ (gitignored)
+    ARCHIVE_DIR="$PROJECT_ROOT/.meta/plans"
+    LOG_DIR="$PROJECT_ROOT/.meta/logs"
 else
     # Shipped mode: archive to .claude/archive/plans/ (committed)
     ARCHIVE_DIR="$PROJECT_ROOT/.claude/archive/plans"
@@ -82,6 +82,6 @@ title: $TITLE
 
 # Log the archive action
 mkdir -p "$LOG_DIR"
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Archived plan: $ARCHIVE_FILENAME (mode: $(if [[ -d \"$PROJECT_ROOT/.claude-dev\" ]]; then echo 'meta'; else echo 'shipped'; fi))" >> "$LOG_DIR/plan-archive.log"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Archived plan: $ARCHIVE_FILENAME (mode: $(if [[ -d \"$PROJECT_ROOT/.meta\" ]]; then echo 'meta'; else echo 'shipped'; fi))" >> "$LOG_DIR/plan-archive.log"
 
 exit 0

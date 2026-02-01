@@ -1,7 +1,7 @@
 // ABOUTME: Configuration for Feature Factory orchestrator.
 // ABOUTME: Defines cost limits, model selection, and approval behavior.
 
-import type { ApprovalMode, ModelType } from './types.js';
+import type { ApprovalMode, AutonomousModeConfig, ModelType } from './types.js';
 
 /**
  * Feature Factory configuration options
@@ -68,6 +68,13 @@ export interface FeatureFactoryConfig {
    * @default false
    */
   verbose: boolean;
+
+  /**
+   * Autonomous mode configuration.
+   * When enabled, removes approval prompts and budget/turn limits.
+   * Quality gates (TDD, lint, coverage) remain enforced.
+   */
+  autonomousMode: AutonomousModeConfig;
 }
 
 /**
@@ -83,30 +90,56 @@ export const DEFAULT_CONFIG: FeatureFactoryConfig = {
   validationTimeoutMs: 30000,
   workingDirectory: process.cwd(),
   verbose: false,
+  autonomousMode: {
+    enabled: false,
+    acknowledged: false,
+    acknowledgedVia: null,
+    acknowledgedAt: null,
+  },
 };
 
 /**
- * Create a configuration by merging partial options with defaults
+ * Create a configuration by merging partial options with defaults.
+ * When autonomous mode is enabled, overrides approval mode and removes limits.
  */
 export function createConfig(
   options: Partial<FeatureFactoryConfig> = {}
 ): FeatureFactoryConfig {
-  return {
+  const config = {
     ...DEFAULT_CONFIG,
     ...options,
+    autonomousMode: {
+      ...DEFAULT_CONFIG.autonomousMode,
+      ...options.autonomousMode,
+    },
   };
+
+  // Autonomous mode overrides
+  if (config.autonomousMode.enabled && config.autonomousMode.acknowledged) {
+    config.approvalMode = 'none';
+    config.maxBudgetUsd = Infinity;
+    config.maxTurnsPerAgent = Infinity;
+  }
+
+  return config;
 }
 
 /**
  * Validate configuration values
  */
 export function validateConfig(config: FeatureFactoryConfig): void {
-  if (config.maxBudgetUsd <= 0) {
-    throw new Error('maxBudgetUsd must be greater than 0');
-  }
+  // Skip budget/turn validation in autonomous mode (they're set to Infinity)
+  const isAutonomous =
+    config.autonomousMode.enabled && config.autonomousMode.acknowledged;
 
-  if (config.maxTurnsPerAgent <= 0) {
-    throw new Error('maxTurnsPerAgent must be greater than 0');
+  if (!isAutonomous) {
+    if (config.maxBudgetUsd <= 0) {
+      throw new Error('maxBudgetUsd must be greater than 0');
+    }
+
+    if (config.maxTurnsPerAgent <= 0) {
+      throw new Error('maxTurnsPerAgent must be greater than 0');
+    }
   }
 
   if (config.validationTimeoutMs <= 0) {
@@ -126,6 +159,15 @@ export function validateConfig(config: FeatureFactoryConfig): void {
   if (!validApprovalModes.includes(config.approvalMode)) {
     throw new Error(
       `approvalMode must be one of: ${validApprovalModes.join(', ')}`
+    );
+  }
+
+  // Autonomous mode requires acknowledgment
+  if (config.autonomousMode.enabled && !config.autonomousMode.acknowledged) {
+    throw new Error(
+      'Autonomous mode is enabled but not acknowledged. ' +
+        'Use --dangerously-autonomous flag with acknowledgment prompt, ' +
+        'or set FEATURE_FACTORY_AUTONOMOUS_ACKNOWLEDGED=true in CI/CD.'
     );
   }
 }
@@ -160,5 +202,29 @@ export function configFromEnv(): Partial<FeatureFactoryConfig> {
     config.verbose = true;
   }
 
+  // Autonomous mode from environment (for CI/CD)
+  if (process.env.FEATURE_FACTORY_AUTONOMOUS === 'true') {
+    config.autonomousMode = {
+      enabled: true,
+      acknowledged:
+        process.env.FEATURE_FACTORY_AUTONOMOUS_ACKNOWLEDGED === 'true',
+      acknowledgedVia:
+        process.env.FEATURE_FACTORY_AUTONOMOUS_ACKNOWLEDGED === 'true'
+          ? 'environment'
+          : null,
+      acknowledgedAt:
+        process.env.FEATURE_FACTORY_AUTONOMOUS_ACKNOWLEDGED === 'true'
+          ? new Date()
+          : null,
+    };
+  }
+
   return config;
+}
+
+/**
+ * Check if autonomous mode is enabled and acknowledged
+ */
+export function isAutonomousMode(config: FeatureFactoryConfig): boolean {
+  return config.autonomousMode.enabled && config.autonomousMode.acknowledged;
 }

@@ -7,7 +7,15 @@ import chalk from 'chalk';
 import ora from 'ora';
 import * as readline from 'readline';
 import { FeatureFactoryOrchestrator } from './orchestrator.js';
-import type { WorkflowEvent, ApprovalMode } from './types.js';
+import {
+  displayAutonomousWarning,
+  requireAcknowledgment,
+  generateSessionSummary,
+  displaySessionSummary,
+  createAuditLogger,
+  isAutonomousCICD,
+} from './autonomous.js';
+import type { WorkflowEvent, ApprovalMode, AutonomousModeConfig } from './types.js';
 
 const program = new Command();
 
@@ -28,11 +36,15 @@ function formatCurrency(amount: number): string {
  */
 async function handleWorkflowEvents(
   events: AsyncGenerator<WorkflowEvent>,
-  orchestrator: FeatureFactoryOrchestrator
+  orchestrator: FeatureFactoryOrchestrator,
+  auditLogger?: { log: (event: string, data?: Record<string, unknown>) => void } | null
 ): Promise<void> {
   let spinner = ora();
 
   for await (const event of events) {
+    // Log to audit trail if enabled
+    auditLogger?.log(event.type, event as unknown as Record<string, unknown>);
+
     switch (event.type) {
       case 'workflow-started': {
         const state = orchestrator.getState();
@@ -98,12 +110,12 @@ async function handleWorkflowEvents(
           console.log();
           // Continue the workflow
           const continueEvents = orchestrator.continueWorkflow(true);
-          await handleWorkflowEvents(continueEvents, orchestrator);
+          await handleWorkflowEvents(continueEvents, orchestrator, auditLogger);
         } else {
           const feedback = await promptForFeedback();
           console.log(chalk.red('✗ Rejected'));
           const rejectEvents = orchestrator.continueWorkflow(false, feedback);
-          await handleWorkflowEvents(rejectEvents, orchestrator);
+          await handleWorkflowEvents(rejectEvents, orchestrator, auditLogger);
         }
         return; // Exit after handling approval continuation
 
@@ -190,7 +202,8 @@ program
     'Default model (sonnet, opus, haiku)',
     'sonnet'
   )
-  .option('--no-approval', 'Skip approval gates (autonomous mode)')
+  .option('--no-approval', 'Skip approval gates')
+  .option('--dangerously-autonomous', 'Full autonomous mode (no prompts, no limits)')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
@@ -199,38 +212,117 @@ program
         budget: string;
         model: string;
         approval: boolean;
+        dangerouslyAutonomous: boolean;
         verbose: boolean;
       }
     ) => {
       console.log(chalk.bold('\n🏭 Feature Factory\n'));
 
-      const approvalMode: ApprovalMode = options.approval
-        ? 'after-each-phase'
-        : 'none';
+      // Handle autonomous mode
+      let autonomousMode: AutonomousModeConfig = {
+        enabled: false,
+        acknowledged: false,
+        acknowledgedVia: null,
+        acknowledgedAt: null,
+      };
+
+      if (options.dangerouslyAutonomous || isAutonomousCICD()) {
+        autonomousMode.enabled = true;
+
+        // Check if already acknowledged via environment (CI/CD)
+        if (isAutonomousCICD()) {
+          autonomousMode.acknowledged = true;
+          autonomousMode.acknowledgedVia = 'environment';
+          autonomousMode.acknowledgedAt = new Date();
+          console.log(chalk.gray('Autonomous mode: acknowledged via environment variable'));
+        } else {
+          // Interactive acknowledgment required
+          displayAutonomousWarning();
+          try {
+            autonomousMode = await requireAcknowledgment();
+          } catch (error) {
+            console.error(
+              chalk.red(
+                `\n${error instanceof Error ? error.message : 'Acknowledgment failed'}`
+              )
+            );
+            process.exit(1);
+          }
+        }
+      }
+
+      const approvalMode: ApprovalMode = autonomousMode.enabled
+        ? 'none'
+        : options.approval
+          ? 'after-each-phase'
+          : 'none';
 
       const orchestrator = new FeatureFactoryOrchestrator({
         maxBudgetUsd: parseFloat(options.budget),
         defaultModel: options.model as 'sonnet' | 'opus' | 'haiku',
         approvalMode,
         verbose: options.verbose,
+        autonomousMode,
       });
 
-      console.log(
-        chalk.gray(
-          `Config: budget=${formatCurrency(parseFloat(options.budget))}, model=${options.model}, approval=${approvalMode}`
-        )
-      );
+      // Create audit logger for autonomous sessions
+      const auditLogger = autonomousMode.enabled
+        ? createAuditLogger(orchestrator.getState()?.sessionId || 'unknown')
+        : null;
+
+      if (autonomousMode.enabled) {
+        console.log(chalk.cyan.bold('🤖 Running in AUTONOMOUS MODE'));
+        console.log(chalk.gray('   Quality gates still enforced: TDD, lint, coverage, credential safety'));
+        auditLogger?.log('workflow-started', { description, workflow: 'new-feature' });
+      } else {
+        console.log(
+          chalk.gray(
+            `Config: budget=${formatCurrency(parseFloat(options.budget))}, model=${options.model}, approval=${approvalMode}`
+          )
+        );
+      }
+
+      const startTime = new Date();
+      const filesCreated: string[] = [];
+      const filesModified: string[] = [];
 
       try {
         const events = orchestrator.runWorkflow('new-feature', description);
-        await handleWorkflowEvents(events, orchestrator);
+        await handleWorkflowEvents(events, orchestrator, auditLogger);
+
+        // Generate and display summary for autonomous mode
+        if (autonomousMode.enabled) {
+          const state = orchestrator.getState();
+          if (state) {
+            // Collect files from phase results
+            for (const result of Object.values(state.phaseResults)) {
+              filesCreated.push(...result.filesCreated);
+              filesModified.push(...result.filesModified);
+            }
+
+            const summary = generateSessionSummary(
+              state,
+              startTime,
+              filesCreated,
+              filesModified,
+              auditLogger?.getPath() || ''
+            );
+            displaySessionSummary(summary);
+            auditLogger?.log('workflow-completed', { success: state.status === 'completed' });
+          }
+        }
       } catch (error) {
+        auditLogger?.log('workflow-error', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
         console.error(
           chalk.red(
             `\nFatal error: ${error instanceof Error ? error.message : 'Unknown error'}`
           )
         );
         process.exit(1);
+      } finally {
+        auditLogger?.close();
       }
     }
   );
@@ -282,22 +374,229 @@ program
     }
   });
 
+// Bug Fix command
+program
+  .command('bug-fix <description>')
+  .description('Run the bug fix pipeline')
+  .option('-b, --budget <amount>', 'Maximum budget in USD', '5.00')
+  .option(
+    '-m, --model <model>',
+    'Default model (sonnet, opus, haiku)',
+    'sonnet'
+  )
+  .option('--no-approval', 'Skip approval gates')
+  .option('--dangerously-autonomous', 'Full autonomous mode (no prompts, no limits)')
+  .option('-v, --verbose', 'Enable verbose logging')
+  .action(
+    async (
+      description: string,
+      options: {
+        budget: string;
+        model: string;
+        approval: boolean;
+        dangerouslyAutonomous: boolean;
+        verbose: boolean;
+      }
+    ) => {
+      await runWorkflowCommand('bug-fix', description, options);
+    }
+  );
+
+// Refactor command
+program
+  .command('refactor <description>')
+  .description('Run the safe refactoring pipeline')
+  .option('-b, --budget <amount>', 'Maximum budget in USD', '5.00')
+  .option(
+    '-m, --model <model>',
+    'Default model (sonnet, opus, haiku)',
+    'sonnet'
+  )
+  .option('--no-approval', 'Skip approval gates')
+  .option('--dangerously-autonomous', 'Full autonomous mode (no prompts, no limits)')
+  .option('-v, --verbose', 'Enable verbose logging')
+  .action(
+    async (
+      description: string,
+      options: {
+        budget: string;
+        model: string;
+        approval: boolean;
+        dangerouslyAutonomous: boolean;
+        verbose: boolean;
+      }
+    ) => {
+      await runWorkflowCommand('refactor', description, options);
+    }
+  );
+
+/**
+ * Common workflow runner for all workflow types
+ */
+async function runWorkflowCommand(
+  workflow: 'new-feature' | 'bug-fix' | 'refactor',
+  description: string,
+  options: {
+    budget: string;
+    model: string;
+    approval: boolean;
+    dangerouslyAutonomous: boolean;
+    verbose: boolean;
+  }
+): Promise<void> {
+  console.log(chalk.bold('\n🏭 Feature Factory\n'));
+
+  // Handle autonomous mode
+  let autonomousMode: AutonomousModeConfig = {
+    enabled: false,
+    acknowledged: false,
+    acknowledgedVia: null,
+    acknowledgedAt: null,
+  };
+
+  if (options.dangerouslyAutonomous || isAutonomousCICD()) {
+    autonomousMode.enabled = true;
+
+    if (isAutonomousCICD()) {
+      autonomousMode.acknowledged = true;
+      autonomousMode.acknowledgedVia = 'environment';
+      autonomousMode.acknowledgedAt = new Date();
+      console.log(chalk.gray('Autonomous mode: acknowledged via environment variable'));
+    } else {
+      displayAutonomousWarning();
+      try {
+        autonomousMode = await requireAcknowledgment();
+      } catch (error) {
+        console.error(
+          chalk.red(
+            `\n${error instanceof Error ? error.message : 'Acknowledgment failed'}`
+          )
+        );
+        process.exit(1);
+      }
+    }
+  }
+
+  const approvalMode: ApprovalMode = autonomousMode.enabled
+    ? 'none'
+    : options.approval
+      ? 'after-each-phase'
+      : 'none';
+
+  const orchestrator = new FeatureFactoryOrchestrator({
+    maxBudgetUsd: parseFloat(options.budget),
+    defaultModel: options.model as 'sonnet' | 'opus' | 'haiku',
+    approvalMode,
+    verbose: options.verbose,
+    autonomousMode,
+  });
+
+  const auditLogger = autonomousMode.enabled
+    ? createAuditLogger(orchestrator.getState()?.sessionId || 'unknown')
+    : null;
+
+  if (autonomousMode.enabled) {
+    console.log(chalk.cyan.bold('🤖 Running in AUTONOMOUS MODE'));
+    console.log(chalk.gray('   Quality gates still enforced: TDD, lint, coverage, credential safety'));
+    auditLogger?.log('workflow-started', { description, workflow });
+  } else {
+    console.log(
+      chalk.gray(
+        `Config: budget=${formatCurrency(parseFloat(options.budget))}, model=${options.model}, approval=${approvalMode}`
+      )
+    );
+  }
+
+  const startTime = new Date();
+  const filesCreated: string[] = [];
+  const filesModified: string[] = [];
+
+  try {
+    const events = orchestrator.runWorkflow(workflow, description);
+    await handleWorkflowEvents(events, orchestrator, auditLogger);
+
+    if (autonomousMode.enabled) {
+      const state = orchestrator.getState();
+      if (state) {
+        for (const result of Object.values(state.phaseResults)) {
+          filesCreated.push(...result.filesCreated);
+          filesModified.push(...result.filesModified);
+        }
+
+        const summary = generateSessionSummary(
+          state,
+          startTime,
+          filesCreated,
+          filesModified,
+          auditLogger?.getPath() || ''
+        );
+        displaySessionSummary(summary);
+        auditLogger?.log('workflow-completed', { success: state.status === 'completed' });
+      }
+    }
+  } catch (error) {
+    auditLogger?.log('workflow-error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    console.error(
+      chalk.red(
+        `\nFatal error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+    );
+    process.exit(1);
+  } finally {
+    auditLogger?.close();
+  }
+}
+
 // Resume command - continue a paused workflow
 program
   .command('resume [sessionId]')
   .description('Resume a paused workflow')
   .option('-b, --budget <amount>', 'Maximum budget in USD', '5.00')
+  .option('--dangerously-autonomous', 'Full autonomous mode (no prompts, no limits)')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
       sessionId: string | undefined,
-      options: { budget: string; verbose: boolean }
+      options: { budget: string; dangerouslyAutonomous: boolean; verbose: boolean }
     ) => {
       console.log(chalk.bold('\n🏭 Feature Factory - Resume\n'));
+
+      // Handle autonomous mode
+      let autonomousMode: AutonomousModeConfig = {
+        enabled: false,
+        acknowledged: false,
+        acknowledgedVia: null,
+        acknowledgedAt: null,
+      };
+
+      if (options.dangerouslyAutonomous || isAutonomousCICD()) {
+        autonomousMode.enabled = true;
+
+        if (isAutonomousCICD()) {
+          autonomousMode.acknowledged = true;
+          autonomousMode.acknowledgedVia = 'environment';
+          autonomousMode.acknowledgedAt = new Date();
+        } else {
+          displayAutonomousWarning();
+          try {
+            autonomousMode = await requireAcknowledgment();
+          } catch (error) {
+            console.error(
+              chalk.red(
+                `\n${error instanceof Error ? error.message : 'Acknowledgment failed'}`
+              )
+            );
+            process.exit(1);
+          }
+        }
+      }
 
       const orchestrator = new FeatureFactoryOrchestrator({
         maxBudgetUsd: parseFloat(options.budget),
         verbose: options.verbose,
+        autonomousMode,
       });
 
       // If no sessionId provided, find the most recent resumable one
@@ -313,16 +612,25 @@ program
         console.log(chalk.gray(`Auto-selected session: ${targetSessionId}`));
       }
 
+      const auditLogger = autonomousMode.enabled
+        ? createAuditLogger(targetSessionId)
+        : null;
+
       try {
         const events = orchestrator.resumeWorkflow(targetSessionId);
-        await handleWorkflowEvents(events, orchestrator);
+        await handleWorkflowEvents(events, orchestrator, auditLogger);
       } catch (error) {
+        auditLogger?.log('workflow-error', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
         console.error(
           chalk.red(
             `\nFatal error: ${error instanceof Error ? error.message : 'Unknown error'}`
           )
         );
         process.exit(1);
+      } finally {
+        auditLogger?.close();
       }
     }
   );

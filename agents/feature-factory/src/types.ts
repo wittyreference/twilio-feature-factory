@@ -89,6 +89,73 @@ export type ModelType = 'sonnet' | 'opus' | 'haiku';
 export type ApprovalMode = 'after-each-phase' | 'at-end' | 'none';
 
 /**
+ * Autonomous mode configuration
+ *
+ * When enabled, the workflow runs without human approval prompts.
+ * Quality gates (TDD, lint, coverage) still enforced.
+ * Budget and turn limits removed.
+ */
+export interface AutonomousModeConfig {
+  /** Whether autonomous mode is enabled */
+  enabled: boolean;
+
+  /** Whether the user has acknowledged the risks */
+  acknowledged: boolean;
+
+  /** How acknowledgment was provided */
+  acknowledgedVia: 'interactive' | 'environment' | null;
+
+  /** Timestamp of acknowledgment */
+  acknowledgedAt: Date | null;
+}
+
+/**
+ * Summary of an autonomous session completion
+ */
+export interface AutonomousSessionSummary {
+  /** Session ID */
+  sessionId: string;
+
+  /** Duration in milliseconds */
+  durationMs: number;
+
+  /** Total cost in USD */
+  totalCostUsd: number;
+
+  /** Phases completed vs total */
+  phasesCompleted: number;
+  phasesTotal: number;
+
+  /** Test results */
+  testResults: {
+    unitTestsPassed: number;
+    unitTestsTotal: number;
+    integrationTestsPassed: number;
+    integrationTestsTotal: number;
+    coveragePercent: number;
+    lintClean: boolean;
+  };
+
+  /** Files created/modified */
+  filesCreated: string[];
+  filesModified: string[];
+
+  /** Learnings and recommendations captured */
+  learningsCaptured: number;
+  pendingActionsGenerated: number;
+
+  /** Whether E2E validation was performed */
+  e2eValidationPerformed: boolean;
+  e2eValidationResult?: {
+    callsCompleted: number;
+    messagesDelivered: number;
+  };
+
+  /** Audit log path */
+  auditLogPath: string;
+}
+
+/**
  * Configuration for an individual agent
  */
 export interface AgentConfig {

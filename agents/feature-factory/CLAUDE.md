@@ -118,8 +118,65 @@ interface FeatureFactoryConfig {
   approvalMode: 'after-each-phase' | 'at-end' | 'none';
   twilioMcpEnabled: boolean;
   deepValidationEnabled: boolean;
+  autonomousMode: AutonomousModeConfig;  // Optional, for unattended operation
 }
 ```
+
+## Autonomous Mode
+
+Autonomous mode enables unattended operation for CI/CD pipelines or when you want to start a task and return later to completed work.
+
+### What Changes
+
+| Aspect | Normal Mode | Autonomous Mode |
+|--------|-------------|-----------------|
+| Phase approval prompts | Required after architect, spec, review | Auto-approved |
+| Budget limit | $5.00 default | Unlimited |
+| Max turns | 50 default | Unlimited |
+| Quality gates | Enforced | **Still enforced** |
+
+### Quality Gates (Always Enforced)
+
+Even in autonomous mode, these gates are **never bypassed**:
+
+- **TDD enforcement**: Tests must fail first (Red), then pass (Green)
+- **Linting**: Must pass
+- **Coverage**: 80% threshold
+- **Credential safety**: Secrets never committed
+- **Documentation flywheel**: Learnings captured
+- **Git safety**: No `--no-verify`, no force push
+
+### Enabling Autonomous Mode
+
+**Interactive (CLI):**
+```bash
+npx feature-factory new-feature "Add voice AI" --dangerously-autonomous
+```
+
+Displays warning box, requires typing `I ACKNOWLEDGE THE RISKS`.
+
+**CI/CD (Environment):**
+```bash
+FEATURE_FACTORY_AUTONOMOUS=true \
+FEATURE_FACTORY_AUTONOMOUS_ACKNOWLEDGED=true \
+npx feature-factory new-feature "Add voice AI"
+```
+
+### Session Summary
+
+When autonomous mode completes, you receive a comprehensive summary:
+
+- Duration and cost
+- Phases completed
+- Test results (unit, integration, coverage, lint)
+- Files created/modified
+- Learnings captured (`.claude/learnings.md`)
+- Recommended actions (`.claude/pending-actions.md`)
+- Audit log path (`.feature-factory/autonomous-*.log`)
+
+### Audit Logging
+
+All autonomous sessions are logged to `.feature-factory/autonomous-<sessionId>.log` with timestamps for every phase start, completion, and error.
 
 ## CLI Usage
 
@@ -137,6 +194,9 @@ npx feature-factory refactor "Extract shared validation logic into utility modul
 npx feature-factory new-feature "Add call recording" \
   --budget 10.00 \
   --no-approval
+
+# Fully autonomous (no prompts, no limits)
+npx feature-factory new-feature "Add voice AI" --dangerously-autonomous
 
 # Check status of recent workflows
 npx feature-factory status

@@ -53,4 +53,4 @@ This is an example of how archived plans are formatted. When you exit plan mode,
 
 - Plans are archived with timestamp and title slug
 - Metadata header captures branch, project, and source file
-- Archives go to both `.claude-dev/plans/` (local) and `.claude/archive/plans/` (committed)
+- Archives go to `.claude-dev/plans/` (meta-development, gitignored) OR `.claude/archive/plans/` (shipped, committed) based on environment

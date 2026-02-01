@@ -1,17 +1,16 @@
 #!/bin/bash
 # ABOUTME: Archives the current plan file when a Claude Code session ends.
-# ABOUTME: Copies plans to .claude-dev/plans/ (local) and .claude/archive/plans/ (shipped).
+# ABOUTME: Writes to .claude/archive/plans/ for version-controlled history.
 
 set -euo pipefail
 
 # Directories
 CLAUDE_PLANS_DIR="$HOME/.claude/plans"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-META_ARCHIVE="$PROJECT_ROOT/.claude-dev/plans"
-SHIPPED_ARCHIVE="$PROJECT_ROOT/.claude/archive/plans"
+ARCHIVE_DIR="$PROJECT_ROOT/.claude/archive/plans"
 
-# Ensure archive directories exist
-mkdir -p "$META_ARCHIVE" "$SHIPPED_ARCHIVE"
+# Ensure archive directory exists
+mkdir -p "$ARCHIVE_DIR"
 
 # Find the most recently modified plan file
 if [[ ! -d "$CLAUDE_PLANS_DIR" ]]; then
@@ -65,19 +64,14 @@ title: $TITLE
 
 "
 
-# Archive to meta directory (local only, gitignored)
+# Archive to shipped directory
 {
     echo "$METADATA"
     cat "$LATEST_PLAN"
-} > "$META_ARCHIVE/$ARCHIVE_FILENAME"
-
-# Archive to shipped directory (committed to repo)
-{
-    echo "$METADATA"
-    cat "$LATEST_PLAN"
-} > "$SHIPPED_ARCHIVE/$ARCHIVE_FILENAME"
+} > "$ARCHIVE_DIR/$ARCHIVE_FILENAME"
 
 # Log the archive action
+mkdir -p "$PROJECT_ROOT/.claude/logs"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Archived plan: $ARCHIVE_FILENAME" >> "$PROJECT_ROOT/.claude/logs/plan-archive.log"
 
 exit 0

@@ -691,6 +691,7 @@ This project uses Claude Code hooks to automate enforcement of coding standards.
 | `post-write.sh` | PostToolUse (Write/Edit) | Auto-lints JS files with ESLint |
 | `post-bash.sh` | PostToolUse (Bash) | Logs deploy/test completions |
 | `subagent-log.sh` | SubagentStop | Logs workflow activity |
+| `archive-plan.sh` | Stop | Archives plan files with metadata |
 | `notify-ready.sh` | Stop | Desktop notification when done |
 
 ### What Gets Blocked (Exit Code 2)
@@ -705,6 +706,33 @@ This project uses Claude Code hooks to automate enforcement of coding standards.
 ### Hook Scripts Location
 
 All hook scripts are in `.claude/hooks/` and can be modified to adjust behavior.
+
+### Plan Archival
+
+When a Claude Code session ends, the `archive-plan.sh` hook automatically preserves the current plan file:
+
+**What gets archived:**
+- Plans modified within the last hour (likely from current session)
+- Plan content with added metadata header (timestamp, branch, project, source)
+- Descriptive filename: `YYYY-MM-DD-HHMMSS-plan-title-slug.md`
+
+**Where plans are archived:**
+
+| Location | Purpose | Git Status |
+|----------|---------|------------|
+| `.claude/archive/plans/` | Shipped with repo for users | Committed |
+| `.claude-dev/plans/` | Local development plans | Gitignored |
+
+**Metadata captured:**
+```yaml
+archived: 2026-02-01T15:30:45-08:00
+branch: main
+project: twilio-agent-factory
+source: ~/.claude/plans/deep-nibbling-castle.md
+title: Plan Title From First Heading
+```
+
+Plans are preserved for debugging, audit trails, and understanding decision history.
 
 ## Extended Thinking Configuration
 

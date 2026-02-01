@@ -289,6 +289,20 @@ This gives you a consistent URL: `wss://my-relay-dev.ngrok.io`
 
 ngrok provides a web interface at `http://localhost:4040` to inspect WebSocket traffic in real-time.
 
+## Prerequisites
+
+### Conversational Intelligence (Voice Intelligence)
+
+To use transcript storage and analysis features, you must create a Conversational Intelligence (CI) Service in the Twilio Console. **There is no API for creating CI Services** (as of February 2026).
+
+1. Go to [Twilio Console → Voice → Voice Intelligence](https://console.twilio.com/us1/develop/voice-intelligence/services)
+2. Click "Create new Service"
+3. Name your service (e.g., "twilio-agent-factory")
+4. Copy the Service SID (starts with `GA...`)
+5. Add to `.env`: `TWILIO_INTELLIGENCE_SERVICE_SID=GA...`
+
+Without this, transcript creation via the Intelligence API will fail with 404 errors.
+
 ## Testing Conversation Relay
 
 1. Set up a WebSocket server (locally or deployed)

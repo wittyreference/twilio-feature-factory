@@ -263,6 +263,8 @@ for await (const message of query({
 
 ### Intelligence Tools (P2) - 8 tools
 
+**Note:** Intelligence Services must be created in the Twilio Console. There is no API for service creation (as of February 2026). Go to Console → Voice → Voice Intelligence to create a service before using these tools.
+
 | Tool | Description |
 |------|-------------|
 | `list_intelligence_services` | List available Intelligence services |

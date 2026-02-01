@@ -1,6 +1,6 @@
 #!/bin/bash
 # ABOUTME: Post-write hook for auto-linting and session file tracking.
-# ABOUTME: Tracks all files touched during session for documentation flywheel.
+# ABOUTME: Environment-aware: tracks files to .meta/ (meta) or .claude/ (shipped).
 
 FILE_PATH="${CLAUDE_TOOL_INPUT_FILE_PATH:-}"
 
@@ -15,8 +15,14 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-SESSION_FILE="$PROJECT_ROOT/.claude/.session-files"
-SESSION_START="$PROJECT_ROOT/.claude/.session-start"
+
+# Source environment detection for meta-aware paths
+source "$SCRIPT_DIR/_meta-mode.sh"
+
+# Use environment-aware paths (routes to .meta/ or .claude/ based on context)
+SESSION_DIR="$(dirname "$CLAUDE_PENDING_ACTIONS")"
+SESSION_FILE="$SESSION_DIR/.session-files"
+SESSION_START="$SESSION_DIR/.session-start"
 
 # Initialize session start time if not set
 if [ ! -f "$SESSION_START" ]; then

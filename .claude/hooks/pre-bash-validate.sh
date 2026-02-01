@@ -45,6 +45,24 @@ if echo "$COMMAND" | grep -qE "^git\s+commit"; then
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     source "$SCRIPT_DIR/_meta-mode.sh"
 
+    # ============================================
+    # META REFERENCE LEAKAGE WARNING
+    # ============================================
+    # Warn if staged files contain .meta/ references (potential leakage)
+    if git diff --staged 2>/dev/null | grep -qE '\.meta/'; then
+        echo "" >&2
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+        echo "⚠️  WARNING: Staged changes reference .meta/" >&2
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+        echo "" >&2
+        echo "This may indicate meta-development content leaking into shipped code." >&2
+        echo "Review with: git diff --staged | grep '.meta/'" >&2
+        echo "" >&2
+        echo "If this is intentional documentation about the separation, proceed." >&2
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+        echo "" >&2
+    fi
+
     # Call the consolidated flywheel-doc-check (environment-aware)
     FLYWHEEL_HOOK="$SCRIPT_DIR/flywheel-doc-check.sh"
     if [ -x "$FLYWHEEL_HOOK" ]; then

@@ -38,12 +38,11 @@ fi
 if echo "$COMMAND" | grep -qE "(npm\s+(test|run\s+(test|build))|jest|vitest)"; then
     # Get project root from script location
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-    # Call doc-update-check if it exists in dev hooks
-    DEV_HOOK="$PROJECT_ROOT/.claude-dev/hooks/doc-update-check.sh"
-    if [ -x "$DEV_HOOK" ]; then
-        "$DEV_HOOK"
+    # Call the consolidated flywheel-doc-check (environment-aware)
+    FLYWHEEL_HOOK="$SCRIPT_DIR/flywheel-doc-check.sh"
+    if [ -x "$FLYWHEEL_HOOK" ]; then
+        "$FLYWHEEL_HOOK" --force
     fi
 fi
 

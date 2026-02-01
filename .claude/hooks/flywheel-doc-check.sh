@@ -1,6 +1,6 @@
 #!/bin/bash
 # ABOUTME: Documentation flywheel hook - suggests doc updates from multiple sources.
-# ABOUTME: Analyzes uncommitted files, recent commits, and session-tracked files.
+# ABOUTME: Environment-aware: writes to .claude-dev/ (meta) or .claude/ (shipped).
 
 # This hook combines THREE sources for doc suggestions:
 # 1. Uncommitted files (git status) - catches pre-commit needs
@@ -8,12 +8,15 @@
 # 3. Session-tracked files (from post-write hook) - catches everything touched
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-CLAUDE_DIR="$PROJECT_ROOT/.claude"
-PENDING_ACTIONS_FILE="$CLAUDE_DIR/pending-actions.md"
-SESSION_FILE="$CLAUDE_DIR/.session-files"
-SESSION_START_FILE="$CLAUDE_DIR/.session-start"
-LAST_RUN_FILE="$CLAUDE_DIR/.last-doc-check"
+
+# Source environment detection helper
+source "$SCRIPT_DIR/_meta-mode.sh"
+
+# Use environment-aware paths from _meta-mode.sh
+PENDING_ACTIONS_FILE="$CLAUDE_PENDING_ACTIONS"
+SESSION_FILE="$(dirname "$CLAUDE_PENDING_ACTIONS")/.session-files"
+SESSION_START_FILE="$(dirname "$CLAUDE_PENDING_ACTIONS")/.session-start"
+LAST_RUN_FILE="$(dirname "$CLAUDE_PENDING_ACTIONS")/.last-doc-check"
 
 # Accept --force flag to skip debounce
 FORCE=false

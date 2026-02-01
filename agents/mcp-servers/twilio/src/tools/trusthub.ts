@@ -527,8 +527,8 @@ export function trusthubTools(context: TwilioContext) {
   );
 
   const listSupportingDocuments = createTool(
-    'list_supporting_documents',
-    'List supporting documents for trust products.',
+    'list_trusthub_supporting_documents',
+    'List supporting documents for TrustHub trust products.',
     z.object({
       limit: z.number().min(1).max(100).default(20).describe('Maximum documents to return'),
     }),

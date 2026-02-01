@@ -226,6 +226,54 @@ twilio-agent-factory/
 | `npm run deploy:dev` | Deploy to dev environment |
 | `npm run deploy:prod` | Deploy to production |
 
+## Testing
+
+### Unit and Integration Tests
+
+```bash
+npm test                 # Run all tests
+npm run test:watch       # Run tests in watch mode
+npm run test:coverage    # Run tests with coverage report
+```
+
+### E2E Testing (ConversationRelay)
+
+End-to-end testing for ConversationRelay requires a real phone call and ngrok tunnel.
+
+**Prerequisites:**
+- ngrok installed and configured
+- Real phone to answer test calls
+- Twilio phone number configured
+
+**Manual E2E Process:**
+
+1. Start WebSocket server locally:
+   ```bash
+   node __tests__/e2e/conversation-relay-server.js
+   ```
+
+2. Expose via ngrok:
+   ```bash
+   ngrok http 8080
+   ```
+
+3. Update `.env` with ngrok URL:
+   ```bash
+   CONVERSATION_RELAY_URL=wss://abc123.ngrok.io/relay
+   ```
+
+4. Start serverless with ngrok:
+   ```bash
+   npm run start:ngrok
+   ```
+
+5. Run E2E test:
+   ```bash
+   node __tests__/e2e/conversation-relay-e2e.js
+   ```
+
+6. Answer the incoming call and test the conversation
+
 ## Safety Features
 
 Claude Code hooks protect your code automatically:

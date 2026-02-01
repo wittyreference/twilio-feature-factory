@@ -298,6 +298,19 @@ ngrok provides a web interface at `http://localhost:4040` to inspect WebSocket t
 5. Test interruption scenarios
 6. Test DTMF handling if enabled
 
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| AI greets but doesn't respond to speech | Using `isFinal` instead of `last` in prompt handler | Check for `message.last` instead of `message.isFinal` |
+| "Extra inputs are not permitted" from Anthropic | Passing extra fields (timestamp, etc.) in messages array | Strip messages to only `role` and `content` fields |
+| WebSocket doesn't connect | URL not HTTPS/WSS | Use ngrok HTTPS URL, convert to `wss://` |
+| No transcript created after call | Missing Sync Service SID | Ensure `TWILIO_SYNC_SERVICE_SID` is set in environment |
+| Call connects but no audio | WebSocket server not responding | Check WebSocket server logs, verify connection |
+| Interruption not working | `interruptible` not set to `'true'` | Add `interruptible: 'true'` to ConversationRelay config |
+| DTMF not detected | `dtmfDetection` not enabled | Add `dtmfDetection: 'true'` to ConversationRelay config |
+| Partial transcripts missing | `partialPrompts` not enabled | Add `partialPrompts: 'true'` for streaming transcripts |
+
 ## Environment Variables
 
 ```text

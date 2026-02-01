@@ -106,8 +106,8 @@ export function regulatoryTools(context: TwilioContext) {
   );
 
   const listSupportingDocuments = createTool(
-    'list_supporting_documents',
-    'List supporting documents for regulatory compliance.',
+    'list_regulatory_supporting_documents',
+    'List supporting documents for regulatory compliance bundles.',
     z.object({
       limit: z.number().min(1).max(100).default(20).describe('Maximum documents to return'),
     }),

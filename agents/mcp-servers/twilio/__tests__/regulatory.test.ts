@@ -59,8 +59,8 @@ describe('regulatoryTools', () => {
       expect(typeof tool?.handler).toBe('function');
     });
 
-    it('should have list_supporting_documents tool with correct metadata', () => {
-      const tool = tools.find(t => t.name === 'list_supporting_documents');
+    it('should have list_regulatory_supporting_documents tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'list_regulatory_supporting_documents');
       expect(tool).toBeDefined();
       expect(tool?.description).toContain('document');
       expect(tool?.inputSchema).toBeDefined();
@@ -140,11 +140,11 @@ describe('regulatoryTools', () => {
       });
     });
 
-    describe('list_supporting_documents schema', () => {
+    describe('list_regulatory_supporting_documents schema', () => {
       let schema: z.ZodType;
 
       beforeAll(() => {
-        const tool = tools.find(t => t.name === 'list_supporting_documents');
+        const tool = tools.find(t => t.name === 'list_regulatory_supporting_documents');
         schema = tool!.inputSchema;
       });
 
@@ -203,9 +203,9 @@ describe('regulatoryTools', () => {
     );
 
     itWithCredentials(
-      'list_supporting_documents should return documents',
+      'list_regulatory_supporting_documents should return documents',
       async () => {
-        const tool = tools.find(t => t.name === 'list_supporting_documents')!;
+        const tool = tools.find(t => t.name === 'list_regulatory_supporting_documents')!;
 
         const result = await tool.handler({ limit: 5 });
 

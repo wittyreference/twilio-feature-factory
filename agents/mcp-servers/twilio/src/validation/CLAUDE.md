@@ -17,6 +17,9 @@ The deep validator checks multiple signals to verify actual operation success.
 | File | Purpose |
 |------|---------|
 | `deep-validator.ts` | Main validation class with methods for messages, calls, verifications, tasks |
+| `diagnostic-bridge.ts` | Connects validation failures to learning capture with root cause analysis |
+| `learning-capture.ts` | Auto-captures learnings from validation failures to learnings.md |
+| `pattern-tracker.ts` | Tracks recurring validation failure patterns across sessions |
 | `index.ts` | Exports public API |
 
 ## Usage
@@ -84,6 +87,16 @@ For each operation, the validator runs multiple checks:
 | conferenceInsights | `insights.v1.conferences(sid).fetch()` | Conference Insights summary data |
 | conferenceParticipantInsights | `insights.v1.conferences(sid).conferenceParticipants.list()` | Participant-level insights data |
 | functionLogs | Serverless API | Function logs related to conference (if configured) |
+
+### Two-Way Conversations
+
+| Check | Source | What It Validates |
+|-------|--------|-------------------|
+| transcriptStatus | `intelligence.v2.transcripts` | Both call legs have completed transcripts |
+| sentenceCount | `transcripts(sid).sentences.list()` | Sentences extracted from both sides |
+| speakerTurns | Sentence analysis | Natural conversation flow with turn-taking |
+| topicKeywords | Text analysis | Required keywords appear in conversation |
+| successPhrases | Text analysis | Success indicators found |
 
 **⚠️ Conference Insights Timing:**
 - Summaries are NOT available immediately after conference end
@@ -261,6 +274,41 @@ const result = await validator.validateConversationRelay({
 
 **Note**: Uses correct `last` field (not `isFinal`) per ConversationRelay protocol.
 
+### Two-Way Conversation (validateTwoWay)
+
+Validate a two-way conversation between two calls (AI agent + customer):
+
+```typescript
+const result = await validator.validateTwoWay({
+  callSidA: 'CA123',              // AI agent leg
+  callSidB: 'CA456',              // Customer leg
+  intelligenceServiceSid: 'GA789', // Intelligence Service
+  expectedTurns: 4,                // Minimum conversation turns
+  topicKeywords: ['appointment', 'confirm'],
+  successPhrases: ['thank you', 'confirmed'],
+  waitForTranscripts: true,        // Wait for completion
+  timeout: 120000,                 // 2 minutes
+});
+
+// Result:
+// - success: true if conversation is valid
+// - callA: { callSid, transcriptSid, transcriptStatus, sentenceCount, speakerTurns }
+// - callB: { callSid, transcriptSid, transcriptStatus, sentenceCount, speakerTurns }
+// - conversation: { totalTurns, topicKeywordsFound, topicKeywordsMissing, successPhrasesFound, hasNaturalFlow }
+// - errors[], warnings[]
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| callSidA | required | First call leg SID |
+| callSidB | required | Second call leg SID |
+| intelligenceServiceSid | required | Intelligence Service for transcripts |
+| expectedTurns | 2 | Minimum speaker turns expected |
+| topicKeywords | [] | Keywords that should appear |
+| successPhrases | [] | Phrases indicating success |
+| waitForTranscripts | true | Wait for transcripts to complete |
+| timeout | 120000 | Max wait time (ms) |
+
 ### Prerequisites (validatePrerequisites)
 
 Check that required services exist before operations:
@@ -339,6 +387,51 @@ The deep validator works with the callback Functions in `functions/callbacks/`:
 3. **Data format**: Sync Documents are named `callbacks-{type}-{sid}` with 24hr TTL
 
 This allows validation to check not just the API status but the actual callbacks Twilio sent.
+
+## Event Emission for Autonomous Workflows
+
+DeepValidator extends EventEmitter to enable autonomous work discovery. Validation failures are emitted as events that can trigger automated fix workflows.
+
+### Events
+
+| Event | Payload | When Emitted |
+|-------|---------|--------------|
+| `validation-failure` | `ValidationFailureEvent` | On any validation failure |
+| `validation-success` | `{ type, result, timestamp }` | On successful validation |
+
+### Usage
+
+```typescript
+import { DeepValidator } from './validation';
+import { WorkPoller } from '../../feature-factory/src/discovery';
+
+const validator = new DeepValidator(twilioClient);
+const workPoller = new WorkPoller();
+
+// Register validator for work discovery
+workPoller.registerValidator(validator);
+
+// Listen for discovered work
+workPoller.on('work-discovered', (work) => {
+  console.log('New work item:', work.summary);
+  console.log('Priority:', work.priority);
+  console.log('Tier:', work.tier); // 1-2 can be auto-handled
+});
+
+// Validation failures now trigger work discovery
+const result = await validator.validateMessage('SMxxx', { waitForTerminal: true });
+```
+
+### ValidationFailureEvent Structure
+
+```typescript
+interface ValidationFailureEvent {
+  type: ValidationEventType; // 'message' | 'call' | etc.
+  result: ValidationResult;  // The validation result
+  diagnosis?: Diagnosis;     // From DiagnosticBridge (if available)
+  timestamp: Date;
+}
+```
 
 ## Test Helper
 

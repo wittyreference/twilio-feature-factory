@@ -39,11 +39,21 @@ src/
 │   ├── new-feature.ts    # Full TDD pipeline for new features
 │   ├── bug-fix.ts        # Diagnosis and fix pipeline
 │   └── refactor.ts       # Safe refactoring pipeline
-└── hooks/                # Pre-phase quality gates
-    ├── index.ts          # Hook registry and execution
-    ├── tdd-enforcement.ts # Verifies tests exist and FAIL before dev
-    ├── coverage-threshold.ts # Enforces 80% coverage before QA
-    └── test-passing-enforcement.ts # Verifies all tests PASS (refactor safety)
+├── hooks/                # Pre-phase quality gates
+│   ├── index.ts          # Hook registry and execution
+│   ├── tdd-enforcement.ts # Verifies tests exist and FAIL before dev
+│   ├── coverage-threshold.ts # Enforces 80% coverage before QA
+│   └── test-passing-enforcement.ts # Verifies all tests PASS (refactor safety)
+├── discovery/            # Autonomous work discovery
+│   ├── index.ts          # Exports
+│   ├── work-discovery.ts # Work item types and priority classification
+│   └── work-poller.ts    # Event-driven work queue from validation failures
+├── metrics/              # Process metrics collection
+│   ├── index.ts          # Exports
+│   └── process-metrics.ts # Timing, quality, learning metrics
+└── verification/         # Replay verification
+    ├── index.ts          # Exports
+    └── replay-verifier.ts # Validates learnings improve performance
 ```
 
 ## Subagent Roles
@@ -311,6 +321,98 @@ Validation is **skipped** for:
 | `maxBudgetUsd` | $5.00 | Total budget per feature |
 | `maxTurnsPerAgent` | 50 | Prevent infinite loops |
 | `approvalMode` | after-each-phase | Human checkpoints |
+
+## Process Validation Infrastructure
+
+The Feature Factory includes infrastructure to validate the diagnose → fix → learn cycle.
+
+### Work Discovery
+
+Listens to DeepValidator events and queues work items for autonomous processing:
+
+```typescript
+import { WorkPoller, createWorkPoller } from '@twilio-agent-factory/feature-factory';
+import { DeepValidator } from '@twilio-agent-factory/mcp-twilio';
+
+const validator = new DeepValidator(twilioClient);
+const poller = createWorkPoller({ autoHandleLowTier: true });
+
+// Register validator to listen for failures
+poller.registerValidator(validator);
+
+// Listen for discovered work
+poller.on('work-discovered', (work) => {
+  console.log('Priority:', work.priority);   // critical | high | medium | low
+  console.log('Tier:', work.tier);           // 1-2 auto-handle, 3-4 human review
+  console.log('Workflow:', work.suggestedWorkflow); // bug-fix | refactor | etc.
+});
+
+// Validation failures now trigger work discovery
+const result = await validator.validateMessage('SMxxx');
+```
+
+### Process Metrics
+
+Tracks timing, quality, and learning metrics for the fix cycle:
+
+```typescript
+import { ProcessMetricsCollector, createProcessMetricsCollector } from '@twilio-agent-factory/feature-factory';
+
+const collector = createProcessMetricsCollector();
+
+// Start tracking a fix cycle
+collector.startCycle(discoveredWork);
+
+// Record fix attempts
+collector.recordFixAttempt(work.id);
+collector.recordLearningCapture(work.id, isNovel);
+
+// Complete and get metrics
+const metrics = collector.completeCycle(work.id, 'Fixed the issue', {
+  diagnosisAccurate: true,
+  rootCauseMatched: true,
+  workflowUsed: 'bug-fix',
+});
+
+// Get aggregate statistics
+const aggregates = collector.computeAggregates();
+console.log('First fix success rate:', aggregates.qualityRates.firstFixSuccessRate);
+console.log('Average cycle time:', aggregates.averageTiming.totalCycleTime);
+```
+
+### Replay Verification
+
+Validates that captured learnings actually improve fix performance:
+
+```typescript
+import { ReplayVerifier, createReplayVerifier } from '@twilio-agent-factory/feature-factory';
+
+const verifier = createReplayVerifier();
+
+// Register a scenario
+verifier.registerScenario({
+  id: 'webhook-timeout',
+  name: 'Webhook Timeout Scenario',
+  description: 'Simulates webhook timeout failure',
+  diagnosis: capturedDiagnosis,
+  capturedLearnings: ['Increase timeout to 30s', 'Add retry logic'],
+  resolution: 'Added retry with exponential backoff',
+  validateSuccess: async () => checkWebhookWorks(),
+  setupFailure: async () => configureSlowWebhook(),
+});
+
+// Compare with and without learnings
+const comparison = await verifier.compare('webhook-timeout');
+
+console.log('Time saved:', comparison.improvement.timeSavedMs);
+console.log('Attempts saved:', comparison.improvement.attemptsSaved);
+console.log('Learnings helped:', comparison.improvement.learningsHelped);
+
+// Verify all scenarios
+const summary = await verifier.verifyAll();
+console.log('Scenarios improved:', summary.scenariosImproved);
+console.log('Success rate with learnings:', summary.successRateWithLearnings);
+```
 
 ## Development
 

@@ -2,10 +2,11 @@
 # ABOUTME: Documentation flywheel hook - suggests doc updates from multiple sources.
 # ABOUTME: Environment-aware: writes to .meta/ (meta) or .claude/ (shipped).
 
-# This hook combines THREE sources for doc suggestions:
+# This hook combines FOUR sources for doc suggestions:
 # 1. Uncommitted files (git status) - catches pre-commit needs
 # 2. Recent commits (since session start) - catches post-commit needs
 # 3. Session-tracked files (from post-write hook) - catches everything touched
+# 4. Validation failures (from PatternTracker) - catches unresolved issues
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -74,6 +75,30 @@ if [ -f "$SESSION_FILE" ]; then
     SESSION_TRACKED=$(cut -d'|' -f2 "$SESSION_FILE" 2>/dev/null)
     if [ -n "$SESSION_TRACKED" ]; then
         ALL_FILES="$ALL_FILES"$'\n'"$SESSION_TRACKED"
+    fi
+fi
+
+# Source 4: Validation failure patterns (from PatternTracker)
+# Check for pattern database in both .meta and .claude locations
+PATTERN_DB_META="$PROJECT_ROOT/.meta/pattern-db.json"
+PATTERN_DB_CLAUDE="$PROJECT_ROOT/.claude/pattern-db.json"
+PATTERN_DB=""
+if [ -f "$PATTERN_DB_META" ]; then
+    PATTERN_DB="$PATTERN_DB_META"
+elif [ -f "$PATTERN_DB_CLAUDE" ]; then
+    PATTERN_DB="$PATTERN_DB_CLAUDE"
+fi
+
+# Track unresolved pattern count for later use
+UNRESOLVED_PATTERNS=0
+PATTERN_CATEGORIES=""
+if [ -n "$PATTERN_DB" ] && command -v jq &> /dev/null; then
+    # Count unresolved patterns
+    UNRESOLVED_PATTERNS=$(jq '[.patterns | to_entries[] | select(.value.resolved == false)] | length' "$PATTERN_DB" 2>/dev/null || echo "0")
+
+    # Get categories of unresolved patterns
+    if [ "$UNRESOLVED_PATTERNS" -gt 0 ]; then
+        PATTERN_CATEGORIES=$(jq -r '[.patterns | to_entries[] | select(.value.resolved == false) | .value.category] | unique | join(", ")' "$PATTERN_DB" 2>/dev/null || echo "")
     fi
 fi
 
@@ -157,6 +182,18 @@ if echo "$ALL_FILES" | grep -qE "\.env"; then
     SUGGESTIONS="${SUGGESTIONS}• .env.example - ensure new env vars are documented\n"
 fi
 
+# Check for validation failure patterns (Source 4)
+if [ "$UNRESOLVED_PATTERNS" -gt 0 ]; then
+    SUGGESTIONS="${SUGGESTIONS}• agents/mcp-servers/twilio/src/validation/CLAUDE.md - $UNRESOLVED_PATTERNS unresolved validation patterns"
+    if [ -n "$PATTERN_CATEGORIES" ]; then
+        SUGGESTIONS="${SUGGESTIONS} (categories: $PATTERN_CATEGORIES)"
+    fi
+    SUGGESTIONS="${SUGGESTIONS}\n"
+
+    # Suggest learnings update if patterns exist
+    SUGGESTIONS="${SUGGESTIONS}• .claude/learnings.md - capture insights from validation failures\n"
+fi
+
 # ============================================
 # WRITE SUGGESTIONS TO PENDING-ACTIONS
 # ============================================
@@ -174,10 +211,10 @@ Actions detected by the documentation flywheel. Review before committing.
 EOF
     fi
 
-    # Count sources for context
-    UNCOMMITTED_COUNT=$(echo "$UNCOMMITTED" | grep -c "." 2>/dev/null || echo "0")
-    COMMITTED_COUNT=$(echo "$COMMITTED_FILES" | grep -c "." 2>/dev/null || echo "0")
-    SESSION_COUNT=$(echo "$SESSION_TRACKED" | grep -c "." 2>/dev/null || echo "0")
+    # Count sources for context (tr -d removes any newlines from counts)
+    UNCOMMITTED_COUNT=$(echo "$UNCOMMITTED" | grep -c "." 2>/dev/null | tr -d '\n' || echo "0")
+    COMMITTED_COUNT=$(echo "$COMMITTED_FILES" | grep -c "." 2>/dev/null | tr -d '\n' || echo "0")
+    SESSION_COUNT=$(echo "$SESSION_TRACKED" | grep -c "." 2>/dev/null | tr -d '\n' || echo "0")
 
     # Append new actions (avoid exact duplicates)
     echo -e "$SUGGESTIONS" | while IFS= read -r line; do
@@ -192,7 +229,12 @@ EOF
 
     # Output summary to stderr (visible in hook output)
     TOTAL_FILES=$(echo "$ALL_FILES" | wc -l | tr -d ' ')
-    echo "Doc flywheel: Analyzed $TOTAL_FILES files (uncommitted:$UNCOMMITTED_COUNT, committed:$COMMITTED_COUNT, session:$SESSION_COUNT)" >&2
+    SUMMARY="Doc flywheel: Analyzed $TOTAL_FILES files (uncommitted:$UNCOMMITTED_COUNT, committed:$COMMITTED_COUNT, session:$SESSION_COUNT"
+    if [ "$UNRESOLVED_PATTERNS" -gt 0 ]; then
+        SUMMARY="$SUMMARY, validation-failures:$UNRESOLVED_PATTERNS"
+    fi
+    SUMMARY="$SUMMARY)"
+    echo "$SUMMARY" >&2
 fi
 
 exit 0

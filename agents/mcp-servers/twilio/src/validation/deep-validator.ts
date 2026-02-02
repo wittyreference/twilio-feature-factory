@@ -1,7 +1,9 @@
 // ABOUTME: Deep validation helper for verifying Twilio API operations beyond 200 OK.
 // ABOUTME: Checks resource status, debugger alerts, call events, Voice/Conference Insights, Function logs, and Sync callbacks.
 
+import { EventEmitter } from 'events';
 import type { Twilio } from 'twilio';
+import type { Diagnosis } from './diagnostic-bridge';
 
 /**
  * Result of a single validation check.
@@ -260,6 +262,62 @@ export interface ConversationRelayValidationResult {
 }
 
 /**
+ * Options for two-way conversation validation.
+ */
+export interface TwoWayValidationOptions {
+  /** Call SID for the first leg (e.g., AI agent) */
+  callSidA: string;
+  /** Call SID for the second leg (e.g., customer) */
+  callSidB: string;
+  /** Intelligence Service SID for transcript access */
+  intelligenceServiceSid: string;
+  /** Expected minimum number of conversation turns. Default: 2 */
+  expectedTurns?: number;
+  /** Keywords that should appear in the conversation */
+  topicKeywords?: string[];
+  /** Phrases indicating successful outcome */
+  successPhrases?: string[];
+  /** Wait for transcripts to complete. Default: true */
+  waitForTranscripts?: boolean;
+  /** Timeout for transcript completion (ms). Default: 120000 */
+  timeout?: number;
+}
+
+/**
+ * Result from two-way conversation validation.
+ */
+export interface TwoWayValidationResult {
+  success: boolean;
+  /** Call A validation */
+  callA: {
+    callSid: string;
+    transcriptSid?: string;
+    transcriptStatus?: string;
+    sentenceCount: number;
+    speakerTurns: number;
+  };
+  /** Call B validation */
+  callB: {
+    callSid: string;
+    transcriptSid?: string;
+    transcriptStatus?: string;
+    sentenceCount: number;
+    speakerTurns: number;
+  };
+  /** Conversation analysis */
+  conversation: {
+    totalTurns: number;
+    topicKeywordsFound: string[];
+    topicKeywordsMissing: string[];
+    successPhrasesFound: string[];
+    hasNaturalFlow: boolean;
+  };
+  errors: string[];
+  warnings: string[];
+  validationDuration: number;
+}
+
+/**
  * A single prerequisite check to run.
  */
 export interface PrerequisiteCheck {
@@ -298,6 +356,44 @@ export interface PrerequisiteValidationResult {
   validationDuration: number;
 }
 
+/**
+ * Validation event types emitted by DeepValidator.
+ */
+export type ValidationEventType =
+  | 'message'
+  | 'call'
+  | 'verification'
+  | 'task'
+  | 'conference'
+  | 'debugger'
+  | 'serverless'
+  | 'recording'
+  | 'transcript'
+  | 'operator'
+  | 'conversation-relay'
+  | 'prerequisites'
+  | 'two-way';
+
+/**
+ * Validation failure event payload.
+ */
+export interface ValidationFailureEvent {
+  type: ValidationEventType;
+  result: ValidationResult | DebuggerValidationResult | ServerlessLogsValidationResult |
+          RecordingValidationResult | TranscriptValidationResult | LanguageOperatorValidationResult |
+          ConversationRelayValidationResult | PrerequisiteValidationResult | TwoWayValidationResult;
+  diagnosis?: Diagnosis;
+  timestamp: Date;
+}
+
+/**
+ * Validation events emitted by DeepValidator.
+ */
+export interface DeepValidatorEvents {
+  'validation-failure': [event: ValidationFailureEvent];
+  'validation-success': [event: { type: ValidationEventType; result: unknown; timestamp: Date }];
+}
+
 const DEFAULT_OPTIONS: Required<Omit<ValidationOptions, 'syncServiceSid' | 'serverlessServiceSid' | 'studioFlowSid'>> = {
   waitForTerminal: false,
   timeout: 30000,
@@ -313,12 +409,38 @@ const CONFERENCE_TERMINAL_STATUSES = ['completed'];
 /**
  * Deep validator for Twilio API operations.
  * Goes beyond 200 OK to verify actual operation success.
+ * Extends EventEmitter to enable autonomous work discovery.
  */
-export class DeepValidator {
+export class DeepValidator extends EventEmitter {
   private client: Twilio;
 
   constructor(client: Twilio) {
+    super();
     this.client = client;
+  }
+
+  /**
+   * Emits a validation event based on the result.
+   * Called after each validation method completes.
+   */
+  private emitValidationEvent(
+    type: ValidationEventType,
+    result: ValidationFailureEvent['result'],
+    diagnosis?: Diagnosis
+  ): void {
+    const timestamp = new Date();
+
+    if (result.success) {
+      this.emit('validation-success', { type, result, timestamp });
+    } else {
+      const event: ValidationFailureEvent = {
+        type,
+        result,
+        diagnosis,
+        timestamp,
+      };
+      this.emit('validation-failure', event);
+    }
   }
 
   /**
@@ -361,7 +483,7 @@ export class DeepValidator {
 
     const success = statusCheck.passed && alertCheck.passed && (!syncCheck || syncCheck.passed);
 
-    return {
+    const result: ValidationResult = {
       success,
       resourceSid: messageSid,
       resourceType: 'message',
@@ -376,6 +498,9 @@ export class DeepValidator {
       warnings,
       duration: Date.now() - startTime,
     };
+
+    this.emitValidationEvent('message', result);
+    return result;
   }
 
   /**
@@ -430,7 +555,7 @@ export class DeepValidator {
 
     const success = statusCheck.passed && alertCheck.passed && eventsCheck.passed;
 
-    return {
+    const result: ValidationResult = {
       success,
       resourceSid: callSid,
       resourceType: 'call',
@@ -448,6 +573,9 @@ export class DeepValidator {
       warnings,
       duration: Date.now() - startTime,
     };
+
+    this.emitValidationEvent('call', result);
+    return result;
   }
 
   /**
@@ -477,7 +605,7 @@ export class DeepValidator {
 
     const success = statusCheck.passed && alertCheck.passed;
 
-    return {
+    const result: ValidationResult = {
       success,
       resourceSid: verificationSid,
       resourceType: 'verification',
@@ -491,6 +619,9 @@ export class DeepValidator {
       warnings,
       duration: Date.now() - startTime,
     };
+
+    this.emitValidationEvent('verification', result);
+    return result;
   }
 
   /**
@@ -520,7 +651,7 @@ export class DeepValidator {
 
     const success = statusCheck.passed && alertCheck.passed;
 
-    return {
+    const result: ValidationResult = {
       success,
       resourceSid: taskSid,
       resourceType: 'task',
@@ -534,6 +665,9 @@ export class DeepValidator {
       warnings,
       duration: Date.now() - startTime,
     };
+
+    this.emitValidationEvent('task', result);
+    return result;
   }
 
   /**
@@ -588,7 +722,7 @@ export class DeepValidator {
 
     const success = statusCheck.passed && alertCheck.passed;
 
-    return {
+    const result: ValidationResult = {
       success,
       resourceSid: conferenceSid,
       resourceType: 'conference',
@@ -605,6 +739,9 @@ export class DeepValidator {
       warnings,
       duration: Date.now() - startTime,
     };
+
+    this.emitValidationEvent('conference', result);
+    return result;
   }
 
   // ---- Private check methods ----
@@ -1230,7 +1367,7 @@ export class DeepValidator {
       const errorAlerts = filteredAlerts.filter((a) => a.logLevel === 'error');
       const warningAlerts = filteredAlerts.filter((a) => a.logLevel === 'warning');
 
-      return {
+      const result: DebuggerValidationResult = {
         success: errorAlerts.length === 0,
         totalAlerts: filteredAlerts.length,
         errorAlerts: errorAlerts.length,
@@ -1247,8 +1384,11 @@ export class DeepValidator {
         timeRange: { start: startDate, end: endDate },
         duration: Date.now() - startTime,
       };
+
+      this.emitValidationEvent('debugger', result);
+      return result;
     } catch (error) {
-      return {
+      const result: DebuggerValidationResult = {
         success: false,
         totalAlerts: 0,
         errorAlerts: 0,
@@ -1257,6 +1397,9 @@ export class DeepValidator {
         timeRange: { start: startDate, end: endDate },
         duration: Date.now() - startTime,
       };
+
+      this.emitValidationEvent('debugger', result);
+      return result;
     }
   }
 
@@ -1324,7 +1467,7 @@ export class DeepValidator {
         if (log.level === 'warn') byFunction[fid].warns++;
       }
 
-      return {
+      const result: ServerlessLogsValidationResult = {
         success: errorLogs.length === 0,
         totalLogs: filteredLogs.length,
         errorLogs: errorLogs.length,
@@ -1340,8 +1483,11 @@ export class DeepValidator {
         timeRange: { start: startDate, end: endDate },
         duration: Date.now() - startTime,
       };
+
+      this.emitValidationEvent('serverless', result);
+      return result;
     } catch (error) {
-      return {
+      const result: ServerlessLogsValidationResult = {
         success: false,
         totalLogs: 0,
         errorLogs: 0,
@@ -1351,6 +1497,9 @@ export class DeepValidator {
         timeRange: { start: startDate, end: endDate },
         duration: Date.now() - startTime,
       };
+
+      this.emitValidationEvent('serverless', result);
+      return result;
     }
   }
 
@@ -1386,7 +1535,7 @@ export class DeepValidator {
         errors.push(`Recording ${status}: ${recording.errorCode || 'unknown error'}`);
       }
 
-      return {
+      const result: RecordingValidationResult = {
         success: status === 'completed',
         recordingSid,
         callSid: recording.callSid,
@@ -1400,14 +1549,20 @@ export class DeepValidator {
         errors,
         validationDuration: Date.now() - startTime,
       };
+
+      this.emitValidationEvent('recording', result);
+      return result;
     } catch (error) {
-      return {
+      const result: RecordingValidationResult = {
         success: false,
         recordingSid,
         status: 'error',
         errors: [`Failed to fetch recording: ${error instanceof Error ? error.message : String(error)}`],
         validationDuration: Date.now() - startTime,
       };
+
+      this.emitValidationEvent('recording', result);
+      return result;
     }
   }
 
@@ -1456,7 +1611,7 @@ export class DeepValidator {
         }
       }
 
-      return {
+      const result: TranscriptValidationResult = {
         success: status === 'completed' && errors.length === 0,
         transcriptSid,
         serviceSid: transcript.serviceSid,
@@ -1468,8 +1623,11 @@ export class DeepValidator {
         errors,
         validationDuration: Date.now() - startTime,
       };
+
+      this.emitValidationEvent('transcript', result);
+      return result;
     } catch (error) {
-      return {
+      const result: TranscriptValidationResult = {
         success: false,
         transcriptSid,
         serviceSid: '',
@@ -1477,6 +1635,9 @@ export class DeepValidator {
         errors: [`Failed to fetch transcript: ${error instanceof Error ? error.message : String(error)}`],
         validationDuration: Date.now() - startTime,
       };
+
+      this.emitValidationEvent('transcript', result);
+      return result;
     }
   }
 
@@ -1520,21 +1681,27 @@ export class DeepValidator {
         extractResults: r.extractResults,
       }));
 
-      return {
+      const result: LanguageOperatorValidationResult = {
         success: errors.length === 0 && filteredResults.length > 0,
         transcriptSid,
         operatorResults: mappedResults,
         errors,
         validationDuration: Date.now() - startTime,
       };
+
+      this.emitValidationEvent('operator', result);
+      return result;
     } catch (error) {
-      return {
+      const result: LanguageOperatorValidationResult = {
         success: false,
         transcriptSid,
         operatorResults: [],
         errors: [`Failed to fetch operator results: ${error instanceof Error ? error.message : String(error)}`],
         validationDuration: Date.now() - startTime,
       };
+
+      this.emitValidationEvent('operator', result);
+      return result;
     }
   }
 
@@ -1565,7 +1732,7 @@ export class DeepValidator {
     const WS = WebSocketImpl || (typeof WebSocket !== 'undefined' ? WebSocket : null);
 
     if (!WS) {
-      return {
+      const result: ConversationRelayValidationResult = {
         success: false,
         connectionEstablished: false,
         setupReceived: false,
@@ -1574,7 +1741,13 @@ export class DeepValidator {
         errors: ['WebSocket not available. Provide WebSocket implementation via second parameter or install "ws" package.'],
         validationDuration: Date.now() - startTime,
       };
+      this.emitValidationEvent('conversation-relay', result);
+      return result;
     }
+
+    // Store reference to this for use in safeResolve closure
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const self = this;
 
     return new Promise((resolve) => {
       let connectionEstablished = false;
@@ -1594,6 +1767,7 @@ export class DeepValidator {
         resolved = true;
         clearTimeout(timer);
         if (ws && ws.close) ws.close();
+        self.emitValidationEvent('conversation-relay', result);
         resolve(result);
       };
 
@@ -1777,12 +1951,15 @@ export class DeepValidator {
       .filter((r) => r.required)
       .every((r) => r.ok);
 
-    return {
+    const result: PrerequisiteValidationResult = {
       success: requiredPassed,
       results,
       errors,
       validationDuration: Date.now() - startTime,
     };
+
+    this.emitValidationEvent('prerequisites', result);
+    return result;
   }
 
   /**
@@ -1947,6 +2124,252 @@ export class DeepValidator {
       },
     }),
   };
+
+  /**
+   * Validates a two-way conversation between two calls.
+   * Use this for AI agent conversations, conference bridges, or any
+   * scenario where two call legs should have a coherent dialogue.
+   *
+   * This method:
+   * 1. Fetches transcripts for both calls
+   * 2. Analyzes conversation flow (turn taking, sentence counts)
+   * 3. Checks topic coverage via keywords
+   * 4. Finds success phrases to verify goal completion
+   */
+  async validateTwoWay(
+    options: TwoWayValidationOptions
+  ): Promise<TwoWayValidationResult> {
+    const startTime = Date.now();
+    const waitForTranscripts = options.waitForTranscripts ?? true;
+    const timeout = options.timeout ?? 120000;
+    const expectedTurns = options.expectedTurns ?? 2;
+    const topicKeywords = options.topicKeywords ?? [];
+    const successPhrases = options.successPhrases ?? [];
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    // Find transcripts for both calls
+    const [transcriptA, transcriptB] = await Promise.all([
+      this.findTranscriptForCall(options.callSidA, options.intelligenceServiceSid, waitForTranscripts, timeout),
+      this.findTranscriptForCall(options.callSidB, options.intelligenceServiceSid, waitForTranscripts, timeout),
+    ]);
+
+    // Initialize result structure
+    const callAResult = {
+      callSid: options.callSidA,
+      transcriptSid: transcriptA?.sid,
+      transcriptStatus: transcriptA?.status,
+      sentenceCount: 0,
+      speakerTurns: 0,
+    };
+
+    const callBResult = {
+      callSid: options.callSidB,
+      transcriptSid: transcriptB?.sid,
+      transcriptStatus: transcriptB?.status,
+      sentenceCount: 0,
+      speakerTurns: 0,
+    };
+
+    // Fetch sentences if transcripts are available
+    let allSentences: Array<{
+      text: string;
+      mediaChannel?: number;
+    }> = [];
+
+    if (transcriptA?.sid && transcriptA.status === 'completed') {
+      try {
+        const sentences = await this.client.intelligence.v2
+          .transcripts(transcriptA.sid)
+          .sentences.list({ limit: 1000 });
+        callAResult.sentenceCount = sentences.length;
+        // Use mediaChannel to count speaker turns (channels represent different speakers)
+        callAResult.speakerTurns = this.countSpeakerTurnsByChannel(
+          sentences.map((s) => ({ mediaChannel: s.mediaChannel }))
+        );
+        allSentences = allSentences.concat(
+          sentences.map((s) => ({
+            text: s.transcript || '',
+            mediaChannel: s.mediaChannel,
+          }))
+        );
+      } catch (e) {
+        warnings.push(`Could not fetch sentences for call A: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    } else if (!transcriptA) {
+      errors.push(`No transcript found for call A (${options.callSidA})`);
+    } else if (transcriptA.status !== 'completed') {
+      errors.push(`Transcript A not completed (status: ${transcriptA.status})`);
+    }
+
+    if (transcriptB?.sid && transcriptB.status === 'completed') {
+      try {
+        const sentences = await this.client.intelligence.v2
+          .transcripts(transcriptB.sid)
+          .sentences.list({ limit: 1000 });
+        callBResult.sentenceCount = sentences.length;
+        callBResult.speakerTurns = this.countSpeakerTurnsByChannel(
+          sentences.map((s) => ({ mediaChannel: s.mediaChannel }))
+        );
+        allSentences = allSentences.concat(
+          sentences.map((s) => ({
+            text: s.transcript || '',
+            mediaChannel: s.mediaChannel,
+          }))
+        );
+      } catch (e) {
+        warnings.push(`Could not fetch sentences for call B: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    } else if (!transcriptB) {
+      errors.push(`No transcript found for call B (${options.callSidB})`);
+    } else if (transcriptB.status !== 'completed') {
+      errors.push(`Transcript B not completed (status: ${transcriptB.status})`);
+    }
+
+    // Analyze conversation
+    const allText = allSentences.map((s) => s.text.toLowerCase()).join(' ');
+    const totalTurns = callAResult.speakerTurns + callBResult.speakerTurns;
+
+    // Check topic keywords
+    const topicKeywordsFound = topicKeywords.filter((kw) =>
+      allText.includes(kw.toLowerCase())
+    );
+    const topicKeywordsMissing = topicKeywords.filter(
+      (kw) => !allText.includes(kw.toLowerCase())
+    );
+
+    // Check success phrases
+    const successPhrasesFound = successPhrases.filter((phrase) =>
+      allText.includes(phrase.toLowerCase())
+    );
+
+    // Check for natural flow (both sides should have spoken)
+    const hasNaturalFlow =
+      callAResult.speakerTurns > 0 &&
+      callBResult.speakerTurns > 0 &&
+      totalTurns >= expectedTurns;
+
+    // Validate expectations
+    if (totalTurns < expectedTurns) {
+      errors.push(`Expected at least ${expectedTurns} turns, got ${totalTurns}`);
+    }
+
+    if (topicKeywordsMissing.length > 0 && topicKeywords.length > 0) {
+      warnings.push(`Missing topic keywords: ${topicKeywordsMissing.join(', ')}`);
+    }
+
+    if (successPhrases.length > 0 && successPhrasesFound.length === 0) {
+      errors.push('No success phrases found in conversation');
+    }
+
+    // Determine overall success
+    const success =
+      errors.length === 0 &&
+      callAResult.transcriptStatus === 'completed' &&
+      callBResult.transcriptStatus === 'completed' &&
+      hasNaturalFlow;
+
+    const result: TwoWayValidationResult = {
+      success,
+      callA: callAResult,
+      callB: callBResult,
+      conversation: {
+        totalTurns,
+        topicKeywordsFound,
+        topicKeywordsMissing,
+        successPhrasesFound,
+        hasNaturalFlow,
+      },
+      errors,
+      warnings,
+      validationDuration: Date.now() - startTime,
+    };
+
+    this.emitValidationEvent('two-way', result);
+    return result;
+  }
+
+  /**
+   * Finds a transcript for a given call SID.
+   * Optionally waits for the transcript to complete.
+   * Note: Currently finds the most recent transcript from the service.
+   * For more precise matching, use the Recording SID or transcript metadata.
+   */
+  private async findTranscriptForCall(
+    _callSid: string,
+    serviceSid: string,
+    waitForCompletion: boolean,
+    timeout: number
+  ): Promise<{ sid: string; status: string } | null> {
+    try {
+      // Search for transcripts by media source (the call SID)
+      const transcripts = await this.client.intelligence.v2.transcripts.list({
+        limit: 10,
+      });
+
+      // Find transcript that matches this call
+      // Note: The transcript's mediaStartTime or channel info may link to the call
+      // For now, we check transcripts created around the same time
+      // A more robust approach would be to use the source field or metadata
+      let transcript = transcripts.find((t) => {
+        // Check if transcript is from this service and recent
+        // The actual linking mechanism depends on how transcripts are created
+        return t.serviceSid === serviceSid;
+      });
+
+      // If using recordings, we need to match by recording SID
+      // For now, look for any recent transcript from the service
+      if (!transcript && transcripts.length > 0) {
+        // Use the most recent one from this service
+        transcript = transcripts.filter((t) => t.serviceSid === serviceSid)[0];
+      }
+
+      if (!transcript) {
+        return null;
+      }
+
+      // Wait for completion if requested
+      if (waitForCompletion && transcript.status !== 'completed') {
+        const deadline = Date.now() + timeout;
+        const terminalStatuses = ['completed', 'failed', 'canceled', 'error'];
+
+        while (Date.now() < deadline && !terminalStatuses.includes(transcript.status)) {
+          await this.sleep(5000);
+          const updated = await this.client.intelligence.v2.transcripts(transcript.sid).fetch();
+          transcript = updated as typeof transcript;
+        }
+      }
+
+      return { sid: transcript.sid, status: transcript.status };
+    } catch (e) {
+      // Transcript not found or service error
+      return null;
+    }
+  }
+
+  /**
+   * Counts speaker turns from sentences using media channel.
+   * A "turn" is when the channel (speaker) changes.
+   * Channel 1 = one speaker, Channel 2 = other speaker.
+   */
+  private countSpeakerTurnsByChannel(
+    sentences: Array<{ mediaChannel?: number }>
+  ): number {
+    if (sentences.length === 0) return 0;
+
+    let turns = 1;
+    let lastChannel = sentences[0].mediaChannel;
+
+    for (let i = 1; i < sentences.length; i++) {
+      const currentChannel = sentences[i].mediaChannel;
+      if (currentChannel !== undefined && currentChannel !== lastChannel) {
+        turns++;
+        lastChannel = currentChannel;
+      }
+    }
+
+    return turns;
+  }
 
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));

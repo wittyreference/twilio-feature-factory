@@ -99,3 +99,48 @@ export type {
   HookResult,
   PrePhaseHookEvent,
 } from './types.js';
+
+// Discovery module (autonomous work discovery)
+export {
+  type DiscoveredWork,
+  type WorkSource,
+  type WorkPriority,
+  type SuggestedWorkflow,
+  type AutomationTier,
+  type WorkDiscoveryConfig,
+  determinePriority,
+  determineAutomationTier,
+  suggestWorkflow,
+  createWorkFromValidation,
+  WorkPoller,
+  createWorkPoller,
+  type WorkPollerEvents,
+} from './discovery/index.js';
+
+// Metrics module (process metrics collector)
+export {
+  type TimingMetrics,
+  type QualityMetrics,
+  type LearningMetrics,
+  type ProcessMetrics,
+  type AggregateMetrics,
+  type CategoryMetrics,
+  type ProcessMetricsConfig,
+  type ProcessMetricsEvents,
+  ProcessMetricsCollector,
+  createProcessMetricsCollector,
+} from './metrics/index.js';
+
+// Verification module (replay verifier)
+export {
+  type ReplayScenario,
+  type ReplayAttempt,
+  type ReplayResult,
+  type ReplayComparison,
+  type VerificationSummary,
+  type ReplayVerifierConfig,
+  type ReplayVerifierEvents,
+  type FixExecutor,
+  ReplayVerifier,
+  createReplayVerifier,
+} from './verification/index.js';

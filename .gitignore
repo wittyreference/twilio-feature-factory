@@ -27,6 +27,13 @@ Thumbs.db
 dist/
 build/
 
+# TypeScript compiled output in source directories
+agents/**/*.js
+agents/**/*.js.map
+agents/**/*.d.ts
+agents/**/*.d.ts.map
+!agents/**/jest.config.js
+
 # Logs
 *.log
 npm-debug.log*

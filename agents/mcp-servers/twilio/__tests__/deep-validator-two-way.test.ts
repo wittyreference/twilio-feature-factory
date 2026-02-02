@@ -392,4 +392,135 @@ describe('DeepValidator.validateTwoWay', () => {
       expect(result.conversation.successPhrasesFound).toContain('CONFIRMED');
     });
   });
+
+  describe('forbidden patterns', () => {
+    it('should detect forbidden patterns in conversation', async () => {
+      // Mock client with error message in transcript
+      // Create a callable function that also has a list method
+      const errorTranscriptsAccessor = (_sid: string) => ({
+        fetch: jest.fn().mockResolvedValue(
+          { sid: 'GT_error', serviceSid: 'GA_service_123', status: 'completed' }
+        ),
+        sentences: {
+          list: jest.fn().mockResolvedValue([
+            { transcript: "We're sorry, an application error has occurred.", mediaChannel: 1 },
+            { transcript: 'Please try again later.', mediaChannel: 1 },
+          ]),
+        },
+      });
+      errorTranscriptsAccessor.list = jest.fn().mockResolvedValue([
+        { sid: 'GT_error', serviceSid: 'GA_service_123', status: 'completed' },
+      ]);
+
+      const errorMockClient = {
+        intelligence: {
+          v2: {
+            transcripts: errorTranscriptsAccessor,
+          },
+        },
+      } as unknown as import('twilio').Twilio;
+
+      const errorValidator = new DeepValidator(errorMockClient);
+
+      const options: TwoWayValidationOptions = {
+        callSidA: 'CA_call_a',
+        callSidB: 'CA_call_b',
+        intelligenceServiceSid: 'GA_service_123',
+        forbiddenPatterns: ['application error', "we're sorry"],
+      };
+
+      const result = await errorValidator.validateTwoWay(options);
+
+      expect(result.success).toBe(false);
+      expect(result.conversation.forbiddenPatternsFound).toContain('application error');
+      expect(result.conversation.forbiddenPatternsFound).toContain("we're sorry");
+      expect(result.errors.some((e) => e.includes('Forbidden patterns found'))).toBe(true);
+    });
+
+    it('should pass when no forbidden patterns found', async () => {
+      const options: TwoWayValidationOptions = {
+        callSidA: 'CA_call_a',
+        callSidB: 'CA_call_b',
+        intelligenceServiceSid: 'GA_service_123',
+        forbiddenPatterns: ['application error', "we're sorry"],
+      };
+
+      const result = await validator.validateTwoWay(options);
+
+      expect(result.conversation.forbiddenPatternsFound).toHaveLength(0);
+    });
+  });
+
+  describe('minimum sentences per side', () => {
+    it('should fail when sentences per side is below minimum', async () => {
+      // Mock client with minimal conversation (only 1 sentence per side)
+      // Create a callable function that also has a list method
+      const minimalTranscriptsAccessor = (_sid: string) => ({
+        fetch: jest.fn().mockResolvedValue(
+          { sid: 'GT_minimal', serviceSid: 'GA_service_123', status: 'completed' }
+        ),
+        sentences: {
+          list: jest.fn().mockResolvedValue([
+            { transcript: 'Hello', mediaChannel: 1 },
+          ]),
+        },
+      });
+      minimalTranscriptsAccessor.list = jest.fn().mockResolvedValue([
+        { sid: 'GT_minimal', serviceSid: 'GA_service_123', status: 'completed' },
+      ]);
+
+      const minimalMockClient = {
+        intelligence: {
+          v2: {
+            transcripts: minimalTranscriptsAccessor,
+          },
+        },
+      } as unknown as import('twilio').Twilio;
+
+      const minimalValidator = new DeepValidator(minimalMockClient);
+
+      const options: TwoWayValidationOptions = {
+        callSidA: 'CA_call_a',
+        callSidB: 'CA_call_b',
+        intelligenceServiceSid: 'GA_service_123',
+        minSentencesPerSide: 3,
+      };
+
+      const result = await minimalValidator.validateTwoWay(options);
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some((e) => e.includes('only 1 sentences'))).toBe(true);
+      expect(result.errors.some((e) => e.includes('expected at least 3'))).toBe(true);
+    });
+
+    it('should pass when sentences per side meets minimum', async () => {
+      const options: TwoWayValidationOptions = {
+        callSidA: 'CA_call_a',
+        callSidB: 'CA_call_b',
+        intelligenceServiceSid: 'GA_service_123',
+        minSentencesPerSide: 2, // Our mock has 4 sentences per side
+      };
+
+      const result = await validator.validateTwoWay(options);
+
+      expect(result.callA.sentenceCount).toBeGreaterThanOrEqual(2);
+      expect(result.callB.sentenceCount).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  describe('minimum duration', () => {
+    it('should add warning when minDuration is specified', async () => {
+      const options: TwoWayValidationOptions = {
+        callSidA: 'CA_call_a',
+        callSidB: 'CA_call_b',
+        intelligenceServiceSid: 'GA_service_123',
+        minDuration: 30,
+      };
+
+      const result = await validator.validateTwoWay(options);
+
+      // minDuration check adds a warning since duration isn't available in transcript validation
+      expect(result.warnings.some((w) => w.includes('minDuration'))).toBe(true);
+    });
+  });
 });

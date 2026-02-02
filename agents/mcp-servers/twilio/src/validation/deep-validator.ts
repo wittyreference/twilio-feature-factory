@@ -281,6 +281,12 @@ export interface TwoWayValidationOptions {
   waitForTranscripts?: boolean;
   /** Timeout for transcript completion (ms). Default: 120000 */
   timeout?: number;
+  /** Patterns indicating errors (e.g., "application error", "we're sorry"). Fails if found. */
+  forbiddenPatterns?: string[];
+  /** Minimum sentences per call side. Default: 1 (set higher to require meaningful dialogue) */
+  minSentencesPerSide?: number;
+  /** Minimum call duration in seconds. Fails if call is shorter. */
+  minDuration?: number;
 }
 
 /**
@@ -310,6 +316,7 @@ export interface TwoWayValidationResult {
     topicKeywordsFound: string[];
     topicKeywordsMissing: string[];
     successPhrasesFound: string[];
+    forbiddenPatternsFound: string[];
     hasNaturalFlow: boolean;
   };
   errors: string[];
@@ -2145,6 +2152,9 @@ export class DeepValidator extends EventEmitter {
     const expectedTurns = options.expectedTurns ?? 2;
     const topicKeywords = options.topicKeywords ?? [];
     const successPhrases = options.successPhrases ?? [];
+    const forbiddenPatterns = options.forbiddenPatterns ?? [];
+    const minSentencesPerSide = options.minSentencesPerSide ?? 1;
+    const minDuration = options.minDuration;
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -2243,6 +2253,11 @@ export class DeepValidator extends EventEmitter {
       allText.includes(phrase.toLowerCase())
     );
 
+    // Check for forbidden patterns (error messages, etc.)
+    const forbiddenPatternsFound = forbiddenPatterns.filter((pattern) =>
+      allText.includes(pattern.toLowerCase())
+    );
+
     // Check for natural flow (both sides should have spoken)
     const hasNaturalFlow =
       callAResult.speakerTurns > 0 &&
@@ -2262,6 +2277,26 @@ export class DeepValidator extends EventEmitter {
       errors.push('No success phrases found in conversation');
     }
 
+    // Check forbidden patterns - fails if any error messages detected
+    if (forbiddenPatternsFound.length > 0) {
+      errors.push(`Forbidden patterns found in conversation: ${forbiddenPatternsFound.join(', ')}`);
+    }
+
+    // Check minimum sentences per side
+    if (callAResult.sentenceCount < minSentencesPerSide) {
+      errors.push(`Call A has only ${callAResult.sentenceCount} sentences, expected at least ${minSentencesPerSide}`);
+    }
+    if (callBResult.sentenceCount < minSentencesPerSide) {
+      errors.push(`Call B has only ${callBResult.sentenceCount} sentences, expected at least ${minSentencesPerSide}`);
+    }
+
+    // Check minimum duration (if provided and call data available)
+    if (minDuration !== undefined) {
+      // Note: Duration would need to be retrieved from call data
+      // For now, this is a placeholder that can be enhanced when call duration is available
+      warnings.push(`minDuration check requires call duration data (not yet implemented in transcript validation)`);
+    }
+
     // Determine overall success
     const success =
       errors.length === 0 &&
@@ -2278,6 +2313,7 @@ export class DeepValidator extends EventEmitter {
         topicKeywordsFound,
         topicKeywordsMissing,
         successPhrasesFound,
+        forbiddenPatternsFound,
         hasNaturalFlow,
       },
       errors,

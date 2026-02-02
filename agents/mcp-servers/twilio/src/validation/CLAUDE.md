@@ -20,7 +20,64 @@ The deep validator checks multiple signals to verify actual operation success.
 | `diagnostic-bridge.ts` | Connects validation failures to learning capture with root cause analysis |
 | `learning-capture.ts` | Auto-captures learnings from validation failures to learnings.md |
 | `pattern-tracker.ts` | Tracks recurring validation failure patterns across sessions |
+| `comprehensive-validator.ts` | Orchestrates validators based on products used, feeds to self-healing loop |
 | `index.ts` | Exports public API |
+
+## Error Classification (Scalable Approach)
+
+The DiagnosticBridge uses **range-based error classification** instead of mapping individual error codes. This scales to Twilio's 1500+ error codes without manual maintenance.
+
+### Error Code Ranges
+
+| Range  | Category      | Domain                              |
+|--------|---------------|-------------------------------------|
+| 11xxx  | code          | HTTP/webhook retrieval errors       |
+| 12xxx  | code          | TwiML parsing/validation errors     |
+| 13xxx  | code          | Voice call errors                   |
+| 20xxx  | configuration | Authentication/API errors           |
+| 21xxx  | configuration | Phone number/account errors         |
+| 30xxx  | external      | Messaging delivery (carrier) errors |
+| 31xxx  | external      | Messaging sending errors            |
+| 32xxx  | configuration | Messaging Service errors            |
+| 34xxx  | configuration | A2P 10DLC registration errors       |
+| 60xxx  | code          | Verify service errors               |
+| 63xxx  | external      | Verify delivery errors              |
+| 64xxx  | code          | Voice/TTS/ConversationRelay errors  |
+| 80xxx  | code          | Recording errors                    |
+| 82xxx  | code          | Transcription errors                |
+| 90xxx  | configuration | TaskRouter errors                   |
+
+### How It Works
+
+1. **ANY error or warning from debugger = failure that needs attention**
+2. Error code determines the category via range lookup
+3. Twilio's error message is used directly (not pre-mapped)
+4. Fix suggestions are generic per domain, not per error code
+
+### Example
+
+```typescript
+// Error 64101 is classified as:
+// - Category: 'code' (64xxx range)
+// - Domain: 'Voice/TTS/ConversationRelay'
+// - Description: Uses Twilio's actual error message
+
+// The diagnosis will look like:
+{
+  rootCause: {
+    category: 'code',
+    description: 'Error 64101 (Voice/TTS/ConversationRelay): Invalid voice attribute',
+    confidence: 0.9
+  }
+}
+```
+
+### Why This Approach
+
+- **Scales automatically** to all Twilio error codes
+- **Uses authoritative source** (Twilio's error messages)
+- **No maintenance** when Twilio adds new errors
+- **Correct categorization** based on Twilio's own organization
 
 ## Usage
 

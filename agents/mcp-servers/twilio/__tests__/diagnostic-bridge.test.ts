@@ -147,6 +147,77 @@ describe('DiagnosticBridge', () => {
       expect(diagnosis.rootCause.description).toContain('11200');
     });
 
+    it('should classify Voice/TTS errors by range (64xxx)', () => {
+      // 64xxx errors are all in the Voice/TTS/ConversationRelay domain
+      // The system uses range-based classification, not individual error code mapping
+      const result = createMockValidationResult({
+        resourceType: 'call',
+        checks: {
+          resourceStatus: { passed: false, message: 'Failed', data: {} },
+          debuggerAlerts: {
+            passed: false,
+            message: 'TTS error',
+            data: [{ errorCode: '64101', alertText: 'Invalid voice configuration' }],
+          },
+        },
+      });
+
+      const diagnosis = bridge.analyze(result);
+
+      expect(diagnosis.rootCause.category).toBe('code');
+      expect(diagnosis.rootCause.description).toContain('64101');
+      // Uses range-based domain classification
+      expect(diagnosis.rootCause.description).toContain('Voice/TTS/ConversationRelay');
+      // Uses Twilio's error message directly
+      expect(diagnosis.rootCause.description).toContain('Invalid voice configuration');
+    });
+
+    it('should classify any 64xxx error as Voice/TTS/ConversationRelay domain', () => {
+      // Test multiple error codes in the range - all should get same domain
+      const errorCodes = ['64001', '64102', '64500', '64999'];
+
+      for (const errorCode of errorCodes) {
+        const result = createMockValidationResult({
+          resourceType: 'call',
+          checks: {
+            resourceStatus: { passed: false, message: 'Failed', data: {} },
+            debuggerAlerts: {
+              passed: false,
+              message: 'Error',
+              data: [{ errorCode, alertText: `Test error ${errorCode}` }],
+            },
+          },
+        });
+
+        const diagnosis = bridge.analyze(result);
+
+        expect(diagnosis.rootCause.category).toBe('code');
+        expect(diagnosis.rootCause.description).toContain(errorCode);
+        expect(diagnosis.rootCause.description).toContain('Voice/TTS/ConversationRelay');
+      }
+    });
+
+    it('should use Twilio error message directly instead of pre-mapped description', () => {
+      // The system should use Twilio's alertText, not hardcoded descriptions
+      const twilioMessage = 'The voice attribute "Polly.InvalidVoice" is not valid';
+      const result = createMockValidationResult({
+        resourceType: 'call',
+        checks: {
+          resourceStatus: { passed: false, message: 'Failed', data: {} },
+          debuggerAlerts: {
+            passed: false,
+            message: 'TTS error',
+            data: [{ errorCode: '64103', alertText: twilioMessage }],
+          },
+        },
+      });
+
+      const diagnosis = bridge.analyze(result);
+
+      // Should include Twilio's actual error message
+      expect(diagnosis.rootCause.description).toContain(twilioMessage);
+    });
+
     it('should classify timing issues correctly', () => {
       const result = createMockValidationResult({
         primaryStatus: 'pending', // Use pending status to avoid matching 'failed' -> 'code'
@@ -193,8 +264,60 @@ describe('DiagnosticBridge', () => {
       const diagnosis = bridge.analyze(result);
 
       expect(diagnosis.suggestedFixes.length).toBeGreaterThan(0);
-      // Should include phone number format fix
-      expect(diagnosis.suggestedFixes.some(f => f.description.includes('E.164'))).toBe(true);
+      // 21xxx errors should get phone number configuration suggestions
+      expect(diagnosis.suggestedFixes.some(f =>
+        f.description.toLowerCase().includes('phone number')
+      )).toBe(true);
+    });
+
+    it('should generate Voice/TTS fix suggestions for 64xxx errors', () => {
+      // Any error in the 64xxx range should get Voice/TTS/ConversationRelay suggestions
+      const result = createMockValidationResult({
+        resourceType: 'call',
+        checks: {
+          resourceStatus: { passed: false, message: 'TTS Failed', data: {} },
+          debuggerAlerts: { passed: false, message: 'TTS error', data: [{ errorCode: '64101' }] },
+        },
+      });
+
+      const diagnosis = bridge.analyze(result);
+
+      expect(diagnosis.suggestedFixes.length).toBeGreaterThan(0);
+      // Should include Voice/TTS/ConversationRelay fix based on error code range
+      expect(diagnosis.suggestedFixes.some(f =>
+        f.description.toLowerCase().includes('voice') ||
+        f.description.toLowerCase().includes('tts') ||
+        f.description.toLowerCase().includes('conversationrelay')
+      )).toBe(true);
+    });
+
+    it('should generate range-based fix suggestions for different error domains', () => {
+      // Test that error code ranges produce appropriate fix suggestions
+      const testCases = [
+        { errorCode: '11200', expectedTerm: 'webhook' },           // HTTP/webhook
+        { errorCode: '12200', expectedTerm: 'twiml' },             // TwiML
+        { errorCode: '30003', expectedTerm: 'message' },           // Messaging delivery
+        { errorCode: '64104', expectedTerm: 'voice' },             // Voice/TTS
+      ];
+
+      for (const { errorCode, expectedTerm } of testCases) {
+        const result = createMockValidationResult({
+          checks: {
+            resourceStatus: { passed: false, message: 'Failed', data: {} },
+            debuggerAlerts: { passed: false, message: 'Error', data: [{ errorCode }] },
+          },
+        });
+
+        const diagnosis = bridge.analyze(result);
+
+        expect(diagnosis.suggestedFixes.length).toBeGreaterThan(0);
+        // At least one fix should relate to the error domain
+        const hasRelevantFix = diagnosis.suggestedFixes.some(f =>
+          f.description.toLowerCase().includes(expectedTerm) ||
+          f.steps?.some(s => s.toLowerCase().includes(expectedTerm))
+        );
+        expect(hasRelevantFix).toBe(true);
+      }
     });
 
     it('should not generate fix suggestions when disabled', () => {

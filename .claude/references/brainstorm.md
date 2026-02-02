@@ -43,6 +43,25 @@ Let's develop your idea step by step. I'll ask one question at a time:
 5. **Integration Points**: What external systems need to connect?
 
 6. **Success Criteria**: How will you know if the prototype works?
+   - **6a. Products/Features Used**: Which Twilio APIs does this concept use?
+     (Voice, Messaging, Verify, Sync, TaskRouter, ConversationRelay, Intelligence, Serverless, etc.)
+   - **6b. Observable Success Evidence**: What proves it worked?
+     (e.g., "User receives SMS confirmation", "Call connects to agent within 30 seconds", "Transcript shows both parties spoke")
+   - **6c. Failure Indicators**: What would indicate failure?
+     (e.g., "User hears error message", "SMS never delivered", "Call drops after greeting")
+   - **6d. Validation Mapping**: Based on products used, which validators apply?
+     | Product Used | Validators to Run |
+     |--------------|-------------------|
+     | Voice | validateCall, validateRecording |
+     | ConversationRelay | validateConversationRelay, validateTwoWay |
+     | Messaging | validateMessage |
+     | Verify | validateVerification |
+     | Sync | validateSyncDocument |
+     | TaskRouter | validateTask |
+     | Conference | validateConference |
+     | Intelligence | validateTranscript, validateLanguageOperator |
+     | Serverless | validateServerlessFunctions |
+     | (Always) | validateDebugger |
 
 ## Concept Format
 
@@ -66,6 +85,19 @@ As we discuss, I'll help you develop a concept in this format:
 **Technical Considerations**:
 - Consideration one
 - Consideration two
+
+**Success Criteria**:
+
+*Products Used → Validators*:
+- [Product]: [validator1, validator2]
+
+*Observable Evidence*:
+- [ ] [Evidence 1 from brainstorm]
+- [ ] [Evidence 2 from brainstorm]
+
+*Failure Indicators*:
+- [Indicator 1]
+- [Indicator 2]
 
 **Next Steps**:
 1. First step

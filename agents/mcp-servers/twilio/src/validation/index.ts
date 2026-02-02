@@ -61,3 +61,14 @@ export {
   type PatternDatabase,
   type PatternTrackerConfig,
 } from './pattern-tracker.js';
+
+// ComprehensiveValidator - Orchestrates validators based on products used
+export {
+  ComprehensiveValidator,
+  createComprehensiveValidator,
+  type AnyValidationResult,
+  type ComprehensiveValidationResult,
+  type ComprehensiveValidatorConfig,
+  type TwilioProduct,
+  type VoiceAIFlowOptions,
+} from './comprehensive-validator.js';

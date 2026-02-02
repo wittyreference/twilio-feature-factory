@@ -6,6 +6,8 @@ exports.handler = async (context, event, callback) => {
 
   const connect = twiml.connect();
 
+  // NOTE: interruptByDtmf is NOT a valid ConversationRelay attribute.
+  // Use dtmfDetection to detect DTMF tones; interruption is controlled by interruptible.
   connect.conversationRelay({
     url: context.CONVERSATION_RELAY_URL || 'wss://your-websocket-server.com/relay',
     transcriptionProvider: 'deepgram',
@@ -14,7 +16,6 @@ exports.handler = async (context, event, callback) => {
     language: 'en-US',
     dtmfDetection: 'true',
     interruptible: 'true',
-    interruptByDtmf: 'true',
   });
 
   return callback(null, twiml);

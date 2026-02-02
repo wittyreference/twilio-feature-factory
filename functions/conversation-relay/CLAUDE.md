@@ -38,11 +38,12 @@ connect.conversationRelay({
   profanityFilter: 'true',                   // Filter profanity
   dtmfDetection: 'true',                     // Detect DTMF tones
   interruptible: 'true',                     // Allow interruptions
-  interruptByDtmf: 'true',                   // DTMF can interrupt
   welcomeGreeting: 'Hello, how can I help?', // Initial greeting
   partialPrompts: 'true'                     // Enable partial transcripts
 });
 ```
+
+**Note**: `interruptByDtmf` is NOT a valid ConversationRelay attribute. DTMF detection is controlled by `dtmfDetection`, and interruption behavior is controlled by `interruptible`.
 
 ## WebSocket Message Protocol
 

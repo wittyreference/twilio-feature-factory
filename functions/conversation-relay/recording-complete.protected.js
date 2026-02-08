@@ -43,6 +43,17 @@ exports.handler = async function (context, event, callback) {
     const recordingMediaUrl = `${RecordingUrl}.mp3`;
     let transcriptSid = null;
 
+    // Fetch call details to get From/To numbers for SMS summary later
+    let callFrom = null;
+    let callTo = null;
+    try {
+      const call = await client.calls(CallSid).fetch();
+      callFrom = call.from;
+      callTo = call.to;
+    } catch (callError) {
+      console.log(`Could not fetch call details: ${callError.message}`);
+    }
+
     // Step 1: Trigger Voice Intelligence transcription if configured
     if (intelligenceServiceSid && RecordingStatus === 'completed') {
       try {
@@ -83,9 +94,11 @@ exports.handler = async function (context, event, callback) {
           .documents(documentName)
           .fetch();
 
-        // Update with recording and transcript info
+        // Update with recording and transcript info (add from/to if not present)
         const updatedData = {
           ...doc.data,
+          from: doc.data.from || callFrom,
+          to: doc.data.to || callTo,
           recordingSid: RecordingSid,
           recordingUrl: recordingMediaUrl,
           recordingDuration: RecordingDuration,
@@ -110,6 +123,8 @@ exports.handler = async function (context, event, callback) {
               uniqueName: `recording-${CallSid}`,
               data: {
                 callSid: CallSid,
+                from: callFrom,
+                to: callTo,
                 recordingSid: RecordingSid,
                 recordingUrl: recordingMediaUrl,
                 recordingDuration: RecordingDuration,

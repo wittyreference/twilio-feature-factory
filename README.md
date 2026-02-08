@@ -102,13 +102,33 @@ During execution, autonomous agents have access to:
    - `TWILIO_AUTH_TOKEN`
    - `TWILIO_PHONE_NUMBER`
 
-4. **Start development server**
+4. **Export environment variables**
+
+   The Twilio MCP server needs your `.env` variables exported into the shell. The easiest way is [direnv](https://direnv.net/):
+
+   ```bash
+   brew install direnv
+   echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc  # or ~/.bashrc for bash
+   source ~/.zshrc
+   echo 'dotenv' > .envrc
+   direnv allow
+   ```
+
+   This auto-loads `.env` whenever you `cd` into the project. Without this, the MCP server will fail to start because it can't read your Twilio credentials.
+
+   **Alternative** (no install required):
+   ```bash
+   set -a && source .env && set +a
+   ```
+   Run this before launching Claude Code each session.
+
+5. **Start development server**
 
    ```bash
    npm start
    ```
 
-5. **Build your first app**
+6. **Build your first app**
 
    In Claude Code, start by referencing the brainstorm template:
 

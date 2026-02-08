@@ -2,16 +2,19 @@
 # ABOUTME: Captures the compaction summary after context is compacted.
 # ABOUTME: Extracts the summary from transcript and saves for debugging.
 
-# Read JSON input from stdin
+# Read JSON input from stdin.
+# Two callers:
+#   1. SessionStart hook (manual /compact) - has "source": "compact"
+#   2. PostToolUse hooks via marker file - has session_id/transcript_path but no source
 INPUT=$(cat)
 
 # Extract fields from hook input
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // "unknown"' 2>/dev/null)
 TRANSCRIPT_PATH=$(echo "$INPUT" | jq -r '.transcript_path // ""' 2>/dev/null)
-SOURCE=$(echo "$INPUT" | jq -r '.source // "unknown"' 2>/dev/null)
+SOURCE=$(echo "$INPUT" | jq -r '.source // "marker"' 2>/dev/null)
 
-# Only run for compaction restarts
-if [ "$SOURCE" != "compact" ]; then
+# Only run for compaction-related invocations (SessionStart compact or marker file)
+if [ "$SOURCE" != "compact" ] && [ "$SOURCE" != "marker" ]; then
     exit 0
 fi
 

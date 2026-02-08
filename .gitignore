@@ -55,3 +55,4 @@ newman/
 .claude/.session-files
 .claude/.session-start
 .claude/.last-doc-check
+.claude/.compact-pending

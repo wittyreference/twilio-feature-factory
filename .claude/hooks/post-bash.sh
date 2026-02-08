@@ -2,6 +2,28 @@
 # ABOUTME: Post-bash hook for tracking command completions.
 # ABOUTME: Logs deployment completions and sends notifications for key operations.
 
+# ============================================
+# COMPACT-PENDING MARKER CHECK
+# ============================================
+# After auto-compaction, PreCompact leaves a marker file. Pick it up here
+# to run the compaction summary extraction (since SessionStart only fires
+# for manual /compact, not auto-compaction).
+_check_compact_pending() {
+    local HOOK_DIR="$(dirname "${BASH_SOURCE[0]}")"
+    source "$HOOK_DIR/_meta-mode.sh"
+    local MARKER
+    if [ "$CLAUDE_META_MODE" = "true" ]; then
+        MARKER="$PROJECT_ROOT/.meta/.compact-pending"
+    else
+        MARKER="$PROJECT_ROOT/.claude/.compact-pending"
+    fi
+    if [ -f "$MARKER" ]; then
+        "$HOOK_DIR/post-compact-summary.sh" < "$MARKER"
+        rm -f "$MARKER"
+    fi
+}
+_check_compact_pending
+
 COMMAND="${CLAUDE_TOOL_INPUT_COMMAND:-}"
 
 # Exit if no command

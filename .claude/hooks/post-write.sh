@@ -2,6 +2,28 @@
 # ABOUTME: Post-write hook for auto-linting and session file tracking.
 # ABOUTME: Environment-aware: tracks files to .meta/ (meta) or .claude/ (shipped).
 
+# ============================================
+# COMPACT-PENDING MARKER CHECK
+# ============================================
+# After auto-compaction, PreCompact leaves a marker file. Pick it up here
+# to run the compaction summary extraction (since SessionStart only fires
+# for manual /compact, not auto-compaction).
+_check_compact_pending() {
+    local HOOK_DIR="$(dirname "${BASH_SOURCE[0]}")"
+    source "$HOOK_DIR/_meta-mode.sh"
+    local MARKER
+    if [ "$CLAUDE_META_MODE" = "true" ]; then
+        MARKER="$PROJECT_ROOT/.meta/.compact-pending"
+    else
+        MARKER="$PROJECT_ROOT/.claude/.compact-pending"
+    fi
+    if [ -f "$MARKER" ]; then
+        "$HOOK_DIR/post-compact-summary.sh" < "$MARKER"
+        rm -f "$MARKER"
+    fi
+}
+_check_compact_pending
+
 FILE_PATH="${CLAUDE_TOOL_INPUT_FILE_PATH:-}"
 
 # Exit early if no file path

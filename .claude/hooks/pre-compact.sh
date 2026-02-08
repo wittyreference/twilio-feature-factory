@@ -32,5 +32,14 @@ mkdir -p "$LOGS_DIR"
 echo "PreCompact: trigger=$TRIGGER session=$SESSION_ID timestamp=$TIMESTAMP" >> "$LOGS_DIR/compaction-events.log"
 echo "Compaction triggered ($TRIGGER) - summary will be captured after compaction" >&2
 
+# Leave a marker file for PostToolUse hooks to pick up.
+# SessionStart with matcher "compact" only fires for manual /compact (which restarts
+# the session). Auto-compaction compresses context in-place without restarting, so
+# the SessionStart hook never fires. The marker file bridges this gap: PreCompact
+# writes it, and the next PostToolUse hook (post-write.sh or post-bash.sh) picks it
+# up to run the summary extraction.
+MARKER_FILE="$LOGS_DIR/../.compact-pending"
+echo "{\"session_id\":\"$SESSION_ID\",\"transcript_path\":\"$TRANSCRIPT_PATH\",\"timestamp\":\"$TIMESTAMP\"}" > "$MARKER_FILE"
+
 # Always exit successfully - don't block compaction
 exit 0

@@ -117,9 +117,55 @@ For each operation, the validator runs multiple checks:
 |-------|--------|-------------------|
 | resourceStatus | `calls(sid).fetch()` | Status is completed (not failed/busy/no-answer) |
 | debuggerAlerts | `monitor.alerts.list()` | No alerts related to this SID |
+| callNotifications | `calls(sid).notifications.list()` | No error-level notifications |
 | callEvents | `insights.v1.calls(sid).events.list()` | No HTTP errors in webhook requests |
+| callContent | recordings + transcripts | Content quality validation (see below) |
 | voiceInsights | `insights.v1.calls(sid).summary().fetch()` | No error tags in call summary |
 | syncCallbacks | Sync Document | Callback data received (if Sync configured) |
+
+### Call Content Validation (New)
+
+**Problem solved**: A call can be "completed" from Twilio's perspective but the user heard an error message like "application error has occurred".
+
+The `callContent` check validates the actual content of the call:
+
+| Check | What It Validates |
+|-------|-------------------|
+| Duration heuristics | Call duration >= minDuration (default: 15s). Short calls often indicate early errors. |
+| Recording existence | Recording exists if `requireRecording: true` |
+| Transcript patterns | Transcript does NOT contain forbidden patterns |
+
+**Default forbidden patterns**:
+- "application error"
+- "we're sorry"
+- "cannot be completed"
+- "not configured"
+- "please try again later"
+- "an error occurred"
+- "system error"
+
+**Usage**:
+
+```typescript
+const result = await validator.validateCall(callSid, {
+  validateContent: true,           // Enable content validation
+  minDuration: 30,                 // Minimum 30 seconds expected
+  forbiddenPatterns: [             // Custom patterns to detect
+    'application error',
+    'please hold',
+  ],
+  intelligenceServiceSid: 'GAxxx', // For transcript analysis
+  requireRecording: false,         // Don't require recording
+});
+
+// Check result
+if (!result.checks.callContent?.passed) {
+  console.error('Content validation failed:', result.checks.callContent.message);
+  // e.g., "Forbidden pattern found in transcript: application error"
+}
+```
+
+**When to use**: Enable content validation for Voice AI applications where you need to verify the AI actually had a conversation, not just that the call completed.
 
 ### Verifications
 
@@ -407,7 +453,9 @@ interface ValidationResult {
   checks: {
     resourceStatus: CheckResult;
     debuggerAlerts: CheckResult;
+    callNotifications?: CheckResult;             // Calls only
     callEvents?: CheckResult;                    // Calls only
+    callContent?: CheckResult;                   // Calls only, if validateContent enabled
     voiceInsights?: CheckResult;                 // Calls only
     conferenceInsights?: CheckResult;            // Conferences only
     conferenceParticipantInsights?: CheckResult; // Conferences only
@@ -432,6 +480,12 @@ interface ValidationOptions {
   syncServiceSid?: string;        // For callback data validation
   serverlessServiceSid?: string;  // For Function log checking
   studioFlowSid?: string;         // For Studio execution checking
+  // Content validation options (calls only)
+  validateContent?: boolean;      // Enable content validation (default: false)
+  minDuration?: number;           // Minimum call duration in seconds (default: 15)
+  forbiddenPatterns?: string[];   // Patterns that should NOT appear in transcripts
+  intelligenceServiceSid?: string; // Voice Intelligence Service for transcript analysis
+  requireRecording?: boolean;     // Require recording to exist (default: false)
 }
 ```
 

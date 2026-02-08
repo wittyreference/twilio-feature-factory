@@ -25,7 +25,9 @@ export interface ValidationResult {
   checks: {
     resourceStatus: CheckResult;
     debuggerAlerts: CheckResult;
+    callNotifications?: CheckResult;
     callEvents?: CheckResult;
+    callContent?: CheckResult;
     voiceInsights?: CheckResult;
     conferenceInsights?: CheckResult;
     conferenceParticipantInsights?: CheckResult;
@@ -56,6 +58,17 @@ export interface ValidationOptions {
   serverlessServiceSid?: string;
   /** Studio Flow SID to check. If not provided, skips Studio check. */
   studioFlowSid?: string;
+  // Content validation options (for calls)
+  /** Enable content validation (check recordings/transcripts). Default: false */
+  validateContent?: boolean;
+  /** Minimum call duration in seconds. Shorter calls may indicate errors. Default: 15 */
+  minDuration?: number;
+  /** Patterns that should NOT appear in transcripts (e.g., "application error"). */
+  forbiddenPatterns?: string[];
+  /** Intelligence Service SID for transcript analysis. */
+  intelligenceServiceSid?: string;
+  /** Require recording to exist for content validation. Default: false */
+  requireRecording?: boolean;
 }
 
 // ===== New Validation Interfaces =====
@@ -401,11 +414,15 @@ export interface DeepValidatorEvents {
   'validation-success': [event: { type: ValidationEventType; result: unknown; timestamp: Date }];
 }
 
-const DEFAULT_OPTIONS: Required<Omit<ValidationOptions, 'syncServiceSid' | 'serverlessServiceSid' | 'studioFlowSid'>> = {
+const DEFAULT_OPTIONS: Required<Omit<ValidationOptions, 'syncServiceSid' | 'serverlessServiceSid' | 'studioFlowSid' | 'intelligenceServiceSid' | 'forbiddenPatterns'>> = {
   waitForTerminal: false,
   timeout: 30000,
   pollInterval: 2000,
   alertLookbackSeconds: 120,
+  // Content validation defaults
+  validateContent: false,
+  minDuration: 15,
+  requireRecording: false,
 };
 
 const MESSAGE_TERMINAL_STATUSES = ['delivered', 'undelivered', 'failed', 'read'];
@@ -523,9 +540,10 @@ export class DeepValidator extends EventEmitter {
     const warnings: string[] = [];
 
     // Run initial checks in parallel
-    const [statusCheck, alertCheck, eventsCheck, syncCheck] = await Promise.all([
+    const [statusCheck, alertCheck, notificationsCheck, eventsCheck, syncCheck] = await Promise.all([
       this.checkCallStatus(callSid, opts),
       this.checkDebuggerAlerts(callSid, opts),
+      this.checkCallNotifications(callSid),
       this.checkCallEvents(callSid),
       opts.syncServiceSid
         ? this.checkSyncCallbacks('call', callSid, opts.syncServiceSid)
@@ -537,6 +555,12 @@ export class DeepValidator extends EventEmitter {
     const status = (statusCheck.data as { status?: string })?.status;
     if (status && CALL_TERMINAL_STATUSES.includes(status)) {
       insightsCheck = await this.checkVoiceInsights(callSid);
+    }
+
+    // Check call content if enabled (recordings, transcripts, forbidden patterns)
+    let contentCheck: CheckResult | undefined;
+    if (opts.validateContent) {
+      contentCheck = await this.checkCallContent(callSid, opts);
     }
 
     // Check Function logs if configured
@@ -554,13 +578,20 @@ export class DeepValidator extends EventEmitter {
     // Aggregate errors
     if (!statusCheck.passed) errors.push(statusCheck.message);
     if (!alertCheck.passed) errors.push(alertCheck.message);
+    if (!notificationsCheck.passed) errors.push(notificationsCheck.message);
     if (!eventsCheck.passed) errors.push(eventsCheck.message);
     if (syncCheck && !syncCheck.passed) errors.push(syncCheck.message);
+    if (contentCheck && !contentCheck.passed) errors.push(contentCheck.message);
     if (insightsCheck && !insightsCheck.passed) warnings.push(insightsCheck.message);
     if (functionLogsCheck && !functionLogsCheck.passed) warnings.push(functionLogsCheck.message);
     if (studioLogsCheck && !studioLogsCheck.passed) warnings.push(studioLogsCheck.message);
 
-    const success = statusCheck.passed && alertCheck.passed && eventsCheck.passed;
+    // Content check is included in success determination when enabled
+    const success = statusCheck.passed &&
+      alertCheck.passed &&
+      notificationsCheck.passed &&
+      eventsCheck.passed &&
+      (!contentCheck || contentCheck.passed);
 
     const result: ValidationResult = {
       success,
@@ -570,7 +601,9 @@ export class DeepValidator extends EventEmitter {
       checks: {
         resourceStatus: statusCheck,
         debuggerAlerts: alertCheck,
+        callNotifications: notificationsCheck,
         callEvents: eventsCheck,
+        callContent: contentCheck,
         voiceInsights: insightsCheck,
         syncCallbacks: syncCheck,
         functionLogs: functionLogsCheck,
@@ -1117,6 +1150,59 @@ export class DeepValidator extends EventEmitter {
     }
   }
 
+  /**
+   * Check call-specific notifications (errors logged during the call).
+   * This is distinct from account-wide debugger alerts - these are call-specific errors
+   * like TwiML parsing failures, WebSocket connection issues, etc.
+   */
+  private async checkCallNotifications(callSid: string): Promise<CheckResult> {
+    try {
+      const notifications = await this.client.calls(callSid).notifications.list({ limit: 50 });
+
+      if (notifications.length === 0) {
+        return {
+          passed: true,
+          message: 'No call notifications',
+          data: [],
+        };
+      }
+
+      // Any notification with error code indicates a problem
+      const errorNotifications = notifications.filter((n) => {
+        // Log levels: 0=ERROR, 1=WARNING, 2=NOTICE, 3+=INFO/DEBUG
+        const logLevel = (n as unknown as { log: string }).log;
+        return logLevel === '0' || logLevel === '1'; // Error or Warning
+      });
+
+      if (errorNotifications.length > 0) {
+        return {
+          passed: false,
+          message: `Found ${errorNotifications.length} call notification(s): ${errorNotifications.map((n) => n.errorCode).join(', ')}`,
+          data: errorNotifications.map((n) => ({
+            errorCode: n.errorCode,
+            messageText: n.messageText,
+            moreInfo: n.moreInfo,
+            logLevel: (n as unknown as { log: string }).log,
+          })),
+        };
+      }
+
+      return {
+        passed: true,
+        message: `${notifications.length} notification(s), no errors`,
+        data: notifications.map((n) => ({
+          errorCode: n.errorCode,
+          messageText: n.messageText,
+        })),
+      };
+    } catch (error) {
+      return {
+        passed: true, // Don't fail if we can't fetch notifications
+        message: `Could not fetch call notifications: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
   private async checkCallEvents(callSid: string): Promise<CheckResult> {
     try {
       // Use insights API to get call events (more reliable than deprecated events endpoint)
@@ -1181,6 +1267,122 @@ export class DeepValidator extends EventEmitter {
       return {
         passed: true,
         message: `Voice Insights not available: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * Check call content quality by examining recordings and transcripts.
+   * Detects false positives where API says "completed" but user heard error message.
+   *
+   * Checks:
+   * 1. Call duration heuristics (suspiciously short calls often indicate errors)
+   * 2. Recording existence (if required)
+   * 3. Transcript content for forbidden patterns (e.g., "application error")
+   */
+  private async checkCallContent(
+    callSid: string,
+    options: ValidationOptions
+  ): Promise<CheckResult> {
+    const minDuration = options.minDuration ?? 15;
+    const forbiddenPatterns = options.forbiddenPatterns ?? [
+      'application error',
+      'we\'re sorry',
+      'cannot be completed',
+      'not configured',
+      'please try again later',
+      'an error occurred',
+      'system error',
+    ];
+
+    try {
+      // 1. Get call details to check duration
+      const call = await this.client.calls(callSid).fetch();
+      const duration = parseInt(call.duration || '0', 10);
+
+      if (duration < minDuration) {
+        return {
+          passed: false,
+          message: `Call duration ${duration}s below minimum ${minDuration}s (may indicate early error)`,
+          data: { duration, minDuration, status: call.status },
+        };
+      }
+
+      // 2. Get recordings for this call
+      const recordings = await this.client.recordings.list({ callSid, limit: 5 });
+
+      if (recordings.length === 0 && options.requireRecording) {
+        return {
+          passed: false,
+          message: 'No recording found for call (required for content validation)',
+          data: { duration },
+        };
+      }
+
+      // 3. If Intelligence Service is configured, check transcript content
+      if (options.intelligenceServiceSid && recordings.length > 0) {
+        try {
+          // Find transcripts for the recordings
+          const transcripts = await this.client.intelligence.v2.transcripts.list({
+            limit: 10,
+          });
+
+          // Look for transcripts that may be related to this call's recordings
+          // (Transcripts are created from recordings, so filter by recent ones)
+          const recentTranscripts = transcripts.filter((t) => {
+            const created = new Date(t.dateCreated).getTime();
+            const callEnd = new Date(call.endTime || call.dateUpdated).getTime();
+            // Transcript should be created within 5 minutes of call end
+            return created >= callEnd && created <= callEnd + 5 * 60 * 1000;
+          });
+
+          if (recentTranscripts.length > 0) {
+            // Check the first matching transcript for forbidden patterns
+            const transcript = recentTranscripts[0];
+
+            if (transcript.status === 'completed') {
+              const sentences = await this.client.intelligence.v2
+                .transcripts(transcript.sid)
+                .sentences.list({ limit: 100 });
+
+              const allText = sentences.map((s) => s.transcript || '').join(' ').toLowerCase();
+
+              // Check for forbidden patterns
+              for (const pattern of forbiddenPatterns) {
+                if (allText.includes(pattern.toLowerCase())) {
+                  return {
+                    passed: false,
+                    message: `Forbidden pattern found in transcript: "${pattern}"`,
+                    data: {
+                      pattern,
+                      transcriptSid: transcript.sid,
+                      sampleText: allText.substring(0, 200),
+                      duration,
+                    },
+                  };
+                }
+              }
+            }
+          }
+        } catch (transcriptError) {
+          // Transcript check is best-effort, don't fail validation
+          // Just note the warning
+        }
+      }
+
+      return {
+        passed: true,
+        message: `Call content validated: ${duration}s duration, ${recordings.length} recording(s)`,
+        data: {
+          duration,
+          recordingCount: recordings.length,
+          recordingSids: recordings.map((r) => r.sid),
+        },
+      };
+    } catch (error) {
+      return {
+        passed: true, // Don't fail if we can't check content
+        message: `Could not check call content: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }

@@ -20,6 +20,8 @@ exports.handler = async (context, event, callback) => {
   // Connect to ConversationRelay with Deepgram nova-3
   const connect = twiml.connect();
 
+  // NOTE: interruptByDtmf is NOT a valid ConversationRelay attribute.
+  // DTMF detection is controlled by dtmfDetection, interruption by interruptible.
   connect.conversationRelay({
     url: wsUrl,
     transcriptionProvider: 'deepgram',
@@ -28,7 +30,6 @@ exports.handler = async (context, event, callback) => {
     language: 'en-US',
     dtmfDetection: 'true',
     interruptible: 'true',
-    interruptByDtmf: 'true',
   });
 
   return callback(null, twiml);

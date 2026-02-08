@@ -30,6 +30,8 @@ import { iamTools } from './tools/iam.js';
 import { pricingTools } from './tools/pricing.js';
 import { notifyTools } from './tools/notify.js';
 import { addressesTools } from './tools/addresses.js';
+// Validation tools (Deep validation beyond HTTP 200)
+import { validationTools } from './tools/validation.js';
 
 export interface TwilioMcpServerConfig {
   accountSid?: string;
@@ -110,6 +112,8 @@ export function createTwilioMcpServer(config: TwilioMcpServerConfig = {}) {
       ...pricingTools(context),
       ...notifyTools(context),
       ...addressesTools(context),
+      // Validation tools
+      ...validationTools(context),
     ],
   };
 }
@@ -143,6 +147,8 @@ export { iamTools } from './tools/iam.js';
 export { pricingTools } from './tools/pricing.js';
 export { notifyTools } from './tools/notify.js';
 export { addressesTools } from './tools/addresses.js';
+// Validation tool exports
+export { validationTools } from './tools/validation.js';
 
 // Export validation utilities
 export {

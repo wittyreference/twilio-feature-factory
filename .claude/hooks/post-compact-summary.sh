@@ -36,8 +36,9 @@ mkdir -p "$LOGS_DIR"
 
 # Extract the compaction summary from transcript
 if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
-    # Find the entry with isCompactSummary: true and extract the message content
-    SUMMARY=$(jq -r 'select(.isCompactSummary == true) | .message.content' "$TRANSCRIPT_PATH" 2>/dev/null | tail -1)
+    # Find the LAST entry with isCompactSummary: true and extract the full message content
+    # Use -s (slurp) to read all entries, filter to summaries, take last one
+    SUMMARY=$(jq -rs '[.[] | select(.isCompactSummary == true)] | last | .message.content' "$TRANSCRIPT_PATH" 2>/dev/null)
 
     if [ -n "$SUMMARY" ] && [ "$SUMMARY" != "null" ]; then
         {

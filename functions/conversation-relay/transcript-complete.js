@@ -42,11 +42,12 @@ exports.handler = async function (context, event, callback) {
     return callback(null, response);
   }
 
-  // Only process completed transcripts
-  if (status !== 'completed') {
-    console.log(`Transcript ${transcript_sid} status: ${status}, skipping`);
+  // Only process transcript_available events (the 'status' field doesn't exist in webhook)
+  // Voice Intelligence webhooks send event_type, not status
+  if (event_type !== 'voice_intelligence_transcript_available') {
+    console.log(`Transcript ${transcript_sid} event_type: ${event_type}, skipping`);
     response.setStatusCode(200);
-    response.setBody({ success: true, skipped: true, status });
+    response.setBody({ success: true, skipped: true, event_type });
     return callback(null, response);
   }
 

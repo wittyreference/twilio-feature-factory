@@ -237,6 +237,32 @@ export function validationTools(context: TwilioContext) {
     }
   );
 
+  const validateLanguageOperator = createTool(
+    'validate_language_operator',
+    'Validate that Language Operators (summarization, classification, extraction) ran successfully on a transcript. Use after transcript completes to verify operators produced results.',
+    z.object({
+      transcriptSid: z.string().describe('Transcript SID (GT...) to check for operator results'),
+      operatorType: z.enum(['text-generation', 'classification', 'extraction']).optional().describe('Filter by operator type (e.g., text-generation for summarization)'),
+      operatorName: z.string().optional().describe('Filter by operator name (e.g., "Call Summary")'),
+      requireResults: z.boolean().optional().default(true).describe('Fail if no operator results found'),
+    }),
+    async ({ transcriptSid, operatorType, operatorName, requireResults }) => {
+      const validator = new DeepValidator(client);
+      const result = await validator.validateLanguageOperator(transcriptSid, {
+        operatorType,
+        operatorName,
+        requireResults,
+      });
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify(result, null, 2),
+        }],
+      };
+    }
+  );
+
   return [
     validateCall,
     validateMessage,
@@ -245,5 +271,6 @@ export function validationTools(context: TwilioContext) {
     validateRecording,
     validateTranscript,
     validateTwoWay,
+    validateLanguageOperator,
   ];
 }

@@ -99,37 +99,80 @@ function startAgentServer(role, port) {
   });
 }
 
-// Start ngrok tunnel
+// Start ngrok tunnel using spawn for proper process management
 async function startNgrokTunnel(port) {
   console.log(`Starting ngrok tunnel for port ${port}...`);
 
-  try {
-    // Use ngrok API to start tunnel
-    const { stdout } = await execAsync(`ngrok http ${port} --log=stdout &`);
-    console.log(`ngrok started for port ${port}`);
+  return new Promise((resolve, reject) => {
+    // Start ngrok as a background process
+    const ngrokProcess = spawn('ngrok', ['http', String(port), '--log=stdout'], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: true,
+    });
 
-    // Wait a moment for tunnel to establish
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    let resolved = false;
 
-    // Get tunnel URL from ngrok API
-    const { stdout: tunnelsJson } = await execAsync('curl -s http://localhost:4040/api/tunnels');
-    const tunnels = JSON.parse(tunnelsJson);
+    ngrokProcess.stdout.on('data', async (data) => {
+      const output = data.toString();
 
-    const tunnel = tunnels.tunnels.find(t => t.config.addr.includes(String(port)));
+      // Look for the URL in ngrok output
+      if (output.includes('url=') && !resolved) {
+        // Extract URL from log line like "url=https://xxx.ngrok.io"
+        const urlMatch = output.match(/url=(https:\/\/[^\s]+)/);
+        if (urlMatch) {
+          resolved = true;
+          const wsUrl = urlMatch[1].replace('https://', 'wss://');
+          console.log(`Tunnel URL for port ${port}: ${wsUrl}`);
+          resolve({ process: ngrokProcess, url: wsUrl });
+        }
+      }
+    });
 
-    if (!tunnel) {
-      throw new Error(`No tunnel found for port ${port}`);
-    }
+    ngrokProcess.stderr.on('data', (data) => {
+      const output = data.toString();
+      if (output.includes('ERR')) {
+        console.error(`[NGROK ${port}] ${output.trim()}`);
+      }
+    });
 
-    // Convert https to wss
-    const wsUrl = tunnel.public_url.replace('https://', 'wss://');
-    console.log(`Tunnel URL for port ${port}: ${wsUrl}`);
+    ngrokProcess.on('error', (err) => {
+      if (!resolved) {
+        resolved = true;
+        reject(err);
+      }
+    });
 
-    return wsUrl;
-  } catch (error) {
-    console.error(`Error starting ngrok tunnel: ${error.message}`);
-    throw error;
-  }
+    // Fallback: if URL not found in stdout, try API after delay
+    setTimeout(async () => {
+      if (!resolved) {
+        try {
+          const { stdout: tunnelsJson } = await execAsync('curl -s http://localhost:4040/api/tunnels');
+          const tunnels = JSON.parse(tunnelsJson);
+          const tunnel = tunnels.tunnels.find(t => t.config.addr.includes(String(port)));
+
+          if (tunnel) {
+            resolved = true;
+            const wsUrl = tunnel.public_url.replace('https://', 'wss://');
+            console.log(`Tunnel URL for port ${port} (via API): ${wsUrl}`);
+            resolve({ process: ngrokProcess, url: wsUrl });
+          } else {
+            reject(new Error(`No tunnel found for port ${port} after timeout`));
+          }
+        } catch (apiError) {
+          reject(new Error(`ngrok API not available: ${apiError.message}`));
+        }
+      }
+    }, 5000);
+
+    // Hard timeout
+    setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        ngrokProcess.kill();
+        reject(new Error(`ngrok tunnel for port ${port} failed to start`));
+      }
+    }, 15000);
+  });
 }
 
 // Update Twilio phone number webhook
@@ -287,17 +330,35 @@ async function validateResults(sessionId, callSid) {
 }
 
 // Cleanup
-function cleanup(processes) {
+function cleanup(processes, ngrokProcesses = []) {
   console.log('\nCleaning up...');
 
+  // Kill agent servers
   processes.forEach(p => {
     if (p && !p.killed) {
-      p.kill();
+      try {
+        p.kill('SIGTERM');
+      } catch (e) {
+        // Ignore errors
+      }
     }
   });
 
-  // Kill ngrok
-  exec('pkill -f ngrok', () => {});
+  // Kill ngrok processes
+  ngrokProcesses.forEach(p => {
+    if (p && !p.killed) {
+      try {
+        // ngrok was started detached, need to kill process group
+        process.kill(-p.pid, 'SIGTERM');
+      } catch (e) {
+        // Ignore errors, try regular kill
+        try { p.kill('SIGTERM'); } catch (_) {}
+      }
+    }
+  });
+
+  // Fallback: kill any remaining ngrok processes
+  exec('pkill -f "ngrok http"', () => {});
 }
 
 // Main test runner
@@ -309,65 +370,129 @@ async function runTest() {
   checkEnv();
 
   const processes = [];
+  const ngrokProcesses = [];
   const sessionId = `test-${Date.now()}`;
 
+  // Check for optional full automation
+  const runFullAutomation = process.env.FULL_AUTOMATION === 'true';
+
   try {
-    // Note: This is a simplified test that assumes:
-    // 1. ngrok is already running with tunnels
-    // 2. Webhooks are already configured
-    // 3. Agent servers can be started manually
+    console.log('\n--- Phase 1: Starting Agent Servers ---');
 
-    console.log('\n--- Starting Agent Servers ---');
+    // Start Agent A (questioner)
+    const agentA = await startAgentServer('questioner', AGENT_A_PORT);
+    processes.push(agentA.process);
+    console.log(`Agent A (questioner) started on port ${AGENT_A_PORT}`);
 
-    // For a full automated test, we would:
-    // 1. Start agent servers
-    // 2. Start ngrok tunnels
-    // 3. Update phone number webhooks
-    // 4. Trigger the call
-    // 5. Wait and validate
+    // Start Agent B (answerer)
+    const agentB = await startAgentServer('answerer', AGENT_B_PORT);
+    processes.push(agentB.process);
+    console.log(`Agent B (answerer) started on port ${AGENT_B_PORT}`);
 
-    // For now, provide manual instructions
-    console.log(`
-To run the full agent-to-agent test:
+    if (runFullAutomation) {
+      console.log('\n--- Phase 2: Starting ngrok Tunnels ---');
 
-1. Start Agent A (questioner) server:
-   AGENT_ROLE=questioner PORT=8080 TEST_SESSION_ID=${sessionId} \\
-   node __tests__/e2e/agent-server-template.js
+      // Start ngrok tunnels
+      const tunnelA = await startNgrokTunnel(AGENT_A_PORT);
+      ngrokProcesses.push(tunnelA.process);
+      console.log(`Tunnel A: ${tunnelA.url}`);
 
-2. Start Agent B (answerer) server:
-   AGENT_ROLE=answerer PORT=8081 TEST_SESSION_ID=${sessionId} \\
-   node __tests__/e2e/agent-server-template.js
+      const tunnelB = await startNgrokTunnel(AGENT_B_PORT);
+      ngrokProcesses.push(tunnelB.process);
+      console.log(`Tunnel B: ${tunnelB.url}`);
 
-3. Start ngrok tunnels:
-   ngrok http 8080 --domain=agent-a.ngrok.io &
-   ngrok http 8081 --domain=agent-b.ngrok.io &
+      console.log('\n--- Phase 3: Updating Phone Number Webhooks ---');
 
-4. Update phone number webhooks:
-   twilio phone-numbers:update +12062021014 \\
-     --voice-url="https://your-domain.twil.io/conversation-relay/agent-a-inbound"
-   twilio phone-numbers:update +12062031575 \\
-     --voice-url="https://your-domain.twil.io/conversation-relay/agent-b-inbound"
+      const agentAPhone = process.env.AGENT_A_PHONE_NUMBER || '+12062021014';
+      const agentBPhone = process.env.AGENT_B_PHONE_NUMBER || '+12062031575';
 
-5. Set environment variables in .env:
-   AGENT_A_RELAY_URL=wss://agent-a.ngrok.io
-   AGENT_B_RELAY_URL=wss://agent-b.ngrok.io
+      // For full automation, we'd need deployed functions that reference these tunnels
+      // This requires serverless deployment with the tunnel URLs as env vars
+      // For now, we'll report what would need to happen
 
-6. Deploy functions:
+      console.log(`Agent A phone: ${agentAPhone}`);
+      console.log(`Agent B phone: ${agentBPhone}`);
+      console.log(`Agent A relay URL would be: ${tunnelA.url}`);
+      console.log(`Agent B relay URL would be: ${tunnelB.url}`);
+
+      console.log('\n--- Phase 4: Triggering Test Call ---');
+
+      const callSid = await triggerTestCall(sessionId);
+      console.log(`Test call initiated: ${callSid}`);
+
+      console.log('\n--- Phase 5: Waiting for Call Completion ---');
+
+      const call = await waitForCallCompletion(callSid, 120000);
+      console.log(`Call completed with status: ${call.status}`);
+
+      console.log('\n--- Phase 6: Validating Results ---');
+
+      const results = await validateResults(sessionId, callSid);
+
+      console.log('\n' + '='.repeat(60));
+      console.log('  Test Results');
+      console.log('='.repeat(60));
+      console.log(`Success: ${results.success}`);
+      console.log(`Agent A: ${JSON.stringify(results.agentA, null, 2)}`);
+      console.log(`Agent B: ${JSON.stringify(results.agentB, null, 2)}`);
+      if (results.errors.length > 0) {
+        console.log(`Errors: ${results.errors.join(', ')}`);
+      }
+
+      cleanup(processes, ngrokProcesses);
+
+      if (results.success) {
+        console.log('\n✅ Agent-to-Agent test PASSED');
+        process.exit(0);
+      } else {
+        console.log('\n❌ Agent-to-Agent test FAILED');
+        process.exit(1);
+      }
+
+    } else {
+      // Semi-automated mode: servers running, provide next steps
+      console.log('\n--- Agent Servers Running ---');
+      console.log(`
+Agent servers are now running and ready for connections.
+
+Session ID: ${sessionId}
+Agent A (questioner): ws://localhost:${AGENT_A_PORT}
+Agent B (answerer): ws://localhost:${AGENT_B_PORT}
+
+To complete the test manually:
+
+1. Start ngrok tunnels (in separate terminals):
+   ngrok http ${AGENT_A_PORT}
+   ngrok http ${AGENT_B_PORT}
+
+2. Update the AGENT_A_RELAY_URL and AGENT_B_RELAY_URL env vars
+   with the ngrok wss:// URLs
+
+3. Deploy functions:
    twilio serverless:deploy
 
-7. Trigger test call:
-   curl -X POST "https://your-domain.twil.io/conversation-relay/start-agent-test?sessionId=${sessionId}"
+4. Update phone number webhooks to point to deployed functions
 
-8. Validate results:
-   curl "https://your-domain.twil.io/conversation-relay/validate-agent-test?sessionId=${sessionId}"
+5. Trigger the test call:
+   twilio api:core:calls:create \\
+     --to=${process.env.AGENT_B_PHONE_NUMBER || '+12062031575'} \\
+     --from=${process.env.AGENT_A_PHONE_NUMBER || '+12062021014'} \\
+     --url=https://<domain>.twil.io/conversation-relay/agent-a-inbound
+
+For FULL automation, run with:
+   FULL_AUTOMATION=true node __tests__/e2e/agent-to-agent.test.js
+
+Press Ctrl+C to stop the servers.
 `);
 
-    console.log('\nTest framework created successfully.');
-    console.log('See above for manual testing instructions.');
+      // Keep running until interrupted
+      await new Promise(() => {});
+    }
 
   } catch (error) {
     console.error('\nTest failed:', error.message);
-    cleanup(processes);
+    console.error(error.stack);
+    cleanup(processes, ngrokProcesses);
     process.exit(1);
   }
 }

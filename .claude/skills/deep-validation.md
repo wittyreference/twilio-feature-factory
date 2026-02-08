@@ -161,9 +161,55 @@ const alerts = await client.monitor.alerts.list({
 });
 ```
 
-## Using the DeepValidator
+## MCP Validation Tools (Preferred Method)
 
-The project includes a DeepValidator helper at `agents/mcp-servers/twilio/src/validation/deep-validator.ts`:
+**USE THESE MCP TOOLS** instead of CLI commands or manual API polling. They're available via the Twilio MCP server.
+
+### Available Tools
+
+| MCP Tool | Purpose |
+|----------|---------|
+| `validate_call` | Deep call validation with Voice Insights, events, content quality |
+| `validate_message` | Message delivery validation with debugger check |
+| `validate_recording` | Recording completion validation |
+| `validate_transcript` | Transcript completion + sentence validation |
+| `validate_debugger` | Account-wide debugger error check |
+| `validate_voice_ai_flow` | Full Voice AI flow (call + recording + transcript + SMS) |
+| `validate_two_way` | Two-way conversation validation |
+| `validate_language_operator` | Language Operator results validation |
+
+### Using MCP Tools (Claude Code)
+
+```text
+# Validate a call - checks status, events, Voice Insights
+validate_call(callSid: "CA123...", validateContent: true)
+
+# Validate message delivery
+validate_message(messageSid: "SM456...")
+
+# Full Voice AI flow validation
+validate_voice_ai_flow(
+  callSid: "CA123...",
+  forbiddenPatterns: ["application error", "please try again"]
+)
+
+# Check debugger for recent errors
+validate_debugger(lookbackSeconds: 300, logLevel: "error")
+```
+
+### Why MCP Tools Over CLI
+
+| CLI Approach | MCP Tool Approach |
+|--------------|-------------------|
+| Manual polling with retries | Automatic polling with timeout |
+| Parse text output | Structured JSON response |
+| Multiple commands needed | Single tool call |
+| No content validation | Forbidden pattern detection |
+| Manual error correlation | Unified error reporting |
+
+## Using the DeepValidator (Programmatic)
+
+For programmatic use in Node.js, the DeepValidator helper is at `agents/mcp-servers/twilio/src/validation/deep-validator.ts`:
 
 ```typescript
 import { DeepValidator } from '../validation/deep-validator';
@@ -270,10 +316,17 @@ if (response.sid) {
 }
 ```
 
-### Do This Instead
+### Do This Instead (MCP Tool)
+
+```text
+# BEST: Use MCP validation tool
+validate_message(messageSid: "SM123...", waitForTerminal: true)
+```
+
+### Do This Instead (Programmatic)
 
 ```typescript
-// GOOD: Deep validation
+// GOOD: Deep validation in code
 const message = await client.messages.create({ to, from, body });
 const validation = await DeepValidator.validateMessage(message.sid, {
   waitForTerminal: true
@@ -288,6 +341,8 @@ if (validation.success) {
 
 ## Related Documentation
 
-- [DeepValidator source](/agents/mcp-servers/twilio/src/validation/deep-validator.ts)
-- [Callback functions](/functions/callbacks/CLAUDE.md)
+- [MCP Validation Tools](/agents/mcp-servers/twilio/src/tools/validation.ts) - Tool definitions
+- [DeepValidator source](/agents/mcp-servers/twilio/src/validation/deep-validator.ts) - Library implementation
+- [Validation CLAUDE.md](/agents/mcp-servers/twilio/src/validation/CLAUDE.md) - Validation patterns
+- [Callback functions](/functions/callbacks/CLAUDE.md) - Callback infrastructure
 - [Voice skill](/.claude/skills/voice.md) - Voice-specific validation

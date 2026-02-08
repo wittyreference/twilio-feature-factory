@@ -287,6 +287,8 @@ const result = await validator.validateRecording('RE123', {
 // - errorCode: if failed
 ```
 
+**Short Recording Warning**: Very short recordings (under ~10 seconds) may fail transcription with status "error" even if the recording itself completed successfully. The Voice Intelligence API requires sufficient audio content for reliable transcription. If your test calls are short, expect transcript failures - this is a known limitation, not a bug.
+
 | Option | Default | Description |
 |--------|---------|-------------|
 | waitForCompleted | true | Poll until terminal status |

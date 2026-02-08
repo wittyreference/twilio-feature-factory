@@ -111,7 +111,40 @@ This project provides specialized tools for Claude Code to build Twilio applicat
 
 Exposes Twilio APIs as tools:
 
-- **P0-P3 (220+ tools)**: Messaging, Voice, Verify, Sync, TaskRouter, Debugger, Phone Numbers, and more
+- **P0-P3 (248+ tools)**: Messaging, Voice, Verify, Sync, TaskRouter, Debugger, Phone Numbers, and more
+
+### MCP Validation Tools (USE THESE!)
+
+**IMPORTANT**: Use these MCP tools instead of CLI commands for validation. They provide deep validation beyond HTTP 200.
+
+| Tool | Purpose | Use Instead Of |
+|------|---------|----------------|
+| `validate_call` | Deep call validation (status, events, Voice Insights, content) | `twilio api:core:calls:fetch` + manual checks |
+| `validate_message` | Message delivery validation | `twilio api:messaging:*:fetch` |
+| `validate_recording` | Recording completion check | `twilio api:core:recordings:fetch` |
+| `validate_transcript` | Transcript completion + sentences check | `twilio api:intelligence:*:fetch` |
+| `validate_debugger` | Account-wide error check | `twilio debugger:logs:list` |
+| `validate_voice_ai_flow` | Full Voice AI flow (call + recording + transcript + SMS) | Multiple CLI commands |
+| `validate_two_way` | Two-way conversation validation | Manual transcript analysis |
+| `validate_language_operator` | Language Operator results (summaries, etc.) | Manual operator result checks |
+
+**Why use MCP validation tools?**
+- Automatic polling for terminal status (no manual retries)
+- Content quality checks (not just API success)
+- Forbidden pattern detection in transcripts
+- Unified error reporting with suggestions
+
+**Example Usage:**
+```
+# Instead of multiple CLI commands with retries:
+# twilio api:core:calls:fetch --sid CA123...
+# twilio debugger:logs:list --limit 10
+
+# Use the MCP tool:
+validate_call(callSid: "CA123...", validateContent: true)
+```
+
+See `agents/mcp-servers/twilio/src/tools/validation.ts` for full tool documentation.
 
 ### Terminology
 

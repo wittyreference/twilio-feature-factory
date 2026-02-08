@@ -20,6 +20,7 @@ exports.handler = async function (context, event, callback) {
   response.appendHeader('Content-Type', 'application/json');
 
   const {
+    AccountSid,
     RecordingSid,
     RecordingUrl,
     RecordingStatus,
@@ -28,6 +29,14 @@ exports.handler = async function (context, event, callback) {
   } = event;
 
   console.log(`Recording callback: ${RecordingSid} for call ${CallSid} - ${RecordingStatus}`);
+
+  // Security check: Validate AccountSid matches our account
+  if (AccountSid && AccountSid !== context.ACCOUNT_SID) {
+    console.warn(`Rejected: AccountSid mismatch (${AccountSid} vs ${context.ACCOUNT_SID})`);
+    response.setStatusCode(403);
+    response.setBody({ success: false, error: 'Invalid account' });
+    return callback(null, response);
+  }
 
   if (!CallSid) {
     response.setStatusCode(400);
@@ -117,25 +126,34 @@ exports.handler = async function (context, event, callback) {
         // Document might not exist yet (finalize hasn't been called)
         // Store recording info separately
         if (syncError.code === 20404) {
-          await client.sync.v1
-            .services(syncServiceSid)
-            .documents.create({
-              uniqueName: `recording-${CallSid}`,
-              data: {
-                callSid: CallSid,
-                from: callFrom,
-                to: callTo,
-                recordingSid: RecordingSid,
-                recordingUrl: recordingMediaUrl,
-                recordingDuration: RecordingDuration,
-                recordingStatus: RecordingStatus,
-                transcriptSid: transcriptSid,
-                transcriptStatus: transcriptSid ? 'queued' : null,
-                createdAt: new Date().toISOString(),
-              },
-              ttl: 86400,
-            });
-          console.log(`Created temporary recording document for ${CallSid}`);
+          try {
+            await client.sync.v1
+              .services(syncServiceSid)
+              .documents.create({
+                uniqueName: `recording-${CallSid}`,
+                data: {
+                  callSid: CallSid,
+                  from: callFrom,
+                  to: callTo,
+                  recordingSid: RecordingSid,
+                  recordingUrl: recordingMediaUrl,
+                  recordingDuration: RecordingDuration,
+                  recordingStatus: RecordingStatus,
+                  transcriptSid: transcriptSid,
+                  transcriptStatus: transcriptSid ? 'queued' : null,
+                  createdAt: new Date().toISOString(),
+                },
+                ttl: 86400,
+              });
+            console.log(`Created temporary recording document for ${CallSid}`);
+          } catch (createError) {
+            // Handle duplicate callbacks (Twilio may retry)
+            if (createError.code === 54301) {
+              console.log(`Recording document already exists for ${CallSid} (duplicate callback)`);
+            } else {
+              throw createError;
+            }
+          }
         } else {
           throw syncError;
         }

@@ -197,32 +197,102 @@ main() {
 
     # Launch Claude Code with autonomous permissions
     # The --allowedTools flag pre-approves specific tool patterns
+    #
+    # NOTE: Patterns use glob-style matching where * is a wildcard.
+    # These patterns are ADDITIVE to .claude/settings.local.json permissions.
+    # Claude Code generates patterns like "Bash(npm test:*)" with colons,
+    # so we include both forms for comprehensive coverage.
+
     claude --allowedTools "Bash(npm test*)" \
+           --allowedTools "Bash(npm test:*)" \
            --allowedTools "Bash(npm run lint*)" \
            --allowedTools "Bash(npm run build*)" \
            --allowedTools "Bash(npm run dev*)" \
+           --allowedTools "Bash(npm run setup*)" \
+           --allowedTools "Bash(npm run setup:*)" \
+           --allowedTools "Bash(npm run deploy*)" \
+           --allowedTools "Bash(npm run deploy:*)" \
+           --allowedTools "Bash(npm install*)" \
+           --allowedTools "Bash(npm --version*)" \
            --allowedTools "Bash(npx jest*)" \
+           --allowedTools "Bash(npx jest:*)" \
            --allowedTools "Bash(npx tsc*)" \
+           --allowedTools "Bash(npx tsc:*)" \
            --allowedTools "Bash(npx eslint*)" \
+           --allowedTools "Bash(npx ngrok*)" \
+           --allowedTools "Bash(npx ngrok:*)" \
+           --allowedTools "Bash(npx ts-node*)" \
+           --allowedTools "Bash(npx ts-node:*)" \
            --allowedTools "Bash(twilio serverless:*)" \
            --allowedTools "Bash(twilio profiles:*)" \
            --allowedTools "Bash(twilio api:*)" \
-           --allowedTools "Bash(git add *)" \
-           --allowedTools "Bash(git commit *)" \
+           --allowedTools "Bash(twilio phone-numbers:*)" \
+           --allowedTools "Bash(twilio debugger:*)" \
+           --allowedTools "Bash(twilio plugins:*)" \
+           --allowedTools "Bash(twilio --version*)" \
+           --allowedTools "Bash(git add*)" \
+           --allowedTools "Bash(git add:*)" \
+           --allowedTools "Bash(git commit*)" \
+           --allowedTools "Bash(git commit:*)" \
            --allowedTools "Bash(git status*)" \
            --allowedTools "Bash(git diff*)" \
            --allowedTools "Bash(git log*)" \
            --allowedTools "Bash(git branch*)" \
            --allowedTools "Bash(git checkout*)" \
            --allowedTools "Bash(git stash*)" \
-           --allowedTools "Bash(ls *)" \
-           --allowedTools "Bash(cat *)" \
-           --allowedTools "Bash(head *)" \
-           --allowedTools "Bash(tail *)" \
-           --allowedTools "Bash(mkdir *)" \
+           --allowedTools "Bash(git stash:*)" \
+           --allowedTools "Bash(git pull*)" \
+           --allowedTools "Bash(git pull:*)" \
+           --allowedTools "Bash(git push*)" \
+           --allowedTools "Bash(git push:*)" \
+           --allowedTools "Bash(git remote*)" \
+           --allowedTools "Bash(git show*)" \
+           --allowedTools "Bash(gh auth*)" \
+           --allowedTools "Bash(gh auth:*)" \
+           --allowedTools "Bash(gh repo*)" \
+           --allowedTools "Bash(gh repo:*)" \
+           --allowedTools "Bash(ls*)" \
+           --allowedTools "Bash(ls:*)" \
+           --allowedTools "Bash(cat*)" \
+           --allowedTools "Bash(head*)" \
+           --allowedTools "Bash(tail*)" \
+           --allowedTools "Bash(mkdir*)" \
            --allowedTools "Bash(pwd)" \
-           --allowedTools "Bash(which *)" \
-           --allowedTools "Bash(echo *)" \
+           --allowedTools "Bash(which*)" \
+           --allowedTools "Bash(echo*)" \
+           --allowedTools "Bash(echo:*)" \
+           --allowedTools "Bash(tree*)" \
+           --allowedTools "Bash(tree:*)" \
+           --allowedTools "Bash(find*)" \
+           --allowedTools "Bash(find:*)" \
+           --allowedTools "Bash(grep*)" \
+           --allowedTools "Bash(grep:*)" \
+           --allowedTools "Bash(curl*)" \
+           --allowedTools "Bash(curl:*)" \
+           --allowedTools "Bash(jq*)" \
+           --allowedTools "Bash(jq:*)" \
+           --allowedTools "Bash(wc*)" \
+           --allowedTools "Bash(wc:*)" \
+           --allowedTools "Bash(chmod*)" \
+           --allowedTools "Bash(chmod:*)" \
+           --allowedTools "Bash(source*)" \
+           --allowedTools "Bash(source:*)" \
+           --allowedTools "Bash(node*)" \
+           --allowedTools "Bash(node:*)" \
+           --allowedTools "Bash(tee*)" \
+           --allowedTools "Bash(tee:*)" \
+           --allowedTools "Bash(lsof*)" \
+           --allowedTools "Bash(lsof:*)" \
+           --allowedTools "Bash(pkill*)" \
+           --allowedTools "Bash(pkill:*)" \
+           --allowedTools "Bash(ngrok*)" \
+           --allowedTools "Bash(ngrok:*)" \
+           --allowedTools "Bash(test*)" \
+           --allowedTools "Bash(test:*)" \
+           --allowedTools "Bash(xargs*)" \
+           --allowedTools "Bash(xargs:*)" \
+           --allowedTools "Bash(python3*)" \
+           --allowedTools "Bash(python3:*)" \
            --allowedTools "Read" \
            --allowedTools "Write" \
            --allowedTools "Edit" \

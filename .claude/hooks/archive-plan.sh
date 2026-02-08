@@ -34,14 +34,15 @@ if [[ -z "$LATEST_PLAN" || ! -f "$LATEST_PLAN" ]]; then
     exit 0  # No plan files found
 fi
 
-# Check if plan was modified in the last hour (likely from this session)
+# Check if plan was modified in the last 8 hours (likely from this session)
+# Extended from 1 hour to accommodate longer development sessions.
 # macOS uses stat -f %m, Linux uses stat -c %Y
 PLAN_MTIME=$(stat -f %m "$LATEST_PLAN" 2>/dev/null || stat -c %Y "$LATEST_PLAN" 2>/dev/null)
 CURRENT_TIME=$(date +%s)
 AGE=$((CURRENT_TIME - PLAN_MTIME))
 
-if [[ $AGE -gt 3600 ]]; then
-    exit 0  # Plan is older than 1 hour, probably not from this session
+if [[ $AGE -gt 28800 ]]; then
+    exit 0  # Plan is older than 8 hours, probably not from this session
 fi
 
 # Extract title from first heading

@@ -67,6 +67,16 @@
           }
         ]
       }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$(git rev-parse --show-toplevel)/.claude/hooks/pre-compact.sh"
+          }
+        ]
+      }
     ]
   },
   "disabledMcpjsonServers": [

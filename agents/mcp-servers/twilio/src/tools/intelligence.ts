@@ -268,9 +268,54 @@ export function intelligenceTools(context: TwilioContext) {
     }
   );
 
+  const createTranscript = createTool(
+    'create_transcript',
+    'Create a transcript from a recording URL. Submits audio to Voice Intelligence for transcription and language operator processing.',
+    z.object({
+      serviceSid: z.string().startsWith('GA').describe('Intelligence Service SID (starts with GA)'),
+      mediaUrl: z.string().url().describe('URL of the audio recording (e.g., from Twilio Recording)'),
+      customerKey: z.string().optional().describe('Optional customer identifier for metadata (max 64 chars)'),
+    }),
+    async ({ serviceSid, mediaUrl, customerKey }) => {
+      // Channel format for Voice Intelligence API
+      const channel = {
+        media_properties: {
+          media_url: mediaUrl,
+        },
+        participants: [
+          { channel_participant: 1, user_id: 'caller' },
+          { channel_participant: 2, user_id: 'agent' },
+        ],
+      };
+
+      const transcript = await client.intelligence.v2.transcripts.create({
+        serviceSid,
+        channel,
+        customerKey,
+      });
+
+      const t = transcript as unknown as Record<string, unknown>;
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            transcriptSid: t.sid,
+            serviceSid: t.serviceSid,
+            status: t.status,
+            dateCreated: t.dateCreated,
+            message: 'Transcript creation initiated. Use get_transcript to check status (queued -> in-progress -> completed). Transcription typically takes 1-3 minutes.',
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
   return [
     listIntelligenceServices,
     getIntelligenceService,
+    createTranscript,
     listTranscripts,
     getTranscript,
     deleteTranscript,

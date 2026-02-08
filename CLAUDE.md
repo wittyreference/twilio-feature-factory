@@ -719,8 +719,9 @@ This project uses Claude Code hooks to automate enforcement of coding standards.
 
 | Hook | Event | Purpose |
 |------|-------|---------|
-| `pre-write-validate.sh` | PreToolUse (Write/Edit) | Blocks hardcoded credentials, enforces ABOUTME |
-| `pre-bash-validate.sh` | PreToolUse (Bash) | Blocks --no-verify, validates before deploy |
+| `pre-write-validate.sh` | PreToolUse (Write/Edit) | Blocks credentials, magic test numbers; warns on naming |
+| `pre-bash-validate.sh` | PreToolUse (Bash) | Blocks --no-verify, pending-actions, validates deploy |
+| `flywheel-doc-check.sh` | PreToolUse (Bash) | Suggests doc updates including todo.md |
 | `post-write.sh` | PostToolUse (Write/Edit) | Auto-lints JS files with ESLint |
 | `post-bash.sh` | PostToolUse (Bash) | Logs deploy/test completions |
 | `subagent-log.sh` | SubagentStop | Logs workflow activity |
@@ -731,10 +732,27 @@ This project uses Claude Code hooks to automate enforcement of coding standards.
 
 - Hardcoded Twilio credentials (`AC...`, `SK...`, auth tokens)
 - `git commit --no-verify` or `git commit -n`
+- `git commit` with unaddressed pending-actions.md (override: `SKIP_PENDING_ACTIONS=true`)
 - `git push --force` to main/master
 - Deployment when tests fail
+- Deployment when coverage < 80% (statements or branches)
 - Deployment when linting fails
 - New function files without ABOUTME comments
+- Twilio magic test numbers (`+15005550xxx`) in non-test files
+
+### What Gets Warned (Non-blocking)
+
+- Non-evergreen naming patterns (`ImprovedX`, `NewHandler`, `BetterY`, `EnhancedZ`)
+- High-risk assertions in CLAUDE.md files without citations
+- Test files without ABOUTME comments
+- `.meta/` references in staged changes (potential leakage)
+
+### Commit Checklist
+
+On every `git commit`, the hook displays a reminder checklist:
+- Updated `.meta/todo.md`?
+- Captured learnings in `.claude/learnings.md`?
+- Design decision documented if architectural?
 
 ### Hook Scripts Location
 

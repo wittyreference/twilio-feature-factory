@@ -69,7 +69,23 @@ if echo "$COMMAND" | grep -qE "^git\s+commit"; then
         "$FLYWHEEL_HOOK" --force
     fi
 
-    # Display pending documentation actions if any exist (environment-aware path)
+    # ============================================
+    # COMMIT CHECKLIST PROMPT (Non-blocking)
+    # ============================================
+    echo "" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "COMMIT CHECKLIST" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "  [ ] Updated .meta/todo.md?" >&2
+    echo "  [ ] Captured learnings in .claude/learnings.md?" >&2
+    echo "  [ ] Design decision documented if architectural?" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "" >&2
+
+    # ============================================
+    # PENDING DOCUMENTATION ACTIONS (BLOCKING)
+    # ============================================
+    # Block commit if pending-actions.md has items (unless escape hatch used)
     PENDING_ACTIONS="$CLAUDE_PENDING_ACTIONS"
     if [ -f "$PENDING_ACTIONS" ]; then
         # Count non-empty, non-header lines (actual action items)
@@ -83,10 +99,25 @@ if echo "$COMMAND" | grep -qE "^git\s+commit"; then
             # Show the action items (lines starting with "- [")
             grep "^\- \[" "$PENDING_ACTIONS" >&2
             echo "" >&2
-            echo "Review pending-actions.md and update docs before committing." >&2
-            echo "Clear the file after addressing actions." >&2
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-            echo "" >&2
+
+            # Check for escape hatch (environment variable)
+            if [ "$SKIP_PENDING_ACTIONS" = "true" ] || [ "$SKIP_PENDING_ACTIONS" = "1" ]; then
+                echo "⚠️  Skipping pending-actions check (SKIP_PENDING_ACTIONS set)" >&2
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+                echo "" >&2
+            else
+                echo "BLOCKED: Pending documentation actions must be addressed!" >&2
+                echo "" >&2
+                echo "Options:" >&2
+                echo "  1. Address the pending actions and clear the file" >&2
+                echo "  2. Override: SKIP_PENDING_ACTIONS=true git commit ..." >&2
+                echo "" >&2
+                echo "To clear after addressing:" >&2
+                echo "  rm $PENDING_ACTIONS" >&2
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+                echo "" >&2
+                exit 2
+            fi
         fi
     fi
 fi
@@ -146,6 +177,60 @@ if echo "$COMMAND" | grep -qE "(twilio\s+serverless:deploy|npm\s+run\s+deploy)";
     fi
     echo "✓ Tests passed"
 
+    # Check code coverage (80% threshold)
+    echo "Checking code coverage..."
+    COVERAGE_MIN=80
+    COVERAGE_SUMMARY="coverage/coverage-summary.json"
+
+    # Run tests with coverage if summary doesn't exist or is stale
+    if [ ! -f "$COVERAGE_SUMMARY" ] || [ "package.json" -nt "$COVERAGE_SUMMARY" ]; then
+        npm test -- --coverage --coverageReporters=json-summary --silent 2>/dev/null
+    fi
+
+    if [ -f "$COVERAGE_SUMMARY" ] && command -v jq &> /dev/null; then
+        # Extract coverage percentages
+        STATEMENTS=$(jq -r '.total.statements.pct // 0' "$COVERAGE_SUMMARY" 2>/dev/null)
+        BRANCHES=$(jq -r '.total.branches.pct // 0' "$COVERAGE_SUMMARY" 2>/dev/null)
+        FUNCTIONS=$(jq -r '.total.functions.pct // 0' "$COVERAGE_SUMMARY" 2>/dev/null)
+        LINES=$(jq -r '.total.lines.pct // 0' "$COVERAGE_SUMMARY" 2>/dev/null)
+
+        # Check if any metric is below threshold
+        COVERAGE_FAILED=false
+        FAILED_METRICS=""
+
+        # Use awk for float comparison
+        if [ "$(echo "$STATEMENTS < $COVERAGE_MIN" | bc -l 2>/dev/null || echo "0")" = "1" ]; then
+            COVERAGE_FAILED=true
+            FAILED_METRICS="${FAILED_METRICS}statements: ${STATEMENTS}%, "
+        fi
+        if [ "$(echo "$BRANCHES < $COVERAGE_MIN" | bc -l 2>/dev/null || echo "0")" = "1" ]; then
+            COVERAGE_FAILED=true
+            FAILED_METRICS="${FAILED_METRICS}branches: ${BRANCHES}%, "
+        fi
+
+        if [ "$COVERAGE_FAILED" = true ]; then
+            FAILED_METRICS=$(echo "$FAILED_METRICS" | sed 's/, $//')
+            echo "" >&2
+            echo "BLOCKED: Code coverage below ${COVERAGE_MIN}% threshold!" >&2
+            echo "" >&2
+            echo "Failed metrics: $FAILED_METRICS" >&2
+            echo "" >&2
+            echo "Coverage summary:" >&2
+            echo "  Statements: ${STATEMENTS}%" >&2
+            echo "  Branches:   ${BRANCHES}%" >&2
+            echo "  Functions:  ${FUNCTIONS}%" >&2
+            echo "  Lines:      ${LINES}%" >&2
+            echo "" >&2
+            echo "Add tests to increase coverage before deploying." >&2
+            echo "Run 'npm test -- --coverage' to see uncovered lines." >&2
+            echo "" >&2
+            exit 2
+        fi
+        echo "✓ Coverage check passed (statements: ${STATEMENTS}%, branches: ${BRANCHES}%)"
+    else
+        echo "⚠️  Coverage check skipped (missing coverage report or jq)"
+    fi
+
     # Run linting
     echo "Running linter..."
     if ! npm run lint --silent 2>/dev/null; then
@@ -166,6 +251,7 @@ if echo "$COMMAND" | grep -qE "(twilio\s+serverless:deploy|npm\s+run\s+deploy)";
         echo ""
         echo "Pre-deployment checks:"
         echo "  ✓ All tests passing"
+        echo "  ✓ Coverage meets 80% threshold"
         echo "  ✓ Linting passing"
         echo ""
     fi

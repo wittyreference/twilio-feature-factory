@@ -172,6 +172,28 @@ if echo "$ALL_FILES" | grep -q "__tests__/"; then
     SUGGESTIONS="${SUGGESTIONS}• Root CLAUDE.md - if new test patterns established\n"
 fi
 
+# Check for significant code changes that should be tracked in todo.md
+# functions/ and agents/ are the main code directories
+if echo "$ALL_FILES" | grep -qE "^(functions|agents)/"; then
+    # Check which areas changed
+    CHANGED_AREAS=""
+    if echo "$ALL_FILES" | grep -q "^functions/"; then
+        CHANGED_AREAS="${CHANGED_AREAS}functions, "
+    fi
+    if echo "$ALL_FILES" | grep -q "^agents/"; then
+        CHANGED_AREAS="${CHANGED_AREAS}agents, "
+    fi
+    CHANGED_AREAS=$(echo "$CHANGED_AREAS" | sed 's/, $//')
+    SUGGESTIONS="${SUGGESTIONS}• .meta/todo.md - update task tracking (changed: $CHANGED_AREAS)\n"
+fi
+
+# Check for design decision changes
+# New files, architectural changes, or config changes may need design-decisions.md update
+NEW_FILES_COUNT=$(echo "$ALL_FILES" | wc -l | tr -d ' ')
+if [ "$NEW_FILES_COUNT" -gt 3 ]; then
+    SUGGESTIONS="${SUGGESTIONS}• .meta/design-decisions.md - review if architectural decisions were made\n"
+fi
+
 # Check for CLI reference updates needed
 if echo "$ALL_FILES" | grep -qE "(twilio|cli)" && ! echo "$ALL_FILES" | grep -q "twilio-cli.md"; then
     SUGGESTIONS="${SUGGESTIONS}• .claude/references/twilio-cli.md - if new CLI patterns discovered\n"

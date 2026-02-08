@@ -208,4 +208,62 @@ if [[ "$FILE_PATH" =~ CLAUDE\.md$ ]] || [[ "$FILE_PATH" =~ \.claude/skills/.*\.m
     fi
 fi
 
+# ============================================
+# NON-EVERGREEN NAMING PATTERN WARNING (not blocking)
+# ============================================
+
+# Check for naming patterns that indicate temporal context
+# These names will become misleading as codebase evolves
+if echo "$CONTENT" | grep -qE "\b(Improved|Enhanced|Better|Refactored)[A-Z][a-zA-Z]*"; then
+    MATCHED_NAMES=$(echo "$CONTENT" | grep -oE "\b(Improved|Enhanced|Better|Refactored)[A-Z][a-zA-Z]*" | head -5 | tr '\n' ', ' | sed 's/,$//')
+    echo "" >&2
+    echo "⚠️  NON-EVERGREEN NAMING WARNING" >&2
+    echo "   File: $FILE_PATH" >&2
+    echo "   Found: $MATCHED_NAMES" >&2
+    echo "" >&2
+    echo "   Names like 'ImprovedX' or 'BetterY' become misleading over time." >&2
+    echo "   What's 'improved' today will be 'old' tomorrow." >&2
+    echo "   Use descriptive names that explain WHAT it does, not WHEN it was written." >&2
+    echo "" >&2
+fi
+
+# Also check for "New" prefix followed by uppercase (but allow "new" in sentences)
+# Pattern: NewSomething in declarations (not "new something" or "newline")
+if echo "$CONTENT" | grep -qE "(const|let|var|function|class|type|interface)\s+New[A-Z]"; then
+    MATCHED_NAMES=$(echo "$CONTENT" | grep -oE "(const|let|var|function|class|type|interface)\s+New[A-Z][a-zA-Z]*" | sed 's/^[a-z]* //' | head -5 | tr '\n' ', ' | sed 's/,$//')
+    echo "" >&2
+    echo "⚠️  NON-EVERGREEN NAMING WARNING" >&2
+    echo "   File: $FILE_PATH" >&2
+    echo "   Found: $MATCHED_NAMES" >&2
+    echo "" >&2
+    echo "   Names like 'NewHandler' will be outdated when you add another one." >&2
+    echo "   Use descriptive names instead: 'StreamingHandler', 'BatchHandler', etc." >&2
+    echo "" >&2
+fi
+
+# ============================================
+# MAGIC TEST NUMBER CHECK (BLOCKING)
+# ============================================
+
+# Twilio magic test numbers (+15005550xxx) should only be in test files
+# These are special numbers that bypass actual phone networks
+if echo "$CONTENT" | grep -qE "\+?1?5005550[0-9]{3}"; then
+    # Check if this is a test file
+    if [[ ! "$FILE_PATH" =~ (\.test\.|\.spec\.|__tests__|test/|tests/|\.test$|\.spec$) ]]; then
+        MATCHED_NUMBERS=$(echo "$CONTENT" | grep -oE "\+?1?5005550[0-9]{3}" | head -3 | tr '\n' ', ' | sed 's/,$//')
+        echo "BLOCKED: Twilio magic test numbers in non-test file!" >&2
+        echo "" >&2
+        echo "Found: $MATCHED_NUMBERS" >&2
+        echo "File: $FILE_PATH" >&2
+        echo "" >&2
+        echo "Magic test numbers (+15005550xxx) bypass actual phone networks and" >&2
+        echo "should only be used in test files." >&2
+        echo "" >&2
+        echo "For test files: rename to .test.js/.spec.js or move to __tests__/" >&2
+        echo "For production: use environment variables for phone numbers" >&2
+        echo "" >&2
+        exit 2
+    fi
+fi
+
 exit 0

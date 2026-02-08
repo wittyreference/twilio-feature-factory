@@ -77,6 +77,17 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$(git rev-parse --show-toplevel)/.claude/hooks/post-compact-summary.sh"
+          }
+        ]
+      }
     ]
   },
   "disabledMcpjsonServers": [

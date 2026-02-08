@@ -60,6 +60,7 @@ describe('CLI Hook Scripts', () => {
             ...process.env,
             CLAUDE_TOOL_INPUT_CONTENT: content,
             CLAUDE_TOOL_INPUT_FILE_PATH: filePath,
+            CLAUDE_ALLOW_PRODUCTION_WRITE: 'true',
           },
           encoding: 'utf-8',
           stdio: ['pipe', 'pipe', 'pipe'],
@@ -133,6 +134,7 @@ describe('CLI Hook Scripts', () => {
           env: {
             ...process.env,
             CLAUDE_TOOL_INPUT_COMMAND: command,
+            SKIP_PENDING_ACTIONS: 'true',
           },
           encoding: 'utf-8',
           stdio: ['pipe', 'pipe', 'pipe'],

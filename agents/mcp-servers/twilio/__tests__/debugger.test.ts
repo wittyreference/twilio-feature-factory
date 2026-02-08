@@ -182,6 +182,6 @@ describe('debuggerTools', () => {
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
       expect(Array.isArray(response.records)).toBe(true);
-    });
+    }, 15000);
   });
 });

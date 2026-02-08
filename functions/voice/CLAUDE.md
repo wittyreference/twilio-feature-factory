@@ -182,7 +182,11 @@ These operations "fork off" and run concurrently with whatever TwiML executes ne
 
 ```javascript
 // Recording starts and continues through subsequent TwiML
-twiml.start().record({ name: 'my-recording' });
+const start = twiml.start();
+start.recording({
+  recordingStatusCallback: '/recording-complete',
+  recordingStatusCallbackEvent: 'completed',
+});
 twiml.say('This is being recorded...');
 twiml.redirect('/next-handler'); // Recording continues!
 ```

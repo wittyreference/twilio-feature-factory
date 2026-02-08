@@ -1,11 +1,12 @@
 // ABOUTME: Handles recording completion callback from Twilio.
-// ABOUTME: Updates Sync document with recording URL when available.
+// ABOUTME: Updates Sync document and triggers Voice Intelligence transcription.
 
 /**
  * Recording Complete Callback
  *
  * Called by Twilio when a call recording is complete.
- * Updates the Sync document with the recording URL.
+ * - Updates the Sync document with the recording URL
+ * - Triggers Voice Intelligence transcription (if TWILIO_INTELLIGENCE_SERVICE_SID set)
  *
  * Callback Parameters:
  *   - RecordingSid: The recording SID
@@ -37,7 +38,41 @@ exports.handler = async function (context, event, callback) {
   try {
     const client = context.getTwilioClient();
     const syncServiceSid = context.TWILIO_SYNC_SERVICE_SID;
+    const intelligenceServiceSid = context.TWILIO_INTELLIGENCE_SERVICE_SID;
 
+    const recordingMediaUrl = `${RecordingUrl}.mp3`;
+    let transcriptSid = null;
+
+    // Step 1: Trigger Voice Intelligence transcription if configured
+    if (intelligenceServiceSid && RecordingStatus === 'completed') {
+      try {
+        // Channel format for Voice Intelligence API
+        // Use source_sid to reference the Recording directly (avoids auth issues with URLs)
+        const channel = {
+          media_properties: {
+            source_sid: RecordingSid,
+          },
+          participants: [
+            { channel_participant: 1, user_id: 'caller' },
+            { channel_participant: 2, user_id: 'agent' },
+          ],
+        };
+
+        const transcript = await client.intelligence.v2.transcripts.create({
+          serviceSid: intelligenceServiceSid,
+          channel,
+          customerKey: CallSid, // Use CallSid as customer key for correlation
+        });
+
+        transcriptSid = transcript.sid;
+        console.log(`Created transcript ${transcriptSid} for recording ${RecordingSid}`);
+      } catch (transcriptError) {
+        // Log but don't fail the callback - transcript creation is async
+        console.error('Failed to create transcript:', transcriptError.message);
+      }
+    }
+
+    // Step 2: Update Sync document with recording info
     if (syncServiceSid && RecordingStatus === 'completed') {
       const documentName = `ai-demo-${CallSid}`;
 
@@ -48,13 +83,15 @@ exports.handler = async function (context, event, callback) {
           .documents(documentName)
           .fetch();
 
-        // Update with recording info
+        // Update with recording and transcript info
         const updatedData = {
           ...doc.data,
           recordingSid: RecordingSid,
-          recordingUrl: `${RecordingUrl}.mp3`,
+          recordingUrl: recordingMediaUrl,
           recordingDuration: RecordingDuration,
           recordingStatus: RecordingStatus,
+          transcriptSid: transcriptSid,
+          transcriptStatus: transcriptSid ? 'queued' : null,
         };
 
         await client.sync.v1
@@ -62,7 +99,7 @@ exports.handler = async function (context, event, callback) {
           .documents(documentName)
           .update({ data: updatedData });
 
-        console.log(`Updated Sync document ${documentName} with recording`);
+        console.log(`Updated Sync document ${documentName} with recording and transcript`);
       } catch (syncError) {
         // Document might not exist yet (finalize hasn't been called)
         // Store recording info separately
@@ -74,9 +111,11 @@ exports.handler = async function (context, event, callback) {
               data: {
                 callSid: CallSid,
                 recordingSid: RecordingSid,
-                recordingUrl: `${RecordingUrl}.mp3`,
+                recordingUrl: recordingMediaUrl,
                 recordingDuration: RecordingDuration,
                 recordingStatus: RecordingStatus,
+                transcriptSid: transcriptSid,
+                transcriptStatus: transcriptSid ? 'queued' : null,
                 createdAt: new Date().toISOString(),
               },
               ttl: 86400,
@@ -94,6 +133,7 @@ exports.handler = async function (context, event, callback) {
       recordingSid: RecordingSid,
       callSid: CallSid,
       status: RecordingStatus,
+      transcriptSid: transcriptSid,
     });
 
     return callback(null, response);

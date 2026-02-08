@@ -203,16 +203,20 @@ async function processWithLLM(userMessage) {
 
 ## Voice Options
 
+**Important**: Some voice/provider combinations may cause error 64101 "Invalid TTS settings". Google Neural voices are recommended for reliability.
+
+### Google Voices (Recommended)
+- `Google.en-US-Neural2-F` - US English, Female (recommended)
+- `Google.en-US-Neural2-J` - US English, Male
+- `Google.en-US-Neural2-A` - US English Neural
+- `Google.en-GB-Neural2-B` - British English Neural
+
 ### Amazon Polly Voices
-- `Polly.Amy` - British English, Female
+- `Polly.Amy` - British English, Female (may be blocked in some configs)
 - `Polly.Brian` - British English, Male
 - `Polly.Joanna` - US English, Female
 - `Polly.Matthew` - US English, Male
 - `Polly.Ivy` - US English, Child Female
-
-### Google Voices
-- `Google.en-US-Neural2-A` - US English Neural
-- `Google.en-GB-Neural2-B` - British English Neural
 
 ## Best Practices
 
@@ -304,6 +308,37 @@ To use transcript storage and analysis features, you must create a Conversationa
 
 Without this, transcript creation via the Intelligence API will fail with 404 errors.
 
+### Creating Transcripts from Recordings
+
+When creating transcripts from Twilio recordings, use `source_sid` instead of `media_url`:
+
+```javascript
+// WRONG - Intelligence API can't authenticate to api.twilio.com
+const channel = {
+  media_properties: {
+    media_url: `https://api.twilio.com/.../Recordings/${recordingSid}.mp3`,
+  },
+  participants: [...]
+};
+
+// CORRECT - Use source_sid for Twilio recordings
+const channel = {
+  media_properties: {
+    source_sid: recordingSid,  // e.g., "RE1234567890abcdef"
+  },
+  participants: [
+    { channel_participant: 1, user_id: 'caller' },
+    { channel_participant: 2, user_id: 'agent' },
+  ],
+};
+
+const transcript = await client.intelligence.v2.transcripts.create({
+  serviceSid: intelligenceServiceSid,
+  channel,
+  customerKey: callSid,  // For correlation
+});
+```
+
 ## Testing Conversation Relay
 
 1. Set up a WebSocket server (locally or deployed)
@@ -325,6 +360,8 @@ Without this, transcript creation via the Intelligence API will fail with 404 er
 | Interruption not working | `interruptible` not set to `'true'` | Add `interruptible: 'true'` to ConversationRelay config |
 | DTMF not detected | `dtmfDetection` not enabled | Add `dtmfDetection: 'true'` to ConversationRelay config |
 | Partial transcripts missing | `partialPrompts` not enabled | Add `partialPrompts: 'true'` for streaming transcripts |
+| Transcript status "error" | Using media_url for Twilio recordings | Use `source_sid: RecordingSid` instead of `media_url` - Intelligence API can't authenticate to api.twilio.com |
+| Call says "not configured" (8s) | CONVERSATION_RELAY_URL not set after deploy | Redeploy with correct env var or set in Twilio Console |
 
 ## Environment Variables
 

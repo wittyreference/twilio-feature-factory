@@ -17,6 +17,18 @@ exports.handler = async (context, event, callback) => {
     return callback(null, twiml);
   }
 
+  // Start background recording using <Start><Recording> (non-blocking)
+  // This forks off a recording that continues while ConversationRelay runs
+  // Recording callback will trigger Intelligence API transcription
+  const recordingCallbackUrl = `https://${context.DOMAIN_NAME}/conversation-relay/recording-complete`;
+  const start = twiml.start();
+  start.recording({
+    recordingStatusCallback: recordingCallbackUrl,
+    recordingStatusCallbackEvent: 'completed',
+    recordingStatusCallbackMethod: 'POST',
+    trim: 'trim-silence',
+  });
+
   // Connect to ConversationRelay with Deepgram nova-3
   const connect = twiml.connect();
 
@@ -26,7 +38,7 @@ exports.handler = async (context, event, callback) => {
     url: wsUrl,
     transcriptionProvider: 'deepgram',
     speechModel: 'nova-3-general',
-    voice: 'Polly.Amy',
+    voice: 'Google.en-US-Neural2-F',
     language: 'en-US',
     dtmfDetection: 'true',
     interruptible: 'true',

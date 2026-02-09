@@ -717,7 +717,7 @@ export class FeatureFactoryOrchestrator {
     }
 
     if (Object.keys(context.previousPhaseResults).length > 0) {
-      prompt += `# Previous Phase Results\n\n`;
+      prompt += '# Previous Phase Results\n\n';
       for (const [agent, result] of Object.entries(
         context.previousPhaseResults
       )) {
@@ -726,11 +726,11 @@ export class FeatureFactoryOrchestrator {
       }
     }
 
-    prompt += `# Expected Output\n\n`;
-    prompt += `Please provide your response in the following JSON format:\n\n`;
-    prompt += `\`\`\`json\n`;
+    prompt += '# Expected Output\n\n';
+    prompt += 'Please provide your response in the following JSON format:\n\n';
+    prompt += '```json\n';
     prompt += JSON.stringify(agentConfig.outputSchema, null, 2);
-    prompt += `\n\`\`\`\n`;
+    prompt += '\n```\n';
 
     return prompt;
   }

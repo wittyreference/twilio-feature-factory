@@ -40,7 +40,7 @@ export function trusthubTools(context: TwilioContext) {
         policySid,
       };
 
-      if (statusCallback) params.statusCallback = statusCallback;
+      if (statusCallback) {params.statusCallback = statusCallback;}
 
       const profile = await client.trusthub.v1.customerProfiles.create(params);
 
@@ -72,8 +72,8 @@ export function trusthubTools(context: TwilioContext) {
     }),
     async ({ status, friendlyName, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (status) params.status = status;
-      if (friendlyName) params.friendlyName = friendlyName;
+      if (status) {params.status = status;}
+      if (friendlyName) {params.friendlyName = friendlyName;}
 
       const profiles = await client.trusthub.v1.customerProfiles.list(params);
 
@@ -110,8 +110,8 @@ export function trusthubTools(context: TwilioContext) {
     }),
     async ({ status, friendlyName, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (status) params.status = status;
-      if (friendlyName) params.friendlyName = friendlyName;
+      if (status) {params.status = status;}
+      if (friendlyName) {params.friendlyName = friendlyName;}
 
       const products = await client.trusthub.v1.trustProducts.list(params);
 
@@ -208,7 +208,7 @@ export function trusthubTools(context: TwilioContext) {
     async ({ customerProfileSid, ...updates }) => {
       const params: Record<string, unknown> = {};
       Object.entries(updates).forEach(([key, value]) => {
-        if (value !== undefined) params[key] = value;
+        if (value !== undefined) {params[key] = value;}
       });
 
       const profile = await client.trusthub.v1.customerProfiles(customerProfileSid).update(params);
@@ -383,7 +383,7 @@ export function trusthubTools(context: TwilioContext) {
         statusCallback?: string;
       } = { friendlyName, email, policySid };
 
-      if (statusCallback) params.statusCallback = statusCallback;
+      if (statusCallback) {params.statusCallback = statusCallback;}
 
       const product = await client.trusthub.v1.trustProducts.create(params);
 
@@ -417,7 +417,7 @@ export function trusthubTools(context: TwilioContext) {
     async ({ trustProductSid, ...updates }) => {
       const params: Record<string, unknown> = {};
       Object.entries(updates).forEach(([key, value]) => {
-        if (value !== undefined) params[key] = value;
+        if (value !== undefined) {params[key] = value;}
       });
 
       const product = await client.trusthub.v1.trustProducts(trustProductSid).update(params);
@@ -506,7 +506,7 @@ export function trusthubTools(context: TwilioContext) {
         attributes?: Record<string, unknown>;
       } = { friendlyName, type };
 
-      if (attributes) params.attributes = attributes;
+      if (attributes) {params.attributes = attributes;}
 
       const endUser = await client.trusthub.v1.endUsers.create(params);
 

@@ -189,9 +189,9 @@ export function studioTools(context: TwilioContext) {
     }),
     async ({ flowSid, status, dateCreatedFrom, dateCreatedTo, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (status) params.status = status;
-      if (dateCreatedFrom) params.dateCreatedFrom = new Date(dateCreatedFrom);
-      if (dateCreatedTo) params.dateCreatedTo = new Date(dateCreatedTo);
+      if (status) {params.status = status;}
+      if (dateCreatedFrom) {params.dateCreatedFrom = new Date(dateCreatedFrom);}
+      if (dateCreatedTo) {params.dateCreatedTo = new Date(dateCreatedTo);}
 
       const executions = await client.studio.v2
         .flows(flowSid)

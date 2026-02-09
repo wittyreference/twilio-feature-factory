@@ -676,9 +676,9 @@ sessionsCmd
   .description('Remove old completed/cancelled sessions')
   .option('-d, --days <days>', 'Remove sessions older than N days', '7')
   .option('--include-failed', 'Also remove failed sessions')
-  .action((options: { days: string; includeFailed: boolean }) => {
+  .action(async (options: { days: string; includeFailed: boolean }) => {
     // Import cleanup function
-    const { cleanupSessions } = require('./session.js');
+    const { cleanupSessions } = await import('./session.js');
 
     const deleted = cleanupSessions(process.cwd(), {
       olderThanDays: parseInt(options.days),

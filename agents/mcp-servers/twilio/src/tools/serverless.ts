@@ -435,8 +435,8 @@ export function serverlessTools(context: TwilioContext) {
     }),
     async ({ serviceSid, environmentSid, variableSid, key, value }) => {
       const params: Record<string, string> = {};
-      if (key) params.key = key;
-      if (value) params.value = value;
+      if (key) {params.key = key;}
+      if (value) {params.value = value;}
 
       const variable = await client.serverless.v1
         .services(serviceSid)
@@ -502,9 +502,9 @@ export function serverlessTools(context: TwilioContext) {
     }),
     async ({ serviceSid, environmentSid, functionSid, startDate, endDate, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (functionSid) params.functionSid = functionSid;
-      if (startDate) params.startDate = new Date(startDate);
-      if (endDate) params.endDate = new Date(endDate);
+      if (functionSid) {params.functionSid = functionSid;}
+      if (startDate) {params.startDate = new Date(startDate);}
+      if (endDate) {params.endDate = new Date(endDate);}
 
       const logs = await client.serverless.v1
         .services(serviceSid)

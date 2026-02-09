@@ -481,7 +481,7 @@ export class ProcessMetricsCollector extends EventEmitter {
   // Helper methods
 
   private average(values: number[]): number {
-    if (values.length === 0) return 0;
+    if (values.length === 0) {return 0;}
     return values.reduce((a, b) => a + b, 0) / values.length;
   }
 
@@ -490,7 +490,7 @@ export class ProcessMetricsCollector extends EventEmitter {
   }
 
   private rate(values: boolean[]): number {
-    if (values.length === 0) return 0;
+    if (values.length === 0) {return 0;}
     return values.filter((v) => v).length / values.length;
   }
 

@@ -45,11 +45,11 @@ export function voiceTools(context: TwilioContext) {
         startTimeBefore?: Date;
       } = { limit: limit || 20 };
 
-      if (status) filters.status = status as typeof filters.status;
-      if (to) filters.to = to;
-      if (from) filters.from = from;
-      if (startTimeAfter) filters.startTimeAfter = new Date(startTimeAfter);
-      if (startTimeBefore) filters.startTimeBefore = new Date(startTimeBefore);
+      if (status) {filters.status = status as typeof filters.status;}
+      if (to) {filters.to = to;}
+      if (from) {filters.from = from;}
+      if (startTimeAfter) {filters.startTimeAfter = new Date(startTimeAfter);}
+      if (startTimeBefore) {filters.startTimeBefore = new Date(startTimeBefore);}
 
       const calls = await client.calls.list(filters);
 
@@ -92,8 +92,8 @@ export function voiceTools(context: TwilioContext) {
         from: from || defaultFromNumber,
       };
 
-      if (url) callParams.url = url;
-      if (twiml) callParams.twiml = twiml;
+      if (url) {callParams.url = url;}
+      if (twiml) {callParams.twiml = twiml;}
 
       const call = await client.calls.create(callParams);
 
@@ -164,10 +164,10 @@ export function voiceTools(context: TwilioContext) {
         dateCreatedBefore?: Date;
       } = { limit: limit || 20 };
 
-      if (status) filters.status = status;
-      if (friendlyName) filters.friendlyName = friendlyName;
-      if (dateCreatedAfter) filters.dateCreatedAfter = new Date(dateCreatedAfter);
-      if (dateCreatedBefore) filters.dateCreatedBefore = new Date(dateCreatedBefore);
+      if (status) {filters.status = status;}
+      if (friendlyName) {filters.friendlyName = friendlyName;}
+      if (dateCreatedAfter) {filters.dateCreatedAfter = new Date(dateCreatedAfter);}
+      if (dateCreatedBefore) {filters.dateCreatedBefore = new Date(dateCreatedBefore);}
 
       const conferences = await client.conferences.list(filters);
 
@@ -233,8 +233,8 @@ export function voiceTools(context: TwilioContext) {
         announceMethod?: 'GET' | 'POST';
       } = { status };
 
-      if (announceUrl) updateParams.announceUrl = announceUrl;
-      if (announceMethod) updateParams.announceMethod = announceMethod;
+      if (announceUrl) {updateParams.announceUrl = announceUrl;}
+      if (announceMethod) {updateParams.announceMethod = announceMethod;}
 
       const conference = await client.conferences(conferenceSid).update(updateParams);
 
@@ -268,8 +268,8 @@ export function voiceTools(context: TwilioContext) {
         hold?: boolean;
       } = { limit: limit || 50 };
 
-      if (muted !== undefined) filters.muted = muted;
-      if (hold !== undefined) filters.hold = hold;
+      if (muted !== undefined) {filters.muted = muted;}
+      if (hold !== undefined) {filters.hold = hold;}
 
       const participants = await client.conferences(conferenceSid).participants.list(filters);
 
@@ -352,13 +352,13 @@ export function voiceTools(context: TwilioContext) {
         endConferenceOnExit?: boolean;
       } = {};
 
-      if (muted !== undefined) updateParams.muted = muted;
-      if (hold !== undefined) updateParams.hold = hold;
-      if (holdUrl) updateParams.holdUrl = holdUrl;
-      if (holdMethod) updateParams.holdMethod = holdMethod;
-      if (coaching !== undefined) updateParams.coaching = coaching;
-      if (callSidToCoach) updateParams.callSidToCoach = callSidToCoach;
-      if (endConferenceOnExit !== undefined) updateParams.endConferenceOnExit = endConferenceOnExit;
+      if (muted !== undefined) {updateParams.muted = muted;}
+      if (hold !== undefined) {updateParams.hold = hold;}
+      if (holdUrl) {updateParams.holdUrl = holdUrl;}
+      if (holdMethod) {updateParams.holdMethod = holdMethod;}
+      if (coaching !== undefined) {updateParams.coaching = coaching;}
+      if (callSidToCoach) {updateParams.callSidToCoach = callSidToCoach;}
+      if (endConferenceOnExit !== undefined) {updateParams.endConferenceOnExit = endConferenceOnExit;}
 
       const participant = await client.conferences(conferenceSid).participants(callSid).update(updateParams);
 
@@ -415,16 +415,16 @@ export function voiceTools(context: TwilioContext) {
         from: from || defaultFromNumber,
       };
 
-      if (label) createParams.label = label;
-      if (earlyMedia !== undefined) createParams.earlyMedia = earlyMedia;
-      if (beep) createParams.beep = beep;
-      if (muted !== undefined) createParams.muted = muted;
-      if (hold !== undefined) createParams.hold = hold;
-      if (startConferenceOnEnter !== undefined) createParams.startConferenceOnEnter = startConferenceOnEnter;
-      if (endConferenceOnExit !== undefined) createParams.endConferenceOnExit = endConferenceOnExit;
-      if (coaching !== undefined) createParams.coaching = coaching;
-      if (callSidToCoach) createParams.callSidToCoach = callSidToCoach;
-      if (record !== undefined) createParams.record = record;
+      if (label) {createParams.label = label;}
+      if (earlyMedia !== undefined) {createParams.earlyMedia = earlyMedia;}
+      if (beep) {createParams.beep = beep;}
+      if (muted !== undefined) {createParams.muted = muted;}
+      if (hold !== undefined) {createParams.hold = hold;}
+      if (startConferenceOnEnter !== undefined) {createParams.startConferenceOnEnter = startConferenceOnEnter;}
+      if (endConferenceOnExit !== undefined) {createParams.endConferenceOnExit = endConferenceOnExit;}
+      if (coaching !== undefined) {createParams.coaching = coaching;}
+      if (callSidToCoach) {createParams.callSidToCoach = callSidToCoach;}
+      if (record !== undefined) {createParams.record = record;}
 
       const participant = await client.conferences(conferenceSid).participants.create(createParams);
 
@@ -505,10 +505,10 @@ export function voiceTools(context: TwilioContext) {
         twiml?: string;
       } = {};
 
-      if (status) updateParams.status = status;
-      if (url) updateParams.url = url;
-      if (method) updateParams.method = method;
-      if (twiml) updateParams.twiml = twiml;
+      if (status) {updateParams.status = status;}
+      if (url) {updateParams.url = url;}
+      if (method) {updateParams.method = method;}
+      if (twiml) {updateParams.twiml = twiml;}
 
       const call = await client.calls(callSid).update(updateParams);
 
@@ -591,11 +591,11 @@ export function voiceTools(context: TwilioContext) {
         includeSoftDeleted?: boolean;
       } = { limit: limit || 20 };
 
-      if (callSid) filters.callSid = callSid;
-      if (conferenceSid) filters.conferenceSid = conferenceSid;
-      if (dateCreatedAfter) filters.dateCreatedAfter = new Date(dateCreatedAfter);
-      if (dateCreatedBefore) filters.dateCreatedBefore = new Date(dateCreatedBefore);
-      if (includeSoftDeleted) filters.includeSoftDeleted = includeSoftDeleted;
+      if (callSid) {filters.callSid = callSid;}
+      if (conferenceSid) {filters.conferenceSid = conferenceSid;}
+      if (dateCreatedAfter) {filters.dateCreatedAfter = new Date(dateCreatedAfter);}
+      if (dateCreatedBefore) {filters.dateCreatedBefore = new Date(dateCreatedBefore);}
+      if (includeSoftDeleted) {filters.includeSoftDeleted = includeSoftDeleted;}
 
       const recordings = await client.recordings.list(filters);
 
@@ -686,12 +686,12 @@ export function voiceTools(context: TwilioContext) {
         recordingStatusCallbackEvent?: string[];
       } = {};
 
-      if (recordingChannels) createParams.recordingChannels = recordingChannels;
-      if (recordingTrack) createParams.recordingTrack = recordingTrack;
-      if (trim) createParams.trim = trim;
-      if (recordingStatusCallback) createParams.recordingStatusCallback = recordingStatusCallback;
-      if (recordingStatusCallbackMethod) createParams.recordingStatusCallbackMethod = recordingStatusCallbackMethod;
-      if (recordingStatusCallbackEvent) createParams.recordingStatusCallbackEvent = recordingStatusCallbackEvent;
+      if (recordingChannels) {createParams.recordingChannels = recordingChannels;}
+      if (recordingTrack) {createParams.recordingTrack = recordingTrack;}
+      if (trim) {createParams.trim = trim;}
+      if (recordingStatusCallback) {createParams.recordingStatusCallback = recordingStatusCallback;}
+      if (recordingStatusCallbackMethod) {createParams.recordingStatusCallbackMethod = recordingStatusCallbackMethod;}
+      if (recordingStatusCallbackEvent) {createParams.recordingStatusCallbackEvent = recordingStatusCallbackEvent;}
 
       const recording = await client.calls(callSid).recordings.create(createParams);
 
@@ -809,7 +809,7 @@ export function voiceTools(context: TwilioContext) {
     }),
     async ({ callSid, processingState }) => {
       const fetchOptions: { processingState?: 'partial' | 'complete' } = {};
-      if (processingState) fetchOptions.processingState = processingState;
+      if (processingState) {fetchOptions.processingState = processingState;}
 
       const summary = await client.insights.v1.calls(callSid).summary().fetch(fetchOptions);
 
@@ -855,7 +855,7 @@ export function voiceTools(context: TwilioContext) {
         edge?: 'unknown_edge' | 'carrier_edge' | 'sip_edge' | 'sdk_edge' | 'client_edge';
       } = { limit: limit || 50 };
 
-      if (edge) filters.edge = edge;
+      if (edge) {filters.edge = edge;}
 
       const events = await client.insights.v1.calls(callSid).events.list(filters);
 
@@ -898,8 +898,8 @@ export function voiceTools(context: TwilioContext) {
         direction?: 'unknown' | 'inbound' | 'outbound' | 'both';
       } = { limit: limit || 50 };
 
-      if (edge) filters.edge = edge;
-      if (direction) filters.direction = direction;
+      if (edge) {filters.edge = edge;}
+      if (direction) {filters.direction = direction;}
 
       const metrics = await client.insights.v1.calls(callSid).metrics.list(filters);
 
@@ -1182,10 +1182,10 @@ export function voiceTools(context: TwilioContext) {
         url,
       };
 
-      if (name) createParams.name = name;
-      if (track) createParams.track = track;
-      if (statusCallback) createParams.statusCallback = statusCallback;
-      if (statusCallbackMethod) createParams.statusCallbackMethod = statusCallbackMethod;
+      if (name) {createParams.name = name;}
+      if (track) {createParams.track = track;}
+      if (statusCallback) {createParams.statusCallback = statusCallback;}
+      if (statusCallbackMethod) {createParams.statusCallbackMethod = statusCallbackMethod;}
 
       // Add custom parameters (API supports up to 99, we limit to 10 for simplicity)
       if (parameters) {
@@ -1259,7 +1259,7 @@ export function voiceTools(context: TwilioContext) {
         status?: 'in-progress' | 'paused' | 'stopped' | 'processing' | 'completed' | 'absent';
       } = { limit: limit || 20 };
 
-      if (status) filters.status = status;
+      if (status) {filters.status = status;}
 
       const recordings = await client.conferences(conferenceSid).recordings.list(filters);
 

@@ -64,7 +64,7 @@ if [ -n "$REL_PATH" ]; then
 fi
 
 # Only process JavaScript files
-if [[ ! "$FILE_PATH" =~ \.(js|mjs|cjs)$ ]]; then
+if [[ ! "$FILE_PATH" =~ \.(js|mjs|cjs|ts)$ ]]; then
     exit 0
 fi
 

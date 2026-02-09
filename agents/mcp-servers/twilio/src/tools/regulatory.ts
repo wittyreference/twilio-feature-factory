@@ -32,11 +32,11 @@ export function regulatoryTools(context: TwilioContext) {
     }),
     async ({ status, friendlyName, regulationSid, isoCountry, numberType, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (status) params.status = status;
-      if (friendlyName) params.friendlyName = friendlyName;
-      if (regulationSid) params.regulationSid = regulationSid;
-      if (isoCountry) params.isoCountry = isoCountry;
-      if (numberType) params.numberType = numberType;
+      if (status) {params.status = status;}
+      if (friendlyName) {params.friendlyName = friendlyName;}
+      if (regulationSid) {params.regulationSid = regulationSid;}
+      if (isoCountry) {params.isoCountry = isoCountry;}
+      if (numberType) {params.numberType = numberType;}
 
       const bundles = await client.numbers.v2.regulatoryCompliance.bundles.list(params);
 
@@ -150,9 +150,9 @@ export function regulatoryTools(context: TwilioContext) {
     }),
     async ({ isoCountry, numberType, endUserType, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (isoCountry) params.isoCountry = isoCountry;
-      if (numberType) params.numberType = numberType;
-      if (endUserType) params.endUserType = endUserType;
+      if (isoCountry) {params.isoCountry = isoCountry;}
+      if (numberType) {params.numberType = numberType;}
+      if (endUserType) {params.endUserType = endUserType;}
 
       const regulations = await client.numbers.v2.regulatoryCompliance.regulations.list(params);
 
@@ -231,7 +231,7 @@ export function regulatoryTools(context: TwilioContext) {
     async ({ bundleSid, ...updates }) => {
       const params: Record<string, unknown> = {};
       Object.entries(updates).forEach(([key, value]) => {
-        if (value !== undefined) params[key] = value;
+        if (value !== undefined) {params[key] = value;}
       });
 
       const bundle = await client.numbers.v2.regulatoryCompliance
@@ -435,8 +435,8 @@ export function regulatoryTools(context: TwilioContext) {
     }),
     async ({ documentSid, friendlyName, attributes }) => {
       const params: Record<string, unknown> = {};
-      if (friendlyName) params.friendlyName = friendlyName;
-      if (attributes) params.attributes = attributes;
+      if (friendlyName) {params.friendlyName = friendlyName;}
+      if (attributes) {params.attributes = attributes;}
 
       const document = await client.numbers.v2.regulatoryCompliance
         .supportingDocuments(documentSid)

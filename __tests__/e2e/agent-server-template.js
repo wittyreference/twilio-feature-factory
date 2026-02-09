@@ -78,7 +78,7 @@ try {
     apiKey: process.env.ANTHROPIC_API_KEY,
   });
   console.log('Anthropic client initialized');
-} catch (error) {
+} catch (_error) {
   console.error('Failed to initialize Anthropic client. Set ANTHROPIC_API_KEY.');
   process.exit(1);
 }
@@ -94,7 +94,7 @@ try {
     );
     console.log('Twilio client initialized for Sync storage');
   }
-} catch (error) {
+} catch (_error) {
   console.log('Twilio client not available (Sync storage disabled)');
 }
 
@@ -201,7 +201,7 @@ async function storeTranscript(context) {
         }
       });
 
-    console.log(`[SYNC] Transcript stored successfully`);
+    console.log('[SYNC] Transcript stored successfully');
   } catch (error) {
     console.error(`[SYNC] Error storing transcript: ${error.message}`);
   }
@@ -312,8 +312,8 @@ wss.on('connection', (ws) => {
             if (context.turnCount >= MAX_TURNS) {
               console.log(`[${timestamp}] Max turns reached, ending test`);
               const endMessage = AGENT_ROLE === 'questioner'
-                ? "Test complete due to turn limit. Thank you."
-                : "Acknowledged. The test has ended.";
+                ? 'Test complete due to turn limit. Thank you.'
+                : 'Acknowledged. The test has ended.';
               ws.send(JSON.stringify({ type: 'text', token: endMessage }));
               await storeTranscript(context);
               setTimeout(() => {
@@ -329,8 +329,8 @@ wss.on('connection', (ws) => {
                 lowerPrompt.includes('acknowledged')) {
               console.log(`[${timestamp}] End trigger detected`);
               const endMessage = AGENT_ROLE === 'questioner'
-                ? "Ending the test now. Goodbye."
-                : "Goodbye. Test ended.";
+                ? 'Ending the test now. Goodbye.'
+                : 'Goodbye. Test ended.';
               ws.send(JSON.stringify({ type: 'text', token: endMessage }));
               await storeTranscript(context);
               setTimeout(() => {

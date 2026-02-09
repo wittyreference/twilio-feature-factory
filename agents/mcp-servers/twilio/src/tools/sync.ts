@@ -40,7 +40,7 @@ export function syncTools(context: TwilioContext) {
       }
 
       const createParams: { uniqueName: string; data: object; ttl?: number } = { uniqueName, data };
-      if (ttl !== undefined) createParams.ttl = ttl;
+      if (ttl !== undefined) {createParams.ttl = ttl;}
 
       const document = await client.sync.v1.services(sid).documents.create(createParams);
 
@@ -81,7 +81,7 @@ export function syncTools(context: TwilioContext) {
       }
 
       const updateParams: { data: object; ttl?: number } = { data };
-      if (ttl !== undefined) updateParams.ttl = ttl;
+      if (ttl !== undefined) {updateParams.ttl = ttl;}
 
       const document = await client.sync.v1
         .services(sid)

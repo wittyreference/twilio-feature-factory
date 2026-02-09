@@ -127,21 +127,21 @@ function categorizeByErrorCodeRange(errorCode: string): { category: RootCauseCat
   }
 
   // Error code ranges map to categories
-  if (code >= 11000 && code < 12000) return { category: 'code', domain: 'HTTP/webhook retrieval' };
-  if (code >= 12000 && code < 13000) return { category: 'code', domain: 'TwiML parsing/validation' };
-  if (code >= 13000 && code < 14000) return { category: 'code', domain: 'Voice call processing' };
-  if (code >= 20000 && code < 21000) return { category: 'configuration', domain: 'Authentication/API' };
-  if (code >= 21000 && code < 22000) return { category: 'configuration', domain: 'Phone number/account' };
-  if (code >= 30000 && code < 31000) return { category: 'external', domain: 'Messaging delivery (carrier)' };
-  if (code >= 31000 && code < 32000) return { category: 'external', domain: 'Messaging sending' };
-  if (code >= 32000 && code < 33000) return { category: 'configuration', domain: 'Messaging Service' };
-  if (code >= 34000 && code < 35000) return { category: 'configuration', domain: 'A2P 10DLC registration' };
-  if (code >= 60000 && code < 63000) return { category: 'code', domain: 'Verify service' };
-  if (code >= 63000 && code < 64000) return { category: 'external', domain: 'Verify delivery' };
-  if (code >= 64000 && code < 65000) return { category: 'code', domain: 'Voice/TTS/ConversationRelay' };
-  if (code >= 80000 && code < 81000) return { category: 'code', domain: 'Recording' };
-  if (code >= 82000 && code < 83000) return { category: 'code', domain: 'Transcription' };
-  if (code >= 90000 && code < 91000) return { category: 'configuration', domain: 'TaskRouter' };
+  if (code >= 11000 && code < 12000) {return { category: 'code', domain: 'HTTP/webhook retrieval' };}
+  if (code >= 12000 && code < 13000) {return { category: 'code', domain: 'TwiML parsing/validation' };}
+  if (code >= 13000 && code < 14000) {return { category: 'code', domain: 'Voice call processing' };}
+  if (code >= 20000 && code < 21000) {return { category: 'configuration', domain: 'Authentication/API' };}
+  if (code >= 21000 && code < 22000) {return { category: 'configuration', domain: 'Phone number/account' };}
+  if (code >= 30000 && code < 31000) {return { category: 'external', domain: 'Messaging delivery (carrier)' };}
+  if (code >= 31000 && code < 32000) {return { category: 'external', domain: 'Messaging sending' };}
+  if (code >= 32000 && code < 33000) {return { category: 'configuration', domain: 'Messaging Service' };}
+  if (code >= 34000 && code < 35000) {return { category: 'configuration', domain: 'A2P 10DLC registration' };}
+  if (code >= 60000 && code < 63000) {return { category: 'code', domain: 'Verify service' };}
+  if (code >= 63000 && code < 64000) {return { category: 'external', domain: 'Verify delivery' };}
+  if (code >= 64000 && code < 65000) {return { category: 'code', domain: 'Voice/TTS/ConversationRelay' };}
+  if (code >= 80000 && code < 81000) {return { category: 'code', domain: 'Recording' };}
+  if (code >= 82000 && code < 83000) {return { category: 'code', domain: 'Transcription' };}
+  if (code >= 90000 && code < 91000) {return { category: 'configuration', domain: 'TaskRouter' };}
 
   return { category: 'unknown', domain: 'Unrecognized error range' };
 }

@@ -36,8 +36,8 @@ export function proxyTools(context: TwilioContext) {
         numberSelectionBehavior,
       };
 
-      if (callbackUrl) params.callbackUrl = callbackUrl;
-      if (defaultTtl) params.defaultTtl = defaultTtl;
+      if (callbackUrl) {params.callbackUrl = callbackUrl;}
+      if (defaultTtl) {params.defaultTtl = defaultTtl;}
 
       const service = await client.proxy.v1.services.create(
         params as unknown as Parameters<typeof client.proxy.v1.services.create>[0]
@@ -75,9 +75,9 @@ export function proxyTools(context: TwilioContext) {
     async ({ serviceSid, uniqueName, ttl, mode, status }) => {
       const params: Record<string, unknown> = { mode };
 
-      if (uniqueName) params.uniqueName = uniqueName;
-      if (ttl) params.ttl = ttl;
-      if (status) params.status = status;
+      if (uniqueName) {params.uniqueName = uniqueName;}
+      if (ttl) {params.ttl = ttl;}
+      if (status) {params.status = status;}
 
       const session = await client.proxy.v1
         .services(serviceSid)
@@ -119,8 +119,8 @@ export function proxyTools(context: TwilioContext) {
         proxyIdentifier?: string;
       } = { identifier };
 
-      if (friendlyName) params.friendlyName = friendlyName;
-      if (proxyIdentifier) params.proxyIdentifier = proxyIdentifier;
+      if (friendlyName) {params.friendlyName = friendlyName;}
+      if (proxyIdentifier) {params.proxyIdentifier = proxyIdentifier;}
 
       const participant = await client.proxy.v1
         .services(serviceSid)
@@ -156,7 +156,7 @@ export function proxyTools(context: TwilioContext) {
     }),
     async ({ serviceSid, status, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (status) params.status = status;
+      if (status) {params.status = status;}
 
       const sessions = await client.proxy.v1
         .services(serviceSid)
@@ -263,7 +263,7 @@ export function proxyTools(context: TwilioContext) {
     async ({ serviceSid, ...updates }) => {
       const params: Record<string, unknown> = {};
       Object.entries(updates).forEach(([key, value]) => {
-        if (value !== undefined) params[key] = value;
+        if (value !== undefined) {params[key] = value;}
       });
 
       const service = await client.proxy.v1.services(serviceSid).update(params);
@@ -352,8 +352,8 @@ export function proxyTools(context: TwilioContext) {
     }),
     async ({ serviceSid, sessionSid, status, ttl }) => {
       const params: Record<string, unknown> = {};
-      if (status) params.status = status;
-      if (ttl) params.ttl = ttl;
+      if (status) {params.status = status;}
+      if (ttl) {params.ttl = ttl;}
 
       const session = await client.proxy.v1
         .services(serviceSid)

@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { Diagnosis, RootCauseCategory } from './diagnostic-bridge';
 
+
 /**
  * History for a single pattern.
  */
@@ -156,7 +157,7 @@ export class PatternTracker {
    * Saves the pattern database to disk.
    */
   private saveDatabase(): void {
-    if (!this.dirty) return;
+    if (!this.dirty) {return;}
 
     // Ensure directory exists
     const dir = path.dirname(this.config.databasePath);
@@ -176,7 +177,7 @@ export class PatternTracker {
    * Records a new occurrence of a pattern from a diagnosis.
    */
   record(diagnosis: Diagnosis, sessionId: string): PatternHistory {
-    const { patternId, summary, rootCause, validationResult } = diagnosis;
+    const { patternId, summary, rootCause } = diagnosis;
     const now = new Date();
 
     let pattern = this.database.patterns[patternId];
@@ -195,11 +196,8 @@ export class PatternTracker {
         resolved: false,
       };
 
-      // Get promotion target
-      const { LearningCaptureEngine } = require('./learning-capture');
-      pattern.promotionTarget = LearningCaptureEngine.prototype.getLearningsPath
-        ? undefined
-        : `functions/${validationResult.resourceType}/CLAUDE.md`;
+      // Promotion target is handled by LearningCaptureEngine
+      pattern.promotionTarget = undefined;
     }
 
     // Update pattern
@@ -225,7 +223,7 @@ export class PatternTracker {
    */
   recordFixAttempt(patternId: string, fixDescription: string, success: boolean): void {
     const pattern = this.database.patterns[patternId];
-    if (!pattern) return;
+    if (!pattern) {return;}
 
     pattern.fixAttempts.push({
       timestamp: new Date(),
@@ -247,7 +245,7 @@ export class PatternTracker {
    */
   markResolved(patternId: string, successfulFix: string): void {
     const pattern = this.database.patterns[patternId];
-    if (!pattern) return;
+    if (!pattern) {return;}
 
     pattern.resolved = true;
     pattern.successfulFix = successfulFix;

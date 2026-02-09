@@ -139,7 +139,7 @@ export function trunkingTools(context: TwilioContext) {
     async ({ trunkSid, ...updates }) => {
       const params: Record<string, unknown> = {};
       Object.entries(updates).forEach(([key, value]) => {
-        if (value !== undefined) params[key] = value;
+        if (value !== undefined) {params[key] = value;}
       });
 
       const trunk = await client.trunking.v1.trunks(trunkSid).update(params);

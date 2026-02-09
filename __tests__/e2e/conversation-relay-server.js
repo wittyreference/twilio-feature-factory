@@ -49,7 +49,7 @@ try {
     apiKey: process.env.ANTHROPIC_API_KEY,
   });
   console.log('Anthropic client initialized');
-} catch (error) {
+} catch (_error) {
   console.error('Failed to initialize Anthropic client. Set ANTHROPIC_API_KEY.');
   process.exit(1);
 }

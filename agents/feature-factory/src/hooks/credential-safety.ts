@@ -137,16 +137,16 @@ export function validateCredentials(content: string): CredentialValidationResult
 
   // Run all checks
   const accountSidViolation = checkAccountSid(content);
-  if (accountSidViolation) violations.push(accountSidViolation);
+  if (accountSidViolation) {violations.push(accountSidViolation);}
 
   const apiKeyViolation = checkApiKeySid(content);
-  if (apiKeyViolation) violations.push(apiKeyViolation);
+  if (apiKeyViolation) {violations.push(apiKeyViolation);}
 
   const authTokenViolation = checkAuthToken(content);
-  if (authTokenViolation) violations.push(authTokenViolation);
+  if (authTokenViolation) {violations.push(authTokenViolation);}
 
   const apiSecretViolation = checkApiSecret(content);
-  if (apiSecretViolation) violations.push(apiSecretViolation);
+  if (apiSecretViolation) {violations.push(apiSecretViolation);}
 
   if (violations.length > 0) {
     const errorMessages = violations.map(v =>

@@ -54,7 +54,7 @@ exports.handler = async function (context, event, callback) {
   try {
     const client = context.getTwilioClient();
     const syncServiceSid = context.TWILIO_SYNC_SERVICE_SID;
-    const intelligenceServiceSid = context.TWILIO_INTELLIGENCE_SERVICE_SID;
+    const _intelligenceServiceSid = context.TWILIO_INTELLIGENCE_SERVICE_SID;
 
     // Step 1: Fetch transcript details
     const transcript = await client.intelligence.v2
@@ -245,7 +245,7 @@ async function sendSmsSummary(client, context, callSid, transcript, insights, du
         .fetch();
       // Get the "to" number from call (the person who answered)
       smsTo = doc.data.to || doc.data.from;
-    } catch (err) {
+    } catch (_err) {
       // Try ai-demo document
       try {
         const doc = await client.sync.v1
@@ -253,7 +253,7 @@ async function sendSmsSummary(client, context, callSid, transcript, insights, du
           .documents(`ai-demo-${callSid}`)
           .fetch();
         smsTo = doc.data.to || doc.data.from;
-      } catch (err2) {
+      } catch (_err2) {
         console.log(`Could not find caller number for ${callSid}`);
       }
     }

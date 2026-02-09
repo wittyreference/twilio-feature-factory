@@ -60,9 +60,9 @@ export function voiceConfigTools(context: TwilioContext) {
     }),
     async ({ isoCode, continent, lowRiskNumbersEnabled, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (isoCode) params.isoCode = isoCode;
-      if (continent) params.continent = continent;
-      if (lowRiskNumbersEnabled !== undefined) params.lowRiskNumbersEnabled = lowRiskNumbersEnabled;
+      if (isoCode) {params.isoCode = isoCode;}
+      if (continent) {params.continent = continent;}
+      if (lowRiskNumbersEnabled !== undefined) {params.lowRiskNumbersEnabled = lowRiskNumbersEnabled;}
 
       const countries = await client.voice.v1.dialingPermissions.countries.list(params);
 
@@ -144,9 +144,9 @@ export function voiceConfigTools(context: TwilioContext) {
         cnamLookupEnabled,
       };
 
-      if (voiceFallbackUrl) params.voiceFallbackUrl = voiceFallbackUrl;
-      if (statusCallbackUrl) params.statusCallbackUrl = statusCallbackUrl;
-      if (connectionPolicySid) params.connectionPolicySid = connectionPolicySid;
+      if (voiceFallbackUrl) {params.voiceFallbackUrl = voiceFallbackUrl;}
+      if (statusCallbackUrl) {params.statusCallbackUrl = statusCallbackUrl;}
+      if (connectionPolicySid) {params.connectionPolicySid = connectionPolicySid;}
 
       const trunk = await client.voice.v1.byocTrunks.create(params);
 
@@ -219,7 +219,7 @@ export function voiceConfigTools(context: TwilioContext) {
     async ({ trunkSid, ...updates }) => {
       const params: Record<string, unknown> = {};
       Object.entries(updates).forEach(([key, value]) => {
-        if (value !== undefined) params[key] = value;
+        if (value !== undefined) {params[key] = value;}
       });
 
       const trunk = await client.voice.v1.byocTrunks(trunkSid).update(params);

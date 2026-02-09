@@ -315,7 +315,7 @@ export class ComprehensiveValidator {
         }
       } else {
         // Handle promise rejection
-        console.error(`Validator failed with error:`, settled.reason);
+        console.error('Validator failed with error:', settled.reason);
       }
     }
 
@@ -511,7 +511,7 @@ export class ComprehensiveValidator {
     const validationResultLike = this.toValidationResult(validatorName, result);
 
     // Skip if we can't convert to ValidationResult (e.g., debugger-only results)
-    if (!validationResultLike) return;
+    if (!validationResultLike) {return;}
 
     try {
       // Analyze with DiagnosticBridge

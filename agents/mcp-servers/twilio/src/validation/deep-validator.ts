@@ -495,10 +495,10 @@ export class DeepValidator extends EventEmitter {
     }
 
     // Aggregate errors
-    if (!statusCheck.passed) errors.push(statusCheck.message);
-    if (!alertCheck.passed) errors.push(alertCheck.message);
-    if (syncCheck && !syncCheck.passed) errors.push(syncCheck.message);
-    if (functionLogsCheck && !functionLogsCheck.passed) warnings.push(functionLogsCheck.message);
+    if (!statusCheck.passed) {errors.push(statusCheck.message);}
+    if (!alertCheck.passed) {errors.push(alertCheck.message);}
+    if (syncCheck && !syncCheck.passed) {errors.push(syncCheck.message);}
+    if (functionLogsCheck && !functionLogsCheck.passed) {warnings.push(functionLogsCheck.message);}
 
     // Add warnings for non-critical issues
     if (alertCheck.data && Array.isArray(alertCheck.data) && alertCheck.data.length > 0) {
@@ -576,15 +576,15 @@ export class DeepValidator extends EventEmitter {
     }
 
     // Aggregate errors
-    if (!statusCheck.passed) errors.push(statusCheck.message);
-    if (!alertCheck.passed) errors.push(alertCheck.message);
-    if (!notificationsCheck.passed) errors.push(notificationsCheck.message);
-    if (!eventsCheck.passed) errors.push(eventsCheck.message);
-    if (syncCheck && !syncCheck.passed) errors.push(syncCheck.message);
-    if (contentCheck && !contentCheck.passed) errors.push(contentCheck.message);
-    if (insightsCheck && !insightsCheck.passed) warnings.push(insightsCheck.message);
-    if (functionLogsCheck && !functionLogsCheck.passed) warnings.push(functionLogsCheck.message);
-    if (studioLogsCheck && !studioLogsCheck.passed) warnings.push(studioLogsCheck.message);
+    if (!statusCheck.passed) {errors.push(statusCheck.message);}
+    if (!alertCheck.passed) {errors.push(alertCheck.message);}
+    if (!notificationsCheck.passed) {errors.push(notificationsCheck.message);}
+    if (!eventsCheck.passed) {errors.push(eventsCheck.message);}
+    if (syncCheck && !syncCheck.passed) {errors.push(syncCheck.message);}
+    if (contentCheck && !contentCheck.passed) {errors.push(contentCheck.message);}
+    if (insightsCheck && !insightsCheck.passed) {warnings.push(insightsCheck.message);}
+    if (functionLogsCheck && !functionLogsCheck.passed) {warnings.push(functionLogsCheck.message);}
+    if (studioLogsCheck && !studioLogsCheck.passed) {warnings.push(studioLogsCheck.message);}
 
     // Content check is included in success determination when enabled
     const success = statusCheck.passed &&
@@ -639,9 +639,9 @@ export class DeepValidator extends EventEmitter {
         : Promise.resolve({ passed: true, message: 'Sync check skipped (no service SID)' }),
     ]);
 
-    if (!statusCheck.passed) errors.push(statusCheck.message);
-    if (!alertCheck.passed) errors.push(alertCheck.message);
-    if (syncCheck && !syncCheck.passed) warnings.push(syncCheck.message);
+    if (!statusCheck.passed) {errors.push(statusCheck.message);}
+    if (!alertCheck.passed) {errors.push(alertCheck.message);}
+    if (syncCheck && !syncCheck.passed) {warnings.push(syncCheck.message);}
 
     const success = statusCheck.passed && alertCheck.passed;
 
@@ -685,9 +685,9 @@ export class DeepValidator extends EventEmitter {
         : Promise.resolve({ passed: true, message: 'Sync check skipped (no service SID)' }),
     ]);
 
-    if (!statusCheck.passed) errors.push(statusCheck.message);
-    if (!alertCheck.passed) errors.push(alertCheck.message);
-    if (syncCheck && !syncCheck.passed) warnings.push(syncCheck.message);
+    if (!statusCheck.passed) {errors.push(statusCheck.message);}
+    if (!alertCheck.passed) {errors.push(alertCheck.message);}
+    if (syncCheck && !syncCheck.passed) {warnings.push(syncCheck.message);}
 
     const success = statusCheck.passed && alertCheck.passed;
 
@@ -753,12 +753,12 @@ export class DeepValidator extends EventEmitter {
     }
 
     // Aggregate errors
-    if (!statusCheck.passed) errors.push(statusCheck.message);
-    if (!alertCheck.passed) errors.push(alertCheck.message);
-    if (syncCheck && !syncCheck.passed) errors.push(syncCheck.message);
-    if (conferenceInsightsCheck && !conferenceInsightsCheck.passed) warnings.push(conferenceInsightsCheck.message);
-    if (participantInsightsCheck && !participantInsightsCheck.passed) warnings.push(participantInsightsCheck.message);
-    if (functionLogsCheck && !functionLogsCheck.passed) warnings.push(functionLogsCheck.message);
+    if (!statusCheck.passed) {errors.push(statusCheck.message);}
+    if (!alertCheck.passed) {errors.push(alertCheck.message);}
+    if (syncCheck && !syncCheck.passed) {errors.push(syncCheck.message);}
+    if (conferenceInsightsCheck && !conferenceInsightsCheck.passed) {warnings.push(conferenceInsightsCheck.message);}
+    if (participantInsightsCheck && !participantInsightsCheck.passed) {warnings.push(participantInsightsCheck.message);}
+    if (functionLogsCheck && !functionLogsCheck.passed) {warnings.push(functionLogsCheck.message);}
 
     const success = statusCheck.passed && alertCheck.passed;
 
@@ -1364,7 +1364,7 @@ export class DeepValidator extends EventEmitter {
               }
             }
           }
-        } catch (transcriptError) {
+        } catch (_transcriptError) {
           // Transcript check is best-effort, don't fail validation
           // Just note the warning
         }
@@ -1596,7 +1596,7 @@ export class DeepValidator extends EventEmitter {
 
       this.emitValidationEvent('debugger', result);
       return result;
-    } catch (error) {
+    } catch (_error) {
       const result: DebuggerValidationResult = {
         success: false,
         totalAlerts: 0,
@@ -1672,8 +1672,8 @@ export class DeepValidator extends EventEmitter {
           byFunction[fid] = { total: 0, errors: 0, warns: 0 };
         }
         byFunction[fid].total++;
-        if (log.level === 'error') byFunction[fid].errors++;
-        if (log.level === 'warn') byFunction[fid].warns++;
+        if (log.level === 'error') {byFunction[fid].errors++;}
+        if (log.level === 'warn') {byFunction[fid].warns++;}
       }
 
       const result: ServerlessLogsValidationResult = {
@@ -1695,7 +1695,7 @@ export class DeepValidator extends EventEmitter {
 
       this.emitValidationEvent('serverless', result);
       return result;
-    } catch (error) {
+    } catch (_error) {
       const result: ServerlessLogsValidationResult = {
         success: false,
         totalLogs: 0,
@@ -1937,7 +1937,7 @@ export class DeepValidator extends EventEmitter {
     const protocolErrors: string[] = [];
 
     // Try to get WebSocket - prefer provided impl, then global, then error
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const WS = WebSocketImpl || (typeof WebSocket !== 'undefined' ? WebSocket : null);
 
     if (!WS) {
@@ -1972,10 +1972,10 @@ export class DeepValidator extends EventEmitter {
       let ws: any;
 
       const safeResolve = (result: ConversationRelayValidationResult) => {
-        if (resolved) return;
+        if (resolved) {return;}
         resolved = true;
         clearTimeout(timer);
-        if (ws && ws.close) ws.close();
+        if (ws && ws.close) {ws.close();}
         self.emitValidationEvent('conversation-relay', result);
         resolve(result);
       };
@@ -2062,7 +2062,7 @@ export class DeepValidator extends EventEmitter {
                 }
               }
             }
-          } catch (e) {
+          } catch (_e) {
             const rawData = typeof event.data === 'string' ? event.data : String(event.data);
             protocolErrors.push(`Invalid JSON: ${rawData.slice(0, 100)}`);
           }
@@ -2496,7 +2496,7 @@ export class DeepValidator extends EventEmitter {
     if (minDuration !== undefined) {
       // Note: Duration would need to be retrieved from call data
       // For now, this is a placeholder that can be enhanced when call duration is available
-      warnings.push(`minDuration check requires call duration data (not yet implemented in transcript validation)`);
+      warnings.push('minDuration check requires call duration data (not yet implemented in transcript validation)');
     }
 
     // Determine overall success
@@ -2579,7 +2579,7 @@ export class DeepValidator extends EventEmitter {
       }
 
       return { sid: transcript.sid, status: transcript.status };
-    } catch (e) {
+    } catch (_e) {
       // Transcript not found or service error
       return null;
     }
@@ -2593,7 +2593,7 @@ export class DeepValidator extends EventEmitter {
   private countSpeakerTurnsByChannel(
     sentences: Array<{ mediaChannel?: number }>
   ): number {
-    if (sentences.length === 0) return 0;
+    if (sentences.length === 0) {return 0;}
 
     let turns = 1;
     let lastChannel = sentences[0].mediaChannel;

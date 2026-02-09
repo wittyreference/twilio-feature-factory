@@ -36,9 +36,9 @@ export function debuggerTools(context: TwilioContext) {
         endDate?: Date;
       } = { limit: limit || 20 };
 
-      if (logLevel) filters.logLevel = logLevel;
-      if (startDate) filters.startDate = new Date(startDate);
-      if (endDate) filters.endDate = new Date(endDate);
+      if (logLevel) {filters.logLevel = logLevel;}
+      if (startDate) {filters.startDate = new Date(startDate);}
+      if (endDate) {filters.endDate = new Date(endDate);}
 
       const alerts = await client.monitor.v1.alerts.list(filters);
 
@@ -130,9 +130,9 @@ export function debuggerTools(context: TwilioContext) {
         endDate?: Date;
       } = {};
 
-      if (category) filters.category = category;
-      if (startDate) filters.startDate = new Date(startDate);
-      if (endDate) filters.endDate = new Date(endDate);
+      if (category) {filters.category = category;}
+      if (startDate) {filters.startDate = new Date(startDate);}
+      if (endDate) {filters.endDate = new Date(endDate);}
 
       const records = await client.usage.records.list(filters);
 

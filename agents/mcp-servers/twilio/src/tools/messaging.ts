@@ -130,10 +130,10 @@ export function messagingTools(context: TwilioContext) {
         dateSentBefore?: Date;
       } = { limit: limit || 20 };
 
-      if (to) filters.to = to;
-      if (from) filters.from = from;
-      if (dateSentAfter) filters.dateSentAfter = new Date(dateSentAfter);
-      if (dateSentBefore) filters.dateSentBefore = new Date(dateSentBefore);
+      if (to) {filters.to = to;}
+      if (from) {filters.from = from;}
+      if (dateSentAfter) {filters.dateSentAfter = new Date(dateSentAfter);}
+      if (dateSentBefore) {filters.dateSentBefore = new Date(dateSentBefore);}
 
       const messages = await client.messages.list(filters);
 

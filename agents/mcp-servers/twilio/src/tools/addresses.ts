@@ -30,9 +30,9 @@ export function addressesTools(context: TwilioContext) {
     }),
     async ({ customerName, friendlyName, isoCountry, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (customerName) params.customerName = customerName;
-      if (friendlyName) params.friendlyName = friendlyName;
-      if (isoCountry) params.isoCountry = isoCountry;
+      if (customerName) {params.customerName = customerName;}
+      if (friendlyName) {params.friendlyName = friendlyName;}
+      if (isoCountry) {params.isoCountry = isoCountry;}
 
       const addresses = await client.addresses.list(params);
 
@@ -165,7 +165,7 @@ export function addressesTools(context: TwilioContext) {
     async ({ addressSid, ...updates }) => {
       const params: Record<string, unknown> = {};
       Object.entries(updates).forEach(([key, value]) => {
-        if (value !== undefined) params[key] = value;
+        if (value !== undefined) {params[key] = value;}
       });
 
       const address = await client.addresses(addressSid).update(params);

@@ -68,11 +68,11 @@ export function phoneNumberTools(context: TwilioContext) {
         statusCallback?: string;
       } = {};
 
-      if (voiceUrl) updateParams.voiceUrl = voiceUrl;
-      if (voiceMethod) updateParams.voiceMethod = voiceMethod;
-      if (smsUrl) updateParams.smsUrl = smsUrl;
-      if (smsMethod) updateParams.smsMethod = smsMethod;
-      if (statusCallback) updateParams.statusCallback = statusCallback;
+      if (voiceUrl) {updateParams.voiceUrl = voiceUrl;}
+      if (voiceMethod) {updateParams.voiceMethod = voiceMethod;}
+      if (smsUrl) {updateParams.smsUrl = smsUrl;}
+      if (smsMethod) {updateParams.smsMethod = smsMethod;}
+      if (statusCallback) {updateParams.statusCallback = statusCallback;}
 
       const updated = await client.incomingPhoneNumbers(phoneNumberSid).update(updateParams);
 
@@ -112,10 +112,10 @@ export function phoneNumberTools(context: TwilioContext) {
         limit: number;
       } = { limit: limit || 10 };
 
-      if (areaCode !== undefined) searchParams.areaCode = areaCode;
-      if (contains) searchParams.contains = contains;
-      if (smsEnabled !== undefined) searchParams.smsEnabled = smsEnabled;
-      if (voiceEnabled !== undefined) searchParams.voiceEnabled = voiceEnabled;
+      if (areaCode !== undefined) {searchParams.areaCode = areaCode;}
+      if (contains) {searchParams.contains = contains;}
+      if (smsEnabled !== undefined) {searchParams.smsEnabled = smsEnabled;}
+      if (voiceEnabled !== undefined) {searchParams.voiceEnabled = voiceEnabled;}
 
       const numbers = await client.availablePhoneNumbers(countryCode).local.list(searchParams);
 

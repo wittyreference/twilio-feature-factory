@@ -185,7 +185,7 @@ Monitoring call status...
       try {
         await client.calls(call.sid).update({ status: 'completed' });
         console.log('Call cancelled successfully.\n');
-      } catch (error) {
+      } catch (_error) {
         console.log('Call may have already ended.\n');
       }
       process.exit(0);

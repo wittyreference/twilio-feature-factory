@@ -60,8 +60,8 @@ export function accountsTools(context: TwilioContext) {
     }),
     async ({ friendlyName, status, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (friendlyName) params.friendlyName = friendlyName;
-      if (status) params.status = status;
+      if (friendlyName) {params.friendlyName = friendlyName;}
+      if (status) {params.status = status;}
 
       const accounts = await client.api.v2010.accounts.list(params);
 
@@ -123,8 +123,8 @@ export function accountsTools(context: TwilioContext) {
     }),
     async ({ accountSid, friendlyName, status }) => {
       const params: Record<string, unknown> = {};
-      if (friendlyName) params.friendlyName = friendlyName;
-      if (status) params.status = status;
+      if (friendlyName) {params.friendlyName = friendlyName;}
+      if (status) {params.status = status;}
 
       const account = await client.api.v2010.accounts(accountSid).update(params);
 
@@ -157,9 +157,9 @@ export function accountsTools(context: TwilioContext) {
     }),
     async ({ category, startDate, endDate, includeSubaccounts, limit }) => {
       const params: Record<string, unknown> = { limit, includeSubaccounts };
-      if (category) params.category = category;
-      if (startDate) params.startDate = new Date(startDate);
-      if (endDate) params.endDate = new Date(endDate);
+      if (category) {params.category = category;}
+      if (startDate) {params.startDate = new Date(startDate);}
+      if (endDate) {params.endDate = new Date(endDate);}
 
       const records = await client.usage.records.list(params);
 
@@ -200,9 +200,9 @@ export function accountsTools(context: TwilioContext) {
     }),
     async ({ category, startDate, endDate, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (category) params.category = category;
-      if (startDate) params.startDate = new Date(startDate);
-      if (endDate) params.endDate = new Date(endDate);
+      if (category) {params.category = category;}
+      if (startDate) {params.startDate = new Date(startDate);}
+      if (endDate) {params.endDate = new Date(endDate);}
 
       const records = await client.usage.records.daily.list(params);
 
@@ -241,9 +241,9 @@ export function accountsTools(context: TwilioContext) {
     }),
     async ({ category, startDate, endDate, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (category) params.category = category;
-      if (startDate) params.startDate = new Date(startDate);
-      if (endDate) params.endDate = new Date(endDate);
+      if (category) {params.category = category;}
+      if (startDate) {params.startDate = new Date(startDate);}
+      if (endDate) {params.endDate = new Date(endDate);}
 
       const records = await client.usage.records.monthly.list(params);
 
@@ -284,9 +284,9 @@ export function accountsTools(context: TwilioContext) {
     }),
     async ({ recurring, triggerBy, usageCategory, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (recurring) params.recurring = recurring;
-      if (triggerBy) params.triggerBy = triggerBy;
-      if (usageCategory) params.usageCategory = usageCategory;
+      if (recurring) {params.recurring = recurring;}
+      if (triggerBy) {params.triggerBy = triggerBy;}
+      if (usageCategory) {params.usageCategory = usageCategory;}
 
       const triggers = await client.usage.triggers.list(params);
 
@@ -402,7 +402,7 @@ export function accountsTools(context: TwilioContext) {
     async ({ triggerSid, ...updates }) => {
       const params: Record<string, unknown> = {};
       Object.entries(updates).forEach(([key, value]) => {
-        if (value !== undefined) params[key] = value;
+        if (value !== undefined) {params[key] = value;}
       });
 
       const trigger = await client.usage.triggers(triggerSid).update(params);

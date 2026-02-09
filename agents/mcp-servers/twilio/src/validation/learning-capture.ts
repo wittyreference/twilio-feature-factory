@@ -3,6 +3,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { execSync } from 'child_process';
 import type { Diagnosis, RootCauseCategory } from './diagnostic-bridge';
 
 /**
@@ -225,7 +226,6 @@ export class LearningCaptureEngine {
    */
   private triggerDocFlywheel(): void {
     try {
-      const { execSync } = require('child_process');
       const flywheelScript = path.join(this.projectRoot, '.claude', 'hooks', 'flywheel-doc-check.sh');
 
       if (fs.existsSync(flywheelScript)) {

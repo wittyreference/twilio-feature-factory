@@ -37,11 +37,11 @@ export function videoTools(context: TwilioContext) {
         recordParticipantsOnConnect,
       };
 
-      if (uniqueName) roomParams.uniqueName = uniqueName;
-      if (maxParticipants) roomParams.maxParticipants = maxParticipants;
-      if (statusCallback) roomParams.statusCallback = statusCallback;
-      if (maxParticipantDuration) roomParams.maxParticipantDuration = maxParticipantDuration;
-      if (emptyRoomTimeout) roomParams.emptyRoomTimeout = emptyRoomTimeout;
+      if (uniqueName) {roomParams.uniqueName = uniqueName;}
+      if (maxParticipants) {roomParams.maxParticipants = maxParticipants;}
+      if (statusCallback) {roomParams.statusCallback = statusCallback;}
+      if (maxParticipantDuration) {roomParams.maxParticipantDuration = maxParticipantDuration;}
+      if (emptyRoomTimeout) {roomParams.emptyRoomTimeout = emptyRoomTimeout;}
 
       const room = await client.video.v1.rooms.create(roomParams);
 
@@ -75,8 +75,8 @@ export function videoTools(context: TwilioContext) {
     }),
     async ({ status, uniqueName, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (status) params.status = status;
-      if (uniqueName) params.uniqueName = uniqueName;
+      if (status) {params.status = status;}
+      if (uniqueName) {params.uniqueName = uniqueName;}
 
       const rooms = await client.video.v1.rooms.list(params);
 
@@ -114,7 +114,7 @@ export function videoTools(context: TwilioContext) {
     }),
     async ({ roomSid, status, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (status) params.status = status;
+      if (status) {params.status = status;}
 
       const participants = await client.video.v1
         .rooms(roomSid)
@@ -279,7 +279,7 @@ export function videoTools(context: TwilioContext) {
     }),
     async ({ roomSid, status, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (status) params.status = status;
+      if (status) {params.status = status;}
 
       const recordings = await client.video.v1
         .rooms(roomSid)

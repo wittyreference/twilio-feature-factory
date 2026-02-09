@@ -30,7 +30,7 @@ export function notifyTools(context: TwilioContext) {
     }),
     async ({ friendlyName, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (friendlyName) params.friendlyName = friendlyName;
+      if (friendlyName) {params.friendlyName = friendlyName;}
 
       const services = await client.notify.v1.services.list(params);
 
@@ -142,7 +142,7 @@ export function notifyTools(context: TwilioContext) {
     async ({ serviceSid, ...updates }) => {
       const params: Record<string, unknown> = {};
       Object.entries(updates).forEach(([key, value]) => {
-        if (value !== undefined) params[key] = value;
+        if (value !== undefined) {params[key] = value;}
       });
 
       const service = await client.notify.v1.services(serviceSid).update(params);
@@ -197,8 +197,8 @@ export function notifyTools(context: TwilioContext) {
     }),
     async ({ serviceSid, identity, bindingType, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (identity) params.identity = identity;
-      if (bindingType) params.bindingType = bindingType;
+      if (identity) {params.identity = identity;}
+      if (bindingType) {params.bindingType = bindingType;}
 
       const bindings = await client.notify.v1.services(serviceSid).bindings.list(params);
 

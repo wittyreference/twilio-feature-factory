@@ -289,15 +289,15 @@ export class WorkPoller extends EventEmitter {
    */
   getNextWork(): DiscoveredWork | undefined {
     const pending = this.workQueue.filter((w) => w.status === 'pending');
-    if (pending.length === 0) return undefined;
+    if (pending.length === 0) {return undefined;}
 
     pending.sort((a, b) => {
       // First by priority (critical first)
       const priorityDiff = this.comparePriority(a.priority, b.priority);
-      if (priorityDiff !== 0) return priorityDiff;
+      if (priorityDiff !== 0) {return priorityDiff;}
 
       // Then by tier (lower tier = easier to automate)
-      if (a.tier !== b.tier) return a.tier - b.tier;
+      if (a.tier !== b.tier) {return a.tier - b.tier;}
 
       // Then by discovery time (older first)
       return a.discoveredAt.getTime() - b.discoveredAt.getTime();
@@ -317,7 +317,7 @@ export class WorkPoller extends EventEmitter {
    * Starts the polling loop.
    */
   start(): void {
-    if (this.isRunning) return;
+    if (this.isRunning) {return;}
 
     this.isRunning = true;
     this.pollTimer = setInterval(() => {
@@ -373,8 +373,8 @@ export class WorkPoller extends EventEmitter {
     for (const work of this.workQueue) {
       byPriority[work.priority]++;
       byTier[work.tier]++;
-      if (work.status === 'pending') pendingCount++;
-      if (work.status === 'in-progress') inProgressCount++;
+      if (work.status === 'pending') {pendingCount++;}
+      if (work.status === 'in-progress') {inProgressCount++;}
     }
 
     return {

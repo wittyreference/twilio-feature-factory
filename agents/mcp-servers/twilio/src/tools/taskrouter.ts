@@ -47,9 +47,9 @@ export function taskrouterTools(context: TwilioContext) {
         priority?: number;
       } = { attributes: JSON.stringify(attributes) };
 
-      if (workflowSid) createParams.workflowSid = workflowSid;
-      if (timeout) createParams.timeout = timeout;
-      if (priority !== undefined) createParams.priority = priority;
+      if (workflowSid) {createParams.workflowSid = workflowSid;}
+      if (timeout) {createParams.timeout = timeout;}
+      if (priority !== undefined) {createParams.priority = priority;}
 
       const task = await client.taskrouter.v1.workspaces(wsSid).tasks.create(createParams);
 
@@ -90,7 +90,7 @@ export function taskrouterTools(context: TwilioContext) {
       }
 
       const filters: { assignmentStatus?: string[]; limit: number } = { limit: limit || 20 };
-      if (assignmentStatus) filters.assignmentStatus = [assignmentStatus];
+      if (assignmentStatus) {filters.assignmentStatus = [assignmentStatus];}
 
       const tasks = await client.taskrouter.v1.workspaces(wsSid).tasks.list(filters);
 
@@ -175,8 +175,8 @@ export function taskrouterTools(context: TwilioContext) {
       }
 
       const filters: { available?: string; activityName?: string; limit: number } = { limit: limit || 20 };
-      if (available !== undefined) filters.available = available.toString();
-      if (activityName) filters.activityName = activityName;
+      if (available !== undefined) {filters.available = available.toString();}
+      if (activityName) {filters.activityName = activityName;}
 
       const workers = await client.taskrouter.v1.workspaces(wsSid).workers.list(filters);
 

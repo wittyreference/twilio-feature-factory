@@ -31,9 +31,9 @@ export function mediaTools(context: TwilioContext) {
     }),
     async ({ status, sourceSid, groupingSid, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (status) params.status = status;
-      if (sourceSid) params.sourceSid = sourceSid;
-      if (groupingSid) params.groupingSid = groupingSid;
+      if (status) {params.status = status;}
+      if (sourceSid) {params.sourceSid = sourceSid;}
+      if (groupingSid) {params.groupingSid = groupingSid;}
 
       const recordings = await client.video.v1.recordings.list(params);
 
@@ -104,8 +104,8 @@ export function mediaTools(context: TwilioContext) {
     }),
     async ({ status, roomSid, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (status) params.status = status;
-      if (roomSid) params.roomSid = roomSid;
+      if (status) {params.status = status;}
+      if (roomSid) {params.roomSid = roomSid;}
 
       const compositions = await client.video.v1.compositions.list(params);
 
@@ -266,8 +266,8 @@ export function mediaTools(context: TwilioContext) {
     }),
     async ({ enabled, friendlyName, limit }) => {
       const params: Record<string, unknown> = { limit };
-      if (enabled !== undefined) params.enabled = enabled;
-      if (friendlyName) params.friendlyName = friendlyName;
+      if (enabled !== undefined) {params.enabled = enabled;}
+      if (friendlyName) {params.friendlyName = friendlyName;}
 
       const hooks = await client.video.v1.compositionHooks.list(params);
 

@@ -248,7 +248,7 @@ export function messagingServicesTools(context: TwilioContext) {
     async ({ serviceSid, ...updates }) => {
       const params: Record<string, unknown> = {};
       Object.entries(updates).forEach(([key, value]) => {
-        if (value !== undefined) params[key] = value;
+        if (value !== undefined) {params[key] = value;}
       });
 
       const service = await client.messaging.v1.services(serviceSid).update(params);

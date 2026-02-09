@@ -34,7 +34,7 @@ const execAsync = promisify(exec);
 
 const AGENT_A_PORT = 8080;
 const AGENT_B_PORT = 8081;
-const TEST_TIMEOUT = 180000; // 3 minutes
+const _TEST_TIMEOUT = 180000; // 3 minutes
 
 // Check required environment variables
 function checkEnv() {
@@ -176,7 +176,7 @@ async function startNgrokTunnel(port) {
 }
 
 // Update Twilio phone number webhook
-async function updatePhoneNumberWebhook(phoneNumber, voiceUrl) {
+async function _updatePhoneNumberWebhook(phoneNumber, voiceUrl) {
   console.log(`Updating webhook for ${phoneNumber} to ${voiceUrl}...`);
 
   try {
@@ -206,7 +206,7 @@ async function updatePhoneNumberWebhook(phoneNumber, voiceUrl) {
 }
 
 // Trigger test call
-async function triggerTestCall(sessionId) {
+async function triggerTestCall(_sessionId) {
   console.log('Triggering test call...');
 
   try {
@@ -263,7 +263,7 @@ async function waitForCallCompletion(callSid, timeout = 120000) {
 }
 
 // Validate test results
-async function validateResults(sessionId, callSid) {
+async function validateResults(sessionId, _callSid) {
   console.log('Validating test results...');
 
   const syncServiceSid = process.env.TWILIO_SYNC_SERVICE_SID;
@@ -338,7 +338,7 @@ function cleanup(processes, ngrokProcesses = []) {
     if (p && !p.killed) {
       try {
         p.kill('SIGTERM');
-      } catch (e) {
+      } catch (_e) {
         // Ignore errors
       }
     }
@@ -350,9 +350,9 @@ function cleanup(processes, ngrokProcesses = []) {
       try {
         // ngrok was started detached, need to kill process group
         process.kill(-p.pid, 'SIGTERM');
-      } catch (e) {
+      } catch (_e) {
         // Ignore errors, try regular kill
-        try { p.kill('SIGTERM'); } catch (_) {}
+        try { p.kill('SIGTERM'); } catch (_e2) {}
       }
     }
   });

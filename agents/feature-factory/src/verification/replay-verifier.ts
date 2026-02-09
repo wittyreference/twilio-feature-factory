@@ -481,8 +481,8 @@ export class ReplayVerifier extends EventEmitter {
       totalTimeImprovement += improvement.timeImprovementPercent;
       totalAttemptsImprovement += improvement.attemptsImprovementPercent;
 
-      if (enhanced.success) successWithLearnings++;
-      if (baseline.success) successWithoutLearnings++;
+      if (enhanced.success) {successWithLearnings++;}
+      if (baseline.success) {successWithoutLearnings++;}
     }
 
     return {

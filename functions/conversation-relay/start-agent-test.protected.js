@@ -28,7 +28,7 @@ exports.handler = async function (context, event, callback) {
   // Configuration
   const agentAPhone = context.AGENT_A_PHONE_NUMBER || '+12062021014';
   const agentBPhone = context.AGENT_B_PHONE_NUMBER || '+12062031575';
-  const syncServiceSid = context.TWILIO_SYNC_SERVICE_SID;
+  const _syncServiceSid = context.TWILIO_SYNC_SERVICE_SID;
   const sessionId = event.sessionId || `test-${Date.now()}`;
   const timeout = parseInt(event.timeout || '120', 10);
 

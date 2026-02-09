@@ -137,7 +137,7 @@ function zodToAnthropicSchema(
   const jsonSchema = zodToJsonSchema(zodSchema, { target: 'openApi3' });
 
   // Remove $schema property which Anthropic doesn't accept
-  const { $schema, ...schemaWithoutMeta } = jsonSchema as Record<string, unknown>;
+  const { $schema: _$schema, ...schemaWithoutMeta } = jsonSchema as Record<string, unknown>;
 
   return schemaWithoutMeta as Anthropic.Tool['input_schema'];
 }

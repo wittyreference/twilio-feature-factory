@@ -722,7 +722,7 @@ This project uses Claude Code hooks to automate enforcement of coding standards.
 | `pre-write-validate.sh` | PreToolUse (Write/Edit) | Blocks credentials, magic test numbers; warns on naming |
 | `pre-bash-validate.sh` | PreToolUse (Bash) | Blocks --no-verify, pending-actions, validates deploy |
 | `flywheel-doc-check.sh` | PreToolUse (Bash) | Suggests doc updates including todo.md |
-| `post-write.sh` | PostToolUse (Write/Edit) | Auto-lints JS files with ESLint |
+| `post-write.sh` | PostToolUse (Write/Edit) | Auto-lints JS/TS files with ESLint |
 | `post-bash.sh` | PostToolUse (Bash) | Logs deploy/test completions |
 | `subagent-log.sh` | SubagentStop | Logs workflow activity |
 | `archive-plan.sh` | Stop | Archives plan files with metadata |

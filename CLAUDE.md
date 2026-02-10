@@ -955,8 +955,8 @@ Required environment variables (see `.env.example`):
 GitHub Actions workflows:
 
 - **CI** (`ci.yml`): Runs on push/PR to main/develop - tests and lints
-- **Deploy Dev** (`deploy-dev.yml`): Deploys to dev on push to develop
-- **Deploy Prod** (`deploy-prod.yml`): Deploys to production on push to main
+- **Deploy Dev** (`deploy-dev.yml`): Manual dispatch only (`workflow_dispatch`)
+- **Deploy Prod** (`deploy-prod.yml`): On release tags or manual dispatch (requires confirmation)
 
 Required GitHub Secrets:
 

@@ -1,11 +1,10 @@
 # ABOUTME: Deployment workflow for the dev environment.
-# ABOUTME: Triggered on push to develop branch after CI passes.
+# ABOUTME: Triggered manually, not on every push.
 
 name: Deploy to Dev
 
 on:
-  push:
-    branches: [develop]
+  workflow_dispatch:
 
 permissions:
   contents: read

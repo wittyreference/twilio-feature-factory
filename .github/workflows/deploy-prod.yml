@@ -1,11 +1,16 @@
 # ABOUTME: Deployment workflow for the production environment.
-# ABOUTME: Triggered on push to main branch after CI passes.
+# ABOUTME: Triggered manually or on release tags, never on every push.
 
 name: Deploy to Production
 
 on:
-  push:
-    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "deploy" to confirm production deployment'
+        required: true
 
 permissions:
   contents: read
@@ -15,6 +20,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Confirm deployment
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "deploy" ]; then
+            echo "::error::Deployment not confirmed. Type 'deploy' to proceed."
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v6
 

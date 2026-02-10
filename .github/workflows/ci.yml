@@ -57,22 +57,39 @@ jobs:
     needs: test
 
     steps:
+      - name: Check for Twilio credentials
+        id: check-creds
+        run: |
+          if [ -n "$TWILIO_SID" ]; then
+            echo "has_creds=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_creds=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping E2E tests — no Twilio secrets configured"
+          fi
+        env:
+          TWILIO_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+
       - name: Checkout repository
+        if: steps.check-creds.outputs.has_creds == 'true'
         uses: actions/checkout@v6
 
       - name: Setup Node.js
+        if: steps.check-creds.outputs.has_creds == 'true'
         uses: actions/setup-node@v6
         with:
           node-version: '20.x'
           cache: 'npm'
 
       - name: Install dependencies
+        if: steps.check-creds.outputs.has_creds == 'true'
         run: npm ci
 
       - name: Install Newman
+        if: steps.check-creds.outputs.has_creds == 'true'
         run: npm install -g newman
 
       - name: Start local server
+        if: steps.check-creds.outputs.has_creds == 'true'
         env:
           TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
@@ -82,4 +99,5 @@ jobs:
           sleep 10
 
       - name: Run E2E tests
+        if: steps.check-creds.outputs.has_creds == 'true'
         run: npm run test:e2e

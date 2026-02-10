@@ -11,14 +11,10 @@ global.hasTwilioCredentials = () => {
 };
 
 global.createTestContext = () => {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const accountSid = process.env.TWILIO_ACCOUNT_SID || 'ACtest00000000000000000000000000';
+  const authToken = process.env.TWILIO_AUTH_TOKEN || 'test_auth_token_placeholder';
   const apiKey = process.env.TWILIO_API_KEY;
   const apiSecret = process.env.TWILIO_API_SECRET;
-
-  if (!accountSid || !authToken) {
-    return null;
-  }
 
   return {
     TWILIO_ACCOUNT_SID: accountSid,

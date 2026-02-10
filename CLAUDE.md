@@ -56,6 +56,19 @@ This separation ensures:
 
 See [DESIGN_DECISIONS.md](/DESIGN_DECISIONS.md) for architectural rationale and [.claude/references/tool-boundaries.md](/.claude/references/tool-boundaries.md) for MCP vs CLI vs Functions guidance.
 
+### Meta-Development Mode
+
+When `.meta/` exists at the project root, this is a meta-development environment (gitignored, never ships). You are developing the factory itself, not using it as a shipped product.
+
+**File routing in meta-development mode:** Session-specific files live under `.meta/` instead of at root or `.claude/`:
+
+- **Todo / roadmap**: `.meta/todo.md` in meta-development, `todo.md` otherwise
+- **Session learnings**: `.meta/learnings.md` in meta-development, `.claude/learnings.md` otherwise
+- **Pending actions**: `.meta/pending-actions.md` in meta-development, `.claude/pending-actions.md` otherwise
+- **Archived plans**: `.meta/plans/` in meta-development, `.claude/archive/plans/` otherwise
+
+The hooks in `.claude/hooks/` auto-detect the environment. Claude must also follow this routing — when the user says "todo" or "learnings", use the meta-development paths if `.meta/` exists. See `.meta/CLAUDE.md` for full meta-development documentation.
+
 ## Development Tools Architecture
 
 This project provides specialized tools for Claude Code to build Twilio applications.
@@ -174,8 +187,8 @@ See `agents/mcp-servers/twilio/src/tools/validation.ts` for full tool documentat
 | Deep validation | [agents/mcp-servers/twilio/src/validation/CLAUDE.md](/agents/mcp-servers/twilio/src/validation/CLAUDE.md) |
 | Setup scripts | [scripts/CLAUDE.md](/scripts/CLAUDE.md) |
 | Twilio CLI reference | [.claude/references/twilio-cli.md](/.claude/references/twilio-cli.md) |
-| Implementation progress | [todo.md](/todo.md) |
-| Session learnings | `.claude/learnings.md` (local, not committed) |
+| Implementation progress | Todo file (see [Meta-Development Mode](#meta-development-mode)) |
+| Session learnings | Learnings file (see [Meta-Development Mode](#meta-development-mode)) |
 
 ## Your Role as Primary Agent
 - **Architecture & Planning**: Lead on system design and specification creation
@@ -213,7 +226,7 @@ Read the relevant `CLAUDE.md` file for the domain you're modifying:
 
 ### Discovery Capture
 
-When you learn something unexpected, add it to `.claude/learnings.md` **IMMEDIATELY**:
+When you learn something unexpected, add it to the learnings file **IMMEDIATELY** (see [Meta-Development Mode](#meta-development-mode) for path):
 
 ```markdown
 ## [YYYY-MM-DD] Session N - Topic
@@ -231,7 +244,7 @@ Don't wait until the end of a task - capture inline as you discover.
 
 ### Before Committing
 
-1. Check `.claude/pending-actions.md` for doc update suggestions
+1. Check the pending actions file for doc update suggestions (see [Meta-Development Mode](#meta-development-mode) for path)
 2. Address suggestions or consciously defer them
 3. Verify you recorded any learnings from this session
 
@@ -241,7 +254,7 @@ Use the capture-promote-clear workflow for knowledge management:
 
 ### 1. Capture
 
-Add discoveries to `.claude/learnings.md` (local, not committed):
+Add discoveries to the learnings file (see [Meta-Development Mode](#meta-development-mode) for path):
 
 - Type system gotchas or API quirks
 - Debugging insights and root causes
@@ -257,7 +270,7 @@ Move stable learnings to permanent docs:
 | Architectural choices | DESIGN_DECISIONS.md |
 | New APIs or tools | API_REFERENCE.md |
 | MCP/CLI/Functions boundaries | .claude/references/tool-boundaries.md |
-| Session completion | todo.md session log |
+| Session completion | Todo file session log (see [Meta-Development Mode](#meta-development-mode)) |
 | New patterns | Relevant CLAUDE.md files |
 
 ### 3. Clear
@@ -266,16 +279,17 @@ Remove promoted entries from learnings.md to keep it focused.
 
 ### Automation
 
-The `doc-update-check.sh` hook detects file changes and appends documentation suggestions to `.claude/pending-actions.md`. This file-based approach ensures reminders persist and are visible.
+The `doc-update-check.sh` hook detects file changes and appends documentation suggestions to the pending actions file (see [Meta-Development Mode](#meta-development-mode) for path). This file-based approach ensures reminders persist and are visible.
 
 **Before committing, ALWAYS check for pending actions:**
 ```bash
-cat .claude/pending-actions.md 2>/dev/null || echo "No pending actions"
+# Path depends on environment — see Meta-Development Mode section
+cat .meta/pending-actions.md 2>/dev/null || cat .claude/pending-actions.md 2>/dev/null || echo "No pending actions"
 ```
 
 After addressing actions, clear the file:
 ```bash
-rm .claude/pending-actions.md
+rm -f .meta/pending-actions.md .claude/pending-actions.md
 ```
 
 A desktop notification with pending action count is sent when sessions end (if enabled).
@@ -486,7 +500,7 @@ Continuous quality assurance:
 
 - **Testing**: Make sure all tests pass before marking tasks as done
 - **Linting**: Ensure linting passes before completing tasks
-- **Todo Management**: If `todo.md` exists, check off any completed work
+- **Todo Management**: Check off completed work in the todo file (see [Meta-Development Mode](#meta-development-mode))
 - **GitHub Integration**: Use agent scripts to create issues and sync with todo tasks
 
 ## Build and Development Commands
@@ -743,6 +757,8 @@ This project uses Claude Code hooks to automate enforcement of coding standards.
 | `flywheel-doc-check.sh` | PreToolUse (Bash) | Suggests doc updates including todo.md |
 | `post-write.sh` | PostToolUse (Write/Edit) | Auto-lints JS/TS files with ESLint |
 | `post-bash.sh` | PostToolUse (Bash) | Logs deploy/test completions |
+| `session-start-log.sh` | SessionStart (all) | Logs all session starts, captures compaction summaries, resets session tracking |
+| `post-compact-summary.sh` | SessionStart (compact) | Extracts compaction summary from transcript |
 | `subagent-log.sh` | SubagentStop | Logs workflow activity |
 | `archive-plan.sh` | Stop | Archives plan files with metadata |
 | `notify-ready.sh` | Stop | Desktop notification when done |

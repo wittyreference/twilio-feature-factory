@@ -238,13 +238,32 @@ EOF
     COMMITTED_COUNT=$(echo "$COMMITTED_FILES" | grep -c "." 2>/dev/null | tr -d '\n' || echo "0")
     SESSION_COUNT=$(echo "$SESSION_TRACKED" | grep -c "." 2>/dev/null | tr -d '\n' || echo "0")
 
-    # Append new actions (avoid exact duplicates)
+    # Append new actions (dedup with 24h staleness — old entries don't suppress forever)
+    NOW_EPOCH=$(date +%s)
+    STALE_THRESHOLD=86400  # 24 hours in seconds
+
     echo -e "$SUGGESTIONS" | while IFS= read -r line; do
         if [ -n "$line" ]; then
-            # Check if this exact suggestion (without timestamp) already exists
             SUGGESTION_TEXT=$(echo "$line" | sed 's/^• //')
-            if ! grep -qF "$SUGGESTION_TEXT" "$PENDING_ACTIONS_FILE" 2>/dev/null; then
+            EXISTING_LINE=$(grep -F "$SUGGESTION_TEXT" "$PENDING_ACTIONS_FILE" 2>/dev/null | tail -1)
+
+            if [ -z "$EXISTING_LINE" ]; then
+                # No existing entry — add it
                 echo "- [$TIMESTAMP] $line" >> "$PENDING_ACTIONS_FILE"
+            else
+                # Extract timestamp from existing entry: "- [YYYY-MM-DD HH:MM] • ..."
+                EXISTING_TS=$(echo "$EXISTING_LINE" | sed -n 's/^.*\[\([0-9-]* [0-9:]*\)\].*$/\1/p')
+                if [ -n "$EXISTING_TS" ]; then
+                    # Parse timestamp (macOS then Linux fallback, default 0 = always re-suggest)
+                    EXISTING_EPOCH=$(date -j -f "%Y-%m-%d %H:%M" "$EXISTING_TS" "+%s" 2>/dev/null \
+                        || date -d "$EXISTING_TS" "+%s" 2>/dev/null \
+                        || echo "0")
+                    AGE=$((NOW_EPOCH - EXISTING_EPOCH))
+                    if [ "$AGE" -gt "$STALE_THRESHOLD" ]; then
+                        # Existing entry is stale (>24h) — re-suggest
+                        echo "- [$TIMESTAMP] $line" >> "$PENDING_ACTIONS_FILE"
+                    fi
+                fi
             fi
         fi
     done

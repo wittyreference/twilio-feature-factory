@@ -19,7 +19,9 @@ global.Twilio = Twilio;
 
 const { handler: relayHandler } = require('../../../functions/conversation-relay/relay-handler');
 
-describe('ConversationRelay Integration Tests', () => {
+const maybeDescribe = global.hasTwilioCredentials() ? describe : describe.skip;
+
+maybeDescribe('ConversationRelay Integration Tests', () => {
   let context;
   let client;
 

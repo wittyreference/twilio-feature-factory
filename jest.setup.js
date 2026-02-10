@@ -5,6 +5,11 @@ require('dotenv').config();
 
 const Twilio = require('twilio');
 
+// Returns true if Twilio credentials are available for integration tests
+global.hasTwilioCredentials = () => {
+  return !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
+};
+
 global.createTestContext = () => {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -12,10 +17,7 @@ global.createTestContext = () => {
   const apiSecret = process.env.TWILIO_API_SECRET;
 
   if (!accountSid || !authToken) {
-    throw new Error(
-      'Missing required Twilio credentials. ' +
-      'Ensure TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN are set in .env'
-    );
+    return null;
   }
 
   return {

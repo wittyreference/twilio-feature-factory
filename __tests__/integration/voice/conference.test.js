@@ -22,7 +22,9 @@ const { handler: createConference } = require('../../../functions/voice/create-c
 const { handler: addParticipant } = require('../../../functions/voice/add-conference-participant.protected');
 const { handler: endConference } = require('../../../functions/voice/end-conference.protected');
 
-describe('Conference Integration Tests', () => {
+const maybeDescribe = global.hasTwilioCredentials() ? describe : describe.skip;
+
+maybeDescribe('Conference Integration Tests', () => {
   let context;
   let client;
   let createdConferenceName;

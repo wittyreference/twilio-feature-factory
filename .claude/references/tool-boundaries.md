@@ -307,9 +307,3 @@ Is the operation read-only?
 - [/DESIGN_DECISIONS.md](/DESIGN_DECISIONS.md) - Project-wide architectural decisions
 
 ---
-
-## Revision History
-
-| Date | Change |
-|------|--------|
-| 2026-01-20 | Initial version - established tool boundaries and risk tiers |

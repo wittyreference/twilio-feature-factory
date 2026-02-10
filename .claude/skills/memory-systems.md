@@ -129,7 +129,7 @@ git diff --name-only HEAD~5
 # Project Todo
 
 ## In Progress
-- [ ] Voice IVR menu (MC)
+- [ ] Voice IVR menu
 
 ## Pending
 - [ ] SMS keyword routing

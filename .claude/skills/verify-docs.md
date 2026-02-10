@@ -43,7 +43,7 @@ For unverified claims (avoid these when possible):
 
 Options in order of preference:
 1. **Don't make the claim** - safest option
-2. **Ask MC to verify** from domain expertise
+2. **Ask the user to verify** from domain expertise
 3. **Mark as UNVERIFIED** with clear explanation
 4. **Test and document** the behavior, noting it's observed not documented
 

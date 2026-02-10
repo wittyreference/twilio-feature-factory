@@ -452,18 +452,31 @@ export function accountsTools(context: TwilioContext) {
     'Get the current account balance.',
     z.object({}),
     async () => {
-      const balance = await client.balance.fetch();
+      try {
+        const balance = await client.balance.fetch();
 
-      return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({
-            success: true,
-            balance: balance.balance,
-            currency: balance.currency,
-          }, null, 2),
-        }],
-      };
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              success: true,
+              balance: balance.balance,
+              currency: balance.currency,
+            }, null, 2),
+          }],
+        };
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              success: false,
+              error: message,
+            }, null, 2),
+          }],
+        };
+      }
     }
   );
 

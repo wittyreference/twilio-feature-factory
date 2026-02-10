@@ -6,7 +6,6 @@ import Twilio from 'twilio';
 import { z } from 'zod';
 import {
   getTestValidator,
-  validateMessageInTest,
   TestValidationConfig,
 } from './helpers/deep-validation';
 
@@ -271,7 +270,8 @@ describe('messagingTools', () => {
 
         // Deep validation: verify no errors occurred beyond 200 OK
         const validator = getTestValidator(validatorConfig);
-        const validation = await validateMessageInTest(validator, response.sid, {
+        const validation = await validator.validateMessage(response.sid, {
+          ...{ waitForTerminal: true, timeout: 30000, pollInterval: 2000, alertLookbackSeconds: 120 },
           timeout: 15000, // Allow extra time for SMS delivery
           syncServiceSid: TEST_CREDENTIALS.syncServiceSid || undefined, // Skip Sync check if not configured
         });
@@ -279,7 +279,7 @@ describe('messagingTools', () => {
         if (!validation.success) {
           // Check for carrier-level filtering (error 30034) which is environmental
           const statusCheck = validation.checks.resourceStatus;
-          const errorCode = statusCheck?.details?.errorCode;
+          const errorCode = (statusCheck?.data as Record<string, unknown>)?.errorCode;
           if (errorCode === 30034 || errorCode === '30034') {
             console.log('SMS blocked by carrier filtering (error 30034) - environmental issue, not a code bug');
             // Verify the initial send succeeded

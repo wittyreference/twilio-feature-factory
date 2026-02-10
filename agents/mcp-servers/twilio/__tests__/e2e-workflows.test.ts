@@ -128,7 +128,7 @@ describe('E2E Workflows', () => {
         const usageResponse = JSON.parse(usageResult.content[0].text);
 
         expect(usageResponse.success).toBe(true);
-        expect(Array.isArray(usageResponse.usageRecords)).toBe(true);
+        expect(Array.isArray(usageResponse.records)).toBe(true);
       },
       30000
     );

@@ -86,28 +86,35 @@ Move stable learnings to permanent docs:
 
 Remove promoted entries from `learnings.md` to keep it focused on current session.
 
-## Enabling the Flywheel
+## Hook Configuration
 
-The flywheel hooks are available but disabled by default. To enable them, add to your `.claude/settings.json`:
+The flywheel hooks are enabled by default in the shipped `.claude/settings.json`. The relevant hooks are:
 
 ```json
 {
   "hooks": {
-    "SubagentStop": [
+    "PostToolUse": [
       {
-        "command": "./.claude/hooks/flywheel-doc-check.sh",
-        "description": "Documentation flywheel - suggest doc updates"
-      }
-    ],
-    "Stop": [
-      {
-        "command": "./.claude/hooks/flywheel-session-summary.sh",
-        "description": "Session documentation review"
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$(git rev-parse --show-toplevel)/.claude/hooks/post-write.sh"
+          },
+          {
+            "type": "command",
+            "command": "$(git rev-parse --show-toplevel)/.claude/hooks/flywheel-doc-check.sh"
+          }
+        ]
       }
     ]
   }
 }
 ```
+
+- **`post-write.sh`** runs on every `Write` or `Edit` tool use, tracking modified files to `.session-files`
+- **`flywheel-doc-check.sh`** analyzes all three sources and appends suggestions to `pending-actions.md`
+- Hook paths use `$(git rev-parse --show-toplevel)` for portability across subdirectories (see [DESIGN_DECISIONS.md](../DESIGN_DECISIONS.md#decision-11-use-git-rev-parse-for-hook-paths))
 
 ## Key Documents to Maintain
 

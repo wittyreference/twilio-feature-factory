@@ -334,6 +334,16 @@ Claude Code hooks protect your code automatically:
 - [Twilio Functions Docs](https://www.twilio.com/docs/serverless/functions-assets/functions)
 - [Claude Code](https://claude.ai/code)
 
+## Attribution
+
+This CLAUDE.md structure and many of the interaction patterns were inspired by:
+
+- **Harper Reed's dotfiles**: [github.com/harperreed/dotfiles/.claude/CLAUDE.md](https://github.com/harperreed/dotfiles/blob/master/.claude/CLAUDE.md) - The foundational approach to Claude Code configuration, relationship framing, and coding principles.
+
+- **Agent Skills for Context Engineering**: [github.com/muratcankoylan/Agent-Skills-for-Context-Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering) - Context engineering skills adapted for Twilio development workflows.
+
+Thank you to these developers for sharing their work openly.
+
 ## License
 
 MIT

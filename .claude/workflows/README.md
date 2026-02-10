@@ -1,6 +1,6 @@
-# Subagent Workflows
+# Development Workflows
 
-This document describes the available workflow patterns for developing Twilio features using Claude Code subagents.
+This document describes the available workflow patterns for developing Twilio features using Claude Code subagents and agent teams.
 
 ## Available Subagents
 
@@ -107,7 +107,70 @@ Review code for security issues:
 2. `/dev [fixes]` - Implement security fixes (if needed)
 3. `/test` - Validate fixes
 
-## Standalone vs Orchestrated
+## Agent Team Workflows
+
+For tasks that benefit from parallel work or inter-agent discussion, use `/team` instead of `/orchestrate`. Agent teams spawn multiple Claude Code instances that communicate via messaging and a shared task list.
+
+### When to Use Teams vs Subagents
+
+| Criteria | Use Subagents (`/orchestrate`) | Use Teams (`/team`) |
+|----------|-------------------------------|---------------------|
+| Task structure | Sequential, clear phases | Parallel or adversarial |
+| Communication | Results flow one direction | Agents discuss findings |
+| Context needs | Shared context is fine | Each agent needs fresh context |
+| Token budget | Tight | Flexible (2-3x more) |
+| Best for | Routine features | Bug debugging, code review, complex features |
+
+### Team: New Feature (Parallel Review)
+
+```text
+Phase 1 (Sequential): architect → spec → test-gen → dev
+Phase 2 (Parallel):   qa ──┬── review
+Phase 3 (Sequential): docs
+```
+
+Run with: `/team new-feature [description]`
+
+QA and review teammates work in parallel after implementation, each with a fresh context window. Both must pass quality gates before docs teammate starts.
+
+### Team: Bug Fix (Competing Hypotheses)
+
+```text
+Phase 1 (Parallel): investigator-1 ──┬── investigator-2 ──┬── investigator-3
+                    (code path)       │   (logs/debugger)  │   (config/env)
+Phase 2: Lead synthesizes strongest hypothesis
+Phase 3 (Sequential): test-gen → dev → review
+```
+
+Run with: `/team bug-fix [issue]`
+
+Three investigators work in parallel, messaging each other to challenge hypotheses. Lead picks the strongest root cause analysis.
+
+### Team: Code Review (Multi-Lens)
+
+```text
+Phase 1 (Parallel): security ──┬── performance ──┬── testing
+Phase 2: Cross-challenge (each reads others' findings)
+Phase 3: Lead compiles unified review
+```
+
+Run with: `/team code-review [scope]`
+
+Three reviewers with different focus areas. After initial review, each reads others' findings and adds counter-points or agreement.
+
+### Team: Refactor (Parallel Analysis)
+
+```text
+Phase 1 (Parallel): baseline-qa ──┬── architect
+Phase 2 (Sequential): dev (tests must stay green)
+Phase 3 (Parallel): verify-qa ──┬── reviewer
+```
+
+Run with: `/team refactor [target]`
+
+Baseline QA and architect work in parallel to establish metrics and plan. After implementation, verification and review run in parallel.
+
+## Standalone vs Orchestrated vs Team-Based
 
 All subagents work independently. Choose the approach that fits your workflow:
 
@@ -115,7 +178,7 @@ All subagents work independently. Choose the approach that fits your workflow:
 
 Use `/orchestrate` when:
 
-- Building a complete new feature
+- Building a complete new feature with sequential phases
 - Following a standard workflow pattern
 - Want automated sequencing and handoffs
 - Working on a well-defined task
@@ -124,6 +187,22 @@ Example:
 
 ```text
 /orchestrate new-feature voice IVR menu with speech recognition
+```
+
+### Team-Based Mode
+
+Use `/team` when:
+
+- Agents need to discuss or challenge each other's findings
+- Parallel work would save time (e.g., qa + review simultaneously)
+- Task benefits from competing hypotheses (bug debugging)
+- Each agent needs a fresh context window (prevents bloat)
+
+Example:
+
+```text
+/team bug-fix "webhook returning 500 for empty body"
+/team code-review functions/voice/
 ```
 
 ### Standalone Mode
@@ -234,3 +313,6 @@ Each subagent suggests the next logical step:
 4. **Run `/review`** before merging any significant changes
 5. **Keep `/docs`** updated as features evolve
 6. **Use `/twilio-logs`** when debugging production issues
+7. **Use `/team`** for bug debugging (competing hypotheses find root causes faster)
+8. **Use `/team`** for code review (multi-lens parallel review catches more issues)
+9. **Avoid teams for simple sequential tasks** (overhead exceeds benefit)

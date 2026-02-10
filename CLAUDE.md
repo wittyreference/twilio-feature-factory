@@ -79,24 +79,24 @@ This project provides specialized tools for Claude Code to build Twilio applicat
 ┌─────────────────────────────────────────────────────────────────┐
 │  Claude Code (Interactive Orchestrator)                         │
 │  ───────────────────────────────────────────────────────────────│
-│  Plan mode → User approval → Execution                          │
+│  Single session │ Agent Teams │ Plan mode → Approval            │
 └─────────────────────────────────────────────────────────────────┘
                               │
                     invokes as needed
                               │
-    ┌─────────────────────────┼─────────────────────────┐
-    │                         │                         │
-    ▼                         ▼                         ▼
-┌─────────────┐       ┌─────────────┐       ┌─────────────────┐
-│ Slash Cmds  │       │ MCP Server  │       │ Voice AI Builder│
-│ ────────────│       │ ────────────│       │ ────────────────│
-│ /architect  │       │ Twilio APIs │       │ Code generators │
-│ /spec       │       │ as tools    │       │ for voice apps  │
-│ /test-gen   │       │             │       │                 │
-│ /dev        │       │ • Send SMS  │       │ • TwiML handlers│
-│ /review     │       │ • Make calls│       │ • WebSocket svrs│
-│ /docs       │       │ • Query logs│       │ • Templates     │
-└─────────────┘       └─────────────┘       └─────────────────┘
+    ┌───────────────┬─────────┼─────────┬─────────────────┐
+    │               │         │         │                 │
+    ▼               ▼         ▼         ▼                 ▼
+┌─────────────┐ ┌─────────┐ ┌─────────────┐ ┌─────────────────┐
+│ Slash Cmds  │ │  Agent  │ │ MCP Server  │ │ Voice AI Builder│
+│ ────────────│ │  Teams  │ │ ────────────│ │ ────────────────│
+│ /architect  │ │ ────────│ │ Twilio APIs │ │ Code generators │
+│ /spec       │ │ /team   │ │ as tools    │ │ for voice apps  │
+│ /test-gen   │ │ Parallel│ │             │ │                 │
+│ /dev        │ │ multi-  │ │ • Send SMS  │ │ • TwiML handlers│
+│ /review     │ │ agent   │ │ • Make calls│ │ • WebSocket svrs│
+│ /docs       │ │ work    │ │ • Query logs│ │ • Templates     │
+└─────────────┘ └─────────┘ └─────────────┘ └─────────────────┘
 
          OR (for headless automation)
 
@@ -110,15 +110,73 @@ This project provides specialized tools for Claude Code to build Twilio applicat
 
 ### When to Use What
 
-**Claude Code (Interactive):**
+**Claude Code (Interactive — Single Session):**
 - Working in the CLI interactively
 - Need plan mode + approval workflow
 - Want to invoke slash commands as needed
+
+**Claude Code (Interactive — Agent Teams):**
+- Parallel work where agents need to communicate
+- Bug debugging with competing hypotheses
+- Multi-lens code review (security + performance + tests)
+- Complex features with parallel review + QA after implementation
+- See [Agent Teams](#agent-teams) below
 
 **Feature Factory (Headless):**
 - CI/CD automation
 - Programmatic access
 - Running workflows without human interaction
+
+### Agent Teams
+
+Agent Teams (experimental) coordinate multiple Claude Code instances for parallel work. Each teammate gets its own context window and can communicate with other teammates via direct messaging and a shared task list.
+
+**How to use:**
+```
+/team new-feature "Add SMS verification"
+/team bug-fix "webhook returning 500 for empty body"
+/team code-review functions/voice/
+/team refactor functions/helpers/
+```
+
+**Configurations:**
+
+| Team | Structure | Best For |
+|------|-----------|----------|
+| `new-feature` | Sequential build → parallel qa + review → docs | Complex features |
+| `bug-fix` | 3 parallel investigators → fix → verify | Debugging |
+| `code-review` | 3 parallel reviewers → cross-challenge | Thorough review |
+| `refactor` | Parallel analysis → implement → parallel verify | Restructuring |
+
+**Key characteristics:**
+- Lead operates in delegate mode (coordination only, no direct coding)
+- Quality gates enforced via `TeammateIdle` and `TaskCompleted` hooks
+- Teammates share findings via messaging — not just results flowing one direction
+- ~2-3x token cost vs subagents — use for high-value tasks
+
+**When to use teams vs subagents:**
+
+| Criteria | Use Subagents (`/orchestrate`) | Use Teams (`/team`) |
+|----------|-------------------------------|---------------------|
+| Task structure | Sequential, clear phases | Parallel or adversarial |
+| Communication | Results flow one direction | Agents discuss findings |
+| Context needs | Shared context is fine | Each agent needs fresh context |
+| Token budget | Tight | Flexible (2-3x more) |
+| Best for | Routine features | Bug debugging, code review, complex features |
+
+**How to enable/disable:**
+
+Enabled by default via `.claude/settings.json`:
+```json
+"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+```
+
+To disable, remove the line above or override per-session:
+```bash
+CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=0 claude
+```
+
+When disabled, `/team` won't work, `TeammateIdle`/`TaskCompleted` hooks are inert, and all existing subagent workflows continue unchanged.
 
 ### MCP Server (`agents/mcp-servers/twilio/`)
 
@@ -592,6 +650,7 @@ The following slash commands are available for specialized tasks:
 | Command | Description |
 |---------|-------------|
 | `/orchestrate [workflow] [task]` | Workflow coordinator - runs full development pipelines |
+| `/team [workflow] [task]` | Agent team coordinator - parallel multi-agent workflows |
 
 ### Development Subagents
 
@@ -677,6 +736,8 @@ Run with: `/orchestrate refactor [target]`
 
 The `/dev` subagent verifies failing tests exist before implementing. See `.claude/workflows/README.md` for detailed workflow documentation.
 
+> For parallel workflows where agents need to communicate with each other, use `/team` instead. See [Agent Teams](#agent-teams) section above.
+
 ## Autonomous Mode
 
 Both Claude Code and Feature Factory support autonomous mode for unattended operation.
@@ -744,6 +805,8 @@ Session summary displayed at completion with test results, files modified, learn
 
 See [Feature Factory CLAUDE.md](/agents/feature-factory/CLAUDE.md) for full documentation.
 
+> **Note**: Agent teams should NOT be used in autonomous overnight runs. Teammates cannot resume sessions, so if a teammate's session is interrupted, its work is lost. Keep team tasks small enough to complete in one session.
+
 ## Claude Code Hooks
 
 This project uses Claude Code hooks to automate enforcement of coding standards. Hooks are configured in `.claude/settings.json`.
@@ -760,6 +823,8 @@ This project uses Claude Code hooks to automate enforcement of coding standards.
 | `session-start-log.sh` | SessionStart (all) | Logs all session starts, captures compaction summaries, resets session tracking |
 | `post-compact-summary.sh` | SessionStart (compact) | Extracts compaction summary from transcript |
 | `subagent-log.sh` | SubagentStop | Logs workflow activity |
+| `teammate-idle-check.sh` | TeammateIdle | Quality gate before teammate goes idle |
+| `task-completed-check.sh` | TaskCompleted | TDD/coverage/credential gate on task completion |
 | `archive-plan.sh` | Stop | Archives plan files with metadata |
 | `notify-ready.sh` | Stop | Desktop notification when done |
 

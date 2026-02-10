@@ -51,19 +51,19 @@ Twilio Agent Factory is an **AI-powered development system** for building Twilio
                               │
                     invokes as needed
                               │
-    ┌─────────────────────────┼─────────────────────────┐
-    │                         │                         │
-    ▼                         ▼                         ▼
-┌─────────────┐       ┌─────────────┐       ┌─────────────────┐
-│ Slash Cmds  │       │ MCP Server  │       │ Voice AI Builder│
-│ ────────────│       │ ────────────│       │ ────────────────│
-│ /architect  │       │ Twilio APIs │       │ Code generators │
-│ /spec       │       │ as tools    │       │ for voice apps  │
-│ /test-gen   │       │             │       │                 │
-│ /dev        │       │ • Send SMS  │       │ • TwiML handlers│
-│ /review     │       │ • Make calls│       │ • WebSocket svrs│
-│ /docs       │       │ • Query logs│       │ • Templates     │
-└─────────────┘       └─────────────┘       └─────────────────┘
+    ┌───────────────┬─────────┼─────────┬─────────────────┐
+    │               │         │         │                 │
+    ▼               ▼         ▼         ▼                 ▼
+┌─────────────┐ ┌─────────┐ ┌─────────────┐ ┌─────────────────┐
+│ Slash Cmds  │ │  Agent  │ │ MCP Server  │ │ Voice AI Builder│
+│ ────────────│ │  Teams  │ │ ────────────│ │ ────────────────│
+│ /architect  │ │ ────────│ │ Twilio APIs │ │ Code generators │
+│ /spec       │ │ /team   │ │ as tools    │ │ for voice apps  │
+│ /test-gen   │ │ Parallel│ │             │ │                 │
+│ /dev        │ │ multi-  │ │ • Send SMS  │ │ • TwiML handlers│
+│ /review     │ │ agent   │ │ • Make calls│ │ • WebSocket svrs│
+│ /docs       │ │ work    │ │ • Query logs│ │ • Templates     │
+└─────────────┘ └─────────┘ └─────────────┘ └─────────────────┘
 ```
 
 ### What Agents Use
@@ -164,6 +164,17 @@ Specialized agents for different development phases:
 | `/twilio-logs` | Analyze Twilio debugger logs |
 | `/deploy [env]` | Deploy with validation checks |
 
+### Agent Teams (Experimental)
+
+Coordinate multiple Claude Code instances for parallel work:
+
+- `/team new-feature [desc]` — Parallel qa + review after sequential build
+- `/team bug-fix [issue]` — 3 parallel investigators with hypothesis challenging
+- `/team code-review [scope]` — Security + performance + test reviewers in parallel
+- `/team refactor [target]` — Parallel analysis, then implementation, then parallel review
+
+Disable by removing `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` from `.claude/settings.json`.
+
 ### MCP Server
 
 Twilio APIs exposed as tools Claude Code can invoke:
@@ -202,6 +213,10 @@ See [agents/README.md](agents/README.md) for details.
 
 **Serverless Functions**
 - Voice, Messaging, Verify, Sync, TaskRouter, Conversation Relay
+
+**Coordination**
+- Agent Teams with 4 pre-configured team workflows (new-feature, bug-fix, code-review, refactor)
+- `TeammateIdle` and `TaskCompleted` quality gate hooks
 
 ### Planned 🚧
 

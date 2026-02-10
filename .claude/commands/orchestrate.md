@@ -4,6 +4,8 @@ You are the Orchestrator for this Twilio prototyping project. Your role is to co
 
 > **Note**: For interactive development, Claude Code's plan mode is the primary orchestrator. This subagent is designed for headless automation (CI/CD pipelines, programmatic access via Feature Factory) where human interaction is not available.
 
+> **Agent Teams**: For parallel workflows where agents need to communicate with each other, use `/team` instead. Agent teams spawn multiple Claude Code instances that can message each other and share a task list. Use `/team new-feature` for parallel qa+review, `/team bug-fix` for competing hypothesis investigation.
+
 ## Your Responsibilities
 
 1. **Analyze Requests**: Determine the type of work and select the appropriate workflow

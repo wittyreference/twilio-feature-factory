@@ -750,6 +750,56 @@ Hooks write to `pending-actions.md` → Agent reads file at key moments → File
 
 ---
 
+## Decision 17: Three-Path Coordination Model
+
+### Context
+
+The project had two coordination paths: interactive slash commands (sequential, single session) and Feature Factory (headless, CI/CD). Both are sequential — agents work one at a time, passing results forward. This created pain points:
+
+1. **Context bloat**: By phases 5-7, the orchestrator's context was overloaded with accumulated conversation
+2. **Sequential bottleneck**: QA and review couldn't run in parallel
+3. **No inter-agent discussion**: Agents couldn't challenge each other's findings
+4. **SubagentStop timing**: Hook fired before implementation, not after
+
+Claude Code Agent Teams (experimental) solve these by spawning multiple Claude Code instances that each get their own context window and can communicate via messaging and shared task lists.
+
+### Decision
+
+**Three coordination paths, each optimized for different use cases:**
+
+| Path | Best For | Parallelism | Token Cost | Resumable? |
+|------|----------|-------------|------------|------------|
+| **Single session + subagents** | Simple features, routine work | Sequential | Lowest | Yes |
+| **Agent Teams** | Bug debugging, code review, parallel review | Parallel | ~2-3x | No |
+| **Feature Factory** | CI/CD, unattended, programmatic | Sequential | Medium | Yes |
+
+### Rationale
+
+1. **Each path optimizes for different constraints**: Subagents minimize tokens, teams maximize parallelism, Feature Factory enables automation
+2. **Agent teams solve 4 of 7 documented pain points**: Context bloat, sequential bottleneck, no inter-agent discussion, SubagentStop timing
+3. **No disruption to existing workflows**: Agent teams are additive — behind a feature flag, existing paths unchanged
+4. **Strongest for adversarial workflows**: Bug-fix (competing hypotheses) and code-review (multi-lens) benefit most from inter-agent communication
+
+### Alternatives Considered
+
+- **Replace subagents entirely with teams**: Rejected — teams have higher token cost and no session resumption
+- **Teams without quality gate hooks**: Rejected — teammates need same TDD/coverage enforcement as subagents
+- **Feature Factory with parallel phases**: Rejected — SDK-based approach can't spawn CLI instances
+
+### Consequences
+
+- Users choose based on task complexity and token budget
+- Higher token cost for team workflows (~2-3x)
+- Experimental feature flag dependency (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`)
+- No session resumption for teammates — tasks must complete in one session
+- `TeammateIdle` and `TaskCompleted` hooks enforce quality gates for team members
+
+### Status
+
+**Implemented**
+
+---
+
 ## Adding Your Own Decisions
 
 When making architectural decisions:
@@ -817,3 +867,4 @@ When making architectural decisions:
 | 2026-01-25 | D2 | Credential safety hook implemented |
 | 2026-01-25 | D6 | P1 MCP tools complete (13 tools) |
 | 2026-01-25 | D16 | File-based documentation flywheel implemented |
+| 2026-02-10 | D17 | Three-path coordination model (subagents, agent teams, Feature Factory) |

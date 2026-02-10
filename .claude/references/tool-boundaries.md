@@ -12,6 +12,7 @@ This document defines the architectural boundaries between MCP Server, Twilio CL
 | **Twilio CLI** | DevOps/admin interface for humans | Terminal / CI pipelines | Commands + logs |
 | **Serverless Toolkit** | Deployment mechanism (CLI plugin) | CLI plugin | Deployed code |
 | **Twilio Functions** | Webhook handlers on Twilio infra | Twilio's Node.js runtime | TwiML / JSON |
+| **Agent Teams** | Parallel multi-agent coordination | Multiple Claude Code sessions | Structured task results |
 
 ---
 
@@ -21,6 +22,7 @@ This document defines the architectural boundaries between MCP Server, Twilio CL
 2. **CLI = Infrastructure Operations**: Deploy, configure environments, purchase numbers.
 3. **Functions = Real-Time Webhooks**: Handle calls/messages, return TwiML.
 4. **Never Cross Layers**: MCP does not invoke CLI. Functions do not use MCP.
+5. **Teams = Parallel Coordination**: Multiple agents working simultaneously. Teammates must not edit the same file.
 
 ---
 

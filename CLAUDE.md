@@ -360,6 +360,24 @@ Words that indicate high-risk assertions requiring verification:
 - ALWAYS ask for clarification rather than making assumptions.
 - If you're having trouble with something, it's ok to stop and ask for help. Especially if it's something your human might be better at.
 
+# Debugging
+
+- Form a hypothesis and verify it with actual data BEFORE attempting fixes. Do not shotgun-debug by trying random changes.
+- Do not switch approaches (e.g., `<Record>` vs `<Dial record>`, polling vs webhooks) without confirming with the user first. The current approach usually exists for a reason.
+- When debugging Twilio calls, use the Call Notifications API or MCP `validate_call` tool for deep validation — surface-level debugger checks miss most issues.
+- Before deploying Twilio Functions, verify the active CLI profile with `twilio profiles:list`. Multi-account setups are common and deploying to the wrong account is hard to detect.
+- Twilio phone number direction matters:
+  - **Outbound** (API-initiated): FROM = your Twilio number, TO = the destination
+  - **Inbound** (webhook-triggered): FROM = the external caller/sender, TO = your Twilio number
+- When a multi-step validation or implementation plan exists, NEVER silently skip steps. If a step cannot be completed, explicitly report it as skipped with the reason. Report completion status for every step, not just the ones that succeeded.
+- If authentication or credentials expire mid-session, surface it to the user immediately rather than attempting workarounds or continuing with degraded access.
+
+# Session discipline
+
+- Prioritize implementation over planning. If a session has a concrete task, produce working code — not just plans, outlines, or analysis documents. Keep planning to a short preamble before coding.
+- Do not convert lazy/conditional `require()` calls to static `import` statements without verifying the conditional logic still works. Node.js conditional requires exist for a reason (optional dependencies, environment-specific loading).
+- Run the full relevant test suite before presenting work as complete. A passing subset is not sufficient — regressions in unrelated tests still need to be caught.
+
 # Testing
 
 - Tests MUST cover the functionality being implemented.
@@ -577,6 +595,7 @@ The following slash commands are available for specialized tasks:
 
 | Command | Description |
 |---------|-------------|
+| `/preflight` | Environment verification — CLI profile, env vars, auth validity |
 | `/twilio-docs [topic]` | Searches Twilio documentation |
 | `/twilio-logs` | Fetches and analyzes Twilio debugger logs |
 | `/deploy [env]` | Deployment helper with pre/post checks |

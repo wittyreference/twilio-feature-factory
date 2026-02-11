@@ -18,7 +18,7 @@ import {
   debuggerTools,
   DeepValidator,
   type TwilioContext,
-} from '@twilio-agent-factory/mcp-twilio';
+} from '@twilio-feature-factory/mcp-twilio';
 
 /**
  * MCP tool configuration

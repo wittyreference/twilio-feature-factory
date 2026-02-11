@@ -1,10 +1,24 @@
 {
-  "name": "@twilio-agent-factory/feature-factory",
+  "name": "@twilio-feature-factory/feature-factory",
   "version": "0.1.0",
   "description": "Autonomous Twilio feature development orchestrator using Claude Agent SDK",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "feature-factory": "./dist/cli.js"
   },
@@ -18,11 +32,12 @@
     "test:all": "NODE_OPTIONS='--experimental-vm-modules' jest --runInBand",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
-    "@twilio-agent-factory/mcp-twilio": "file:../mcp-servers/twilio",
+    "@twilio-feature-factory/mcp-twilio": "^0.1.0",
     "commander": "^12.0.0",
     "chalk": "^5.3.0",
     "glob": "^10.3.0",

@@ -331,8 +331,8 @@ The Feature Factory includes infrastructure to validate the diagnose → fix →
 Listens to DeepValidator events and queues work items for autonomous processing:
 
 ```typescript
-import { WorkPoller, createWorkPoller } from '@twilio-agent-factory/feature-factory';
-import { DeepValidator } from '@twilio-agent-factory/mcp-twilio';
+import { WorkPoller, createWorkPoller } from '@twilio-feature-factory/feature-factory';
+import { DeepValidator } from '@twilio-feature-factory/mcp-twilio';
 
 const validator = new DeepValidator(twilioClient);
 const poller = createWorkPoller({ autoHandleLowTier: true });
@@ -356,7 +356,7 @@ const result = await validator.validateMessage('SMxxx');
 Tracks timing, quality, and learning metrics for the fix cycle:
 
 ```typescript
-import { ProcessMetricsCollector, createProcessMetricsCollector } from '@twilio-agent-factory/feature-factory';
+import { ProcessMetricsCollector, createProcessMetricsCollector } from '@twilio-feature-factory/feature-factory';
 
 const collector = createProcessMetricsCollector();
 
@@ -385,7 +385,7 @@ console.log('Average cycle time:', aggregates.averageTiming.totalCycleTime);
 Validates that captured learnings actually improve fix performance:
 
 ```typescript
-import { ReplayVerifier, createReplayVerifier } from '@twilio-agent-factory/feature-factory';
+import { ReplayVerifier, createReplayVerifier } from '@twilio-feature-factory/feature-factory';
 
 const verifier = createReplayVerifier();
 

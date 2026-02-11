@@ -78,7 +78,7 @@ The MCP server requires the following environment variables:
 ## Usage with Claude Agent SDK
 
 ```typescript
-import { createTwilioMcpServer } from '@twilio-agent-factory/mcp-twilio';
+import { createTwilioMcpServer } from '@twilio-feature-factory/mcp-twilio';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 
 const twilioServer = createTwilioMcpServer();

@@ -1,9 +1,23 @@
 {
-  "name": "@twilio-agent-factory/mcp-twilio",
+  "name": "@twilio-feature-factory/mcp-twilio",
   "version": "0.1.0",
   "description": "MCP server exposing Twilio API operations as custom tools for Claude agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "test": "jest",

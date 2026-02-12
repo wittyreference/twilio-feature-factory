@@ -9,6 +9,7 @@ import type {
   WorkflowEvent,
   WorkflowStartedEvent,
   PhaseStartedEvent,
+  PhaseRetryEvent,
   ApprovalRequestedEvent,
   ApprovalReceivedEvent,
   WorkflowCompletedEvent,
@@ -591,6 +592,7 @@ describe('FeatureFactoryOrchestrator', () => {
         twilioMcpEnabled: false,
         approvalMode: 'none',
         maxTurnsPerAgent: 3, // Very low for testing
+        maxRetriesPerPhase: 0,
       });
 
       const events: WorkflowEvent[] = [];
@@ -1005,6 +1007,7 @@ describe('FeatureFactoryOrchestrator', () => {
         workingDirectory: tempDir,
         twilioMcpEnabled: false,
         approvalMode: 'none',
+        maxRetriesPerPhase: 0,
       });
 
       const events: WorkflowEvent[] = [];
@@ -1026,6 +1029,7 @@ describe('FeatureFactoryOrchestrator', () => {
         workingDirectory: tempDir,
         twilioMcpEnabled: false,
         approvalMode: 'none',
+        maxRetriesPerPhase: 0,
       });
 
       const events: WorkflowEvent[] = [];
@@ -1049,6 +1053,7 @@ describe('FeatureFactoryOrchestrator', () => {
         workingDirectory: tempDir,
         twilioMcpEnabled: false,
         approvalMode: 'none',
+        maxRetriesPerPhase: 0,
       });
 
       const events: WorkflowEvent[] = [];
@@ -1058,6 +1063,412 @@ describe('FeatureFactoryOrchestrator', () => {
 
       const errorEvent = events.find(e => e.type === 'workflow-error') as WorkflowErrorEvent;
       expect(errorEvent).toBeDefined();
+    });
+  });
+
+  describe('Phase Retry', () => {
+    it('should retry on agent failure and complete workflow', async () => {
+      // Architect fails first attempt, succeeds second, then rest of workflow completes
+      mockCreate
+        .mockRejectedValueOnce(new Error('Transient API error'))  // architect attempt 0
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))  // architect attempt 1 (retry)
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+        maxRetriesPerPhase: 1,
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Test retry')) {
+        events.push(event);
+      }
+
+      const retryEvent = events.find(e => e.type === 'phase-retry');
+      expect(retryEvent).toBeDefined();
+
+      const completedEvent = events.find(e => e.type === 'workflow-completed') as WorkflowCompletedEvent;
+      expect(completedEvent).toBeDefined();
+      expect(completedEvent.success).toBe(true);
+    });
+
+    it('should retry on validation failure and complete workflow', async () => {
+      // Architect validation fails first (approved: false), then passes
+      mockCreate
+        .mockResolvedValueOnce(createMockResponse({ approved: false }))  // architect attempt 0
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))  // architect attempt 1 (retry)
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+        maxRetriesPerPhase: 1,
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Test validation retry')) {
+        events.push(event);
+      }
+
+      const retryEvent = events.find(e => e.type === 'phase-retry');
+      expect(retryEvent).toBeDefined();
+
+      const completedEvent = events.find(e => e.type === 'workflow-completed') as WorkflowCompletedEvent;
+      expect(completedEvent).toBeDefined();
+      expect(completedEvent.success).toBe(true);
+    });
+
+    it('should fail after exhausting retries', async () => {
+      // Always return invalid output — fails validation on every attempt
+      mockCreate.mockResolvedValue(createMockResponse({ approved: false }));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+        maxRetriesPerPhase: 2,
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Test exhaustion')) {
+        events.push(event);
+      }
+
+      const retryEvents = events.filter(e => e.type === 'phase-retry');
+      expect(retryEvents.length).toBe(2); // 2 retries after initial attempt
+
+      const errorEvent = events.find(e => e.type === 'workflow-error') as WorkflowErrorEvent;
+      expect(errorEvent).toBeDefined();
+
+      expect(orchestrator.getState()?.status).toBe('failed');
+    });
+
+    it('should not retry when maxRetriesPerPhase is 0', async () => {
+      mockCreate.mockResolvedValue(createMockResponse({ approved: false }));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+        maxRetriesPerPhase: 0,
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'No retry')) {
+        events.push(event);
+      }
+
+      const retryEvents = events.filter(e => e.type === 'phase-retry');
+      expect(retryEvents.length).toBe(0);
+
+      const errorEvent = events.find(e => e.type === 'workflow-error') as WorkflowErrorEvent;
+      expect(errorEvent).toBeDefined();
+    });
+
+    it('should use per-phase maxRetries override over global config', async () => {
+      // The new-feature dev phase has maxRetries: 2
+      // Set global to 0, but dev phase override should take effect
+      // Architect, spec, test-gen succeed first try
+      // Dev fails validation (allTestsPassing: false) on first two attempts, then succeeds
+      mockCreate
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse({ allTestsPassing: false }))  // dev attempt 0
+        .mockResolvedValueOnce(createMockResponse({ allTestsPassing: false }))  // dev retry 1
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))            // dev retry 2
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+        maxRetriesPerPhase: 0, // Global: no retries
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Per-phase override')) {
+        events.push(event);
+      }
+
+      // Dev phase has maxRetries: 2 override in new-feature workflow
+      const retryEvents = events.filter(e => e.type === 'phase-retry');
+      expect(retryEvents.length).toBe(2); // 2 retries for dev
+
+      const completedEvent = events.find(e => e.type === 'workflow-completed') as WorkflowCompletedEvent;
+      expect(completedEvent).toBeDefined();
+      expect(completedEvent.success).toBe(true);
+    });
+
+    it('should accumulate files across retries', async () => {
+      // Architect fails first (API error creating file), then succeeds
+      mockCreate
+        .mockResolvedValueOnce({
+          content: [
+            { type: 'tool_use', id: 'tool_1', name: 'Write', input: { file_path: '/tmp/file1.ts', content: 'test' } },
+          ],
+          stop_reason: 'tool_use',
+          usage: { input_tokens: 100, output_tokens: 50 },
+        })
+        .mockResolvedValueOnce(createMockResponse({ approved: false })) // validation fails → retry
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))  // retry succeeds
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+        maxRetriesPerPhase: 1,
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Accumulate files')) {
+        events.push(event);
+      }
+
+      // The accumulated result should include cost from both attempts
+      const state = orchestrator.getState();
+      expect(state?.phaseResults['architect']).toBeDefined();
+      expect(state?.phaseResults['architect'].costUsd).toBeGreaterThan(0);
+    });
+
+    it('should accumulate cost across retries', async () => {
+      // Architect fails first try (high tokens), succeeds second
+      mockCreate
+        .mockRejectedValueOnce(new Error('API transient'))
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT, { input: 5000, output: 2000 }))
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+        maxRetriesPerPhase: 1,
+        maxBudgetUsd: 1000,
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Cost accumulation')) {
+        events.push(event);
+      }
+
+      const costUpdates = events.filter(e => e.type === 'cost-update') as CostUpdateEvent[];
+      expect(costUpdates.length).toBeGreaterThan(0);
+
+      // Total cost should be positive
+      const completedEvent = events.find(e => e.type === 'workflow-completed') as WorkflowCompletedEvent;
+      expect(completedEvent).toBeDefined();
+      expect(completedEvent.totalCostUsd).toBeGreaterThan(0);
+    });
+
+    it('should include retry feedback in agent context', async () => {
+      // Architect validation fails first, succeeds second
+      mockCreate
+        .mockResolvedValueOnce(createMockResponse({ approved: false }))  // fails validation
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))  // retry succeeds
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+        maxRetriesPerPhase: 1,
+      });
+
+      for await (const _event of orchestrator.runWorkflow('new-feature', 'Retry feedback')) {}
+
+      // The second API call (retry) should have retry feedback in the prompt
+      expect(mockCreate).toHaveBeenCalledTimes(8); // 2 for architect + 6 for rest
+      const retryCall = mockCreate.mock.calls[1]; // Second call is the retry
+      const messages = retryCall[0].messages;
+      const userMessage = messages[0].content;
+      expect(userMessage).toContain('PHASE RETRY');
+      expect(userMessage).toContain('Do NOT start over');
+    });
+
+    it('should re-run pre-phase hooks on retry', async () => {
+      const mockExecuteHook = executeHook as jest.Mock;
+
+      // Dev phase has TDD enforcement hook
+      // First: architect, spec, test-gen all succeed
+      // Dev phase: hook passes (both times), agent fails first try, succeeds on retry
+      mockCreate
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse({ allTestsPassing: false }))  // dev fails validation
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))            // dev retry succeeds
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+        maxRetriesPerPhase: 1,
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Hook re-run')) {
+        events.push(event);
+      }
+
+      // Hook should be called multiple times: once for initial dev attempt, once for retry,
+      // plus coverage-threshold for QA phase
+      const hookEvents = events.filter(e => e.type === 'pre-phase-hook') as PrePhaseHookEvent[];
+      const tddHooks = hookEvents.filter(e => e.hook === 'tdd-enforcement');
+      expect(tddHooks.length).toBe(2); // Once for initial + once for retry
+    });
+
+    it('should not retry on budget exceeded', async () => {
+      // First phase uses lots of tokens, exhausting budget
+      mockCreate
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT, { input: 500000, output: 200000 }));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+        maxBudgetUsd: 0.01, // Very low
+        maxRetriesPerPhase: 2,
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Budget exceeded')) {
+        events.push(event);
+      }
+
+      const retryEvents = events.filter(e => e.type === 'phase-retry');
+      expect(retryEvents.length).toBe(0);
+
+      const errorEvent = events.find(e =>
+        e.type === 'workflow-error' && (e as WorkflowErrorEvent).error?.includes('Budget')
+      ) as WorkflowErrorEvent;
+      expect(errorEvent).toBeDefined();
+      expect(errorEvent.recoverable).toBe(false);
+    });
+
+    it('should emit phase-retry event with correct fields', async () => {
+      mockCreate
+        .mockResolvedValueOnce(createMockResponse({ approved: false }))  // fails validation
+        .mockResolvedValueOnce(createMockResponse({ approved: false }))  // still fails
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT));  // succeeds
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+        maxRetriesPerPhase: 2,
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Retry events')) {
+        events.push(event);
+        // Stop after getting retry events — we only care about architect phase
+        if (events.filter(e => e.type === 'phase-completed').length >= 1) break;
+      }
+
+      const retryEvents = events.filter(e => e.type === 'phase-retry') as Array<WorkflowEvent & { type: 'phase-retry'; phase: string; agent: string; attempt: number; maxRetries: number; reason: string }>;
+      expect(retryEvents.length).toBe(2);
+
+      expect(retryEvents[0].phase).toBe('Design Review');
+      expect(retryEvents[0].agent).toBe('architect');
+      expect(retryEvents[0].attempt).toBe(1);
+      expect(retryEvents[0].maxRetries).toBe(2);
+      expect(retryEvents[0].reason).toContain('Validation failed');
+
+      expect(retryEvents[1].attempt).toBe(2);
+    });
+
+    it('should set retryAttempts on final result', async () => {
+      mockCreate
+        .mockResolvedValueOnce(createMockResponse({ approved: false }))  // fails validation
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))  // retry succeeds
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+        maxRetriesPerPhase: 1,
+      });
+
+      for await (const _event of orchestrator.runWorkflow('new-feature', 'Retry attempts field')) {}
+
+      const state = orchestrator.getState();
+      expect(state?.phaseResults['architect'].retryAttempts).toBe(1);
+      // Phases that succeed first try should have retryAttempts: 0
+      expect(state?.phaseResults['spec'].retryAttempts).toBe(0);
+    });
+  });
+
+  describe('Phase Retry Config', () => {
+    it('should default maxRetriesPerPhase to 1', () => {
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+      });
+
+      expect(orchestrator.getConfig().maxRetriesPerPhase).toBe(1);
+    });
+
+    it('should elevate maxRetriesPerPhase to 2 in autonomous mode', () => {
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        autonomousMode: {
+          enabled: true,
+          acknowledged: true,
+          acknowledgedVia: 'environment',
+          acknowledgedAt: new Date(),
+        },
+      });
+
+      expect(orchestrator.getConfig().maxRetriesPerPhase).toBe(2);
+    });
+
+    it('should validate maxRetriesPerPhase >= 0', () => {
+      expect(() => new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        maxRetriesPerPhase: -1,
+      })).toThrow('maxRetriesPerPhase must be >= 0');
     });
   });
 });

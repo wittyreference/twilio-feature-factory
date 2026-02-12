@@ -112,6 +112,13 @@ export interface FeatureFactoryConfig {
    * @default 1800000 (30 minutes)
    */
   maxDurationMsPerWorkflow: number;
+
+  /**
+   * Maximum retries per phase when an agent fails or validation doesn't pass.
+   * Can be overridden per-phase via WorkflowPhase.maxRetries.
+   * @default 1
+   */
+  maxRetriesPerPhase: number;
 }
 
 /**
@@ -135,6 +142,7 @@ export const DEFAULT_CONFIG: FeatureFactoryConfig = {
   },
   maxDurationMsPerAgent: 5 * 60 * 1000,      // 5 minutes
   maxDurationMsPerWorkflow: 30 * 60 * 1000,   // 30 minutes
+  maxRetriesPerPhase: 1,
 };
 
 /**
@@ -169,6 +177,9 @@ export function createConfig(
     if (!options.maxDurationMsPerWorkflow) {
       config.maxDurationMsPerWorkflow = 60 * 60 * 1000; // 60 min (elevated from 30)
     }
+    if (!options.maxRetriesPerPhase) {
+      config.maxRetriesPerPhase = 2; // Elevated from 1
+    }
 
     // Autonomous mode implies sandbox unless explicitly disabled
     if (config.sandbox === undefined) {
@@ -201,6 +212,10 @@ export function validateConfig(config: FeatureFactoryConfig): void {
 
   if (config.validationTimeoutMs <= 0) {
     throw new Error('validationTimeoutMs must be greater than 0');
+  }
+
+  if (config.maxRetriesPerPhase < 0) {
+    throw new Error('maxRetriesPerPhase must be >= 0');
   }
 
   const validModels: ModelType[] = ['sonnet', 'opus', 'haiku'];
@@ -269,6 +284,13 @@ export function configFromEnv(): Partial<FeatureFactoryConfig> {
   if (process.env.FEATURE_FACTORY_MAX_DURATION_PER_WORKFLOW) {
     config.maxDurationMsPerWorkflow = parseInt(
       process.env.FEATURE_FACTORY_MAX_DURATION_PER_WORKFLOW,
+      10
+    );
+  }
+
+  if (process.env.FEATURE_FACTORY_MAX_RETRIES_PER_PHASE) {
+    config.maxRetriesPerPhase = parseInt(
+      process.env.FEATURE_FACTORY_MAX_RETRIES_PER_PHASE,
       10
     );
   }

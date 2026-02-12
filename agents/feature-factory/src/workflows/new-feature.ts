@@ -82,6 +82,7 @@ export const newFeatureWorkflow: Workflow = {
       name: 'TDD Green Phase',
       approvalRequired: false, // Automated validation via tests
       prePhaseHooks: ['tdd-enforcement'], // Verify tests exist and FAIL before dev runs
+      maxRetries: 2, // Dev agent benefits most from retry with feedback
       nextPhaseInput: (result: AgentResult) => ({
         filesCreated: result.filesCreated,
         filesModified: result.filesModified,

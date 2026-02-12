@@ -148,6 +148,11 @@ async function handleWorkflowEvents(
         console.log(chalk.gray(`   Total turns: ${event.totalTurns}`));
         break;
 
+      case 'phase-retry':
+        spinner.warn(chalk.yellow(`${event.phase} failed — retrying (${event.attempt}/${event.maxRetries})`));
+        spinner = ora({ text: chalk.cyan(`Retry ${event.attempt}: ${event.phase} (${event.agent})`) }).start();
+        break;
+
       case 'workflow-error':
         spinner.fail(chalk.red(`Error: ${event.error}`));
         if (event.phase) {
@@ -214,6 +219,7 @@ program
   .option('--sandbox', 'Run workflow in isolated sandbox directory')
   .option('--no-sandbox', 'Disable sandbox (even in autonomous mode)')
   .option('--no-stall-detection', 'Disable stall detection for agents')
+  .option('--no-retry', 'Disable phase retry on failure')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
@@ -226,6 +232,7 @@ program
         maxDuration?: string;
         sandbox: boolean;
         stallDetection: boolean;
+        retry: boolean;
         verbose: boolean;
       }
     ) => {
@@ -296,6 +303,7 @@ program
   .option('--sandbox', 'Run workflow in isolated sandbox directory')
   .option('--no-sandbox', 'Disable sandbox (even in autonomous mode)')
   .option('--no-stall-detection', 'Disable stall detection for agents')
+  .option('--no-retry', 'Disable phase retry on failure')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
@@ -308,6 +316,7 @@ program
         maxDuration?: string;
         sandbox: boolean;
         stallDetection: boolean;
+        retry: boolean;
         verbose: boolean;
       }
     ) => {
@@ -331,6 +340,7 @@ program
   .option('--sandbox', 'Run workflow in isolated sandbox directory')
   .option('--no-sandbox', 'Disable sandbox (even in autonomous mode)')
   .option('--no-stall-detection', 'Disable stall detection for agents')
+  .option('--no-retry', 'Disable phase retry on failure')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
@@ -343,6 +353,7 @@ program
         maxDuration?: string;
         sandbox: boolean;
         stallDetection: boolean;
+        retry: boolean;
         verbose: boolean;
       }
     ) => {
@@ -365,6 +376,7 @@ async function runWorkflowCommand(
     maxDuration?: string;
     sandbox: boolean;
     stallDetection: boolean;
+    retry: boolean;
     verbose: boolean;
   }
 ): Promise<void> {
@@ -468,6 +480,7 @@ async function runWorkflowCommand(
     autonomousMode,
     sandbox: sandboxEnabled ? { enabled: true, sourceDirectory: process.cwd() } : undefined,
     ...(options.stallDetection === false && { stallDetection: { enabled: false } }),
+    ...(options.retry === false && { maxRetriesPerPhase: 0 }),
   });
 
   const auditLogger = autonomousMode.enabled

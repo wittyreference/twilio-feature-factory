@@ -240,6 +240,9 @@ export interface AgentResult {
 
   /** Number of stall detections (interventions) during execution */
   stallDetections?: number;
+
+  /** Number of retry attempts (0 = succeeded first try) */
+  retryAttempts?: number;
 }
 
 /**
@@ -263,6 +266,9 @@ export interface WorkflowPhase {
 
   /** Hooks to run BEFORE this phase starts */
   prePhaseHooks?: HookType[];
+
+  /** Override global maxRetriesPerPhase for this phase */
+  maxRetries?: number;
 }
 
 /**
@@ -287,6 +293,7 @@ export type WorkflowEvent =
   | WorkflowResumedEvent
   | PhaseStartedEvent
   | PhaseCompletedEvent
+  | PhaseRetryEvent
   | ApprovalRequestedEvent
   | ApprovalReceivedEvent
   | WorkflowCompletedEvent
@@ -326,6 +333,16 @@ export interface PhaseCompletedEvent {
   phase: string;
   agent: AgentType;
   result: AgentResult;
+  timestamp: Date;
+}
+
+export interface PhaseRetryEvent {
+  type: 'phase-retry';
+  phase: string;
+  agent: AgentType;
+  attempt: number;       // 1-indexed retry number
+  maxRetries: number;
+  reason: string;
   timestamp: Date;
 }
 

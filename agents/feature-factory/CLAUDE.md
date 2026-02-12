@@ -126,6 +126,7 @@ Key differences from new-feature:
 interface FeatureFactoryConfig {
   maxBudgetUsd: number;        // Default: $5.00 (autonomous: $50)
   maxTurnsPerAgent: number;    // Default: 50 (autonomous: 200)
+  maxRetriesPerPhase: number;       // Default: 1 (autonomous: 2)
   maxDurationMsPerAgent: number;    // Default: 5min (autonomous: 10min)
   maxDurationMsPerWorkflow: number; // Default: 30min (autonomous: 60min)
   defaultModel: 'sonnet' | 'opus' | 'haiku';
@@ -454,6 +455,7 @@ Validation is **skipped** for:
 | `maxBudgetUsd` | $5.00 | $50.00 | Total budget per feature |
 | `maxTurnsPerAgent` | 50 | 200 | Prevent infinite loops |
 | `maxDurationMsPerAgent` | 5 min | 10 min | Per-agent time limit |
+| `maxRetriesPerPhase` | 1 | 2 | Retry failed phases with feedback |
 | `maxDurationMsPerWorkflow` | 30 min | 60 min | Per-workflow time limit |
 | `approvalMode` | after-each-phase | none | Human checkpoints |
 
@@ -512,6 +514,76 @@ Source: `src/stall-detection.ts`
 Tests: `__tests__/stall-detection.test.ts`
 
 Exports: `createStallTracker`, `hashToolInput`, `buildInterventionMessage`, `DEFAULT_STALL_DETECTION_CONFIG`
+
+## Phase Retry
+
+When a phase fails (agent hits turn limit, stall hard-stop, or validation failure), the orchestrator can retry with feedback about what went wrong. The retrying agent receives context about partial progress and instructions to continue rather than start over.
+
+### Configuration
+
+| Parameter | Default | Autonomous | Env Var | Purpose |
+|-----------|---------|------------|---------|---------|
+| `maxRetriesPerPhase` | 1 | 2 | `FEATURE_FACTORY_MAX_RETRIES_PER_PHASE` | Global retry limit |
+| `WorkflowPhase.maxRetries` | — | — | — | Per-phase override |
+
+### Per-Phase Overrides
+
+Workflow phases can override the global retry limit:
+
+```typescript
+{
+  agent: 'dev',
+  name: 'TDD Green Phase',
+  maxRetries: 2,  // Dev benefits most from retry
+}
+```
+
+Current per-phase overrides:
+- **new-feature** dev phase: `maxRetries: 2`
+- **bug-fix** dev phase: `maxRetries: 2`
+- **refactor**: uses global default (1)
+
+### Retry Strategy
+
+1. On recoverable failure (agent error or validation failure), emit `phase-retry` event
+2. Re-run pre-phase hooks (e.g., TDD enforcement re-checks test state after partial work)
+3. Prepend retry feedback to agent context: what failed, partial progress, guidance
+4. Accumulate `filesCreated`, `filesModified`, `commits`, cost, and turns across retries
+5. Final `AgentResult` reflects total effort with `retryAttempts` field
+
+### What Is NOT Retried
+
+- **Hook failures**: Pre-phase hook failure means a prerequisite problem — the previous phase needs re-running
+- **Budget exceeded**: Non-recoverable, no retry
+- **Workflow time limit**: Non-recoverable, no retry
+
+### CLI
+
+```bash
+# Disable retry for a workflow
+npx feature-factory new-feature "Add SMS" --no-retry
+```
+
+### Events
+
+The `phase-retry` event is emitted before each retry attempt:
+
+```typescript
+interface PhaseRetryEvent {
+  type: 'phase-retry';
+  phase: string;
+  agent: AgentType;
+  attempt: number;       // 1-indexed retry number
+  maxRetries: number;
+  reason: string;
+  timestamp: Date;
+}
+```
+
+### Module
+
+Source: `src/orchestrator.ts` — `executePhaseWithRetry()`, `buildRetryFeedback()`
+Tests: `__tests__/orchestrator.test.ts` — "Phase Retry" and "Phase Retry Config" describe blocks
 
 ## Process Validation Infrastructure
 

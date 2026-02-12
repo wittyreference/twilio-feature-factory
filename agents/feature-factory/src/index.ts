@@ -30,6 +30,7 @@ export type {
   WorkflowResumedEvent,
   PhaseStartedEvent,
   PhaseCompletedEvent,
+  PhaseRetryEvent,
   ApprovalRequestedEvent,
   ApprovalReceivedEvent,
   WorkflowCompletedEvent,

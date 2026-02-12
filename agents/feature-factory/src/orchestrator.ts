@@ -14,7 +14,9 @@ import type {
   AgentContext,
   AgentResult,
   AgentType,
+  PhaseRetryEvent,
   WorkflowEvent,
+  WorkflowPhase,
   WorkflowState,
   WorkflowType,
 } from './types.js';
@@ -126,178 +128,33 @@ export class FeatureFactoryOrchestrator {
         const phase = workflow.phases[i];
         this.state.currentPhaseIndex = i;
 
-        // Check budget
-        if (this.state.totalCostUsd >= this.config.maxBudgetUsd) {
-          yield {
-            type: 'workflow-error',
-            phase: phase.name,
-            error: `Budget exceeded: $${this.state.totalCostUsd.toFixed(2)} of $${this.config.maxBudgetUsd.toFixed(2)}`,
-            recoverable: false,
-            timestamp: new Date(),
-          };
-          this.state.status = 'failed';
-          this.state.error = 'Budget exceeded';
-          return;
-        }
-
-        // Check workflow time limit
-        const workflowElapsed = Date.now() - this.state.startedAt.getTime();
-        if (workflowElapsed >= this.config.maxDurationMsPerWorkflow) {
-          yield {
-            type: 'workflow-error',
-            phase: phase.name,
-            error: `Workflow time limit exceeded: ${(workflowElapsed / 1000 / 60).toFixed(1)} minutes`,
-            recoverable: false,
-            timestamp: new Date(),
-          };
-          this.state.status = 'failed';
-          this.state.error = 'Workflow time limit exceeded';
-          return;
-        }
-
-        // Run pre-phase hooks if defined
-        if (phase.prePhaseHooks && phase.prePhaseHooks.length > 0) {
-          const hookContext: HookContext = {
-            workingDirectory: this.config.workingDirectory,
-            previousPhaseResults: this.state.phaseResults,
-            workflowState: this.state,
-            verbose: this.config.verbose,
-          };
-
-          for (const hookType of phase.prePhaseHooks) {
-            if (this.config.verbose) {
-              console.log(`  [orchestrator] Running pre-phase hook: ${hookType}`);
-            }
-
-            const hookResult = await executeHook(hookType, hookContext);
-
-            // Emit hook event
-            yield {
-              type: 'pre-phase-hook',
-              phase: phase.name,
-              hook: hookType,
-              result: hookResult,
-              timestamp: new Date(),
-            } as PrePhaseHookEvent;
-
-            if (!hookResult.passed) {
-              yield {
-                type: 'workflow-error',
-                phase: phase.name,
-                error: hookResult.error || `Pre-phase hook ${hookType} failed`,
-                recoverable: true,
-                timestamp: new Date(),
-              };
-              this.state.status = 'failed';
-              this.state.error = hookResult.error;
-              this.persistState();
-              return;
-            }
-
-            // Log warnings if present
-            if (hookResult.warnings && this.config.verbose) {
-              for (const warning of hookResult.warnings) {
-                console.log(`  [${hookType}] Warning: ${warning}`);
-              }
-            }
-          }
-        }
-
-        // Emit phase started
-        yield {
-          type: 'phase-started',
-          phase: phase.name,
-          agent: phase.agent,
-          phaseIndex: i,
-          totalPhases: workflow.phases.length,
-          timestamp: new Date(),
-        };
-
-        // Build context for agent
-        const context: AgentContext = {
-          featureDescription: description,
-          workingDirectory: this.config.workingDirectory,
-          previousPhaseResults: this.state.phaseResults,
-          additionalContext: phase.nextPhaseInput
-            ? JSON.stringify(
-                phase.nextPhaseInput(
-                  this.state.phaseResults[workflow.phases[i - 1]?.agent] || {
-                    agent: 'architect',
-                    success: true,
-                    output: {},
-                    filesCreated: [],
-                    filesModified: [],
-                    commits: [],
-                    costUsd: 0,
-                    turnsUsed: 0,
-                  }
-                )
+        // Build additional context from nextPhaseInput
+        const additionalContext = phase.nextPhaseInput
+          ? JSON.stringify(
+              phase.nextPhaseInput(
+                this.state.phaseResults[workflow.phases[i - 1]?.agent] || {
+                  agent: 'architect',
+                  success: true,
+                  output: {},
+                  filesCreated: [],
+                  filesModified: [],
+                  commits: [],
+                  costUsd: 0,
+                  turnsUsed: 0,
+                }
               )
-            : undefined,
-        };
+            )
+          : undefined;
 
-        // Execute agent
-        const result = await this.runAgent(phase.agent, context);
-
-        // Store result
-        this.state.phaseResults[phase.agent] = result;
-        this.state.totalCostUsd += result.costUsd;
-        this.state.totalTurns += result.turnsUsed;
-
-        // Persist after each phase
-        this.persistState();
-
-        // Emit cost update
-        yield {
-          type: 'cost-update',
-          currentCostUsd: this.state.totalCostUsd,
-          budgetRemainingUsd: this.config.maxBudgetUsd - this.state.totalCostUsd,
-          timestamp: new Date(),
-        };
-
-        // Check if agent succeeded
-        if (!result.success) {
-          yield {
-            type: 'workflow-error',
-            phase: phase.name,
-            error: result.error || 'Agent failed',
-            recoverable: true,
-            timestamp: new Date(),
-          };
-          this.state.status = 'failed';
-          this.state.error = result.error;
-          this.persistState();
+        yield* this.executePhaseWithRetry(
+          phase, i, workflow.phases.length, description, additionalContext
+        );
+        if ((this.state!.status as string) === 'failed') {
           return;
         }
-
-        // Run phase validation if present
-        if (phase.validation) {
-          const validationPassed = await phase.validation(result);
-          if (!validationPassed) {
-            yield {
-              type: 'workflow-error',
-              phase: phase.name,
-              error: 'Phase validation failed',
-              recoverable: true,
-              timestamp: new Date(),
-            };
-            this.state.status = 'failed';
-            this.state.error = 'Validation failed';
-            this.persistState();
-            return;
-          }
-        }
-
-        // Emit phase completed
-        yield {
-          type: 'phase-completed',
-          phase: phase.name,
-          agent: phase.agent,
-          result,
-          timestamp: new Date(),
-        };
 
         // Request approval if required
+        const result = this.state.phaseResults[phase.agent];
         if (this.shouldRequestApproval(phase.approvalRequired)) {
           this.state.status = 'awaiting-approval';
           this.persistState();
@@ -396,143 +253,14 @@ export class FeatureFactoryOrchestrator {
       const phase = workflow.phases[i];
       this.state.currentPhaseIndex = i;
 
-      // (Same logic as runWorkflow - extracted for reuse)
-      // Check budget
-      if (this.state.totalCostUsd >= this.config.maxBudgetUsd) {
-        yield {
-          type: 'workflow-error',
-          phase: phase.name,
-          error: `Budget exceeded: $${this.state.totalCostUsd.toFixed(2)}`,
-          recoverable: false,
-          timestamp: new Date(),
-        };
-        this.state.status = 'failed';
+      yield* this.executePhaseWithRetry(
+        phase, i, workflow.phases.length, this.state.description, feedback
+      );
+      if ((this.state!.status as string) === 'failed') {
         return;
       }
 
-      // Check workflow time limit
-      const continueElapsed = Date.now() - this.state.startedAt.getTime();
-      if (continueElapsed >= this.config.maxDurationMsPerWorkflow) {
-        yield {
-          type: 'workflow-error',
-          phase: phase.name,
-          error: `Workflow time limit exceeded: ${(continueElapsed / 1000 / 60).toFixed(1)} minutes`,
-          recoverable: false,
-          timestamp: new Date(),
-        };
-        this.state.status = 'failed';
-        this.state.error = 'Workflow time limit exceeded';
-        return;
-      }
-
-      // Run pre-phase hooks if defined
-      if (phase.prePhaseHooks && phase.prePhaseHooks.length > 0) {
-        const hookContext: HookContext = {
-          workingDirectory: this.config.workingDirectory,
-          previousPhaseResults: this.state.phaseResults,
-          workflowState: this.state,
-          verbose: this.config.verbose,
-        };
-
-        for (const hookType of phase.prePhaseHooks) {
-          if (this.config.verbose) {
-            console.log(`  [orchestrator] Running pre-phase hook: ${hookType}`);
-          }
-
-          const hookResult = await executeHook(hookType, hookContext);
-
-          yield {
-            type: 'pre-phase-hook',
-            phase: phase.name,
-            hook: hookType,
-            result: hookResult,
-            timestamp: new Date(),
-          } as PrePhaseHookEvent;
-
-          if (!hookResult.passed) {
-            yield {
-              type: 'workflow-error',
-              phase: phase.name,
-              error: hookResult.error || `Pre-phase hook ${hookType} failed`,
-              recoverable: true,
-              timestamp: new Date(),
-            };
-            this.state.status = 'failed';
-            this.state.error = hookResult.error;
-            this.persistState();
-            return;
-          }
-        }
-      }
-
-      yield {
-        type: 'phase-started',
-        phase: phase.name,
-        agent: phase.agent,
-        phaseIndex: i,
-        totalPhases: workflow.phases.length,
-        timestamp: new Date(),
-      };
-
-      const context: AgentContext = {
-        featureDescription: this.state.description,
-        workingDirectory: this.config.workingDirectory,
-        previousPhaseResults: this.state.phaseResults,
-        additionalContext: feedback,
-      };
-
-      const result = await this.runAgent(phase.agent, context);
-
-      this.state.phaseResults[phase.agent] = result;
-      this.state.totalCostUsd += result.costUsd;
-      this.state.totalTurns += result.turnsUsed;
-
-      // Persist after each phase
-      this.persistState();
-
-      yield {
-        type: 'cost-update',
-        currentCostUsd: this.state.totalCostUsd,
-        budgetRemainingUsd: this.config.maxBudgetUsd - this.state.totalCostUsd,
-        timestamp: new Date(),
-      };
-
-      if (!result.success) {
-        yield {
-          type: 'workflow-error',
-          phase: phase.name,
-          error: result.error || 'Agent failed',
-          recoverable: true,
-          timestamp: new Date(),
-        };
-        this.state.status = 'failed';
-        this.persistState();
-        return;
-      }
-
-      if (phase.validation) {
-        const validationPassed = await phase.validation(result);
-        if (!validationPassed) {
-          yield {
-            type: 'workflow-error',
-            phase: phase.name,
-            error: 'Phase validation failed',
-            recoverable: true,
-            timestamp: new Date(),
-          };
-          this.state.status = 'failed';
-          this.persistState();
-          return;
-        }
-      }
-
-      yield {
-        type: 'phase-completed',
-        phase: phase.name,
-        agent: phase.agent,
-        result,
-        timestamp: new Date(),
-      };
+      const result = this.state.phaseResults[phase.agent];
 
       if (this.shouldRequestApproval(phase.approvalRequired)) {
         this.state.status = 'awaiting-approval';
@@ -1144,154 +872,14 @@ export class FeatureFactoryOrchestrator {
         continue;
       }
 
-      // Check budget
-      if (this.state.totalCostUsd >= this.config.maxBudgetUsd) {
-        yield {
-          type: 'workflow-error',
-          phase: phase.name,
-          error: `Budget exceeded: $${this.state.totalCostUsd.toFixed(2)} of $${this.config.maxBudgetUsd.toFixed(2)}`,
-          recoverable: false,
-          timestamp: new Date(),
-        };
-        this.state.status = 'failed';
-        this.state.error = 'Budget exceeded';
-        this.persistState();
+      yield* this.executePhaseWithRetry(
+        phase, i, workflow.phases.length, state.description
+      );
+      if ((this.state!.status as string) === 'failed') {
         return;
       }
 
-      // Check workflow time limit
-      const resumeElapsed = Date.now() - this.state.startedAt.getTime();
-      if (resumeElapsed >= this.config.maxDurationMsPerWorkflow) {
-        yield {
-          type: 'workflow-error',
-          phase: phase.name,
-          error: `Workflow time limit exceeded: ${(resumeElapsed / 1000 / 60).toFixed(1)} minutes`,
-          recoverable: false,
-          timestamp: new Date(),
-        };
-        this.state.status = 'failed';
-        this.state.error = 'Workflow time limit exceeded';
-        this.persistState();
-        return;
-      }
-
-      // Run pre-phase hooks if defined
-      if (phase.prePhaseHooks && phase.prePhaseHooks.length > 0) {
-        const hookContext: HookContext = {
-          workingDirectory: this.config.workingDirectory,
-          previousPhaseResults: this.state.phaseResults,
-          workflowState: this.state,
-          verbose: this.config.verbose,
-        };
-
-        for (const hookType of phase.prePhaseHooks) {
-          if (this.config.verbose) {
-            console.log(`  [orchestrator] Running pre-phase hook: ${hookType}`);
-          }
-
-          const hookResult = await executeHook(hookType, hookContext);
-
-          yield {
-            type: 'pre-phase-hook',
-            phase: phase.name,
-            hook: hookType,
-            result: hookResult,
-            timestamp: new Date(),
-          } as PrePhaseHookEvent;
-
-          if (!hookResult.passed) {
-            yield {
-              type: 'workflow-error',
-              phase: phase.name,
-              error: hookResult.error || `Pre-phase hook ${hookType} failed`,
-              recoverable: true,
-              timestamp: new Date(),
-            };
-            this.state.status = 'failed';
-            this.state.error = hookResult.error;
-            this.persistState();
-            return;
-          }
-        }
-      }
-
-      // Emit phase started
-      yield {
-        type: 'phase-started',
-        phase: phase.name,
-        agent: phase.agent,
-        phaseIndex: i,
-        totalPhases: workflow.phases.length,
-        timestamp: new Date(),
-      };
-
-      // Build context for agent
-      const context: AgentContext = {
-        featureDescription: state.description,
-        workingDirectory: this.config.workingDirectory,
-        previousPhaseResults: this.state.phaseResults,
-      };
-
-      // Execute agent
-      const result = await this.runAgent(phase.agent, context);
-
-      // Store result
-      this.state.phaseResults[phase.agent] = result;
-      this.state.totalCostUsd += result.costUsd;
-      this.state.totalTurns += result.turnsUsed;
-
-      // Persist after each phase
-      this.persistState();
-
-      // Emit cost update
-      yield {
-        type: 'cost-update',
-        currentCostUsd: this.state.totalCostUsd,
-        budgetRemainingUsd: this.config.maxBudgetUsd - this.state.totalCostUsd,
-        timestamp: new Date(),
-      };
-
-      // Check if agent succeeded
-      if (!result.success) {
-        yield {
-          type: 'workflow-error',
-          phase: phase.name,
-          error: result.error || 'Agent failed',
-          recoverable: true,
-          timestamp: new Date(),
-        };
-        this.state.status = 'failed';
-        this.state.error = result.error;
-        this.persistState();
-        return;
-      }
-
-      // Run phase validation if present
-      if (phase.validation) {
-        const validationPassed = await phase.validation(result);
-        if (!validationPassed) {
-          yield {
-            type: 'workflow-error',
-            phase: phase.name,
-            error: 'Phase validation failed',
-            recoverable: true,
-            timestamp: new Date(),
-          };
-          this.state.status = 'failed';
-          this.state.error = 'Validation failed';
-          this.persistState();
-          return;
-        }
-      }
-
-      // Emit phase completed
-      yield {
-        type: 'phase-completed',
-        phase: phase.name,
-        agent: phase.agent,
-        result,
-        timestamp: new Date(),
-      };
+      const result = this.state.phaseResults[phase.agent];
 
       // Request approval if required
       if (this.shouldRequestApproval(phase.approvalRequired)) {
@@ -1323,5 +911,301 @@ export class FeatureFactoryOrchestrator {
       results: this.state.phaseResults,
       timestamp: new Date(),
     };
+  }
+
+  /**
+   * Execute a phase with retry logic.
+   * Handles budget/time checks, pre-phase hooks, agent execution, validation,
+   * and retries on recoverable failures.
+   */
+  private async *executePhaseWithRetry(
+    phase: WorkflowPhase,
+    phaseIndex: number,
+    totalPhases: number,
+    description: string,
+    additionalContext?: string
+  ): AsyncGenerator<WorkflowEvent> {
+    const maxRetries = phase.maxRetries ?? this.config.maxRetriesPerPhase;
+
+    // Track cumulative results across retries
+    const cumulativeFilesCreated: string[] = [];
+    const cumulativeFilesModified: string[] = [];
+    const cumulativeCommits: string[] = [];
+    let cumulativeCostUsd = 0;
+    let cumulativeTurnsUsed = 0;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      // Check budget before each attempt
+      if (this.state!.totalCostUsd >= this.config.maxBudgetUsd) {
+        yield {
+          type: 'workflow-error',
+          phase: phase.name,
+          error: `Budget exceeded: $${this.state!.totalCostUsd.toFixed(2)} of $${this.config.maxBudgetUsd.toFixed(2)}`,
+          recoverable: false,
+          timestamp: new Date(),
+        };
+        this.state!.status = 'failed';
+        this.state!.error = 'Budget exceeded';
+        this.persistState();
+        return;
+      }
+
+      // Check workflow time limit before each attempt
+      const elapsed = Date.now() - this.state!.startedAt.getTime();
+      if (elapsed >= this.config.maxDurationMsPerWorkflow) {
+        yield {
+          type: 'workflow-error',
+          phase: phase.name,
+          error: `Workflow time limit exceeded: ${(elapsed / 1000 / 60).toFixed(1)} minutes`,
+          recoverable: false,
+          timestamp: new Date(),
+        };
+        this.state!.status = 'failed';
+        this.state!.error = 'Workflow time limit exceeded';
+        this.persistState();
+        return;
+      }
+
+      // Run pre-phase hooks (re-run on retry to re-check state after partial work)
+      if (phase.prePhaseHooks && phase.prePhaseHooks.length > 0) {
+        const hookContext: HookContext = {
+          workingDirectory: this.config.workingDirectory,
+          previousPhaseResults: this.state!.phaseResults,
+          workflowState: this.state!,
+          verbose: this.config.verbose,
+        };
+
+        let hookFailed = false;
+        for (const hookType of phase.prePhaseHooks) {
+          if (this.config.verbose) {
+            console.log(`  [orchestrator] Running pre-phase hook: ${hookType}${attempt > 0 ? ` (retry ${attempt})` : ''}`);
+          }
+
+          const hookResult = await executeHook(hookType, hookContext);
+
+          yield {
+            type: 'pre-phase-hook',
+            phase: phase.name,
+            hook: hookType,
+            result: hookResult,
+            timestamp: new Date(),
+          } as PrePhaseHookEvent;
+
+          if (!hookResult.passed) {
+            // Hook failures are NOT retried — the previous phase needs re-running
+            yield {
+              type: 'workflow-error',
+              phase: phase.name,
+              error: hookResult.error || `Pre-phase hook ${hookType} failed`,
+              recoverable: true,
+              timestamp: new Date(),
+            };
+            this.state!.status = 'failed';
+            this.state!.error = hookResult.error;
+            this.persistState();
+            hookFailed = true;
+            break;
+          }
+
+          if (hookResult.warnings && this.config.verbose) {
+            for (const warning of hookResult.warnings) {
+              console.log(`  [${hookType}] Warning: ${warning}`);
+            }
+          }
+        }
+        if (hookFailed) {
+          return;
+        }
+      }
+
+      // Emit phase-started on first attempt, phase-retry on subsequent
+      if (attempt === 0) {
+        yield {
+          type: 'phase-started',
+          phase: phase.name,
+          agent: phase.agent,
+          phaseIndex,
+          totalPhases,
+          timestamp: new Date(),
+        };
+      } else {
+        yield {
+          type: 'phase-retry',
+          phase: phase.name,
+          agent: phase.agent,
+          attempt,
+          maxRetries,
+          reason: this.state!.error || 'Unknown failure',
+          timestamp: new Date(),
+        } as PhaseRetryEvent;
+      }
+
+      // Build context for agent, prepending retry feedback on retries
+      let effectiveContext = additionalContext;
+      if (attempt > 0) {
+        const previousResult = this.state!.phaseResults[phase.agent];
+        const failureType = previousResult && previousResult.success
+          ? 'validation-failure' as const
+          : 'agent-failure' as const;
+        const retryFeedback = this.buildRetryFeedback(
+          phase, previousResult, failureType, attempt, maxRetries
+        );
+        effectiveContext = retryFeedback + (additionalContext ? '\n\n' + additionalContext : '');
+      }
+
+      const context: AgentContext = {
+        featureDescription: description,
+        workingDirectory: this.config.workingDirectory,
+        previousPhaseResults: this.state!.phaseResults,
+        additionalContext: effectiveContext,
+      };
+
+      // Execute agent
+      const result = await this.runAgent(phase.agent, context);
+
+      // Accumulate results across retries
+      cumulativeFilesCreated.push(...result.filesCreated);
+      cumulativeFilesModified.push(...result.filesModified);
+      cumulativeCommits.push(...result.commits);
+      cumulativeCostUsd += result.costUsd;
+      cumulativeTurnsUsed += result.turnsUsed;
+
+      // Build the accumulated result for storage
+      const accumulatedResult: AgentResult = {
+        ...result,
+        filesCreated: [...new Set(cumulativeFilesCreated)],
+        filesModified: [...new Set(cumulativeFilesModified)],
+        commits: [...new Set(cumulativeCommits)],
+        costUsd: cumulativeCostUsd,
+        turnsUsed: cumulativeTurnsUsed,
+        retryAttempts: attempt,
+      };
+
+      // Store result and update totals (subtract previous attempt's contribution first)
+      if (attempt > 0) {
+        const prevResult = this.state!.phaseResults[phase.agent];
+        if (prevResult) {
+          this.state!.totalCostUsd -= prevResult.costUsd;
+          this.state!.totalTurns -= prevResult.turnsUsed;
+        }
+      }
+      this.state!.phaseResults[phase.agent] = accumulatedResult;
+      this.state!.totalCostUsd += accumulatedResult.costUsd;
+      this.state!.totalTurns += accumulatedResult.turnsUsed;
+      this.persistState();
+
+      // Emit cost update
+      yield {
+        type: 'cost-update',
+        currentCostUsd: this.state!.totalCostUsd,
+        budgetRemainingUsd: this.config.maxBudgetUsd - this.state!.totalCostUsd,
+        timestamp: new Date(),
+      };
+
+      // Check if agent succeeded
+      if (!result.success) {
+        // Check if this is a non-recoverable failure (budget/time errors from runAgent)
+        const isNonRecoverable = result.error?.includes('Budget exceeded') ||
+          result.error?.includes('time limit');
+
+        if (isNonRecoverable || attempt >= maxRetries) {
+          yield {
+            type: 'workflow-error',
+            phase: phase.name,
+            error: accumulatedResult.error || 'Agent failed',
+            recoverable: !isNonRecoverable && attempt < maxRetries,
+            timestamp: new Date(),
+          };
+          this.state!.status = 'failed';
+          this.state!.error = accumulatedResult.error;
+          this.persistState();
+          return;
+        }
+        // Retry: store error for feedback and continue loop
+        this.state!.error = result.error;
+        continue;
+      }
+
+      // Run phase validation if present
+      if (phase.validation) {
+        const validationPassed = await phase.validation(accumulatedResult);
+        if (!validationPassed) {
+          if (attempt >= maxRetries) {
+            yield {
+              type: 'workflow-error',
+              phase: phase.name,
+              error: 'Phase validation failed',
+              recoverable: false,
+              timestamp: new Date(),
+            };
+            this.state!.status = 'failed';
+            this.state!.error = 'Validation failed';
+            this.persistState();
+            return;
+          }
+          // Retry: store error for feedback and continue loop
+          this.state!.error = 'Validation failed';
+          continue;
+        }
+      }
+
+      // Phase succeeded — emit completed and return
+      yield {
+        type: 'phase-completed',
+        phase: phase.name,
+        agent: phase.agent,
+        result: accumulatedResult,
+        timestamp: new Date(),
+      };
+      return;
+    }
+  }
+
+  /**
+   * Build feedback message for a retrying agent, including what failed
+   * and guidance to build on partial progress.
+   */
+  private buildRetryFeedback(
+    phase: WorkflowPhase,
+    failedResult: AgentResult | undefined,
+    failureType: 'agent-failure' | 'validation-failure',
+    nextAttempt: number,
+    maxRetries: number
+  ): string {
+    const lines: string[] = [];
+
+    lines.push('=== PHASE RETRY ===');
+    lines.push(`Retry ${nextAttempt} of ${maxRetries} for phase: ${phase.name}`);
+    lines.push('');
+
+    if (failureType === 'agent-failure') {
+      lines.push(`Previous attempt FAILED: ${failedResult?.error || 'Unknown error'}`);
+    } else {
+      lines.push('Previous attempt completed but validation did not pass.');
+    }
+    lines.push('');
+
+    if (failedResult) {
+      if (failedResult.filesCreated.length > 0) {
+        lines.push(`Files created so far: ${failedResult.filesCreated.join(', ')}`);
+      }
+      if (failedResult.filesModified.length > 0) {
+        lines.push(`Files modified so far: ${failedResult.filesModified.join(', ')}`);
+      }
+      if (failedResult.commits.length > 0) {
+        lines.push(`Commits made: ${failedResult.commits.join(', ')}`);
+      }
+      if (failedResult.filesCreated.length > 0 || failedResult.filesModified.length > 0) {
+        lines.push('');
+      }
+    }
+
+    lines.push('IMPORTANT:');
+    lines.push('- Build on the previous work. Do NOT start over from scratch.');
+    lines.push('- If you ran out of turns, be more efficient and focused.');
+    lines.push('- If you were stalled, try a different approach.');
+    lines.push('- Check the current state of files before making changes.');
+
+    return lines.join('\n');
   }
 }

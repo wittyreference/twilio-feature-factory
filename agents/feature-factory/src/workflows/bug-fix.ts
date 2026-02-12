@@ -67,6 +67,7 @@ export const bugFixWorkflow: Workflow = {
       name: 'Bug Fix Implementation',
       approvalRequired: false, // Automated validation via tests
       prePhaseHooks: ['tdd-enforcement'], // Verify regression tests FAIL before fix
+      maxRetries: 2, // Dev agent benefits most from retry with feedback
       nextPhaseInput: (result: AgentResult) => ({
         filesModified: result.filesModified,
         commits: result.commits,

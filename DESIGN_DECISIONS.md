@@ -314,9 +314,9 @@ Agent operations cost money (Twilio API calls, Claude tokens). We needed guardra
 ### Decision
 
 **Implement budget caps:**
-- $5.00 per feature implementation
-- $2.00 per test run
+- $5.00 per feature implementation ($50 in autonomous mode, `--budget unlimited` for Infinity)
 - Rate limits on Tier 2 operations (10 SMS/min, 5 calls/min)
+- Time limits: 5min/agent, 30min/workflow (elevated in autonomous mode)
 
 ### Rationale
 
@@ -907,7 +907,51 @@ Fixed turn limits remain as a backstop (elevated to 200 in autonomous mode) but 
 
 ### Status
 
-**Accepted** — Implementation planned in Phase 12.2.
+**Accepted** — Implementation planned in Phase 12.3.
+
+---
+
+## Decision 21: Autonomous Mode Safety Floor
+
+### Context
+
+Autonomous mode set `maxBudgetUsd` and `maxTurnsPerAgent` to `Infinity`. A runaway session had no guardrail — it would burn tokens indefinitely. Additionally, `config.maxTurnsPerAgent` was a dead field — the orchestrator only used per-agent `agentConfig.maxTurns`, so the config value had no effect. No time-based limits existed.
+
+### Decision
+
+**Replace Infinity defaults with elevated-but-finite limits. Require explicit `--budget unlimited` for true Infinity.**
+
+| Limit | Normal | Autonomous | `--budget unlimited` |
+|-------|--------|------------|---------------------|
+| `maxBudgetUsd` | $5.00 | $50.00 | Infinity |
+| `maxTurnsPerAgent` | 50 | 200 | 200 |
+| `maxDurationMsPerAgent` | 5 min | 10 min | 10 min |
+| `maxDurationMsPerWorkflow` | 30 min | 60 min | 60 min |
+
+Key design choice: `createConfig()` checks whether the user explicitly passed values (e.g., `options.maxBudgetUsd`) rather than checking the merged config. This lets safety floor defaults apply when the user didn't specify, while preserving explicit overrides including Infinity.
+
+### Rationale
+
+1. **Defense against runaway cost**: $50 is generous for any single feature but prevents unbounded spend
+2. **Explicit opt-in for unlimited**: `--budget unlimited` makes the risk visible in command history and audit logs
+3. **Time limits catch stalls**: Even with budget headroom, a stuck agent should be stopped
+4. **Dead field fixed**: `maxTurnsPerAgent` now uses `Math.min(agentConfig.maxTurns, config.maxTurnsPerAgent)` in the orchestrator
+
+### Alternatives Considered
+
+- **Keep Infinity with stall detection only**: Stall detection (D19) is complementary, not a replacement for hard limits
+- **Lower defaults ($10, 100 turns)**: Too restrictive for real autonomous workflows that need multiple phases
+
+### Consequences
+
+- Autonomous mode no longer means "no limits" — it means "elevated limits"
+- Users who truly need Infinity must explicitly request it
+- `validateConfig()` no longer skips validation for autonomous mode (Infinity > 0 passes)
+- Time enforcement in all three workflow paths (run, continue, resume)
+
+### Status
+
+**Implemented**
 
 ---
 
@@ -1024,3 +1068,5 @@ When making architectural decisions:
 | 2026-02-11 | D18 | Three-layer context window management (agent prompts, truncation, compaction) |
 | 2026-02-11 | D19 | Stall detection over fixed turn limits (industry survey-informed) |
 | 2026-02-11 | D20 | Sandbox mode for autonomous validation (temp dir isolation) |
+| 2026-02-11 | D21 | Autonomous mode safety floor (finite defaults, --budget unlimited) |
+| 2026-02-11 | D9 | Updated budget caps to reflect autonomous mode safety floor |

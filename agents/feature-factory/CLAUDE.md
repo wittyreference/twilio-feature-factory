@@ -123,8 +123,10 @@ Key differences from new-feature:
 
 ```typescript
 interface FeatureFactoryConfig {
-  maxBudgetUsd: number;        // Default: $5.00 per feature
-  maxTurnsPerAgent: number;    // Default: 50
+  maxBudgetUsd: number;        // Default: $5.00 (autonomous: $50)
+  maxTurnsPerAgent: number;    // Default: 50 (autonomous: 200)
+  maxDurationMsPerAgent: number;    // Default: 5min (autonomous: 10min)
+  maxDurationMsPerWorkflow: number; // Default: 30min (autonomous: 60min)
   defaultModel: 'sonnet' | 'opus' | 'haiku';
   approvalMode: 'after-each-phase' | 'at-end' | 'none';
   twilioMcpEnabled: boolean;
@@ -170,8 +172,10 @@ Autonomous mode enables unattended operation for CI/CD pipelines or when you wan
 | Aspect | Normal Mode | Autonomous Mode |
 |--------|-------------|-----------------|
 | Phase approval prompts | Required after architect, spec, review | Auto-approved |
-| Budget limit | $5.00 default | Unlimited |
-| Max turns | 50 default | Unlimited |
+| Budget limit | $5.00 default | $50.00 (`--budget unlimited` for Infinity) |
+| Max turns/agent | 50 default | 200 |
+| Time limit/agent | 5 min | 10 min |
+| Time limit/workflow | 30 min | 60 min |
 | Sandbox isolation | Off (opt-in with `--sandbox`) | **On by default** (opt-out with `--no-sandbox`) |
 | Quality gates | Enforced | **Still enforced** |
 
@@ -443,11 +447,15 @@ Validation is **skipped** for:
 
 ## Cost Controls
 
-| Control | Default | Purpose |
-|---------|---------|---------|
-| `maxBudgetUsd` | $5.00 | Total budget per feature |
-| `maxTurnsPerAgent` | 50 | Prevent infinite loops |
-| `approvalMode` | after-each-phase | Human checkpoints |
+| Control | Default | Autonomous | Purpose |
+|---------|---------|------------|---------|
+| `maxBudgetUsd` | $5.00 | $50.00 | Total budget per feature |
+| `maxTurnsPerAgent` | 50 | 200 | Prevent infinite loops |
+| `maxDurationMsPerAgent` | 5 min | 10 min | Per-agent time limit |
+| `maxDurationMsPerWorkflow` | 30 min | 60 min | Per-workflow time limit |
+| `approvalMode` | after-each-phase | none | Human checkpoints |
+
+Use `--budget unlimited` to set Infinity budget (explicit opt-in only).
 
 ## Process Validation Infrastructure
 

@@ -473,7 +473,7 @@ export class FeatureFactoryOrchestrator {
             toolName: toolUse.name,
             inputHash: hashToolInput(toolUse.input as Record<string, unknown>),
             hadFileActivity: fileChangeTools.has(toolUse.name) &&
-              !toolResults[idx]?.hasOwnProperty('is_error'),
+              !(toolResults[idx] as unknown as { is_error?: boolean })?.is_error,
           }));
           stallTracker.recordTurn(turnRecords);
 

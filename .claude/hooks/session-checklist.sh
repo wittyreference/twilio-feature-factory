@@ -2,7 +2,7 @@
 # ABOUTME: Stop hook that checks for open session hygiene items.
 # ABOUTME: Reminds about learnings, docs, uncommitted work, unpushed commits, and test runs.
 
-set -euo pipefail
+set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/_meta-mode.sh"

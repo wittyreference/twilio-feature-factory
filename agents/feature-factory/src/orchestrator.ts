@@ -30,6 +30,12 @@ import {
   type ContextManagerConfig,
 } from './context-manager.js';
 import {
+  createStallTracker,
+  hashToolInput,
+  buildInterventionMessage,
+  DEFAULT_STALL_DETECTION_CONFIG,
+} from './stall-detection.js';
+import {
   generateSessionId,
   saveSession,
   loadSession,
@@ -594,6 +600,11 @@ export class FeatureFactoryOrchestrator {
     const agentStartTime = Date.now();
     const effectiveMaxTurns = Math.min(agentConfig.maxTurns, this.config.maxTurnsPerAgent);
 
+    // Create stall tracker if enabled
+    const stallTracker = this.config.stallDetection?.enabled !== false
+      ? createStallTracker({ ...DEFAULT_STALL_DETECTION_CONFIG, ...this.config.stallDetection })
+      : null;
+
     // Resolve context manager config from user config overrides
     const contextManagerConfig: ContextManagerConfig = {
       ...DEFAULT_CONTEXT_MANAGER_CONFIG,
@@ -676,7 +687,7 @@ export class FeatureFactoryOrchestrator {
         });
 
         // Execute tools and collect results
-        const toolResults: Anthropic.ToolResultBlockParam[] = [];
+        const toolResults: Array<Anthropic.ToolResultBlockParam | Anthropic.TextBlockParam> = [];
 
         for (const toolUse of toolUseBlocks) {
           if (this.config.verbose) {
@@ -724,6 +735,49 @@ export class FeatureFactoryOrchestrator {
           });
         }
 
+        // Record turn in stall tracker and check for stalls
+        if (stallTracker) {
+          const fileChangeTools = new Set(['Write', 'Edit']);
+          const turnRecords = toolUseBlocks.map((toolUse, idx) => ({
+            toolName: toolUse.name,
+            inputHash: hashToolInput(toolUse.input as Record<string, unknown>),
+            hadFileActivity: fileChangeTools.has(toolUse.name) &&
+              !toolResults[idx]?.hasOwnProperty('is_error'),
+          }));
+          stallTracker.recordTurn(turnRecords);
+
+          const stall = stallTracker.detectStall();
+          if (stall) {
+            if (stallTracker.shouldHardStop()) {
+              const costUsd = this.calculateCost(
+                totalInputTokens,
+                totalOutputTokens,
+                agentConfig.model || this.config.defaultModel
+              );
+              return {
+                agent: agentType,
+                success: false,
+                output: finalOutput,
+                filesCreated: [...new Set(filesCreated)],
+                filesModified: [...new Set(filesModified)],
+                commits: [...new Set(commits)],
+                costUsd,
+                turnsUsed,
+                contextCompactions,
+                stallDetections: stallTracker.getInterventionCount(),
+                error: `STALLED: ${stall.description}`,
+              };
+            }
+            stallTracker.recordIntervention();
+            toolResults.push({ type: 'text', text: buildInterventionMessage(stall) });
+            if (this.config.verbose) {
+              console.log(
+                `  [${agentType}] Stall detected (${stall.type}) — intervention ${stallTracker.getInterventionCount()}`
+              );
+            }
+          }
+        }
+
         // Add tool results to messages
         messages.push({
           role: 'user',
@@ -750,6 +804,7 @@ export class FeatureFactoryOrchestrator {
           costUsd,
           turnsUsed,
           contextCompactions,
+          stallDetections: stallTracker?.getInterventionCount() ?? 0,
           error: `Max turns (${effectiveMaxTurns}) reached`,
         };
       }
@@ -766,6 +821,7 @@ export class FeatureFactoryOrchestrator {
           costUsd,
           turnsUsed,
           contextCompactions,
+          stallDetections: stallTracker?.getInterventionCount() ?? 0,
           error: `Agent time limit (${(this.config.maxDurationMsPerAgent / 1000 / 60).toFixed(0)}min) reached`,
         };
       }
@@ -780,6 +836,7 @@ export class FeatureFactoryOrchestrator {
         costUsd,
         turnsUsed,
         contextCompactions,
+        stallDetections: stallTracker?.getInterventionCount() ?? 0,
       };
     } catch (error) {
       // Calculate cost even on error
@@ -799,6 +856,7 @@ export class FeatureFactoryOrchestrator {
         costUsd,
         turnsUsed,
         contextCompactions,
+        stallDetections: stallTracker?.getInterventionCount() ?? 0,
         error: error instanceof Error ? error.message : 'Unknown error',
       };
     }

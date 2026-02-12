@@ -3,6 +3,7 @@
 
 import type { ApprovalMode, AutonomousModeConfig, ModelType } from './types.js';
 import type { ContextManagerConfig } from './context-manager.js';
+import type { StallDetectionConfig } from './stall-detection.js';
 
 /**
  * Feature Factory configuration options
@@ -91,6 +92,12 @@ export interface FeatureFactoryConfig {
     enabled: boolean;
     sourceDirectory?: string;
   };
+
+  /**
+   * Stall detection configuration.
+   * Detects stuck agents (repetition, oscillation, idle) and intervenes.
+   */
+  stallDetection?: Partial<StallDetectionConfig>;
 
   /**
    * Maximum duration per agent in milliseconds.

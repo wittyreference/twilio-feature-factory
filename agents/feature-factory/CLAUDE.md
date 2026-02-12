@@ -45,6 +45,7 @@ src/
 │   ├── tdd-enforcement.ts # Verifies tests exist and FAIL before dev
 │   ├── coverage-threshold.ts # Enforces 80% coverage before QA
 │   └── test-passing-enforcement.ts # Verifies all tests PASS (refactor safety)
+├── stall-detection.ts    # Stuck agent detection (repetition, oscillation, idle)
 ├── discovery/            # Autonomous work discovery
 │   ├── index.ts          # Exports
 │   ├── work-discovery.ts # Work item types and priority classification
@@ -133,6 +134,7 @@ interface FeatureFactoryConfig {
   deepValidationEnabled: boolean;
   autonomousMode: AutonomousModeConfig;  // Optional, for unattended operation
   contextWindow?: Partial<ContextManagerConfig>;  // Optional, context management overrides
+  stallDetection?: Partial<StallDetectionConfig>; // Optional, stall detection overrides
   sandbox?: {                  // Optional, isolated execution environment
     enabled: boolean;
     sourceDirectory?: string;
@@ -456,6 +458,60 @@ Validation is **skipped** for:
 | `approvalMode` | after-each-phase | none | Human checkpoints |
 
 Use `--budget unlimited` to set Infinity budget (explicit opt-in only).
+
+## Stall Detection
+
+Agents can get stuck in unproductive loops — reading the same file repeatedly, oscillating between two approaches, or spinning without writing code. Stall detection replaces blunt turn limits with behavioral analysis.
+
+### Detection Patterns
+
+| Pattern | What It Detects | Default Threshold |
+|---------|----------------|-------------------|
+| **Repetition** | Same tool + same input N consecutive times | 3 calls |
+| **Oscillation** | A-B-A-B alternating pattern | 6-call window |
+| **Idle** | No file writes/edits for extended period | 10 turns |
+
+Detection priority: repetition > oscillation > idle (first match wins).
+
+### Intervention Strategy
+
+1. **First stall detected**: Inject intervention message into the conversation, nudging the agent to try a different approach
+2. **Second stall detected**: Another intervention message
+3. **After max interventions (default: 2)**: Hard stop — agent returns with `STALLED:` error
+
+### Configuration
+
+```typescript
+interface StallDetectionConfig {
+  enabled: boolean;              // default: true
+  repetitionThreshold: number;   // default: 3
+  oscillationWindowSize: number; // default: 6
+  idleTurnThreshold: number;     // default: 10
+  maxInterventions: number;      // default: 2
+}
+```
+
+Override programmatically:
+```typescript
+const orchestrator = new FeatureFactoryOrchestrator({
+  stallDetection: {
+    repetitionThreshold: 5,
+    maxInterventions: 3,
+  },
+});
+```
+
+CLI flag to disable:
+```bash
+npx feature-factory new-feature "Add SMS" --no-stall-detection
+```
+
+### Module
+
+Source: `src/stall-detection.ts`
+Tests: `__tests__/stall-detection.test.ts`
+
+Exports: `createStallTracker`, `hashToolInput`, `buildInterventionMessage`, `DEFAULT_STALL_DETECTION_CONFIG`
 
 ## Process Validation Infrastructure
 

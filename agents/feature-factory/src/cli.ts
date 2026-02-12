@@ -213,6 +213,7 @@ program
   .option('--max-duration <minutes>', 'Maximum workflow duration in minutes')
   .option('--sandbox', 'Run workflow in isolated sandbox directory')
   .option('--no-sandbox', 'Disable sandbox (even in autonomous mode)')
+  .option('--no-stall-detection', 'Disable stall detection for agents')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
@@ -224,6 +225,7 @@ program
         dangerouslyAutonomous: boolean;
         maxDuration?: string;
         sandbox: boolean;
+        stallDetection: boolean;
         verbose: boolean;
       }
     ) => {
@@ -293,6 +295,7 @@ program
   .option('--max-duration <minutes>', 'Maximum workflow duration in minutes')
   .option('--sandbox', 'Run workflow in isolated sandbox directory')
   .option('--no-sandbox', 'Disable sandbox (even in autonomous mode)')
+  .option('--no-stall-detection', 'Disable stall detection for agents')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
@@ -304,6 +307,7 @@ program
         dangerouslyAutonomous: boolean;
         maxDuration?: string;
         sandbox: boolean;
+        stallDetection: boolean;
         verbose: boolean;
       }
     ) => {
@@ -326,6 +330,7 @@ program
   .option('--max-duration <minutes>', 'Maximum workflow duration in minutes')
   .option('--sandbox', 'Run workflow in isolated sandbox directory')
   .option('--no-sandbox', 'Disable sandbox (even in autonomous mode)')
+  .option('--no-stall-detection', 'Disable stall detection for agents')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
@@ -337,6 +342,7 @@ program
         dangerouslyAutonomous: boolean;
         maxDuration?: string;
         sandbox: boolean;
+        stallDetection: boolean;
         verbose: boolean;
       }
     ) => {
@@ -358,6 +364,7 @@ async function runWorkflowCommand(
     dangerouslyAutonomous: boolean;
     maxDuration?: string;
     sandbox: boolean;
+    stallDetection: boolean;
     verbose: boolean;
   }
 ): Promise<void> {
@@ -460,6 +467,7 @@ async function runWorkflowCommand(
     workingDirectory,
     autonomousMode,
     sandbox: sandboxEnabled ? { enabled: true, sourceDirectory: process.cwd() } : undefined,
+    ...(options.stallDetection === false && { stallDetection: { enabled: false } }),
   });
 
   const auditLogger = autonomousMode.enabled

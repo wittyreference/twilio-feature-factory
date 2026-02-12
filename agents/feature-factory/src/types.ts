@@ -237,6 +237,9 @@ export interface AgentResult {
 
   /** Number of context compactions performed during execution */
   contextCompactions?: number;
+
+  /** Number of stall detections (interventions) during execution */
+  stallDetections?: number;
 }
 
 /**

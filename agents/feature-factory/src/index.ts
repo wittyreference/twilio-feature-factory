@@ -126,6 +126,21 @@ export type {
   CompactionResult,
 } from './context-manager.js';
 
+// Stall detection module (stuck agent behavioral analysis)
+export {
+  createStallTracker,
+  hashToolInput,
+  buildInterventionMessage,
+  DEFAULT_STALL_DETECTION_CONFIG,
+} from './stall-detection.js';
+export type {
+  StallDetectionConfig,
+  StallDetection,
+  StallType,
+  StallTracker,
+  ToolCallRecord,
+} from './stall-detection.js';
+
 // Discovery module (autonomous work discovery)
 export {
   type DiscoveredWork,

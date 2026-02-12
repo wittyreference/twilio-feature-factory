@@ -72,7 +72,7 @@ export interface FeatureFactoryConfig {
 
   /**
    * Autonomous mode configuration.
-   * When enabled, removes approval prompts and budget/turn limits.
+   * When enabled, removes approval prompts and elevates budget/turn limits.
    * Quality gates (TDD, lint, coverage) remain enforced.
    */
   autonomousMode: AutonomousModeConfig;
@@ -91,6 +91,20 @@ export interface FeatureFactoryConfig {
     enabled: boolean;
     sourceDirectory?: string;
   };
+
+  /**
+   * Maximum duration per agent in milliseconds.
+   * Prevents single agents from running indefinitely.
+   * @default 300000 (5 minutes)
+   */
+  maxDurationMsPerAgent: number;
+
+  /**
+   * Maximum duration per workflow in milliseconds.
+   * Prevents entire workflows from running indefinitely.
+   * @default 1800000 (30 minutes)
+   */
+  maxDurationMsPerWorkflow: number;
 }
 
 /**
@@ -112,11 +126,13 @@ export const DEFAULT_CONFIG: FeatureFactoryConfig = {
     acknowledgedVia: null,
     acknowledgedAt: null,
   },
+  maxDurationMsPerAgent: 5 * 60 * 1000,      // 5 minutes
+  maxDurationMsPerWorkflow: 30 * 60 * 1000,   // 30 minutes
 };
 
 /**
  * Create a configuration by merging partial options with defaults.
- * When autonomous mode is enabled, overrides approval mode and removes limits.
+ * When autonomous mode is enabled, overrides approval mode and elevates limits.
  */
 export function createConfig(
   options: Partial<FeatureFactoryConfig> = {}
@@ -130,11 +146,22 @@ export function createConfig(
     },
   };
 
-  // Autonomous mode overrides
+  // Autonomous mode overrides: elevated-but-finite unless user explicitly passed values
   if (config.autonomousMode.enabled && config.autonomousMode.acknowledged) {
     config.approvalMode = 'none';
-    config.maxBudgetUsd = Infinity;
-    config.maxTurnsPerAgent = Infinity;
+
+    if (!options.maxBudgetUsd) {
+      config.maxBudgetUsd = 50.0;
+    }
+    if (!options.maxTurnsPerAgent) {
+      config.maxTurnsPerAgent = 200;
+    }
+    if (!options.maxDurationMsPerAgent) {
+      config.maxDurationMsPerAgent = 10 * 60 * 1000;   // 10 min (elevated from 5)
+    }
+    if (!options.maxDurationMsPerWorkflow) {
+      config.maxDurationMsPerWorkflow = 60 * 60 * 1000; // 60 min (elevated from 30)
+    }
 
     // Autonomous mode implies sandbox unless explicitly disabled
     if (config.sandbox === undefined) {
@@ -149,18 +176,20 @@ export function createConfig(
  * Validate configuration values
  */
 export function validateConfig(config: FeatureFactoryConfig): void {
-  // Skip budget/turn validation in autonomous mode (they're set to Infinity)
-  const isAutonomous =
-    config.autonomousMode.enabled && config.autonomousMode.acknowledged;
+  if (config.maxBudgetUsd <= 0) {
+    throw new Error('maxBudgetUsd must be greater than 0');
+  }
 
-  if (!isAutonomous) {
-    if (config.maxBudgetUsd <= 0) {
-      throw new Error('maxBudgetUsd must be greater than 0');
-    }
+  if (config.maxTurnsPerAgent <= 0) {
+    throw new Error('maxTurnsPerAgent must be greater than 0');
+  }
 
-    if (config.maxTurnsPerAgent <= 0) {
-      throw new Error('maxTurnsPerAgent must be greater than 0');
-    }
+  if (config.maxDurationMsPerAgent <= 0) {
+    throw new Error('maxDurationMsPerAgent must be greater than 0');
+  }
+
+  if (config.maxDurationMsPerWorkflow <= 0) {
+    throw new Error('maxDurationMsPerWorkflow must be greater than 0');
   }
 
   if (config.validationTimeoutMs <= 0) {
@@ -221,6 +250,20 @@ export function configFromEnv(): Partial<FeatureFactoryConfig> {
 
   if (process.env.FEATURE_FACTORY_VERBOSE === 'true') {
     config.verbose = true;
+  }
+
+  if (process.env.FEATURE_FACTORY_MAX_DURATION_PER_AGENT) {
+    config.maxDurationMsPerAgent = parseInt(
+      process.env.FEATURE_FACTORY_MAX_DURATION_PER_AGENT,
+      10
+    );
+  }
+
+  if (process.env.FEATURE_FACTORY_MAX_DURATION_PER_WORKFLOW) {
+    config.maxDurationMsPerWorkflow = parseInt(
+      process.env.FEATURE_FACTORY_MAX_DURATION_PER_WORKFLOW,
+      10
+    );
   }
 
   // Context window management from environment

@@ -134,6 +134,21 @@ export class FeatureFactoryOrchestrator {
           return;
         }
 
+        // Check workflow time limit
+        const workflowElapsed = Date.now() - this.state.startedAt.getTime();
+        if (workflowElapsed >= this.config.maxDurationMsPerWorkflow) {
+          yield {
+            type: 'workflow-error',
+            phase: phase.name,
+            error: `Workflow time limit exceeded: ${(workflowElapsed / 1000 / 60).toFixed(1)} minutes`,
+            recoverable: false,
+            timestamp: new Date(),
+          };
+          this.state.status = 'failed';
+          this.state.error = 'Workflow time limit exceeded';
+          return;
+        }
+
         // Run pre-phase hooks if defined
         if (phase.prePhaseHooks && phase.prePhaseHooks.length > 0) {
           const hookContext: HookContext = {
@@ -389,6 +404,21 @@ export class FeatureFactoryOrchestrator {
         return;
       }
 
+      // Check workflow time limit
+      const continueElapsed = Date.now() - this.state.startedAt.getTime();
+      if (continueElapsed >= this.config.maxDurationMsPerWorkflow) {
+        yield {
+          type: 'workflow-error',
+          phase: phase.name,
+          error: `Workflow time limit exceeded: ${(continueElapsed / 1000 / 60).toFixed(1)} minutes`,
+          recoverable: false,
+          timestamp: new Date(),
+        };
+        this.state.status = 'failed';
+        this.state.error = 'Workflow time limit exceeded';
+        return;
+      }
+
       // Run pre-phase hooks if defined
       if (phase.prePhaseHooks && phase.prePhaseHooks.length > 0) {
         const hookContext: HookContext = {
@@ -560,6 +590,9 @@ export class FeatureFactoryOrchestrator {
     let turnsUsed = 0;
     let finalOutput: Record<string, unknown> = {};
     let contextCompactions = 0;
+    let timedOut = false;
+    const agentStartTime = Date.now();
+    const effectiveMaxTurns = Math.min(agentConfig.maxTurns, this.config.maxTurnsPerAgent);
 
     // Resolve context manager config from user config overrides
     const contextManagerConfig: ContextManagerConfig = {
@@ -574,11 +607,21 @@ export class FeatureFactoryOrchestrator {
 
     try {
       // Agentic loop
-      while (turnsUsed < agentConfig.maxTurns) {
+      while (turnsUsed < effectiveMaxTurns) {
         turnsUsed++;
 
+        // Check per-agent time limit
+        const agentElapsed = Date.now() - agentStartTime;
+        if (agentElapsed >= this.config.maxDurationMsPerAgent) {
+          if (this.config.verbose) {
+            console.log(`  [${agentType}] Time limit reached: ${(agentElapsed / 1000).toFixed(0)}s`);
+          }
+          timedOut = true;
+          break;
+        }
+
         if (this.config.verbose) {
-          console.log(`  [${agentType}] Turn ${turnsUsed}/${agentConfig.maxTurns}`);
+          console.log(`  [${agentType}] Turn ${turnsUsed}/${effectiveMaxTurns}`);
         }
 
         // Make API call
@@ -696,7 +739,7 @@ export class FeatureFactoryOrchestrator {
       );
 
       // Check for max turns reached
-      if (turnsUsed >= agentConfig.maxTurns) {
+      if (turnsUsed >= effectiveMaxTurns) {
         return {
           agent: agentType,
           success: false,
@@ -707,7 +750,23 @@ export class FeatureFactoryOrchestrator {
           costUsd,
           turnsUsed,
           contextCompactions,
-          error: `Max turns (${agentConfig.maxTurns}) reached`,
+          error: `Max turns (${effectiveMaxTurns}) reached`,
+        };
+      }
+
+      // Check for agent time limit reached
+      if (timedOut) {
+        return {
+          agent: agentType,
+          success: false,
+          output: finalOutput,
+          filesCreated: [...new Set(filesCreated)],
+          filesModified: [...new Set(filesModified)],
+          commits: [...new Set(commits)],
+          costUsd,
+          turnsUsed,
+          contextCompactions,
+          error: `Agent time limit (${(this.config.maxDurationMsPerAgent / 1000 / 60).toFixed(0)}min) reached`,
         };
       }
 
@@ -1038,6 +1097,22 @@ export class FeatureFactoryOrchestrator {
         };
         this.state.status = 'failed';
         this.state.error = 'Budget exceeded';
+        this.persistState();
+        return;
+      }
+
+      // Check workflow time limit
+      const resumeElapsed = Date.now() - this.state.startedAt.getTime();
+      if (resumeElapsed >= this.config.maxDurationMsPerWorkflow) {
+        yield {
+          type: 'workflow-error',
+          phase: phase.name,
+          error: `Workflow time limit exceeded: ${(resumeElapsed / 1000 / 60).toFixed(1)} minutes`,
+          recoverable: false,
+          timestamp: new Date(),
+        };
+        this.state.status = 'failed';
+        this.state.error = 'Workflow time limit exceeded';
         this.persistState();
         return;
       }

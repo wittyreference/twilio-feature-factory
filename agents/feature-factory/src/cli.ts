@@ -202,14 +202,15 @@ async function promptForFeedback(): Promise<string> {
 program
   .command('new-feature <description>')
   .description('Run the new feature development pipeline')
-  .option('-b, --budget <amount>', 'Maximum budget in USD', '5.00')
+  .option('-b, --budget <amount>', 'Maximum budget in USD (or "unlimited")')
   .option(
     '-m, --model <model>',
     'Default model (sonnet, opus, haiku)',
     'sonnet'
   )
   .option('--no-approval', 'Skip approval gates')
-  .option('--dangerously-autonomous', 'Full autonomous mode (no prompts, no limits)')
+  .option('--dangerously-autonomous', 'Full autonomous mode (no prompts, elevated limits)')
+  .option('--max-duration <minutes>', 'Maximum workflow duration in minutes')
   .option('--sandbox', 'Run workflow in isolated sandbox directory')
   .option('--no-sandbox', 'Disable sandbox (even in autonomous mode)')
   .option('-v, --verbose', 'Enable verbose logging')
@@ -217,10 +218,11 @@ program
     async (
       description: string,
       options: {
-        budget: string;
+        budget?: string;
         model: string;
         approval: boolean;
         dangerouslyAutonomous: boolean;
+        maxDuration?: string;
         sandbox: boolean;
         verbose: boolean;
       }
@@ -280,14 +282,15 @@ program
 program
   .command('bug-fix <description>')
   .description('Run the bug fix pipeline')
-  .option('-b, --budget <amount>', 'Maximum budget in USD', '5.00')
+  .option('-b, --budget <amount>', 'Maximum budget in USD (or "unlimited")')
   .option(
     '-m, --model <model>',
     'Default model (sonnet, opus, haiku)',
     'sonnet'
   )
   .option('--no-approval', 'Skip approval gates')
-  .option('--dangerously-autonomous', 'Full autonomous mode (no prompts, no limits)')
+  .option('--dangerously-autonomous', 'Full autonomous mode (no prompts, elevated limits)')
+  .option('--max-duration <minutes>', 'Maximum workflow duration in minutes')
   .option('--sandbox', 'Run workflow in isolated sandbox directory')
   .option('--no-sandbox', 'Disable sandbox (even in autonomous mode)')
   .option('-v, --verbose', 'Enable verbose logging')
@@ -295,10 +298,11 @@ program
     async (
       description: string,
       options: {
-        budget: string;
+        budget?: string;
         model: string;
         approval: boolean;
         dangerouslyAutonomous: boolean;
+        maxDuration?: string;
         sandbox: boolean;
         verbose: boolean;
       }
@@ -311,14 +315,15 @@ program
 program
   .command('refactor <description>')
   .description('Run the safe refactoring pipeline')
-  .option('-b, --budget <amount>', 'Maximum budget in USD', '5.00')
+  .option('-b, --budget <amount>', 'Maximum budget in USD (or "unlimited")')
   .option(
     '-m, --model <model>',
     'Default model (sonnet, opus, haiku)',
     'sonnet'
   )
   .option('--no-approval', 'Skip approval gates')
-  .option('--dangerously-autonomous', 'Full autonomous mode (no prompts, no limits)')
+  .option('--dangerously-autonomous', 'Full autonomous mode (no prompts, elevated limits)')
+  .option('--max-duration <minutes>', 'Maximum workflow duration in minutes')
   .option('--sandbox', 'Run workflow in isolated sandbox directory')
   .option('--no-sandbox', 'Disable sandbox (even in autonomous mode)')
   .option('-v, --verbose', 'Enable verbose logging')
@@ -326,10 +331,11 @@ program
     async (
       description: string,
       options: {
-        budget: string;
+        budget?: string;
         model: string;
         approval: boolean;
         dangerouslyAutonomous: boolean;
+        maxDuration?: string;
         sandbox: boolean;
         verbose: boolean;
       }
@@ -346,10 +352,11 @@ async function runWorkflowCommand(
   workflow: 'new-feature' | 'bug-fix' | 'refactor',
   description: string,
   options: {
-    budget: string;
+    budget?: string;
     model: string;
     approval: boolean;
     dangerouslyAutonomous: boolean;
+    maxDuration?: string;
     sandbox: boolean;
     verbose: boolean;
   }
@@ -432,8 +439,21 @@ async function runWorkflowCommand(
       ? 'after-each-phase'
       : 'none';
 
+  // Parse budget: "unlimited" → Infinity, numeric string → number, absent → undefined (use config default)
+  const budgetValue = options.budget === 'unlimited'
+    ? Infinity
+    : options.budget
+      ? parseFloat(options.budget)
+      : undefined;
+
+  // Parse max duration: minutes → milliseconds
+  const maxDurationOverride = options.maxDuration
+    ? parseInt(options.maxDuration, 10) * 60 * 1000
+    : undefined;
+
   const orchestrator = new FeatureFactoryOrchestrator({
-    maxBudgetUsd: parseFloat(options.budget),
+    ...(budgetValue !== undefined && { maxBudgetUsd: budgetValue }),
+    ...(maxDurationOverride !== undefined && { maxDurationMsPerWorkflow: maxDurationOverride }),
     defaultModel: options.model as 'sonnet' | 'opus' | 'haiku',
     approvalMode,
     verbose: options.verbose,
@@ -446,9 +466,15 @@ async function runWorkflowCommand(
     ? createAuditLogger(orchestrator.getState()?.sessionId || 'unknown', workingDirectory)
     : null;
 
+  const effectiveConfig = orchestrator.getConfig();
+  const budgetDisplay = effectiveConfig.maxBudgetUsd === Infinity
+    ? 'unlimited'
+    : formatCurrency(effectiveConfig.maxBudgetUsd);
+
   if (autonomousMode.enabled) {
     console.log(chalk.cyan.bold('🤖 Running in AUTONOMOUS MODE'));
-    console.log(chalk.gray('   Quality gates still enforced: TDD, lint, coverage, credential safety'));
+    console.log(chalk.gray(`   Budget: ${budgetDisplay}`));
+    console.log(chalk.gray('   Quality gates: TDD, lint, coverage, credential safety'));
     if (sandboxEnabled) {
       console.log(chalk.gray('   Sandbox isolation: enabled'));
     }
@@ -456,7 +482,7 @@ async function runWorkflowCommand(
   } else {
     console.log(
       chalk.gray(
-        `Config: budget=${formatCurrency(parseFloat(options.budget))}, model=${options.model}, approval=${approvalMode}${sandboxEnabled ? ', sandbox=on' : ''}`
+        `Config: budget=${budgetDisplay}, model=${options.model}, approval=${approvalMode}${sandboxEnabled ? ', sandbox=on' : ''}`
       )
     );
   }

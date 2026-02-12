@@ -27,7 +27,7 @@ describe('Autonomous Mode', () => {
       expect(config.autonomousMode.acknowledged).toBe(false);
     });
 
-    it('should override limits when autonomous mode is enabled and acknowledged', () => {
+    it('should set elevated-but-finite defaults when autonomous mode is enabled and acknowledged', () => {
       const config = createConfig({
         autonomousMode: {
           enabled: true,
@@ -38,8 +38,10 @@ describe('Autonomous Mode', () => {
       });
 
       expect(config.approvalMode).toBe('none');
-      expect(config.maxBudgetUsd).toBe(Infinity);
-      expect(config.maxTurnsPerAgent).toBe(Infinity);
+      expect(config.maxBudgetUsd).toBe(50.0);
+      expect(config.maxTurnsPerAgent).toBe(200);
+      expect(config.maxDurationMsPerAgent).toBe(600000);      // 10 min
+      expect(config.maxDurationMsPerWorkflow).toBe(3600000);   // 60 min
     });
 
     it('should NOT override limits when enabled but not acknowledged', () => {
@@ -85,7 +87,7 @@ describe('Autonomous Mode', () => {
       expect(() => validateConfig(config)).not.toThrow();
     });
 
-    it('should skip budget validation in autonomous mode', () => {
+    it('should pass validation with safety floor defaults', () => {
       const config = createConfig({
         autonomousMode: {
           enabled: true,
@@ -95,8 +97,87 @@ describe('Autonomous Mode', () => {
         },
       });
 
-      // Budget is Infinity which would normally fail validation
+      expect(config.maxBudgetUsd).toBe(50.0);
       expect(() => validateConfig(config)).not.toThrow();
+    });
+
+    it('should preserve explicit Infinity budget when user passes it', () => {
+      const config = createConfig({
+        maxBudgetUsd: Infinity,
+        autonomousMode: {
+          enabled: true,
+          acknowledged: true,
+          acknowledgedVia: 'interactive',
+          acknowledgedAt: new Date(),
+        },
+      });
+
+      expect(config.maxBudgetUsd).toBe(Infinity);
+      // Infinity > 0 is true, so validation still passes
+      expect(() => validateConfig(config)).not.toThrow();
+    });
+
+    it('should preserve user-provided maxBudgetUsd in autonomous mode', () => {
+      const config = createConfig({
+        maxBudgetUsd: 10.0,
+        autonomousMode: {
+          enabled: true,
+          acknowledged: true,
+          acknowledgedVia: 'interactive',
+          acknowledgedAt: new Date(),
+        },
+      });
+
+      // User explicitly set $10, should NOT be overridden to $50
+      expect(config.maxBudgetUsd).toBe(10.0);
+    });
+
+    it('should preserve user-provided maxTurnsPerAgent in autonomous mode', () => {
+      const config = createConfig({
+        maxTurnsPerAgent: 100,
+        autonomousMode: {
+          enabled: true,
+          acknowledged: true,
+          acknowledgedVia: 'interactive',
+          acknowledgedAt: new Date(),
+        },
+      });
+
+      // User explicitly set 100, should NOT be overridden to 200
+      expect(config.maxTurnsPerAgent).toBe(100);
+    });
+
+    it('should set default time limits in normal mode', () => {
+      const config = createConfig();
+
+      expect(config.maxDurationMsPerAgent).toBe(5 * 60 * 1000);    // 5 min
+      expect(config.maxDurationMsPerWorkflow).toBe(30 * 60 * 1000); // 30 min
+    });
+
+    it('should elevate time limits in autonomous mode', () => {
+      const config = createConfig({
+        autonomousMode: {
+          enabled: true,
+          acknowledged: true,
+          acknowledgedVia: 'interactive',
+          acknowledgedAt: new Date(),
+        },
+      });
+
+      expect(config.maxDurationMsPerAgent).toBe(10 * 60 * 1000);   // 10 min
+      expect(config.maxDurationMsPerWorkflow).toBe(60 * 60 * 1000); // 60 min
+    });
+
+    it('should reject zero or negative time limits', () => {
+      expect(() => validateConfig(createConfig({ maxDurationMsPerAgent: 0 }))).toThrow(
+        'maxDurationMsPerAgent must be greater than 0'
+      );
+      expect(() => validateConfig(createConfig({ maxDurationMsPerAgent: -1 }))).toThrow(
+        'maxDurationMsPerAgent must be greater than 0'
+      );
+      expect(() => validateConfig(createConfig({ maxDurationMsPerWorkflow: 0 }))).toThrow(
+        'maxDurationMsPerWorkflow must be greater than 0'
+      );
     });
   });
 
@@ -143,6 +224,20 @@ describe('Autonomous Mode', () => {
       delete process.env.FEATURE_FACTORY_AUTONOMOUS_ACKNOWLEDGED;
 
       expect(isAutonomousCICD()).toBe(false);
+    });
+
+    it('should read FEATURE_FACTORY_MAX_DURATION_PER_AGENT from environment', () => {
+      process.env.FEATURE_FACTORY_MAX_DURATION_PER_AGENT = '600000';
+
+      const config = configFromEnv();
+      expect(config.maxDurationMsPerAgent).toBe(600000);
+    });
+
+    it('should read FEATURE_FACTORY_MAX_DURATION_PER_WORKFLOW from environment', () => {
+      process.env.FEATURE_FACTORY_MAX_DURATION_PER_WORKFLOW = '3600000';
+
+      const config = configFromEnv();
+      expect(config.maxDurationMsPerWorkflow).toBe(3600000);
     });
   });
 

@@ -1061,6 +1061,54 @@ Key design choices:
 
 ---
 
+## Decision 23: Git Checkpoints Per Phase
+
+### Context
+
+Feature Factory phases run autonomous agents that read, write, edit files, and make commits. If a phase fails or approval is rejected, changes are left in the working tree with no rollback capability. Sandbox mode (D20) provides full isolation — the temp directory is discarded on failure — but in non-sandbox mode there's no undo. Users need a way to surgically revert a single phase's work without losing unrelated changes.
+
+### Decision
+
+**Lightweight git tags mark HEAD before each phase. On failure or rejection, the CLI prompts the user to roll back.**
+
+Tag format: `ff-checkpoint/<sessionId>/pre-<phaseIndex>-<phase-slug>`
+
+Key properties:
+- **Checkpoint before first attempt only** — retries build on partial progress, so the tag captures state before the entire phase (including retries)
+- **User-prompted rollback** — never auto-rollback; on failure/rejection the CLI asks "Roll back?"
+- **Rollback = `git reset --hard <tag>` + `git clean -fd`** — intentionally destructive for the phase's work, but does NOT use `-x` (preserves gitignored files like `node_modules`)
+- **Cleanup on completion** — all session checkpoint tags deleted after `workflow-completed`
+- **Default: enabled** — creating a tag is ~1ms with zero working tree interference
+
+### Rationale
+
+1. **Complementary to sandbox** — sandbox isolates the entire workflow; checkpoints provide per-phase granularity within the working tree
+2. **Near-zero cost** — git tags are lightweight refs, no data copied, no disk overhead
+3. **No working tree interference** — unlike branches or stashes, tags don't affect HEAD or index during normal operation
+4. **Immutable** — tags can't be accidentally moved by agent commits
+5. **User control** — prompting before rollback prevents surprises; the user can inspect the failed state before deciding
+
+### Alternatives Considered
+
+- **Git stash per phase**: Stashes are a stack — can't selectively pop. Also, agents make commits, not just working tree changes, so stash doesn't capture the right thing.
+- **Git branches per phase**: Heavier-weight, requires checkout/merge, and risks leaving orphan branches. Tags are simpler for a bookmark.
+- **Automatic rollback on failure**: Dangerous — partial work may be valuable. The user should decide.
+- **No rollback (sandbox-only)**: Sandbox requires a clean working tree and copies results back on success. Non-sandbox workflows would have no undo at all.
+
+### Consequences
+
+- Non-sandbox workflows now have per-phase undo capability
+- `WorkflowState.checkpoints` tracks `Record<string, string>` (agent → tag name), persisted with session
+- `--no-checkpoints` flag and `FEATURE_FACTORY_GIT_CHECKPOINTS` env var to opt out
+- Non-git directories silently skip checkpoint creation (no error)
+- Rollback prompt only appears in non-sandbox mode (sandbox provides its own isolation)
+
+### Status
+
+**Implemented**
+
+---
+
 ## Adding Your Own Decisions
 
 When making architectural decisions:
@@ -1135,3 +1183,4 @@ When making architectural decisions:
 | 2026-02-11 | D21 | Autonomous mode safety floor (finite defaults, --budget unlimited) |
 | 2026-02-11 | D9 | Updated budget caps to reflect autonomous mode safety floor |
 | 2026-02-11 | D22 | Phase retry with feedback (LoopAgent pattern, shared executePhaseWithRetry) |
+| 2026-02-11 | D23 | Git checkpoints per phase (lightweight tags, user-prompted rollback, complements sandbox) |

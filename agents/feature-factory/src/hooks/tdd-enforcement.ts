@@ -108,6 +108,11 @@ async function runTests(workingDirectory: string): Promise<TestRunResult> {
       // Parse the output even from failed run
       const testsMatch = output.match(/Tests:\s*(\d+)\s*failed,\s*(\d+)\s*passed,\s*(\d+)\s*total/i);
       const allFailedMatch = output.match(/Tests:\s*(\d+)\s*failed,\s*(\d+)\s*total/i);
+      const allPassedMatch = output.match(/Tests:\s*(\d+)\s*passed,\s*(\d+)\s*total/i);
+
+      // Also check for suite-level failures (e.g., test files that crash because
+      // the implementation doesn't exist yet — the expected TDD Red scenario)
+      const suitesFailedMatch = output.match(/Test Suites:\s*(\d+)\s*failed/i);
 
       if (testsMatch) {
         return {
@@ -125,6 +130,29 @@ async function runTests(workingDirectory: string): Promise<TestRunResult> {
           failingTests: parseInt(allFailedMatch[1], 10),
           passingTests: 0,
           totalTests: parseInt(allFailedMatch[2], 10),
+          rawOutput: output,
+        };
+      }
+
+      // Suite-level failures with all individual tests passing: test files crash
+      // because the implementation module doesn't exist yet. This IS the Red phase.
+      if (suitesFailedMatch && allPassedMatch) {
+        const suitesFailed = parseInt(suitesFailedMatch[1], 10);
+        return {
+          testsFound: true,
+          failingTests: suitesFailed,
+          passingTests: parseInt(allPassedMatch[1], 10),
+          totalTests: parseInt(allPassedMatch[2], 10) + suitesFailed,
+          rawOutput: output,
+        };
+      }
+
+      if (allPassedMatch) {
+        return {
+          testsFound: true,
+          failingTests: 0,
+          passingTests: parseInt(allPassedMatch[1], 10),
+          totalTests: parseInt(allPassedMatch[2], 10),
           rawOutput: output,
         };
       }

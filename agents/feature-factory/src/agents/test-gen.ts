@@ -110,12 +110,13 @@ You have a limited context window. Follow these rules to avoid exceeding it:
 6. **Batch related edits** — Make multiple edits to the same file in one operation rather than reading and editing one change at a time.
 
 Additional test-gen-specific rules:
-- Write all tests for one file before running \`npm test\` to verify
-- Use \`npm test -- --testPathPattern="<file>"\` to verify specific test files, not the full suite
-- After confirming tests fail, move on — don't re-run to double-check`,
+- **Write ALL test files first** before running any tests. Do not run \`npm test\` after each file — write unit, integration, and E2E tests for the entire feature, THEN verify once at the end.
+- When verifying, run a single \`npm test -- --testPathPattern="<pattern>"\` that matches all your test files at once (e.g., \`--testPathPattern="phone-info"\`)
+- Only run verification **once**. If tests fail as expected (Red Phase), you're done. Don't re-run to double-check.
+- If a test has a syntax error, fix it and re-run only the affected file, not all tests.`,
 
   tools: ['Read', 'Glob', 'Grep', 'Write', 'Bash'],
-  maxTurns: 40,
+  maxTurns: 60,
 
   inputSchema: {
     specification: 'object - Spec from spec phase',

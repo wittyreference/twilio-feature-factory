@@ -800,6 +800,159 @@ Claude Code Agent Teams (experimental) solve these by spawning multiple Claude C
 
 ---
 
+## Decision 18: Three-Layer Context Window Management
+
+### Context
+
+The Feature Factory orchestrator's agentic loop (`orchestrator.ts:runAgent()`) accumulates unbounded message history. Each turn pushes assistant responses and tool results onto the `messages` array with zero truncation or eviction. A single `npm test` Bash output can be 50-200KB (~12-50k tokens). After 8-10 test runs, the context exceeds the 200k token API limit and the agent crashes.
+
+First observed during Phase 11.3 validation: dev agent failed at turn 32/60 with "prompt is too long: 213990 tokens > 200000 maximum". This blocked all long-running agents from completing multi-phase workflows.
+
+### Decision
+
+**Three-layer defense against context exhaustion:**
+
+| Layer | Mechanism | When | Impact |
+|-------|-----------|------|--------|
+| **Layer 0** | Agent self-management prompts | Before context grows | Agents learn to read selectively, batch edits, run targeted tests |
+| **Layer 1** | Tool output truncation | Per tool call | Caps individual outputs before they enter message history |
+| **Layer 2** | Conversation history compaction | At 120k tokens (60%) | Evicts older turn-pairs, replaces with heuristic summary |
+
+### Implementation
+
+**Layer 0** — Context management sections added to dev, qa, test-gen, review system prompts. Agent-specific rules (e.g., dev: `tail -100` for test output; test-gen: write ALL tests before any verification run).
+
+**Layer 1** — `truncateToolOutput()` with per-tool strategies:
+- Bash: head/tail split (150 lines each, preserving errors and summaries)
+- Read: middle truncation within char limit
+- Grep: character cap keeping first matches
+- Glob: path count cap (200)
+
+**Layer 2** — `compactMessages()` triggered by `shouldCompact(inputTokensUsed)`:
+- Always preserves `messages[0]` (initial prompt with task context)
+- Always preserves last 8 turn-pairs (recent working context)
+- Evicts middle messages, replaces with summary (tool names, file paths, test status)
+- Summary appended to `messages[0]` to maintain user/assistant alternation
+
+### Rationale
+
+1. **Defense in depth**: Each layer catches what the previous misses
+2. **Layer 0 is highest leverage**: Prevents context bloat at the source
+3. **Layer 1 prevents any single tool from consuming excessive context**: A 200KB test output becomes 30KB
+4. **Layer 2 handles long-tail accumulation**: Even with truncation, 40+ turns accumulate
+5. **Pure functions, no side effects**: `context-manager.ts` is fully testable with hand-crafted `MessageParam[]`
+
+### Alternatives Considered
+
+- **Sliding window (drop oldest messages)**: Loses task context. Summary approach preserves key information.
+- **LLM-generated summaries**: Would require an API call during compaction. Heuristic summaries are free and fast.
+- **Reduce agent turn limits**: Symptom treatment, not cure. Some tasks genuinely need 40+ turns.
+
+### Consequences
+
+- Agents can now run indefinitely (turn limit, not token limit, is the binding constraint)
+- Compaction loses detailed context from early turns (acceptable — recent work matters more)
+- Verbose mode logs truncation and compaction events for debugging
+- 23 unit tests cover all truncation strategies and compaction invariants
+
+### Status
+
+**Implemented** — Validated across 3 autonomous runs. Zero token crashes.
+
+---
+
+## Decision 19: Stall Detection Over Fixed Turn Limits
+
+### Context
+
+After context window management eliminated token crashes, fixed turn limits (`maxTurns: 40-60`) became the binding constraint. The dev agent used all 60 turns during autonomous validation — sometimes making real progress (TDD green loop), sometimes potentially stuck. Fixed turn limits can't distinguish between productive iteration and stalled loops.
+
+Industry survey (15+ systems including SWE-Agent, OpenHands, Ralph, Aider, Codex) revealed that nobody relies on fixed turn limits as their primary guardrail. Instead, they use stall detection: tracking whether the agent is making progress and intervening only when it's stuck.
+
+### Decision
+
+**Replace fixed turn limits with stall detection as the primary agent loop guardrail.**
+
+Detection signals (inspired by Ralph's circuit breaker and gantz.ai's action hashing):
+- Same tool + same input called 3+ times → stall
+- Alternating A-B-A-B pattern over 6+ calls → oscillation
+- No file changes in last N turns → idle
+- Same error message repeated → stuck loop
+
+Response escalation:
+1. First stall: inject "You appear stuck. Try a different approach." into context
+2. Second stall with no progress: hard stop with diagnostic report
+
+Fixed turn limits remain as a backstop (elevated to 200 in autonomous mode) but are not the primary control.
+
+### Rationale
+
+1. **Progress-aware**: A productive 80-turn session should continue; a stuck 20-turn session should stop
+2. **Industry consensus**: No major autonomous coding system relies primarily on fixed turn limits
+3. **Cost-effective**: Budget caps handle cost control; turn limits shouldn't duplicate that concern
+4. **Better diagnostics**: Stall detection explains WHY it stopped, not just THAT it stopped
+
+### Alternatives Considered
+
+- **Just raise turn limits**: Doesn't solve the core problem — an agent can waste 200 turns just as easily as 60
+- **Time-based limits only**: Doesn't distinguish productive work from busy-waiting
+- **LLM-based progress assessment**: Too expensive — would add API calls per turn
+
+### Consequences
+
+- Agents can run longer when making progress (better completion rates)
+- Stall interventions provide actionable feedback to the agent
+- Requires tracking tool call history within `runAgent()` (new `StallDetector` class)
+- Fixed turn limits become a safety net, not the primary control
+
+### Status
+
+**Accepted** — Implementation planned in Phase 12.2.
+
+---
+
+## Decision 20: Sandbox Mode for Autonomous Validation
+
+### Context
+
+Autonomous Feature Factory runs write files directly to the user's repository — test files, implementation code, CLAUDE.md files, postman collections, audit logs. During validation testing, this polluted the shipping repo with generated artifacts that had to be manually cleaned up after each run.
+
+The `workingDirectory` config defaults to `process.cwd()`, which is the project root. There is no isolation between autonomous agent output and the real codebase.
+
+### Decision
+
+**Add sandbox mode that isolates autonomous runs in a temporary directory.**
+
+Two-phase approach:
+1. **Phase 1 (MVP)**: `--sandbox` flag creates a temp directory, clones/copies the repo, sets `workingDirectory` to the temp dir. Results copied back on explicit success.
+2. **Phase 2 (future)**: Git worktree per session — lighter weight, shares `.git` database, agents work on isolated branches merged via PR review.
+
+### Rationale
+
+1. **Non-destructive validation**: Can run autonomous pipelines repeatedly without manual cleanup
+2. **Rollback is free**: Delete the temp dir instead of reverting individual files
+3. **CI/CD ready**: Autonomous runs in CI should never pollute the source checkout
+4. **Industry standard**: Devin, OpenHands, Codex all use isolated environments by default
+
+### Alternatives Considered
+
+- **Docker containers**: Full isolation but heavyweight for a dev tool. Better suited for Phase 2/3.
+- **Git stash/branch per run**: Lighter but still modifies the local repo.
+- **Just `.gitignore` the output**: Doesn't prevent file conflicts or disk pollution.
+
+### Consequences
+
+- Autonomous validation runs become repeatable and safe
+- Small overhead for initial clone/copy (acceptable for multi-minute workflows)
+- Need to handle `.env` and credentials in the sandbox (copy or symlink)
+- Git worktree approach in Phase 2 would be more efficient for large repos
+
+### Status
+
+**Accepted** — Implementation planned in Phase 12.1.
+
+---
+
 ## Adding Your Own Decisions
 
 When making architectural decisions:
@@ -868,3 +1021,6 @@ When making architectural decisions:
 | 2026-01-25 | D6 | P1 MCP tools complete (13 tools) |
 | 2026-01-25 | D16 | File-based documentation flywheel implemented |
 | 2026-02-10 | D17 | Three-path coordination model (subagents, agent teams, Feature Factory) |
+| 2026-02-11 | D18 | Three-layer context window management (agent prompts, truncation, compaction) |
+| 2026-02-11 | D19 | Stall detection over fixed turn limits (industry survey-informed) |
+| 2026-02-11 | D20 | Sandbox mode for autonomous validation (temp dir isolation) |

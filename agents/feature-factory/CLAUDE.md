@@ -129,8 +129,32 @@ interface FeatureFactoryConfig {
   twilioMcpEnabled: boolean;
   deepValidationEnabled: boolean;
   autonomousMode: AutonomousModeConfig;  // Optional, for unattended operation
+  contextWindow?: Partial<ContextManagerConfig>;  // Optional, context management overrides
 }
 ```
+
+## Context Window Management
+
+Long-running agents accumulate tool output in their message history. Without management, this exceeds the 200k token API limit after ~30 turns. Three-layer defense prevents this:
+
+| Layer | Mechanism | Module |
+|-------|-----------|--------|
+| **Layer 0** | Agent self-management prompts | Agent system prompts in `src/agents/` |
+| **Layer 1** | Tool output truncation | `src/context-manager.ts` → `truncateToolOutput()` |
+| **Layer 2** | Conversation history compaction | `src/context-manager.ts` → `compactMessages()` |
+
+### Defaults
+
+| Parameter | Default | Purpose |
+|-----------|---------|---------|
+| `bashOutputMaxChars` | 30,000 | ~7.5k tokens. Head/tail split preserves errors and summaries. |
+| `readOutputMaxChars` | 40,000 | ~10k tokens. Middle truncation. |
+| `grepOutputMaxChars` | 20,000 | ~5k tokens. First matches kept. |
+| `globMaxPaths` | 200 | Path count cap. |
+| `compactionThresholdTokens` | 120,000 | 60% of 200k. Triggers history eviction. |
+| `keepRecentTurnPairs` | 8 | 16 messages preserved during compaction. |
+
+Override via config or env var `FEATURE_FACTORY_CONTEXT_COMPACTION_THRESHOLD`.
 
 ## Autonomous Mode
 

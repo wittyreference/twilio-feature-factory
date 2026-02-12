@@ -997,6 +997,70 @@ Two-phase approach:
 
 ---
 
+## Decision 22: Phase Retry with Feedback
+
+### Context
+
+Feature Factory agents fail-fast: when a phase fails (agent hits turn limit, stall hard-stop, or validation failure), the entire workflow stops. The dev agent is the main casualty — it often makes partial progress (creates files, passes some tests) but runs out of turns. The partial work is lost because the workflow simply stops with a `workflow-error` event.
+
+Industry research (Google ADK's LoopAgent pattern, Devin's self-healing loops) showed that retrying with feedback about what went wrong succeeds where restarting from scratch cannot. The retrying agent benefits from knowing what was already done and what specifically failed.
+
+Additionally, the hook/execute/validate block was duplicated across three methods (`runWorkflow`, `continueWorkflow`, `resumeWorkflow`) — approximately 70 lines each. Any bug fix or feature addition had to be applied three times.
+
+### Decision
+
+**Retry failed phases with structured feedback, and extract the shared execution logic into a single method.**
+
+Key design choices:
+
+1. **Phase-level retry, not agent-level**: The agent already has its own internal tool loop. Retry operates at the orchestrator level — re-invoking the agent with new context about what failed.
+
+2. **Results accumulate across retries**: `filesCreated`, `filesModified`, `commits`, cost, and turns are unioned across attempts. The final `AgentResult` reflects total effort, not just the last attempt.
+
+3. **Pre-phase hooks re-run on retry**: TDD enforcement needs to re-check test state after the agent's partial work may have changed files.
+
+4. **Hook failures are NOT retried**: A hook failure means a prerequisite problem (e.g., no failing tests before dev phase). Retrying the same phase won't fix it — the previous phase needs re-running.
+
+5. **Non-recoverable failures are NOT retried**: Budget exceeded and workflow time limit are hard stops regardless of retry budget.
+
+6. **Shared method eliminates duplication**: `executePhaseWithRetry()` replaces the triplicated hook/execute/validate block. Retry logic lives in one place.
+
+### Configuration
+
+- Global `maxRetriesPerPhase` on `FeatureFactoryConfig` (default: 1, autonomous: 2)
+- Per-phase `maxRetries` on `WorkflowPhase` overrides the global setting
+- Dev phases in new-feature and bug-fix workflows set `maxRetries: 2`
+- `--no-retry` CLI flag sets `maxRetriesPerPhase: 0`
+- Env var: `FEATURE_FACTORY_MAX_RETRIES_PER_PHASE`
+
+### Rationale
+
+1. **Partial progress is valuable**: Dev agent that created 5 files and passed 80% of tests shouldn't start over
+2. **Feedback improves next attempt**: Agent learns what failed and is told to be more efficient
+3. **Dev phase benefits most**: TDD green loop is the longest phase and most likely to hit turn/time limits
+4. **Configurable per-phase**: Not all phases benefit equally — architect rarely needs retry, dev often does
+5. **Code health**: Eliminating 3-way duplication prevents divergence bugs
+
+### Alternatives Considered
+
+- **Agent-level retry (inside runAgent)**: Too low-level — can't re-run hooks or accumulate phase results
+- **Workflow-level retry (re-run from failed phase)**: Too coarse — loses the "continue from partial progress" benefit
+- **Reset results on retry**: Simpler but loses partial progress tracking; accumulated results are more useful for summaries and cost tracking
+
+### Consequences
+
+- Failed phases now have a recovery path without user intervention
+- Dev phase can complete in 2-3 attempts what previously required restarting the entire workflow
+- `phase-retry` events enable UI feedback about retry progress
+- `retryAttempts` field on `AgentResult` tracks how many retries were needed
+- Three execution paths are now maintained in one place
+
+### Status
+
+**Implemented**
+
+---
+
 ## Adding Your Own Decisions
 
 When making architectural decisions:
@@ -1070,3 +1134,4 @@ When making architectural decisions:
 | 2026-02-11 | D20 | Sandbox mode for autonomous validation (temp dir isolation) |
 | 2026-02-11 | D21 | Autonomous mode safety floor (finite defaults, --budget unlimited) |
 | 2026-02-11 | D9 | Updated budget caps to reflect autonomous mode safety floor |
+| 2026-02-11 | D22 | Phase retry with feedback (LoopAgent pattern, shared executePhaseWithRetry) |

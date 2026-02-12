@@ -25,6 +25,7 @@ src/
 ├── types.ts              # TypeScript type definitions
 ├── cli.ts                # CLI interface
 ├── session.ts            # Session persistence for workflow resumption
+├── sandbox.ts            # Sandbox lifecycle (create, copy-back, cleanup)
 ├── tools.ts              # Core tool implementations (Read, Write, Edit, etc.)
 ├── mcp-tools.ts          # MCP tool integration (Twilio APIs)
 ├── agents/               # Subagent configurations
@@ -130,6 +131,10 @@ interface FeatureFactoryConfig {
   deepValidationEnabled: boolean;
   autonomousMode: AutonomousModeConfig;  // Optional, for unattended operation
   contextWindow?: Partial<ContextManagerConfig>;  // Optional, context management overrides
+  sandbox?: {                  // Optional, isolated execution environment
+    enabled: boolean;
+    sourceDirectory?: string;
+  };
 }
 ```
 
@@ -167,6 +172,7 @@ Autonomous mode enables unattended operation for CI/CD pipelines or when you wan
 | Phase approval prompts | Required after architect, spec, review | Auto-approved |
 | Budget limit | $5.00 default | Unlimited |
 | Max turns | 50 default | Unlimited |
+| Sandbox isolation | Off (opt-in with `--sandbox`) | **On by default** (opt-out with `--no-sandbox`) |
 | Quality gates | Enforced | **Still enforced** |
 
 ### Quality Gates (Always Enforced)
@@ -212,6 +218,97 @@ When autonomous mode completes, you receive a comprehensive summary:
 
 All autonomous sessions are logged to `.feature-factory/autonomous-<sessionId>.log` with timestamps for every phase start, completion, and error.
 
+## Sandbox Mode
+
+Sandbox mode isolates workflow execution in a temporary directory, preventing autonomous runs from polluting the user's shipping repo. Results are copied back only on successful completion.
+
+### How It Works
+
+```
+Source repo (user's cwd)
+    │
+    ├── git clone --local ──► Temp sandbox directory
+    │                            ├── Hard-linked .git/objects (fast, space-efficient)
+    │                            ├── Real working tree copies
+    │                            └── Symlinked node_modules → source
+    │
+    │   Workflow runs entirely in sandbox...
+    │
+    ├── On success: changed files copied back ◄── sandbox
+    └── Sandbox directory removed (always, even on failure/SIGINT)
+```
+
+### Enabling Sandbox Mode
+
+```bash
+# Explicit opt-in (any workflow)
+npx feature-factory new-feature "Add voice AI" --sandbox
+
+# Automatic with autonomous mode
+npx feature-factory new-feature "Add voice AI" --dangerously-autonomous
+# sandbox is ON by default ↑
+
+# Override: autonomous without sandbox
+npx feature-factory new-feature "Add voice AI" --dangerously-autonomous --no-sandbox
+```
+
+### Prerequisites
+
+- Source directory must be a **git repository**
+- Working tree must be **clean** (no uncommitted changes). The CLI will error with a file list and instructions to commit or stash if dirty.
+
+### What Gets Copied Back
+
+On successful workflow completion, these files are copied from sandbox to source:
+- **Committed changes** since sandbox creation (`git diff --name-only <start>..HEAD`)
+- **Uncommitted modified files** (`git diff --name-only`)
+- **New untracked files** (`git ls-files --others --exclude-standard`)
+
+Skipped:
+- `.feature-factory/sessions/` — session data stays in sandbox
+
+On failure, nothing is copied. The sandbox is cleaned up either way.
+
+### Path Escape Prevention
+
+When sandbox is active, all file tool operations (Read, Write, Edit, Glob, Grep) are validated against the sandbox boundary. Any path that resolves outside the sandbox directory triggers a `SANDBOX VIOLATION` error. This catches:
+- Absolute paths outside the sandbox (e.g., `/etc/hosts`)
+- Relative traversal (e.g., `../../etc/passwd`)
+
+### Implementation Details
+
+| Aspect | Detail |
+|--------|--------|
+| Clone method | `git clone --local` — hard-links immutable git objects, fast and space-efficient |
+| node_modules | Symlinked from source. If source has none and `package.json` exists, falls back to `npm install` |
+| Signal handling | SIGINT/SIGTERM handlers ensure cleanup runs if process is interrupted |
+| Config field | `sandbox: { enabled: boolean; sourceDirectory?: string }` |
+| ToolContext field | `sandboxBoundary?: string` — when set, `resolvePath()` enforces containment |
+| Module | `src/sandbox.ts` — `createSandbox()`, `copyResultsBack()`, `cleanupSandbox()`, `ensureCleanWorkingTree()` |
+
+### Programmatic Usage
+
+```typescript
+import { createSandbox, copyResultsBack, cleanupSandbox } from '@twilio-feature-factory/feature-factory';
+
+const sandbox = await createSandbox({
+  sourceDirectory: '/path/to/repo',
+  verbose: true,
+});
+
+try {
+  // Run workflow with sandbox.sandboxDirectory as workingDirectory
+  // ...
+
+  // On success, copy results back
+  const result = await copyResultsBack(sandbox);
+  console.log('Copied:', result.filesCopied);
+  console.log('Skipped:', result.skipped);
+} finally {
+  await cleanupSandbox(sandbox.sandboxDirectory);
+}
+```
+
 ## CLI Usage
 
 ```bash
@@ -229,8 +326,14 @@ npx feature-factory new-feature "Add call recording" \
   --budget 10.00 \
   --no-approval
 
-# Fully autonomous (no prompts, no limits)
+# Run in sandbox (isolated temp directory)
+npx feature-factory new-feature "Add call recording" --sandbox
+
+# Fully autonomous (no prompts, no limits, sandbox on by default)
 npx feature-factory new-feature "Add voice AI" --dangerously-autonomous
+
+# Autonomous without sandbox
+npx feature-factory new-feature "Add voice AI" --dangerously-autonomous --no-sandbox
 
 # Check status of recent workflows
 npx feature-factory status

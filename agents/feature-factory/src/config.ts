@@ -119,6 +119,13 @@ export interface FeatureFactoryConfig {
    * @default 1
    */
   maxRetriesPerPhase: number;
+
+  /**
+   * Whether to create git checkpoint tags before each phase.
+   * Enables rollback to pre-phase state on failure or rejection.
+   * @default true
+   */
+  gitCheckpoints: boolean;
 }
 
 /**
@@ -143,6 +150,7 @@ export const DEFAULT_CONFIG: FeatureFactoryConfig = {
   maxDurationMsPerAgent: 5 * 60 * 1000,      // 5 minutes
   maxDurationMsPerWorkflow: 30 * 60 * 1000,   // 30 minutes
   maxRetriesPerPhase: 1,
+  gitCheckpoints: true,
 };
 
 /**
@@ -293,6 +301,10 @@ export function configFromEnv(): Partial<FeatureFactoryConfig> {
       process.env.FEATURE_FACTORY_MAX_RETRIES_PER_PHASE,
       10
     );
+  }
+
+  if (process.env.FEATURE_FACTORY_GIT_CHECKPOINTS === 'false') {
+    config.gitCheckpoints = false;
   }
 
   // Context window management from environment

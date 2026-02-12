@@ -21,6 +21,8 @@ import {
   cleanupSandbox,
   type SandboxInfo,
 } from './sandbox.js';
+import { rollbackToCheckpoint } from './checkpoints.js';
+import { getWorkflow } from './workflows/index.js';
 import type { WorkflowEvent, ApprovalMode, AutonomousModeConfig } from './types.js';
 
 const program = new Command();
@@ -43,7 +45,8 @@ function formatCurrency(amount: number): string {
 async function handleWorkflowEvents(
   events: AsyncGenerator<WorkflowEvent>,
   orchestrator: FeatureFactoryOrchestrator,
-  auditLogger?: { log: (event: string, data?: Record<string, unknown>) => void } | null
+  auditLogger?: { log: (event: string, data?: Record<string, unknown>) => void } | null,
+  eventOptions?: { verbose?: boolean; sandboxEnabled?: boolean }
 ): Promise<void> {
   let spinner = ora();
 
@@ -116,12 +119,32 @@ async function handleWorkflowEvents(
           console.log();
           // Continue the workflow
           const continueEvents = orchestrator.continueWorkflow(true);
-          await handleWorkflowEvents(continueEvents, orchestrator, auditLogger);
+          await handleWorkflowEvents(continueEvents, orchestrator, auditLogger, eventOptions);
         } else {
+          // Offer rollback before cancelling
+          const state = orchestrator.getState();
+          if (state && !eventOptions?.sandboxEnabled) {
+            const workflow = getWorkflow(state.workflow);
+            const currentPhase = workflow.phases[state.currentPhaseIndex];
+            if (state.checkpoints?.[currentPhase.agent]) {
+              const tag = state.checkpoints[currentPhase.agent];
+              const shouldRollback = await promptForRollback(currentPhase.name);
+              if (shouldRollback) {
+                const result = rollbackToCheckpoint({
+                  workingDirectory: orchestrator.getConfig().workingDirectory,
+                  tagName: tag,
+                });
+                if (result.success) {
+                  console.log(chalk.yellow(`  ↩ Rolled back to before ${currentPhase.name}`));
+                  orchestrator.clearCheckpoint(currentPhase.agent);
+                }
+              }
+            }
+          }
           const feedback = await promptForFeedback();
           console.log(chalk.red('✗ Rejected'));
           const rejectEvents = orchestrator.continueWorkflow(false, feedback);
-          await handleWorkflowEvents(rejectEvents, orchestrator, auditLogger);
+          await handleWorkflowEvents(rejectEvents, orchestrator, auditLogger, eventOptions);
         }
         return; // Exit after handling approval continuation
 
@@ -153,6 +176,12 @@ async function handleWorkflowEvents(
         spinner = ora({ text: chalk.cyan(`Retry ${event.attempt}: ${event.phase} (${event.agent})`) }).start();
         break;
 
+      case 'checkpoint-created':
+        if (eventOptions?.verbose) {
+          console.log(chalk.gray(`   📌 Checkpoint: ${event.tagName} (${event.commitHash.slice(0, 7)})`));
+        }
+        break;
+
       case 'workflow-error':
         spinner.fail(chalk.red(`Error: ${event.error}`));
         if (event.phase) {
@@ -161,6 +190,30 @@ async function handleWorkflowEvents(
         console.log(
           chalk.gray(`   Recoverable: ${event.recoverable ? 'yes' : 'no'}`)
         );
+        // Offer rollback if checkpoint exists for the failed phase
+        if (event.phase && !eventOptions?.sandboxEnabled) {
+          const state = orchestrator.getState();
+          if (state) {
+            const workflow = getWorkflow(state.workflow);
+            const failedPhase = workflow.phases.find(p => p.name === event.phase);
+            if (failedPhase && state.checkpoints?.[failedPhase.agent]) {
+              const tag = state.checkpoints[failedPhase.agent];
+              const shouldRollback = await promptForRollback(event.phase);
+              if (shouldRollback) {
+                const result = rollbackToCheckpoint({
+                  workingDirectory: orchestrator.getConfig().workingDirectory,
+                  tagName: tag,
+                });
+                if (result.success) {
+                  console.log(chalk.yellow(`  ↩ Rolled back to before ${event.phase}`));
+                  orchestrator.clearCheckpoint(failedPhase.agent);
+                } else {
+                  console.log(chalk.red(`  Rollback failed: ${result.error}`));
+                }
+              }
+            }
+          }
+        }
         break;
     }
   }
@@ -203,6 +256,26 @@ async function promptForFeedback(): Promise<string> {
   });
 }
 
+/**
+ * Prompt user to roll back changes from a failed/rejected phase
+ */
+async function promptForRollback(phaseName: string): Promise<boolean> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question(
+      chalk.yellow(`  Roll back changes from ${phaseName}? (y/N) `),
+      (answer: string) => {
+        rl.close();
+        resolve(answer.toLowerCase() === 'y');
+      }
+    );
+  });
+}
+
 // New Feature command
 program
   .command('new-feature <description>')
@@ -220,6 +293,7 @@ program
   .option('--no-sandbox', 'Disable sandbox (even in autonomous mode)')
   .option('--no-stall-detection', 'Disable stall detection for agents')
   .option('--no-retry', 'Disable phase retry on failure')
+  .option('--no-checkpoints', 'Disable git checkpoints per phase')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
@@ -233,6 +307,7 @@ program
         sandbox: boolean;
         stallDetection: boolean;
         retry: boolean;
+        checkpoints: boolean;
         verbose: boolean;
       }
     ) => {
@@ -304,6 +379,7 @@ program
   .option('--no-sandbox', 'Disable sandbox (even in autonomous mode)')
   .option('--no-stall-detection', 'Disable stall detection for agents')
   .option('--no-retry', 'Disable phase retry on failure')
+  .option('--no-checkpoints', 'Disable git checkpoints per phase')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
@@ -317,6 +393,7 @@ program
         sandbox: boolean;
         stallDetection: boolean;
         retry: boolean;
+        checkpoints: boolean;
         verbose: boolean;
       }
     ) => {
@@ -341,6 +418,7 @@ program
   .option('--no-sandbox', 'Disable sandbox (even in autonomous mode)')
   .option('--no-stall-detection', 'Disable stall detection for agents')
   .option('--no-retry', 'Disable phase retry on failure')
+  .option('--no-checkpoints', 'Disable git checkpoints per phase')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
@@ -354,6 +432,7 @@ program
         sandbox: boolean;
         stallDetection: boolean;
         retry: boolean;
+        checkpoints: boolean;
         verbose: boolean;
       }
     ) => {
@@ -377,6 +456,7 @@ async function runWorkflowCommand(
     sandbox: boolean;
     stallDetection: boolean;
     retry: boolean;
+    checkpoints: boolean;
     verbose: boolean;
   }
 ): Promise<void> {
@@ -481,6 +561,7 @@ async function runWorkflowCommand(
     sandbox: sandboxEnabled ? { enabled: true, sourceDirectory: process.cwd() } : undefined,
     ...(options.stallDetection === false && { stallDetection: { enabled: false } }),
     ...(options.retry === false && { maxRetriesPerPhase: 0 }),
+    ...(options.checkpoints === false && { gitCheckpoints: false }),
   });
 
   const auditLogger = autonomousMode.enabled
@@ -514,7 +595,10 @@ async function runWorkflowCommand(
 
   try {
     const events = orchestrator.runWorkflow(workflow, description);
-    await handleWorkflowEvents(events, orchestrator, auditLogger);
+    await handleWorkflowEvents(events, orchestrator, auditLogger, {
+      verbose: options.verbose,
+      sandboxEnabled,
+    });
 
     // Copy results back from sandbox on success
     if (sandboxInfo) {

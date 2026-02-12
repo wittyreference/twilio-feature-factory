@@ -10,6 +10,7 @@ import type {
   WorkflowStartedEvent,
   PhaseStartedEvent,
   PhaseRetryEvent,
+  CheckpointCreatedEvent,
   ApprovalRequestedEvent,
   ApprovalReceivedEvent,
   WorkflowCompletedEvent,
@@ -30,6 +31,26 @@ jest.unstable_mockModule('@anthropic-ai/sdk', () => {
         create: mockCreate,
       },
     })),
+  };
+});
+
+// Mock the checkpoints module to avoid needing a real git repo
+let mockCreateCheckpoint: jest.Mock;
+let mockCleanupCheckpoints: jest.Mock;
+
+jest.unstable_mockModule('../src/checkpoints.js', () => {
+  mockCreateCheckpoint = jest.fn().mockReturnValue({
+    success: true,
+    tagName: 'ff-checkpoint/test-session/pre-0-design-review',
+    commitHash: 'abc1234def5678',
+  });
+  mockCleanupCheckpoints = jest.fn().mockReturnValue({ deleted: [] });
+  return {
+    createCheckpoint: mockCreateCheckpoint,
+    rollbackToCheckpoint: jest.fn().mockReturnValue({ success: true }),
+    cleanupCheckpoints: mockCleanupCheckpoints,
+    listCheckpoints: jest.fn().mockReturnValue([]),
+    sanitizePhaseSlug: jest.fn((name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')),
   };
 });
 
@@ -130,6 +151,14 @@ describe('FeatureFactoryOrchestrator', () => {
     // Reset mocks
     jest.clearAllMocks();
     mockCreate.mockReset();
+    mockCreateCheckpoint.mockReset();
+    mockCreateCheckpoint.mockReturnValue({
+      success: true,
+      tagName: 'ff-checkpoint/test-session/pre-0-design-review',
+      commitHash: 'abc1234def5678',
+    });
+    mockCleanupCheckpoints.mockReset();
+    mockCleanupCheckpoints.mockReturnValue({ deleted: [] });
 
     // Reset executeHook mock to default passing behavior
     const mockExecuteHook = executeHook as jest.Mock;
@@ -1469,6 +1498,115 @@ describe('FeatureFactoryOrchestrator', () => {
         twilioMcpEnabled: false,
         maxRetriesPerPhase: -1,
       })).toThrow('maxRetriesPerPhase must be >= 0');
+    });
+  });
+
+  describe('Git Checkpoints', () => {
+    it('should create checkpoint before phase execution', async () => {
+      mockCreate.mockResolvedValue(createMockResponse(VALID_ARCHITECT_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'after-each-phase',
+      });
+
+      for await (const _event of orchestrator.runWorkflow('new-feature', 'Test checkpoints')) {}
+
+      // createCheckpoint should have been called at least once (for the architect phase)
+      expect(mockCreateCheckpoint).toHaveBeenCalled();
+      const firstCall = mockCreateCheckpoint.mock.calls[0][0];
+      expect(firstCall.sessionId).toBeTruthy();
+      expect(firstCall.phaseIndex).toBe(0);
+    });
+
+    it('should emit checkpoint-created event', async () => {
+      mockCreate.mockResolvedValue(createMockResponse(VALID_ARCHITECT_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'after-each-phase',
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Test events')) {
+        events.push(event);
+      }
+
+      const checkpointEvents = events.filter(e => e.type === 'checkpoint-created') as CheckpointCreatedEvent[];
+      expect(checkpointEvents.length).toBeGreaterThan(0);
+      expect(checkpointEvents[0].tagName).toBeTruthy();
+      expect(checkpointEvents[0].commitHash).toBeTruthy();
+      expect(checkpointEvents[0].phase).toBe('Design Review');
+      expect(checkpointEvents[0].agent).toBe('architect');
+    });
+
+    it('should clean up checkpoints on workflow completion', async () => {
+      mockCreate
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+      });
+
+      for await (const _event of orchestrator.runWorkflow('new-feature', 'Test cleanup')) {}
+
+      // cleanupCheckpoints should have been called on completion
+      expect(mockCleanupCheckpoints).toHaveBeenCalled();
+    });
+
+    it('should skip checkpoints when gitCheckpoints is false', async () => {
+      mockCreate.mockResolvedValue(createMockResponse(VALID_ARCHITECT_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'after-each-phase',
+        gitCheckpoints: false,
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'No checkpoints')) {
+        events.push(event);
+      }
+
+      expect(mockCreateCheckpoint).not.toHaveBeenCalled();
+      const checkpointEvents = events.filter(e => e.type === 'checkpoint-created');
+      expect(checkpointEvents.length).toBe(0);
+    });
+
+    it('should store checkpoint in state.checkpoints', async () => {
+      mockCreate.mockResolvedValue(createMockResponse(VALID_ARCHITECT_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'after-each-phase',
+      });
+
+      for await (const _event of orchestrator.runWorkflow('new-feature', 'State checkpoints')) {}
+
+      const state = orchestrator.getState();
+      expect(state?.checkpoints).toBeDefined();
+      expect(state?.checkpoints?.architect).toBe('ff-checkpoint/test-session/pre-0-design-review');
+    });
+
+    it('should default gitCheckpoints to true', () => {
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+      });
+
+      expect(orchestrator.getConfig().gitCheckpoints).toBe(true);
     });
   });
 });

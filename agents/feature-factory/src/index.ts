@@ -31,6 +31,7 @@ export type {
   PhaseStartedEvent,
   PhaseCompletedEvent,
   PhaseRetryEvent,
+  CheckpointCreatedEvent,
   ApprovalRequestedEvent,
   ApprovalReceivedEvent,
   WorkflowCompletedEvent,
@@ -126,6 +127,16 @@ export type {
   TruncationResult,
   CompactionResult,
 } from './context-manager.js';
+
+// Checkpoint module (git tag-based phase checkpoints)
+export {
+  createCheckpoint,
+  rollbackToCheckpoint,
+  cleanupCheckpoints,
+  listCheckpoints,
+  sanitizePhaseSlug,
+} from './checkpoints.js';
+export type { CheckpointResult } from './checkpoints.js';
 
 // Stall detection module (stuck agent behavioral analysis)
 export {

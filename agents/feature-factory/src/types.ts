@@ -294,6 +294,7 @@ export type WorkflowEvent =
   | PhaseStartedEvent
   | PhaseCompletedEvent
   | PhaseRetryEvent
+  | CheckpointCreatedEvent
   | ApprovalRequestedEvent
   | ApprovalReceivedEvent
   | WorkflowCompletedEvent
@@ -343,6 +344,15 @@ export interface PhaseRetryEvent {
   attempt: number;       // 1-indexed retry number
   maxRetries: number;
   reason: string;
+  timestamp: Date;
+}
+
+export interface CheckpointCreatedEvent {
+  type: 'checkpoint-created';
+  phase: string;
+  agent: AgentType;
+  tagName: string;
+  commitHash: string;
   timestamp: Date;
 }
 
@@ -462,6 +472,9 @@ export interface WorkflowState {
 
   /** Error message if failed */
   error?: string;
+
+  /** Git checkpoint tags per phase (agent → tag name) */
+  checkpoints?: Record<string, string>;
 }
 
 /**

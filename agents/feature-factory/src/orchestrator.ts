@@ -46,7 +46,8 @@ import {
   type SessionSummary,
 } from './session.js';
 import { executeHook } from './hooks/index.js';
-import type { PersistedSession, HookContext, PrePhaseHookEvent } from './types.js';
+import { createCheckpoint, cleanupCheckpoints } from './checkpoints.js';
+import type { PersistedSession, HookContext, PrePhaseHookEvent, CheckpointCreatedEvent } from './types.js';
 
 /**
  * Feature Factory Orchestrator
@@ -176,6 +177,7 @@ export class FeatureFactoryOrchestrator {
       }
 
       // All phases completed
+      this.cleanupSessionCheckpoints();
       this.state.status = 'completed';
       this.state.completedAt = new Date();
       this.persistState();
@@ -278,6 +280,7 @@ export class FeatureFactoryOrchestrator {
     }
 
     // Completed
+    this.cleanupSessionCheckpoints();
     this.state.status = 'completed';
     this.state.completedAt = new Date();
     this.persistState();
@@ -731,6 +734,37 @@ export class FeatureFactoryOrchestrator {
   }
 
   /**
+   * Clean up all checkpoint tags for the current session.
+   */
+  private cleanupSessionCheckpoints(): void {
+    if (this.state && this.config.gitCheckpoints) {
+      cleanupCheckpoints({
+        workingDirectory: this.config.workingDirectory,
+        sessionId: this.state.sessionId,
+      });
+      delete this.state.checkpoints;
+      this.persistState();
+    }
+  }
+
+  /**
+   * Get the checkpoint tag name for a specific phase's agent.
+   */
+  getCheckpointForPhase(agent: AgentType): string | undefined {
+    return this.state?.checkpoints?.[agent];
+  }
+
+  /**
+   * Clear a checkpoint after rollback.
+   */
+  clearCheckpoint(agent: AgentType): void {
+    if (this.state?.checkpoints?.[agent]) {
+      delete this.state.checkpoints[agent];
+      this.persistState();
+    }
+  }
+
+  /**
    * Get current workflow state
    */
   getState(): WorkflowState | null {
@@ -898,6 +932,7 @@ export class FeatureFactoryOrchestrator {
     }
 
     // All phases completed
+    this.cleanupSessionCheckpoints();
     this.state.status = 'completed';
     this.state.completedAt = new Date();
     this.persistState();
@@ -933,6 +968,31 @@ export class FeatureFactoryOrchestrator {
     const cumulativeCommits: string[] = [];
     let cumulativeCostUsd = 0;
     let cumulativeTurnsUsed = 0;
+
+    // Create git checkpoint before phase execution (once, before any retries)
+    if (this.config.gitCheckpoints) {
+      const checkpoint = createCheckpoint({
+        workingDirectory: this.config.workingDirectory,
+        sessionId: this.state!.sessionId,
+        phaseName: phase.name,
+        phaseIndex,
+      });
+      if (checkpoint.success) {
+        if (!this.state!.checkpoints) {
+          this.state!.checkpoints = {};
+        }
+        this.state!.checkpoints[phase.agent] = checkpoint.tagName!;
+        this.persistState();
+        yield {
+          type: 'checkpoint-created',
+          phase: phase.name,
+          agent: phase.agent,
+          tagName: checkpoint.tagName!,
+          commitHash: checkpoint.commitHash!,
+          timestamp: new Date(),
+        } as CheckpointCreatedEvent;
+      }
+    }
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       // Check budget before each attempt

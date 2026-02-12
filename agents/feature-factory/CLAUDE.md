@@ -45,6 +45,7 @@ src/
 │   ├── tdd-enforcement.ts # Verifies tests exist and FAIL before dev
 │   ├── coverage-threshold.ts # Enforces 80% coverage before QA
 │   └── test-passing-enforcement.ts # Verifies all tests PASS (refactor safety)
+├── checkpoints.ts        # Git checkpoint tags for phase rollback
 ├── stall-detection.ts    # Stuck agent detection (repetition, oscillation, idle)
 ├── discovery/            # Autonomous work discovery
 │   ├── index.ts          # Exports
@@ -584,6 +585,58 @@ interface PhaseRetryEvent {
 
 Source: `src/orchestrator.ts` — `executePhaseWithRetry()`, `buildRetryFeedback()`
 Tests: `__tests__/orchestrator.test.ts` — "Phase Retry" and "Phase Retry Config" describe blocks
+
+## Git Checkpoints
+
+Lightweight git tags capture the state before each phase, enabling surgical rollback if a phase fails or approval is rejected. In non-sandbox mode, this is the primary undo mechanism.
+
+### How It Works
+
+1. **Before each phase**: A tag `ff-checkpoint/<sessionId>/pre-<index>-<slug>` is created at HEAD
+2. **On failure/rejection**: CLI prompts "Roll back changes from <phase>?" (never auto-rollback)
+3. **On rollback**: `git reset --hard <tag>` + `git clean -fd` (preserves gitignored files)
+4. **On workflow completion**: All session checkpoint tags are deleted
+
+Checkpoints are created once per phase, before the first attempt — retries build on partial progress.
+
+### Configuration
+
+| Parameter | Default | Env Var | CLI Flag |
+|-----------|---------|---------|----------|
+| `gitCheckpoints` | `true` | `FEATURE_FACTORY_GIT_CHECKPOINTS=false` | `--no-checkpoints` |
+
+### CLI Usage
+
+```bash
+# Checkpoints enabled by default
+npx feature-factory new-feature "Add SMS"
+
+# Disable checkpoints
+npx feature-factory new-feature "Add SMS" --no-checkpoints
+
+# Verbose mode shows checkpoint tags
+npx feature-factory new-feature "Add SMS" --verbose
+# Output: 📌 Checkpoint: ff-checkpoint/sess-abc/pre-0-design-review (abc1234)
+```
+
+### Rollback Flow
+
+On phase failure or approval rejection (non-sandbox mode):
+```
+✗ TDD Green Phase failed
+  Roll back changes from TDD Green Phase? (y/N) y
+  ↩ Rolled back to before TDD Green Phase
+```
+
+Rollback is **not offered** when:
+- Sandbox mode is active (sandbox provides isolation)
+- No checkpoint exists for the failed phase
+- The phase is not associated with a specific agent
+
+### Module
+
+Source: `src/checkpoints.ts` — `createCheckpoint()`, `rollbackToCheckpoint()`, `cleanupCheckpoints()`, `listCheckpoints()`, `sanitizePhaseSlug()`
+Tests: `__tests__/checkpoints.test.ts`, `__tests__/orchestrator.test.ts` — "Git Checkpoints" describe block
 
 ## Process Validation Infrastructure
 

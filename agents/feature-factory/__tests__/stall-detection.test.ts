@@ -335,7 +335,7 @@ describe('StallTracker configuration', () => {
     expect(DEFAULT_STALL_DETECTION_CONFIG.enabled).toBe(true);
     expect(DEFAULT_STALL_DETECTION_CONFIG.repetitionThreshold).toBe(3);
     expect(DEFAULT_STALL_DETECTION_CONFIG.oscillationWindowSize).toBe(6);
-    expect(DEFAULT_STALL_DETECTION_CONFIG.idleTurnThreshold).toBe(10);
+    expect(DEFAULT_STALL_DETECTION_CONFIG.idleTurnThreshold).toBe(15);
     expect(DEFAULT_STALL_DETECTION_CONFIG.maxInterventions).toBe(2);
   });
 

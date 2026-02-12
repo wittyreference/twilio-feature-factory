@@ -472,7 +472,7 @@ Agents can get stuck in unproductive loops — reading the same file repeatedly,
 |---------|----------------|-------------------|
 | **Repetition** | Same tool + same input N consecutive times | 3 calls |
 | **Oscillation** | A-B-A-B alternating pattern | 6-call window |
-| **Idle** | No file writes/edits for extended period | 10 turns |
+| **Idle** | No file writes/edits/bash for extended period | 15 turns |
 
 Detection priority: repetition > oscillation > idle (first match wins).
 
@@ -489,7 +489,7 @@ interface StallDetectionConfig {
   enabled: boolean;              // default: true
   repetitionThreshold: number;   // default: 3
   oscillationWindowSize: number; // default: 6
-  idleTurnThreshold: number;     // default: 10
+  idleTurnThreshold: number;     // default: 15
   maxInterventions: number;      // default: 2
 }
 ```

@@ -468,7 +468,7 @@ export class FeatureFactoryOrchestrator {
 
         // Record turn in stall tracker and check for stalls
         if (stallTracker) {
-          const fileChangeTools = new Set(['Write', 'Edit']);
+          const fileChangeTools = new Set(['Write', 'Edit', 'Bash']);
           const turnRecords = toolUseBlocks.map((toolUse, idx) => ({
             toolName: toolUse.name,
             inputHash: hashToolInput(toolUse.input as Record<string, unknown>),

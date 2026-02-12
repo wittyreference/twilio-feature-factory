@@ -71,7 +71,7 @@ export const DEFAULT_STALL_DETECTION_CONFIG: StallDetectionConfig = {
   enabled: true,
   repetitionThreshold: 3,
   oscillationWindowSize: 6,
-  idleTurnThreshold: 10,
+  idleTurnThreshold: 15,
   maxInterventions: 2,
 };
 

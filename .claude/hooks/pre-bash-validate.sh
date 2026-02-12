@@ -70,6 +70,48 @@ if echo "$COMMAND" | grep -qE "^git\s+commit"; then
     fi
 
     # ============================================
+    # AUTO-CLEAR ADDRESSED PENDING ACTIONS
+    # ============================================
+    PENDING_ACTIONS="$CLAUDE_PENDING_ACTIONS"
+    if [ -f "$PENDING_ACTIONS" ]; then
+        STAGED_FILES=$(git diff --staged --name-only 2>/dev/null)
+        if [ -n "$STAGED_FILES" ]; then
+            CLEARED_COUNT=0
+            TEMP_FILE=$(mktemp)
+            while IFS= read -r line; do
+                if echo "$line" | grep -q "^\- \["; then
+                    # Extract doc path: text between "• " and " - "
+                    DOC_PATH=$(echo "$line" | sed -n 's/.*• \(.*\) - .*/\1/p')
+                    # Resolve aliases
+                    case "$DOC_PATH" in
+                        "Root CLAUDE.md") RESOLVED="CLAUDE.md" ;;
+                        ".meta/design-decisions.md") RESOLVED="DESIGN_DECISIONS.md" ;;
+                        "Verify doc-map.md"*) RESOLVED=".claude/references/doc-map.md" ;;
+                        ".meta/"*) RESOLVED="" ;;  # gitignored, skip
+                        "Relevant "*) RESOLVED="" ;;  # too vague, skip
+                        *) RESOLVED="$DOC_PATH" ;;
+                    esac
+                    # Check if resolved path is in staged files
+                    if [ -n "$RESOLVED" ] && echo "$STAGED_FILES" | grep -qF "$RESOLVED"; then
+                        TIMESTAMP=$(echo "$line" | sed -n 's/.*\[\(.*\)\].*/\1/p')
+                        echo "*Auto-cleared [$TIMESTAMP]: $DOC_PATH - staged in this commit*" >> "$TEMP_FILE"
+                        CLEARED_COUNT=$((CLEARED_COUNT + 1))
+                    else
+                        echo "$line" >> "$TEMP_FILE"
+                    fi
+                else
+                    echo "$line" >> "$TEMP_FILE"
+                fi
+            done < "$PENDING_ACTIONS"
+            mv "$TEMP_FILE" "$PENDING_ACTIONS"
+            if [ "$CLEARED_COUNT" -gt 0 ]; then
+                echo "" >&2
+                echo "Doc flywheel: Auto-cleared $CLEARED_COUNT pending action(s) addressed in this commit." >&2
+            fi
+        fi
+    fi
+
+    # ============================================
     # COMMIT CHECKLIST PROMPT (Non-blocking)
     # ============================================
     echo "" >&2
@@ -86,7 +128,7 @@ if echo "$COMMAND" | grep -qE "^git\s+commit"; then
     # PENDING DOCUMENTATION ACTIONS (BLOCKING)
     # ============================================
     # Block commit if pending-actions.md has items (unless escape hatch used)
-    PENDING_ACTIONS="$CLAUDE_PENDING_ACTIONS"
+    # PENDING_ACTIONS set above in auto-clear section
     if [ -f "$PENDING_ACTIONS" ]; then
         # Count non-empty, non-header lines (actual action items)
         ACTION_COUNT=$(grep -c "^\- \[" "$PENDING_ACTIONS" 2>/dev/null || echo "0")

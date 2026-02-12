@@ -274,18 +274,45 @@ For local WebSocket development, use ngrok to expose your local server:
 
 ### ngrok Configuration for WebSockets
 
-For a stable development URL, use a custom subdomain (requires paid ngrok):
+For a stable development URL, use a custom domain (requires paid ngrok):
 
 ```bash
-ngrok http 8080 --subdomain=my-relay-dev
+ngrok http 8080 --domain=your-domain.ngrok.dev
 ```
 
-This gives you a consistent URL: `wss://my-relay-dev.ngrok.io`
+This gives you a consistent URL: `wss://your-domain.ngrok.dev`
+
+### Agent-to-Agent Testing (Dual Tunnel Setup)
+
+Agent-to-agent testing requires **two separate ngrok tunnels** — one per agent. Each tunnel needs its own domain since ngrok only allows one endpoint per domain.
+
+```bash
+# Terminal A: Agent A (questioner) on port 8080
+ngrok http 8080 --domain=zembla.ngrok.dev
+
+# Terminal B: Agent B (answerer) on port 8081
+ngrok http 8081 --domain=submariner.ngrok.io
+```
+
+Then set the relay URLs on the deployed Twilio service:
+```bash
+twilio serverless:env:set --key AGENT_A_RELAY_URL \
+  --value "wss://zembla.ngrok.dev" \
+  --environment dev-environment \
+  --service-sid ZS93c4fa9720063ebf10a70ffca19d8f8a
+
+twilio serverless:env:set --key AGENT_B_RELAY_URL \
+  --value "wss://submariner.ngrok.io" \
+  --environment dev-environment \
+  --service-sid ZS93c4fa9720063ebf10a70ffca19d8f8a
+```
+
+The ngrok domains and auth token are stored in the root `.env` file as `NGROK_DOMAIN_A`, `NGROK_DOMAIN_B`, and `NGROK_AUTHTOKEN`.
 
 ### Development Workflow
 
 1. Start WebSocket server locally (port 8080)
-2. Start ngrok tunnel: `ngrok http 8080`
+2. Start ngrok tunnel: `ngrok http 8080 --domain=your-domain.ngrok.dev`
 3. Update `CONVERSATION_RELAY_URL` in `.env` with ngrok URL
 4. Start Twilio serverless: `npm run start:ngrok`
 5. Call your Twilio number to test

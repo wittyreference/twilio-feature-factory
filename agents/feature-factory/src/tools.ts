@@ -35,6 +35,7 @@ export interface ToolResult {
 export interface ToolContext {
   workingDirectory: string;
   verbose?: boolean;
+  sandboxBoundary?: string;
 }
 
 /**
@@ -381,9 +382,18 @@ const CORE_TOOL_EXECUTORS: Record<
 
   Glob: async (input, context): Promise<ToolResult> => {
     const pattern = input.pattern as string;
-    const searchPath = input.path
-      ? resolvePath(input.path as string, context)
-      : context.workingDirectory;
+    let searchPath: string;
+    try {
+      searchPath = input.path
+        ? resolvePath(input.path as string, context)
+        : context.workingDirectory;
+    } catch (error) {
+      return {
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : 'Path validation failed',
+      };
+    }
 
     try {
       const matches = await glob(pattern, {
@@ -408,9 +418,18 @@ const CORE_TOOL_EXECUTORS: Record<
 
   Grep: async (input, context): Promise<ToolResult> => {
     const pattern = input.pattern as string;
-    const searchPath = input.path
-      ? resolvePath(input.path as string, context)
-      : context.workingDirectory;
+    let searchPath: string;
+    try {
+      searchPath = input.path
+        ? resolvePath(input.path as string, context)
+        : context.workingDirectory;
+    } catch (error) {
+      return {
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : 'Path validation failed',
+      };
+    }
     const globPattern = (input.glob as string) || '**/*';
 
     try {
@@ -525,10 +544,25 @@ const CORE_TOOL_EXECUTORS: Record<
  * Resolve a path relative to working directory
  */
 function resolvePath(filePath: string, context: ToolContext): string {
-  if (path.isAbsolute(filePath)) {
-    return filePath;
+  const resolved = path.isAbsolute(filePath)
+    ? filePath
+    : path.resolve(context.workingDirectory, filePath);
+
+  if (context.sandboxBoundary) {
+    const normalizedResolved = path.resolve(resolved);
+    const normalizedBoundary = path.resolve(context.sandboxBoundary);
+    if (
+      normalizedResolved !== normalizedBoundary &&
+      !normalizedResolved.startsWith(normalizedBoundary + path.sep)
+    ) {
+      throw new Error(
+        `SANDBOX VIOLATION: Path "${filePath}" resolves to "${normalizedResolved}", ` +
+        `outside sandbox boundary "${normalizedBoundary}"`
+      );
+    }
   }
-  return path.resolve(context.workingDirectory, filePath);
+
+  return resolved;
 }
 
 /**

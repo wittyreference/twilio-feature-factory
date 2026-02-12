@@ -82,6 +82,15 @@ export interface FeatureFactoryConfig {
    * Controls tool output truncation limits and compaction behavior.
    */
   contextWindow?: Partial<ContextManagerConfig>;
+
+  /**
+   * Sandbox mode configuration.
+   * When enabled, workflows run in an isolated temp directory.
+   */
+  sandbox?: {
+    enabled: boolean;
+    sourceDirectory?: string;
+  };
 }
 
 /**
@@ -126,6 +135,11 @@ export function createConfig(
     config.approvalMode = 'none';
     config.maxBudgetUsd = Infinity;
     config.maxTurnsPerAgent = Infinity;
+
+    // Autonomous mode implies sandbox unless explicitly disabled
+    if (config.sandbox === undefined) {
+      config.sandbox = { enabled: true, sourceDirectory: config.workingDirectory };
+    }
   }
 
   return config;

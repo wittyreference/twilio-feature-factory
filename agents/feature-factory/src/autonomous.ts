@@ -205,7 +205,8 @@ export function generateSessionSummary(
   startTime: Date,
   filesCreated: string[],
   filesModified: string[],
-  auditLogPath: string
+  auditLogPath: string,
+  workingDirectory: string = process.cwd()
 ): AutonomousSessionSummary {
   const endTime = new Date();
   const durationMs = endTime.getTime() - startTime.getTime();
@@ -245,7 +246,7 @@ export function generateSessionSummary(
 
   // Count learnings from learnings.md if it exists
   let learningsCaptured = 0;
-  const learningsPath = path.join(process.cwd(), '.claude', 'learnings.md');
+  const learningsPath = path.join(workingDirectory, '.claude', 'learnings.md');
   if (fs.existsSync(learningsPath)) {
     const content = fs.readFileSync(learningsPath, 'utf-8');
     // Count entries by looking for "**" patterns indicating learning titles
@@ -255,7 +256,7 @@ export function generateSessionSummary(
 
   // Count pending actions
   let pendingActionsGenerated = 0;
-  const pendingPath = path.join(process.cwd(), '.claude', 'pending-actions.md');
+  const pendingPath = path.join(workingDirectory, '.claude', 'pending-actions.md');
   if (fs.existsSync(pendingPath)) {
     const content = fs.readFileSync(pendingPath, 'utf-8');
     // Count entries by looking for "- [ ]" patterns
@@ -400,8 +401,11 @@ export interface AuditLogger {
 /**
  * Create an audit logger for tracking autonomous session actions
  */
-export function createAuditLogger(sessionId: string): AuditLogger {
-  const auditDir = path.join(process.cwd(), '.feature-factory');
+export function createAuditLogger(
+  sessionId: string,
+  workingDirectory: string = process.cwd()
+): AuditLogger {
+  const auditDir = path.join(workingDirectory, '.feature-factory');
   if (!fs.existsSync(auditDir)) {
     fs.mkdirSync(auditDir, { recursive: true });
   }

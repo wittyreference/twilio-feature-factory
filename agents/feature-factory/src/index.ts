@@ -100,6 +100,19 @@ export type {
   PrePhaseHookEvent,
 } from './types.js';
 
+// Sandbox module (isolated workflow execution)
+export {
+  createSandbox,
+  copyResultsBack,
+  cleanupSandbox,
+  ensureCleanWorkingTree,
+} from './sandbox.js';
+export type {
+  SandboxConfig,
+  SandboxInfo,
+  CopyBackResult,
+} from './sandbox.js';
+
 // Context management module (tool output truncation and conversation compaction)
 export {
   truncateToolOutput,

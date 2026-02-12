@@ -543,6 +543,9 @@ export class FeatureFactoryOrchestrator {
     const toolContext: ToolContext = {
       workingDirectory: context.workingDirectory,
       verbose: this.config.verbose,
+      sandboxBoundary: this.config.sandbox?.enabled
+        ? context.workingDirectory
+        : undefined,
     };
 
     // Build initial prompt

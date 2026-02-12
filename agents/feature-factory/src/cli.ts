@@ -15,6 +15,12 @@ import {
   createAuditLogger,
   isAutonomousCICD,
 } from './autonomous.js';
+import {
+  createSandbox,
+  copyResultsBack,
+  cleanupSandbox,
+  type SandboxInfo,
+} from './sandbox.js';
 import type { WorkflowEvent, ApprovalMode, AutonomousModeConfig } from './types.js';
 
 const program = new Command();
@@ -204,6 +210,8 @@ program
   )
   .option('--no-approval', 'Skip approval gates')
   .option('--dangerously-autonomous', 'Full autonomous mode (no prompts, no limits)')
+  .option('--sandbox', 'Run workflow in isolated sandbox directory')
+  .option('--no-sandbox', 'Disable sandbox (even in autonomous mode)')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
@@ -213,117 +221,11 @@ program
         model: string;
         approval: boolean;
         dangerouslyAutonomous: boolean;
+        sandbox: boolean;
         verbose: boolean;
       }
     ) => {
-      console.log(chalk.bold('\n🏭 Feature Factory\n'));
-
-      // Handle autonomous mode
-      let autonomousMode: AutonomousModeConfig = {
-        enabled: false,
-        acknowledged: false,
-        acknowledgedVia: null,
-        acknowledgedAt: null,
-      };
-
-      if (options.dangerouslyAutonomous || isAutonomousCICD()) {
-        autonomousMode.enabled = true;
-
-        // Check if already acknowledged via environment (CI/CD)
-        if (isAutonomousCICD()) {
-          autonomousMode.acknowledged = true;
-          autonomousMode.acknowledgedVia = 'environment';
-          autonomousMode.acknowledgedAt = new Date();
-          console.log(chalk.gray('Autonomous mode: acknowledged via environment variable'));
-        } else {
-          // Interactive acknowledgment required
-          displayAutonomousWarning();
-          try {
-            autonomousMode = await requireAcknowledgment();
-          } catch (error) {
-            console.error(
-              chalk.red(
-                `\n${error instanceof Error ? error.message : 'Acknowledgment failed'}`
-              )
-            );
-            process.exit(1);
-          }
-        }
-      }
-
-      const approvalMode: ApprovalMode = autonomousMode.enabled
-        ? 'none'
-        : options.approval
-          ? 'after-each-phase'
-          : 'none';
-
-      const orchestrator = new FeatureFactoryOrchestrator({
-        maxBudgetUsd: parseFloat(options.budget),
-        defaultModel: options.model as 'sonnet' | 'opus' | 'haiku',
-        approvalMode,
-        verbose: options.verbose,
-        autonomousMode,
-      });
-
-      // Create audit logger for autonomous sessions
-      const auditLogger = autonomousMode.enabled
-        ? createAuditLogger(orchestrator.getState()?.sessionId || 'unknown')
-        : null;
-
-      if (autonomousMode.enabled) {
-        console.log(chalk.cyan.bold('🤖 Running in AUTONOMOUS MODE'));
-        console.log(chalk.gray('   Quality gates still enforced: TDD, lint, coverage, credential safety'));
-        auditLogger?.log('workflow-started', { description, workflow: 'new-feature' });
-      } else {
-        console.log(
-          chalk.gray(
-            `Config: budget=${formatCurrency(parseFloat(options.budget))}, model=${options.model}, approval=${approvalMode}`
-          )
-        );
-      }
-
-      const startTime = new Date();
-      const filesCreated: string[] = [];
-      const filesModified: string[] = [];
-
-      try {
-        const events = orchestrator.runWorkflow('new-feature', description);
-        await handleWorkflowEvents(events, orchestrator, auditLogger);
-
-        // Generate and display summary for autonomous mode
-        if (autonomousMode.enabled) {
-          const state = orchestrator.getState();
-          if (state) {
-            // Collect files from phase results
-            for (const result of Object.values(state.phaseResults)) {
-              filesCreated.push(...result.filesCreated);
-              filesModified.push(...result.filesModified);
-            }
-
-            const summary = generateSessionSummary(
-              state,
-              startTime,
-              filesCreated,
-              filesModified,
-              auditLogger?.getPath() || ''
-            );
-            displaySessionSummary(summary);
-            auditLogger?.log('workflow-completed', { success: state.status === 'completed' });
-          }
-        }
-      } catch (error) {
-        auditLogger?.log('workflow-error', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-        console.error(
-          chalk.red(
-            `\nFatal error: ${error instanceof Error ? error.message : 'Unknown error'}`
-          )
-        );
-        process.exit(1);
-      } finally {
-        auditLogger?.close();
-      }
+      await runWorkflowCommand('new-feature', description, options);
     }
   );
 
@@ -386,6 +288,8 @@ program
   )
   .option('--no-approval', 'Skip approval gates')
   .option('--dangerously-autonomous', 'Full autonomous mode (no prompts, no limits)')
+  .option('--sandbox', 'Run workflow in isolated sandbox directory')
+  .option('--no-sandbox', 'Disable sandbox (even in autonomous mode)')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
@@ -395,6 +299,7 @@ program
         model: string;
         approval: boolean;
         dangerouslyAutonomous: boolean;
+        sandbox: boolean;
         verbose: boolean;
       }
     ) => {
@@ -414,6 +319,8 @@ program
   )
   .option('--no-approval', 'Skip approval gates')
   .option('--dangerously-autonomous', 'Full autonomous mode (no prompts, no limits)')
+  .option('--sandbox', 'Run workflow in isolated sandbox directory')
+  .option('--no-sandbox', 'Disable sandbox (even in autonomous mode)')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
@@ -423,6 +330,7 @@ program
         model: string;
         approval: boolean;
         dangerouslyAutonomous: boolean;
+        sandbox: boolean;
         verbose: boolean;
       }
     ) => {
@@ -431,7 +339,8 @@ program
   );
 
 /**
- * Common workflow runner for all workflow types
+ * Common workflow runner for all workflow types.
+ * Handles autonomous mode, sandbox lifecycle, audit logging, and session summaries.
  */
 async function runWorkflowCommand(
   workflow: 'new-feature' | 'bug-fix' | 'refactor',
@@ -441,6 +350,7 @@ async function runWorkflowCommand(
     model: string;
     approval: boolean;
     dangerouslyAutonomous: boolean;
+    sandbox: boolean;
     verbose: boolean;
   }
 ): Promise<void> {
@@ -477,6 +387,45 @@ async function runWorkflowCommand(
     }
   }
 
+  // Determine sandbox mode
+  const sandboxEnabled = options.sandbox ||
+    (autonomousMode.enabled && options.sandbox !== false);
+
+  // Set up sandbox if enabled
+  let workingDirectory = process.cwd();
+  let sandboxInfo: SandboxInfo | null = null;
+
+  if (sandboxEnabled) {
+    console.log(chalk.cyan('  Setting up sandbox...'));
+    try {
+      sandboxInfo = await createSandbox({
+        sourceDirectory: process.cwd(),
+        verbose: options.verbose,
+      });
+      workingDirectory = sandboxInfo.sandboxDirectory;
+      console.log(chalk.gray(`   Sandbox: ${workingDirectory}`));
+    } catch (error) {
+      console.error(
+        chalk.red(
+          `\nSandbox setup failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        )
+      );
+      process.exit(1);
+    }
+  }
+
+  // Register cleanup for process signals
+  const signalCleanup = async () => {
+    if (sandboxInfo) {
+      await cleanupSandbox(sandboxInfo.sandboxDirectory);
+    }
+    process.exit(1);
+  };
+  if (sandboxInfo) {
+    process.on('SIGINT', signalCleanup);
+    process.on('SIGTERM', signalCleanup);
+  }
+
   const approvalMode: ApprovalMode = autonomousMode.enabled
     ? 'none'
     : options.approval
@@ -488,21 +437,26 @@ async function runWorkflowCommand(
     defaultModel: options.model as 'sonnet' | 'opus' | 'haiku',
     approvalMode,
     verbose: options.verbose,
+    workingDirectory,
     autonomousMode,
+    sandbox: sandboxEnabled ? { enabled: true, sourceDirectory: process.cwd() } : undefined,
   });
 
   const auditLogger = autonomousMode.enabled
-    ? createAuditLogger(orchestrator.getState()?.sessionId || 'unknown')
+    ? createAuditLogger(orchestrator.getState()?.sessionId || 'unknown', workingDirectory)
     : null;
 
   if (autonomousMode.enabled) {
     console.log(chalk.cyan.bold('🤖 Running in AUTONOMOUS MODE'));
     console.log(chalk.gray('   Quality gates still enforced: TDD, lint, coverage, credential safety'));
-    auditLogger?.log('workflow-started', { description, workflow });
+    if (sandboxEnabled) {
+      console.log(chalk.gray('   Sandbox isolation: enabled'));
+    }
+    auditLogger?.log('workflow-started', { description, workflow, sandboxEnabled });
   } else {
     console.log(
       chalk.gray(
-        `Config: budget=${formatCurrency(parseFloat(options.budget))}, model=${options.model}, approval=${approvalMode}`
+        `Config: budget=${formatCurrency(parseFloat(options.budget))}, model=${options.model}, approval=${approvalMode}${sandboxEnabled ? ', sandbox=on' : ''}`
       )
     );
   }
@@ -514,6 +468,26 @@ async function runWorkflowCommand(
   try {
     const events = orchestrator.runWorkflow(workflow, description);
     await handleWorkflowEvents(events, orchestrator, auditLogger);
+
+    // Copy results back from sandbox on success
+    if (sandboxInfo) {
+      const state = orchestrator.getState();
+      if (state?.status === 'completed') {
+        console.log(chalk.cyan('  Copying results back from sandbox...'));
+        const copyResult = await copyResultsBack(sandboxInfo);
+        console.log(chalk.green(`   Copied ${copyResult.filesCopied.length} files`));
+        for (const file of copyResult.filesCopied) {
+          console.log(chalk.gray(`   - ${file}`));
+        }
+        if (copyResult.skipped.length > 0 && options.verbose) {
+          for (const skip of copyResult.skipped) {
+            console.log(chalk.dim(`   Skipped: ${skip}`));
+          }
+        }
+      } else if (state) {
+        console.log(chalk.yellow(`  Sandbox results NOT copied (workflow status: ${state.status})`));
+      }
+    }
 
     if (autonomousMode.enabled) {
       const state = orchestrator.getState();
@@ -528,7 +502,8 @@ async function runWorkflowCommand(
           startTime,
           filesCreated,
           filesModified,
-          auditLogger?.getPath() || ''
+          auditLogger?.getPath() || '',
+          workingDirectory
         );
         displaySessionSummary(summary);
         auditLogger?.log('workflow-completed', { success: state.status === 'completed' });
@@ -546,6 +521,11 @@ async function runWorkflowCommand(
     process.exit(1);
   } finally {
     auditLogger?.close();
+    if (sandboxInfo) {
+      await cleanupSandbox(sandboxInfo.sandboxDirectory);
+      process.removeListener('SIGINT', signalCleanup);
+      process.removeListener('SIGTERM', signalCleanup);
+    }
   }
 }
 

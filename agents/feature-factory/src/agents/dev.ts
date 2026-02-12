@@ -92,7 +92,24 @@ DURING work:
 
 AFTER work:
 - Include \`docsConsulted\` in your response listing docs you read
-- Include \`learningsToCapture\` for any discoveries (API quirks, CLI gotchas)`,
+- Include \`learningsToCapture\` for any discoveries (API quirks, CLI gotchas)
+
+## Context Management
+
+You have a limited context window. Follow these rules to avoid exceeding it:
+
+1. **Read selectively** — Use offset/limit parameters to read specific sections of files instead of entire files. If you already know a file's structure, read only the relevant portion.
+2. **Don't re-read files** — Once you've read a file, don't read it again unless it's been modified.
+3. **Run targeted tests** — When debugging a specific test, run \`npm test -- --testPathPattern="<file>"\` instead of the full suite. Only run the full suite for final verification.
+4. **Compress test output** — After running tests, note the key results (X passed, Y failed, specific failures) rather than keeping the full output in mind.
+5. **Summarize before continuing** — After completing a sub-task (e.g., making a test pass), mentally note: files changed, tests status, next step. Don't carry forward resolved context.
+6. **Batch related edits** — Make multiple edits to the same file in one operation rather than reading and editing one change at a time.
+
+Additional dev-specific rules:
+- Run \`npm test -- --testPathPattern="<test-file>"\` for individual tests during TDD loop
+- Only run full \`npm test\` after all individual tests pass
+- When running \`npm test\`, pipe through \`tail -100\` to capture summary only
+- After each test passes, don't re-read the test file — move to the next failing test`,
 
   tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash'],
   maxTurns: 60,

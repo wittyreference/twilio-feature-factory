@@ -2,6 +2,7 @@
 // ABOUTME: Defines cost limits, model selection, and approval behavior.
 
 import type { ApprovalMode, AutonomousModeConfig, ModelType } from './types.js';
+import type { ContextManagerConfig } from './context-manager.js';
 
 /**
  * Feature Factory configuration options
@@ -75,6 +76,12 @@ export interface FeatureFactoryConfig {
    * Quality gates (TDD, lint, coverage) remain enforced.
    */
   autonomousMode: AutonomousModeConfig;
+
+  /**
+   * Context window management overrides.
+   * Controls tool output truncation limits and compaction behavior.
+   */
+  contextWindow?: Partial<ContextManagerConfig>;
 }
 
 /**
@@ -200,6 +207,17 @@ export function configFromEnv(): Partial<FeatureFactoryConfig> {
 
   if (process.env.FEATURE_FACTORY_VERBOSE === 'true') {
     config.verbose = true;
+  }
+
+  // Context window management from environment
+  if (process.env.FEATURE_FACTORY_CONTEXT_COMPACTION_THRESHOLD) {
+    config.contextWindow = {
+      ...config.contextWindow,
+      compactionThresholdTokens: parseInt(
+        process.env.FEATURE_FACTORY_CONTEXT_COMPACTION_THRESHOLD,
+        10
+      ),
+    };
   }
 
   // Autonomous mode from environment (for CI/CD)

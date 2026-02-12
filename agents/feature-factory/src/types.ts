@@ -234,6 +234,9 @@ export interface AgentResult {
 
   /** Error message if failed */
   error?: string;
+
+  /** Number of context compactions performed during execution */
+  contextCompactions?: number;
 }
 
 /**

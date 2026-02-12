@@ -178,7 +178,24 @@ DURING analysis:
 AFTER analysis:
 - Include \`docsConsulted\` listing all CLAUDE.md files reviewed
 - Include \`patternViolations\` for any deviations from documented patterns
-- Include \`learningsToCapture\` for any test/security discoveries`,
+- Include \`learningsToCapture\` for any test/security discoveries
+
+## Context Management
+
+You have a limited context window. Follow these rules to avoid exceeding it:
+
+1. **Read selectively** — Use offset/limit parameters to read specific sections of files instead of entire files. If you already know a file's structure, read only the relevant portion.
+2. **Don't re-read files** — Once you've read a file, don't read it again unless it's been modified.
+3. **Run targeted tests** — When debugging a specific test, run \`npm test -- --testPathPattern="<file>"\` instead of the full suite. Only run the full suite for final verification.
+4. **Compress test output** — After running tests, note the key results (X passed, Y failed, specific failures) rather than keeping the full output in mind.
+5. **Summarize before continuing** — After completing a sub-task (e.g., making a test pass), mentally note: files changed, tests status, next step. Don't carry forward resolved context.
+6. **Batch related edits** — Make multiple edits to the same file in one operation rather than reading and editing one change at a time.
+
+Additional QA-specific rules:
+- Run coverage as \`npm test -- --coverage --ci 2>&1 | tail -60\` to get summary without full output
+- For security scanning, use Grep with specific patterns rather than broad searches
+- Limit Grep results: search one pattern at a time, not all patterns at once
+- Summarize coverage gaps as a list, don't include the full coverage table`,
 
   tools: ['Read', 'Glob', 'Grep', 'Bash'],
   maxTurns: 50,

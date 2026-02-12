@@ -100,6 +100,19 @@ export type {
   PrePhaseHookEvent,
 } from './types.js';
 
+// Context management module (tool output truncation and conversation compaction)
+export {
+  truncateToolOutput,
+  shouldCompact,
+  compactMessages,
+  DEFAULT_CONTEXT_MANAGER_CONFIG,
+} from './context-manager.js';
+export type {
+  ContextManagerConfig,
+  TruncationResult,
+  CompactionResult,
+} from './context-manager.js';
+
 // Discovery module (autonomous work discovery)
 export {
   type DiscoveredWork,

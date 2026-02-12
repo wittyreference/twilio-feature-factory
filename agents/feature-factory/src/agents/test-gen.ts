@@ -96,7 +96,23 @@ DURING work:
 - Include \`docsConsulted\` in your response
 
 AFTER work:
-- Include \`learningsToCapture\` for any test framework discoveries`,
+- Include \`learningsToCapture\` for any test framework discoveries
+
+## Context Management
+
+You have a limited context window. Follow these rules to avoid exceeding it:
+
+1. **Read selectively** — Use offset/limit parameters to read specific sections of files instead of entire files. If you already know a file's structure, read only the relevant portion.
+2. **Don't re-read files** — Once you've read a file, don't read it again unless it's been modified.
+3. **Run targeted tests** — When debugging a specific test, run \`npm test -- --testPathPattern="<file>"\` instead of the full suite. Only run the full suite for final verification.
+4. **Compress test output** — After running tests, note the key results (X passed, Y failed, specific failures) rather than keeping the full output in mind.
+5. **Summarize before continuing** — After completing a sub-task (e.g., making a test pass), mentally note: files changed, tests status, next step. Don't carry forward resolved context.
+6. **Batch related edits** — Make multiple edits to the same file in one operation rather than reading and editing one change at a time.
+
+Additional test-gen-specific rules:
+- Write all tests for one file before running \`npm test\` to verify
+- Use \`npm test -- --testPathPattern="<file>"\` to verify specific test files, not the full suite
+- After confirming tests fail, move on — don't re-run to double-check`,
 
   tools: ['Read', 'Glob', 'Grep', 'Write', 'Bash'],
   maxTurns: 40,

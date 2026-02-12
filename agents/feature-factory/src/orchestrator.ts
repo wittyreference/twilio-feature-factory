@@ -23,6 +23,13 @@ import { getAgentConfig } from './agents/index.js';
 import { getToolSchemas, executeTool, type ToolContext } from './tools.js';
 import { initializeMcpTools } from './mcp-tools.js';
 import {
+  truncateToolOutput,
+  shouldCompact,
+  compactMessages,
+  DEFAULT_CONTEXT_MANAGER_CONFIG,
+  type ContextManagerConfig,
+} from './context-manager.js';
+import {
   generateSessionId,
   saveSession,
   loadSession,
@@ -549,6 +556,13 @@ export class FeatureFactoryOrchestrator {
     let totalOutputTokens = 0;
     let turnsUsed = 0;
     let finalOutput: Record<string, unknown> = {};
+    let contextCompactions = 0;
+
+    // Resolve context manager config from user config overrides
+    const contextManagerConfig: ContextManagerConfig = {
+      ...DEFAULT_CONTEXT_MANAGER_CONFIG,
+      ...this.config.contextWindow,
+    };
 
     // Build messages for conversation
     const messages: Anthropic.MessageParam[] = [
@@ -576,6 +590,19 @@ export class FeatureFactoryOrchestrator {
         // Track token usage
         totalInputTokens += response.usage?.input_tokens || 0;
         totalOutputTokens += response.usage?.output_tokens || 0;
+
+        // Layer 2: Check if conversation history needs compaction
+        if (shouldCompact(totalInputTokens, contextManagerConfig)) {
+          const compaction = compactMessages(messages, contextManagerConfig);
+          messages.length = 0;
+          messages.push(...compaction.messages);
+          contextCompactions++;
+          if (this.config.verbose) {
+            console.log(
+              `  [${agentType}] Compacted: removed ${compaction.turnPairsRemoved} turn-pairs, ${messages.length} messages remaining`
+            );
+          }
+        }
 
         // Process response content
         const toolUseBlocks: Anthropic.ToolUseBlock[] = [];
@@ -632,12 +659,21 @@ export class FeatureFactoryOrchestrator {
             }
           }
 
+          // Layer 1: Truncate tool output before it enters message history
+          const rawOutput = result.success
+            ? result.output
+            : `Error: ${result.error || 'Unknown error'}`;
+          const truncation = truncateToolOutput(toolUse.name, rawOutput, contextManagerConfig);
+          if (truncation.wasTruncated && this.config.verbose) {
+            console.log(
+              `  [${agentType}] Truncated ${toolUse.name} output: ${truncation.originalLength} → ${truncation.truncatedLength} chars`
+            );
+          }
+
           toolResults.push({
             type: 'tool_result',
             tool_use_id: toolUse.id,
-            content: result.success
-              ? result.output
-              : `Error: ${result.error || 'Unknown error'}`,
+            content: truncation.output,
             is_error: !result.success,
           });
         }
@@ -667,6 +703,7 @@ export class FeatureFactoryOrchestrator {
           commits: [...new Set(commits)],
           costUsd,
           turnsUsed,
+          contextCompactions,
           error: `Max turns (${agentConfig.maxTurns}) reached`,
         };
       }
@@ -680,6 +717,7 @@ export class FeatureFactoryOrchestrator {
         commits: [...new Set(commits)],
         costUsd,
         turnsUsed,
+        contextCompactions,
       };
     } catch (error) {
       // Calculate cost even on error
@@ -698,6 +736,7 @@ export class FeatureFactoryOrchestrator {
         commits: [...new Set(commits)],
         costUsd,
         turnsUsed,
+        contextCompactions,
         error: error instanceof Error ? error.message : 'Unknown error',
       };
     }

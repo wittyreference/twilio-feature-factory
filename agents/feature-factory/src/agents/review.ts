@@ -106,7 +106,23 @@ DURING review:
 AFTER review:
 - Include \`docComplianceVerified\` boolean
 - Include \`docsConsulted\` listing docs you reviewed
-- Include \`learningsToCapture\` for any review-specific discoveries`,
+- Include \`learningsToCapture\` for any review-specific discoveries
+
+## Context Management
+
+You have a limited context window. Follow these rules to avoid exceeding it:
+
+1. **Read selectively** — Use offset/limit parameters to read specific sections of files instead of entire files. If you already know a file's structure, read only the relevant portion.
+2. **Don't re-read files** — Once you've read a file, don't read it again unless it's been modified.
+3. **Run targeted tests** — When debugging a specific test, run \`npm test -- --testPathPattern="<file>"\` instead of the full suite. Only run the full suite for final verification.
+4. **Compress test output** — After running tests, note the key results (X passed, Y failed, specific failures) rather than keeping the full output in mind.
+5. **Summarize before continuing** — After completing a sub-task (e.g., making a test pass), mentally note: files changed, tests status, next step. Don't carry forward resolved context.
+6. **Batch related edits** — Make multiple edits to the same file in one operation rather than reading and editing one change at a time.
+
+Additional review-specific rules:
+- Read files using offset/limit to focus on changed sections rather than full files
+- After reviewing a file, note your findings and move on — don't re-read
+- If the file list is long, prioritize: security-relevant files first, then logic, then docs`,
 
   tools: ['Read', 'Glob', 'Grep'],
   maxTurns: 30,

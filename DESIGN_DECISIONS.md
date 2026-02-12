@@ -907,7 +907,7 @@ Fixed turn limits remain as a backstop (elevated to 200 in autonomous mode) but 
 
 ### Status
 
-**Accepted** — Implementation planned in Phase 12.3.
+**Implemented** — Validated via 3 smoke test runs (Session 24). Two bugs found and fixed: (1) Bash calls not counted as file activity (`fileChangeTools` missing `'Bash'`), (2) `hadFileActivity` always false due to `hasOwnProperty('is_error')` checking property existence instead of value (property is always present). Post-fix: zero false idle stalls across a full pipeline run. `idleTurnThreshold` set to 15.
 
 ---
 
@@ -1184,3 +1184,4 @@ When making architectural decisions:
 | 2026-02-11 | D9 | Updated budget caps to reflect autonomous mode safety floor |
 | 2026-02-11 | D22 | Phase retry with feedback (LoopAgent pattern, shared executePhaseWithRetry) |
 | 2026-02-11 | D23 | Git checkpoints per phase (lightweight tags, user-prompted rollback, complements sandbox) |
+| 2026-02-11 | D19 | Updated: Implemented and validated via 3 smoke test runs (2 bugs found and fixed, zero false stalls) |

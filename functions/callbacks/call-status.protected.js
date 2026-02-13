@@ -55,6 +55,10 @@ exports.handler = async function (context, event, callback) {
 
   try {
     // Log to Sync for deep validation
+    // Serialize the event to strip non-serializable properties (e.g., request object)
+    // that cause Buffer TypeError when the Sync SDK processes the data.
+    const safeEvent = JSON.parse(JSON.stringify(event));
+
     await logToSync(context, 'call', CallSid, {
       status: CallStatus,
       to: To,
@@ -68,7 +72,7 @@ exports.handler = async function (context, event, callback) {
       accountSid: AccountSid,
       apiVersion: ApiVersion,
       timestamp: Timestamp,
-      rawEvent: event,
+      rawEvent: safeEvent,
     });
 
     // Log for Function execution logs

@@ -59,7 +59,7 @@ exports.handler = async function (context, event, callback) {
       accountSid: AccountSid,
       dateCreated: DateCreated,
       dateUpdated: DateUpdated,
-      rawEvent: event,
+      rawEvent: JSON.parse(JSON.stringify(event)),
     });
 
     // Log for Function execution logs

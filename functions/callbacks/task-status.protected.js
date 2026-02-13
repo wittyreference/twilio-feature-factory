@@ -85,7 +85,7 @@ exports.handler = async function (context, event, callback) {
       taskQueueSid: TaskQueueSid,
       accountSid: AccountSid,
       timestamp: Timestamp,
-      rawEvent: event,
+      rawEvent: JSON.parse(JSON.stringify(event)),
     });
 
     // Log for Function execution logs

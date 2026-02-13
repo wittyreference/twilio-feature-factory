@@ -59,7 +59,7 @@ exports.handler = async function (context, event, callback) {
       from: From,
       direction: Direction,
       accountSid: AccountSid,
-      rawEvent: event,
+      rawEvent: JSON.parse(JSON.stringify(event)),
     });
 
     // Log prominently for Function execution logs

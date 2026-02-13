@@ -146,6 +146,34 @@ exports.handler = async (context, event, callback) => {
 - Concatenated SMS: Up to 1600 characters (split into segments)
 - MMS: Subject line up to 40 characters, body varies by carrier
 
+## A2P 10DLC Compliance (US SMS)
+
+US carriers require A2P 10DLC registration for application-to-person messaging via local numbers. Without registration, messages get error 30034 (blocked by carrier).
+
+### Registration Steps (Twilio Console)
+
+1. **Register a Brand**: Console → Messaging → Trust Hub → US A2P Brand Registration
+2. **Create a Campaign**: Console → Messaging → Services → [your service] → Compliance Info
+3. **Associate Numbers**: Add phone numbers to the Messaging Service sender pool
+4. **Wait for Approval**: Brand vetting takes 1-7 business days; campaign approval is usually faster
+
+### Checking Status
+
+```bash
+# Check brand registrations
+twilio api:messaging:v1:brand-registrations:list
+
+# Check A2P campaigns on a Messaging Service
+twilio api:messaging:v1:services:us-app-to-person:list \
+  --messaging-service-sid $TWILIO_MESSAGING_SERVICE_SID
+```
+
+### Workarounds During Development
+
+- **Toll-free numbers**: Don't require A2P 10DLC (but need toll-free verification)
+- **Short codes**: Pre-approved for high-volume, but expensive
+- **Trial accounts**: May have different filtering behavior
+
 ## Testing Messaging Functions
 
 Tests should use real Twilio APIs:

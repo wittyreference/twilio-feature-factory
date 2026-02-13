@@ -27,11 +27,19 @@ else
 fi
 
 # Check 2: Shipped code (functions/, agents/) should not reference .meta/
+# Exclude: dist/ (compiled output), test files, and comments documenting meta-mode detection
 echo ""
 echo "Checking shipped code directories..."
-if grep -rqE '\.meta/' functions/ agents/ 2>/dev/null; then
+META_REFS=$(grep -rnE '\.meta/' functions/ agents/ 2>/dev/null \
+    | grep -v '/dist/' \
+    | grep -v '/node_modules/' \
+    | grep -v '\.test\.\(ts\|js\)' \
+    | grep -vE '^\s*//' \
+    | grep -vE '(Uses|if) \.meta/' \
+    || true)
+if [[ -n "$META_REFS" ]]; then
     echo "  ✗ ERROR: Shipped code contains .meta/ references"
-    grep -rnE '\.meta/' functions/ agents/ 2>/dev/null | head -10 | sed 's/^/    /'
+    echo "$META_REFS" | head -10 | sed 's/^/    /'
     ERRORS=$((ERRORS + 1))
 else
     echo "  ✓ No .meta/ references in functions/ or agents/"

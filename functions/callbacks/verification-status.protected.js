@@ -43,7 +43,7 @@ exports.handler = async function (context, event, callback) {
   } = event;
 
   if (!VerificationSid) {
-    console.error('Missing VerificationSid in callback');
+    console.log('Missing VerificationSid in callback');
     return callback(null, { success: false, error: 'Missing VerificationSid' });
   }
 
@@ -69,7 +69,8 @@ exports.handler = async function (context, event, callback) {
     // Return success
     const response = new Twilio.Response();
     response.setStatusCode(200);
-    response.setBody({ success: true, status: Status });
+    response.appendHeader('Content-Type', 'application/json');
+    response.setBody(JSON.stringify({ success: true, status: Status }));
 
     return callback(null, response);
   } catch (error) {
@@ -77,11 +78,12 @@ exports.handler = async function (context, event, callback) {
 
     const response = new Twilio.Response();
     response.setStatusCode(200);
-    response.setBody({
+    response.appendHeader('Content-Type', 'application/json');
+    response.setBody(JSON.stringify({
       success: false,
       error: error.message,
       verificationSid: VerificationSid,
-    });
+    }));
 
     return callback(null, response);
   }

@@ -26,7 +26,7 @@ const { logToSync } = require(Runtime.getFunctions()['callbacks/helpers/sync-log
  * @see https://www.twilio.com/docs/messaging/twiml#fallback-url
  */
 exports.handler = async function (context, event, callback) {
-  console.error('Fallback handler invoked:', JSON.stringify(event));
+  console.log('Fallback handler invoked:', JSON.stringify(event));
 
   const {
     ErrorCode,
@@ -63,9 +63,9 @@ exports.handler = async function (context, event, callback) {
     });
 
     // Log prominently for Function execution logs
-    console.error(`FALLBACK: ${resourceType} ${resourceSid}`);
-    console.error(`  Error: ${ErrorCode} - ${ErrorMessage || 'No message'}`);
-    console.error(`  Failed URL: ${ErrorUrl}`);
+    console.log(`FALLBACK: ${resourceType} ${resourceSid}`);
+    console.log(`  Error: ${ErrorCode} - ${ErrorMessage || 'No message'}`);
+    console.log(`  Failed URL: ${ErrorUrl}`);
 
     if (isVoice) {
       // Return safe TwiML for voice calls
@@ -88,13 +88,14 @@ exports.handler = async function (context, event, callback) {
       // Twilio doesn't expect TwiML for message fallbacks
       const response = new Twilio.Response();
       response.setStatusCode(200);
-      response.setBody({
+      response.appendHeader('Content-Type', 'application/json');
+      response.setBody(JSON.stringify({
         success: true,
         fallback: true,
         resourceType,
         resourceSid,
         errorCode: ErrorCode,
-      });
+      }));
 
       return callback(null, response);
     }

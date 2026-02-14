@@ -49,7 +49,7 @@ exports.handler = async function (context, event, callback) {
   } = event;
 
   if (!CallSid) {
-    console.error('Missing CallSid in callback');
+    console.log('Missing CallSid in callback');
     return callback(null, { success: false, error: 'Missing CallSid' });
   }
 
@@ -77,7 +77,7 @@ exports.handler = async function (context, event, callback) {
 
     // Log for Function execution logs
     if (ErrorCode) {
-      console.error(`Call ${CallSid} ${CallStatus}: Error ${ErrorCode} - ${ErrorMessage}`);
+      console.log(`Call ${CallSid} ${CallStatus}: Error ${ErrorCode} - ${ErrorMessage}`);
     } else {
       const durationInfo = CallDuration ? ` (${CallDuration}s)` : '';
       console.log(`Call ${CallSid} status: ${CallStatus}${durationInfo}`);
@@ -86,7 +86,8 @@ exports.handler = async function (context, event, callback) {
     // Return success
     const response = new Twilio.Response();
     response.setStatusCode(200);
-    response.setBody({ success: true, status: CallStatus });
+    response.appendHeader('Content-Type', 'application/json');
+    response.setBody(JSON.stringify({ success: true, status: CallStatus }));
 
     return callback(null, response);
   } catch (error) {
@@ -94,11 +95,12 @@ exports.handler = async function (context, event, callback) {
 
     const response = new Twilio.Response();
     response.setStatusCode(200);
-    response.setBody({
+    response.appendHeader('Content-Type', 'application/json');
+    response.setBody(JSON.stringify({
       success: false,
       error: error.message,
       callSid: CallSid,
-    });
+    }));
 
     return callback(null, response);
   }

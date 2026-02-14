@@ -122,6 +122,29 @@ The fallback handler is special:
 
 All Sync documents have a 24-hour TTL. Callback data is ephemeral and only needed during test validation. Old data automatically expires.
 
+## Logging Rules (Twilio Functions Alert Behavior)
+
+Twilio Functions generate debugger alerts based on log level:
+
+| Log Level | Alert Code | Effect |
+|-----------|------------|--------|
+| `console.log` | None | Silent — use for all operational logging |
+| `console.warn` | 82004 | Generates warning alert — avoid in callbacks |
+| `console.error` | 82005 | Generates error alert — reserve for catch blocks only |
+
+**Pattern**: Use `console.log` for all status reporting, including error conditions in callback data (e.g., message delivery failures with ErrorCode). Only use `console.error` in catch blocks for actual function failures. Never use `console.warn`.
+
+**Response bodies**: Always pass a string to `Twilio.Response.setBody()`, not a plain object. Use `JSON.stringify()` and set `Content-Type: application/json`. Passing an object causes `Buffer.from(object)` TypeError in the runtime.
+
+```javascript
+// WRONG — triggers Buffer TypeError
+response.setBody({ success: true });
+
+// RIGHT — explicit JSON serialization
+response.appendHeader('Content-Type', 'application/json');
+response.setBody(JSON.stringify({ success: true }));
+```
+
 ## Security
 
 All functions use `.protected.js` suffix, requiring valid Twilio request signatures. This prevents:

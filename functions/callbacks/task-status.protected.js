@@ -52,7 +52,7 @@ exports.handler = async function (context, event, callback) {
   const resourceType = TaskSid ? 'task' : ReservationSid ? 'reservation' : 'worker';
 
   if (!resourceSid) {
-    console.error('No identifiable resource SID in TaskRouter callback');
+    console.log('No identifiable resource SID in TaskRouter callback');
     return callback(null, { success: false, error: 'Missing resource SID' });
   }
 
@@ -94,7 +94,8 @@ exports.handler = async function (context, event, callback) {
     // Return success
     const response = new Twilio.Response();
     response.setStatusCode(200);
-    response.setBody({ success: true, eventType: EventType });
+    response.appendHeader('Content-Type', 'application/json');
+    response.setBody(JSON.stringify({ success: true, eventType: EventType }));
 
     return callback(null, response);
   } catch (error) {
@@ -102,11 +103,12 @@ exports.handler = async function (context, event, callback) {
 
     const response = new Twilio.Response();
     response.setStatusCode(200);
-    response.setBody({
+    response.appendHeader('Content-Type', 'application/json');
+    response.setBody(JSON.stringify({
       success: false,
       error: error.message,
       eventType: EventType,
-    });
+    }));
 
     return callback(null, response);
   }

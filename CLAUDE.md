@@ -70,6 +70,8 @@ Agent Teams coordinate multiple Claude Code instances for parallel work. Use `/t
 | MCP server patterns | [agents/mcp-servers/twilio/CLAUDE.md](/agents/mcp-servers/twilio/CLAUDE.md) |
 | Tool boundaries | [.claude/references/tool-boundaries.md](/.claude/references/tool-boundaries.md) |
 | Voice/TwiML patterns | [functions/voice/CLAUDE.md](/functions/voice/CLAUDE.md) |
+| Voice use case product map | `.claude/skills/voice-use-case-map.md` (load on demand) |
+| Voice use case product map | `.claude/skills/voice-use-case-map.md` (load on demand) |
 | SMS/MMS patterns | [functions/messaging/CLAUDE.md](/functions/messaging/CLAUDE.md) |
 | Real-time voice AI | [functions/conversation-relay/CLAUDE.md](/functions/conversation-relay/CLAUDE.md) |
 | Verification patterns | [functions/verify/CLAUDE.md](/functions/verify/CLAUDE.md) |

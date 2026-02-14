@@ -328,6 +328,7 @@ Before starting a design review, optimize your context:
 1. **Load domain CLAUDE.md**: If working on voice, load `functions/voice/CLAUDE.md`
 2. **Reference similar functions**: Find existing patterns to follow
 3. **Load multi-agent patterns skill**: `.claude/skills/multi-agent-patterns.md` for complex designs
+4. **Load voice use case product map**: `.claude/skills/voice-use-case-map.md` when recommending Twilio products for a voice use case — provides definitive per-use-case product mappings
 
 ### Manage Context During Review
 

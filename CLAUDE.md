@@ -71,7 +71,6 @@ Agent Teams coordinate multiple Claude Code instances for parallel work. Use `/t
 | Tool boundaries | [.claude/references/tool-boundaries.md](/.claude/references/tool-boundaries.md) |
 | Voice/TwiML patterns | [functions/voice/CLAUDE.md](/functions/voice/CLAUDE.md) |
 | Voice use case product map | `.claude/skills/voice-use-case-map.md` (load on demand) |
-| Voice use case product map | `.claude/skills/voice-use-case-map.md` (load on demand) |
 | SMS/MMS patterns | [functions/messaging/CLAUDE.md](/functions/messaging/CLAUDE.md) |
 | Real-time voice AI | [functions/conversation-relay/CLAUDE.md](/functions/conversation-relay/CLAUDE.md) |
 | Verification patterns | [functions/verify/CLAUDE.md](/functions/verify/CLAUDE.md) |
@@ -190,6 +189,7 @@ For the full capture-promote-clear documentation workflow, see the `doc-flywheel
 - Prioritize implementation over planning. If a session has a concrete task, produce working code — not just plans, outlines, or analysis documents. Keep planning to a short preamble before coding.
 - Do not convert lazy/conditional `require()` calls to static `import` statements without verifying the conditional logic still works. Node.js conditional requires exist for a reason (optional dependencies, environment-specific loading).
 - Run the full relevant test suite before presenting work as complete. A passing subset is not sufficient — regressions in unrelated tests still need to be caught.
+- After modifying TypeScript files, run `tsc --noEmit` in the relevant package to verify compilation before committing.
 
 # Testing
 
@@ -274,8 +274,12 @@ The following slash commands are available for specialized tasks:
 
 | Command | Description |
 |---------|-------------|
+| `/commit [scope]` | Git commit with pre-commit checks, conventional messages, todo tracking |
+| `/push` | Push to remote with test verification and branch tracking |
 | `/preflight` | Environment verification — CLI profile, env vars, auth validity |
 | `/twilio-docs [topic]` | Searches Twilio documentation |
 | `/twilio-logs` | Fetches and analyzes Twilio debugger logs |
 | `/deploy [env]` | Deployment helper with pre/post checks |
+| `/e2e-test [scope]` | E2E tests against live Twilio — real numbers, deep validation |
+| `/validate [type] [SID]` | Deep validation of individual Twilio resources |
 | `/context [action]` | Context optimization - summarize, load, or analyze context |

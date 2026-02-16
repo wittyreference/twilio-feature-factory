@@ -145,6 +145,16 @@ response.appendHeader('Content-Type', 'application/json');
 response.setBody(JSON.stringify({ success: true }));
 ```
 
+## Debugging Callbacks
+
+**Two-bug masking**: Multiple independent root causes can produce the same debugger alert code. When an error persists after a fix, check whether a second cause is generating the same code. For example, 82005 alerts can come from both a `setBody(object)` crash AND `console.error()` logging — fixing one doesn't silence the other.
+
+**Interpreting `responseBody` in debugger alerts**:
+- `responseBody: null` → the function crashed before writing a response. Look for runtime errors (TypeError, missing modules, unhandled rejections).
+- `responseBody` with valid data → the function completed successfully, but something else triggered the alert (e.g., `console.error` or `console.warn` calls). Look at log statements, not execution flow.
+
+This distinction narrows root cause investigation significantly.
+
 ## Security
 
 All functions use `.protected.js` suffix, requiring valid Twilio request signatures. This prevents:

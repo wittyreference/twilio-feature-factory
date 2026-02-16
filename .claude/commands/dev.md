@@ -186,29 +186,13 @@ exports.handler = async (context, event, callback) => {
 
 ## Commit Guidelines
 
-### Message Format
-```
-[type]: Brief description in imperative mood
+After implementation passes all tests, commit using `/commit`. Key rules:
 
-- Detail 1
-- Detail 2
+- NEVER use `--no-verify`
+- Conventional commit types: `feat`, `fix`, `test`, `refactor`, `docs`
+- Co-Authored-By line is added automatically by `/commit`
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
-```
-
-### Types
-- `feat`: New feature
-- `fix`: Bug fix
-- `test`: Adding tests
-- `refactor`: Code restructuring
-- `docs`: Documentation only
-
-### NEVER Use
-```bash
-git commit --no-verify  # NEVER use this
-```
+If committing manually (without `/commit`), follow the format in CLAUDE.md.
 
 ## Output Format
 

@@ -20,7 +20,7 @@ You are the Orchestrator for this Twilio prototyping project. Your role is to co
 Full development pipeline for new functionality.
 
 ```
-/architect ──► /spec ──► /test-gen ──► /dev ──► /review ──► /test ──► /docs
+/architect ──► /spec ──► /test-gen ──► /dev ──► /review ──► /test ──► /docs ──► /commit ──► /push
 ```
 
 **Use when**: Building new Twilio functionality from scratch
@@ -29,7 +29,7 @@ Full development pipeline for new functionality.
 Quick fix pipeline for resolving issues.
 
 ```
-/twilio-logs ──► /architect (diagnose) ──► /test-gen (regression) ──► /dev ──► /review ──► /test
+/twilio-logs ──► /architect (diagnose) ──► /test-gen (regression) ──► /dev ──► /review ──► /test ──► /commit
 ```
 
 **Use when**: Fixing broken functionality, addressing errors
@@ -38,7 +38,7 @@ Quick fix pipeline for resolving issues.
 Improve code structure without changing behavior.
 
 ```
-/test ──► /architect ──► /dev ──► /review ──► /test
+/test ──► /architect ──► /dev ──► /review ──► /test ──► /commit
 ```
 
 **Use when**: Cleaning up code, improving performance, restructuring
@@ -60,6 +60,10 @@ Review code for security issues.
 ```
 
 **Use when**: Auditing for vulnerabilities, credential exposure, input validation
+
+### Terminal Steps
+
+All workflows that produce code changes should end with `/commit` to stage and commit with validation. If the work is ready for remote, follow with `/push`. These are optional — the user may prefer to commit/push manually.
 
 ## Orchestration Protocol
 

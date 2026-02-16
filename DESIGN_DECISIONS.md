@@ -1148,6 +1148,45 @@ The prompt explicitly names MCP validation tools (`validate_call`, `validate_mes
 
 ---
 
+## Decision 25: Scope-Parallel Refactoring via Task Subagents
+
+### Context
+
+The Claude Code Insights report showed 507 sequential Edit calls across 52 sessions for cross-cutting refactors (ESLint migrations, CLAUDE.md decomposition). Agent Teams exist but split by role (architect/builder/qa), not by scope. Sequential file-by-file editing across a codebase with 9 function domains and 4 agent packages is the throughput bottleneck for cross-cutting changes.
+
+### Decision
+
+**Encode scope-parallel refactoring as a prompt file (`scripts/headless-tasks/parallel-refactor.md`) that uses the Task tool's native subagent parallelism — one subagent per function domain or agent package.**
+
+The prompt reads a refactor spec from `.meta/refactor-spec.md`, identifies affected scope units, spawns parallel `general-purpose` subagents (each scoped to one directory with its own test command), then runs the full suite and commits.
+
+### Rationale
+
+1. **Task subagents already support parallel execution** — spawning multiple in a single message runs them concurrently
+2. **No new infrastructure** — just a prompt file. The headless runner, audit logging, and tool permissions all exist
+3. **Complementary to Agent Teams** — teams split by role (expertise), this splits by scope (directory). Different axes for different problems
+4. **Self-verifying subagents** — each runs domain-specific tests (`--testPathPattern=voice`), catching regressions before the coordinator runs the full suite
+
+### Alternatives Considered
+
+- **New queue runner script**: Over-engineering — the Task tool handles parallelism natively. A shell wrapper adds complexity without capability.
+- **Agent Teams refactor workflow**: Teams split by role, not scope. A scope-parallel team config would conflict with the existing coordination model where teammates have distinct responsibilities (architect vs builder vs qa).
+- **Shell-level parallel `run-headless.sh` invocations**: No coordination layer. Multiple independent Claude sessions editing the same codebase creates conflict risk with no merge resolution.
+
+### Consequences
+
+- New prompt file at `scripts/headless-tasks/parallel-refactor.md` (~75 lines)
+- Requires companion spec at `.meta/refactor-spec.md` (user-written, describes the refactor)
+- Invoked via `--prompt-file` (not `--task`) since it needs external input
+- Recommended `--max-turns 60` for moderate refactors
+- Scope isolation relies on prompt discipline ("do NOT edit outside your directory") — not enforced mechanically
+
+### Status
+
+**Accepted** - 2026-02-15
+
+---
+
 ## Adding Your Own Decisions
 
 When making architectural decisions:
@@ -1225,3 +1264,4 @@ When making architectural decisions:
 | 2026-02-11 | D23 | Git checkpoints per phase (lightweight tags, user-prompted rollback, complements sandbox) |
 | 2026-02-11 | D19 | Updated: Implemented and validated via 3 smoke test runs (2 bugs found and fixed, zero false stalls) |
 | 2026-02-15 | D24 | E2E validation as headless task prompt, not queue system |
+| 2026-02-15 | D25 | Scope-parallel refactoring via Task subagents (complements role-parallel Agent Teams) |

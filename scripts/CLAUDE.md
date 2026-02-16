@@ -211,8 +211,19 @@ For complex tasks that don't fit in a one-liner, store prompt files in `scripts/
 - `validate.md` — Full validation plan with step-by-step reporting
 - `test-fix.md` — Test-fix cycle with retry logic
 - `e2e-validate.md` — Autonomous E2E validation: deploy → live calls → callback verification → auto-fix (3 phases, 3 retries each)
+- `parallel-refactor.md` — Scope-parallel refactoring: spawns one Task subagent per domain/package, each self-verifying. Requires companion spec at `.meta/refactor-spec.md`.
 
 Use with: `./scripts/run-headless.sh --prompt-file scripts/headless-tasks/validate.md`
+
+**Parallel refactor workflow:**
+```bash
+# 1. Write your refactor spec
+echo "Replace setBody(obj) with setBody(JSON.stringify(obj)) + Content-Type header" > .meta/refactor-spec.md
+
+# 2. Run it
+CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh \
+  --prompt-file scripts/headless-tasks/parallel-refactor.md --max-turns 60
+```
 
 ### Key Differences from enable-autonomous.sh
 

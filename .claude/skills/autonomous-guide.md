@@ -92,6 +92,8 @@ CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --task validate --ma
 - Supports `--prompt-file` for complex multi-step plans
 - Audit logs saved to `.claude/autonomous-sessions/headless-*.log`
 
+For cross-cutting refactors using parallel sub-agents, see `scripts/headless-tasks/parallel-refactor.md` (requires companion spec at `.meta/refactor-spec.md`).
+
 See `scripts/run-headless.sh --help` for full usage.
 
 > **Note**: Agent teams should NOT be used in autonomous overnight runs. Teammates cannot resume sessions, so if a teammate's session is interrupted, its work is lost. Keep team tasks small enough to complete in one session.

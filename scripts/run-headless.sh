@@ -37,6 +37,9 @@ resolve_task_prompt() {
         deploy-dev)
             echo "Run /preflight to verify environment, then run /deploy dev. Report deployment URLs at the end."
             ;;
+        e2e-validate)
+            cat "$(dirname "$0")/headless-tasks/e2e-validate.md"
+            ;;
         *)
             echo ""
             ;;
@@ -57,7 +60,7 @@ Options:
   --list-tasks       List available pre-defined tasks
   --help             Show this help message
 
-Pre-defined tasks: validate, test-fix, lint-fix, typecheck, deploy-dev
+Pre-defined tasks: validate, test-fix, lint-fix, typecheck, deploy-dev, e2e-validate
 
 Environment:
   CLAUDE_HEADLESS_ACKNOWLEDGED=true  Required. Confirms you accept autonomous risks.
@@ -73,11 +76,12 @@ USAGE
 list_tasks() {
     echo "Available pre-defined tasks:"
     echo ""
-    echo "  validate    Run /preflight checks, then npm test --bail"
-    echo "  test-fix    Run tests, fix failures, commit fixes"
-    echo "  lint-fix    Run linter, fix errors, commit fixes"
-    echo "  typecheck   Run tsc --noEmit, fix type errors, commit fixes"
-    echo "  deploy-dev  Run /preflight, then deploy to dev environment"
+    echo "  validate      Run /preflight checks, then npm test --bail"
+    echo "  test-fix      Run tests, fix failures, commit fixes"
+    echo "  lint-fix      Run linter, fix errors, commit fixes"
+    echo "  typecheck     Run tsc --noEmit, fix type errors, commit fixes"
+    echo "  deploy-dev    Run /preflight, then deploy to dev environment"
+    echo "  e2e-validate  Full E2E: deploy, live calls, callback verification, auto-fix (use --max-turns 80)"
 }
 
 # Parse arguments

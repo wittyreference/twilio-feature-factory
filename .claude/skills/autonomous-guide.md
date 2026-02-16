@@ -82,6 +82,7 @@ CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --task validate --ma
 | `lint-fix` | Run linter, fix errors, commit fixes |
 | `typecheck` | Run tsc --noEmit, fix type errors, commit fixes |
 | `deploy-dev` | Run /preflight, then deploy to dev |
+| `e2e-validate` | Full E2E: deploy, live calls, callback verification, auto-fix (use `--max-turns 80`) |
 
 **Key differences from interactive autonomous mode:**
 - Uses `claude -p` (non-interactive) — no terminal UI, no countdown, no typing prompt

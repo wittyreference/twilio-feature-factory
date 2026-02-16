@@ -1109,6 +1109,45 @@ Key properties:
 
 ---
 
+## Decision 24: E2E Validation as Headless Task Prompt, Not Queue System
+
+### Context
+
+A Claude Code Insights report identified 16 "wrong_approach" friction events during Twilio validation sessions — the agent would misdiagnose live service failures, skip E2E phases, or fail to use the correct MCP validation tools. The report recommended an "autonomous test-iterate-fix loop" pattern. The raw concept (captured in `.meta/prompt-queue.md`) suggested building infrastructure for sequential prompt execution with retry budgets.
+
+### Decision
+
+**Encode the E2E validation loop as a headless task prompt file (`scripts/headless-tasks/e2e-validate.md`), not as a queue runner, SDK orchestration, or new infrastructure.**
+
+The prompt explicitly names MCP validation tools (`validate_call`, `validate_message`, `validate_debugger`), includes "Do NOT skip live call phases", and specifies per-phase retry budgets. Invoked via `./scripts/run-headless.sh --task e2e-validate --max-turns 80`.
+
+### Rationale
+
+1. **The friction was prompt quality, not infrastructure** — all 16 events were solvable by encoding domain knowledge into the prompt (which tools to use, which phases not to skip, how to diagnose async failures)
+2. **Existing infrastructure handles execution** — `run-headless.sh` already supports `--prompt-file`, `--max-turns`, audit logging, and pre-approved tools
+3. **Single-agent task** — the E2E loop is one agent running sequential steps with retries, not a multi-agent pipeline (which is what Feature Factory provides)
+4. **Prompt files iterate fast** — text, not code. When new failure modes emerge, update the prompt. No build step, no tests to update.
+
+### Alternatives Considered
+
+- **Queue runner wrapper script**: Over-engineering — there is no queue, just one E2E workflow. `scripts/headless-tasks/` + `--prompt-file` scales naturally if more tasks emerge.
+- **Feature Factory workflow**: Wrong abstraction — FF orchestrates multi-agent pipelines with phase transitions. E2E validation is a single agent deploying, testing, and fixing.
+- **New slash command**: `/e2e-test` already exists for interactive use. The headless task is its unattended equivalent.
+- **Retry framework in shell**: The retry logic lives in the prompt ("up to 3 retries per phase"), same pattern as `test-fix.md`. Shell-level retry would duplicate what the agent does naturally.
+
+### Consequences
+
+- New pre-defined task `e2e-validate` in `run-headless.sh` (reads from prompt file via `cat`)
+- Prompt file at `scripts/headless-tasks/e2e-validate.md` (~40 lines, 3 phases with retry instructions)
+- Recommended `--max-turns 80` (default 30 is insufficient for E2E with retries)
+- Prompt effectiveness is the main risk — will need iterative refinement as new failure modes surface
+
+### Status
+
+**Accepted** - 2026-02-15
+
+---
+
 ## Adding Your Own Decisions
 
 When making architectural decisions:
@@ -1185,3 +1224,4 @@ When making architectural decisions:
 | 2026-02-11 | D22 | Phase retry with feedback (LoopAgent pattern, shared executePhaseWithRetry) |
 | 2026-02-11 | D23 | Git checkpoints per phase (lightweight tags, user-prompted rollback, complements sandbox) |
 | 2026-02-11 | D19 | Updated: Implemented and validated via 3 smoke test runs (2 bugs found and fixed, zero false stalls) |
+| 2026-02-15 | D24 | E2E validation as headless task prompt, not queue system |

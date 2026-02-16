@@ -202,6 +202,7 @@ CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --task validate --ma
 | `lint-fix` | Run linter, fix errors, commit fixes. |
 | `typecheck` | Run `tsc --noEmit` in MCP server, fix errors, commit. |
 | `deploy-dev` | Run /preflight, then deploy to dev. Report URLs. |
+| `e2e-validate` | Full E2E: deploy, live calls, callback verification, auto-fix. Use `--max-turns 80`. |
 
 ### Task Prompt Files
 
@@ -209,6 +210,7 @@ For complex tasks that don't fit in a one-liner, store prompt files in `scripts/
 
 - `validate.md` — Full validation plan with step-by-step reporting
 - `test-fix.md` — Test-fix cycle with retry logic
+- `e2e-validate.md` — Autonomous E2E validation: deploy → live calls → callback verification → auto-fix (3 phases, 3 retries each)
 
 Use with: `./scripts/run-headless.sh --prompt-file scripts/headless-tasks/validate.md`
 

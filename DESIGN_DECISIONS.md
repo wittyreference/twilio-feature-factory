@@ -1187,6 +1187,48 @@ The prompt reads a refactor spec from `.meta/refactor-spec.md`, identifies affec
 
 ---
 
+## Decision 26: Session Bootstrap as Hook Enhancement
+
+### Context
+
+Claude repeatedly loses hard-won debugging knowledge across session boundaries — wrong CLI profiles, misremembered protocol fields, expired auth tokens discovered late. The existing infrastructure (MEMORY.md, hooks, flywheel) handles session *tracking* well but doesn't address session *verification* or *knowledge consolidation*. Three sessions were lost entirely to expired credentials discovered too late.
+
+### Decision
+
+**Add automatic environment verification to the `session-start-log.sh` hook, and consolidate costly cross-session failures into an Architectural Invariants section in root CLAUDE.md.**
+
+Two complementary changes:
+
+1. **Bootstrap checks in session-start hook** — Three local-only checks (<500ms, no API calls): `.env` file validation, CLI profile existence, stale session warning. Output to stderr (Claude sees these). Hook always exits 0.
+
+2. **Architectural Invariants in CLAUDE.md** — Cross-reference index of 9 rules that have each caused real debugging time loss (setBody strings, console.error alerts, ConversationRelay `last` field, etc.). Loaded every session without requiring domain-specific docs.
+
+### Rationale
+
+1. **Content, not infrastructure**: The gap was knowledge consolidation, not tooling. The hook and CLAUDE.md are existing mechanisms — the change is what they contain.
+2. **Two-tier verification**: Hook catches "you forgot to set up" (instant, automatic). `/preflight` catches "your setup expired" (slower, manual, makes API calls).
+3. **Zero-risk**: Hook always exits 0, checks are local-only, warnings are informational.
+4. **Leverages existing context injection**: CLAUDE.md is loaded every session. MEMORY.md is loaded every session. Both now carry the cross-session knowledge that was being lost.
+
+### Alternatives Considered
+
+- **Separate bootstrap script**: Would require manual invocation — defeats the purpose of automatic verification.
+- **Full `/preflight` on session start**: Too slow (API calls), could block session start on network issues.
+- **Only MEMORY.md changes**: MEMORY.md has a 200-line truncation limit. Architectural invariants belong in the project-level CLAUDE.md.
+
+### Consequences
+
+- Every session starts with environment health warnings (if any)
+- Architectural invariants are always in context, preventing repeated mistakes
+- MEMORY.md is leaner (~23 lines vs ~52), with no duplication of CLAUDE.md content
+- `learnings.md` stays focused on recent/unpromoted discoveries (~85 lines vs ~846)
+
+### Status
+
+**Implemented** - 2026-02-15
+
+---
+
 ## Adding Your Own Decisions
 
 When making architectural decisions:
@@ -1265,3 +1307,4 @@ When making architectural decisions:
 | 2026-02-11 | D19 | Updated: Implemented and validated via 3 smoke test runs (2 bugs found and fixed, zero false stalls) |
 | 2026-02-15 | D24 | E2E validation as headless task prompt, not queue system |
 | 2026-02-15 | D25 | Scope-parallel refactoring via Task subagents (complements role-parallel Agent Teams) |
+| 2026-02-15 | D26 | Session bootstrap as hook enhancement (auto-verification + architectural invariants) |

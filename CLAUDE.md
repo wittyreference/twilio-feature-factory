@@ -185,6 +185,20 @@ For the full capture-promote-clear documentation workflow, see the `doc-flywheel
 - When a multi-step validation or implementation plan exists, NEVER silently skip steps. If a step cannot be completed, explicitly report it as skipped with the reason. Report completion status for every step, not just the ones that succeeded.
 - If authentication or credentials expire mid-session, surface it to the user immediately rather than attempting workarounds or continuing with degraded access.
 
+## Architectural Invariants
+
+Rules that have each caused real debugging time loss. These exist in domain-specific CLAUDE.md files — this index ensures they're loaded every session.
+
+- **`Twilio.Response.setBody()` requires strings** — Passing objects causes `Buffer.from(object)` TypeError. Always `JSON.stringify()` + Content-Type header. (~29 latent instances across voice/ and conversation-relay/)
+- **`console.error()` → 82005 alerts** — Use `console.log()` for operational logging. Only `console.error()` in catch blocks. `console.warn()` → 82004.
+- **ConversationRelay uses `last`, not `isFinal`** — Protocol sends `{ last: true }`. Checking `isFinal` silently drops all follow-up utterances.
+- **Env vars can reset on deploy** — `twilio serverless:deploy` doesn't preserve runtime env vars. Always verify after deployment.
+- **CLI profile and `.env` are independent** — CLI profile can point to main account while `.env` has subaccount SID. Check both before operations.
+- **TwiML: one document controls a call at a time** — Updating a participant's TwiML exits their current state (conference, queue). Exception: `<Start><Stream>`, `<Start><Recording>`, `<Start><Siprec>` fork background processes.
+- **Voice Intelligence: `source_sid`, not `media_url`** — Use Recording SID for transcript creation. `media_url` requires auth the Intelligence API can't provide.
+- **Google Neural voices for ConversationRelay** — Polly voices may be blocked (error 64101). Use `Google.en-US-Neural2-F` as default.
+- **`<Start><Recording>` syntax is `.recording()`, not `.record()`** — `twiml.start().recording({...})` is correct.
+
 # Session discipline
 
 - Prioritize implementation over planning. If a session has a concrete task, produce working code — not just plans, outlines, or analysis documents. Keep planning to a short preamble before coding.

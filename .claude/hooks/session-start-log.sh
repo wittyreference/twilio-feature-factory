@@ -56,13 +56,58 @@ if [ "$SOURCE" = "compact" ] || [ "$SOURCE" = "clear" ] || [ "$SOURCE" = "plan" 
     fi
 fi
 
-# Reset session tracking on any session start (fresh session = fresh tracking)
+# --- Session Bootstrap Checks ---
+# Local-only checks (no API calls, <500ms). Warnings to stderr so Claude sees them.
+# These catch "you forgot to set up" issues. Run /preflight for full validation.
+
+# Determine session dir early for stale check
 if [ "$CLAUDE_META_MODE" = "true" ]; then
     SESSION_DIR="$PROJECT_ROOT/.meta"
 else
     SESSION_DIR="$PROJECT_ROOT/.claude"
 fi
 
+# 1. Stale session check (BEFORE reset — checks the OLD timestamp)
+if [ -f "$SESSION_DIR/.session-start" ]; then
+    PREV_START=$(cat "$SESSION_DIR/.session-start" 2>/dev/null)
+    NOW=$(date +%s)
+    if [ -n "$PREV_START" ] && [ "$PREV_START" -gt 0 ] 2>/dev/null; then
+        AGE_HOURS=$(( (NOW - PREV_START) / 3600 ))
+        if [ "$AGE_HOURS" -gt 48 ]; then
+            echo "WARNING: Previous session started ${AGE_HOURS}h ago. Flywheel 'recent commits' may return excessive results." >&2
+        fi
+    fi
+fi
+
+# 2. .env file check
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    MISSING_VARS=""
+    for VAR_NAME in TWILIO_ACCOUNT_SID TWILIO_AUTH_TOKEN TWILIO_PHONE_NUMBER; do
+        VAR_VALUE=$(grep "^${VAR_NAME}=" "$PROJECT_ROOT/.env" 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+        if [ -z "$VAR_VALUE" ]; then
+            MISSING_VARS="${MISSING_VARS} ${VAR_NAME}"
+        elif [ "$VAR_VALUE" = "your_account_sid_here" ] || [ "$VAR_VALUE" = "your_auth_token_here" ] || [ "$VAR_VALUE" = "your_phone_number_here" ] || echo "$VAR_VALUE" | grep -qE '^(xxx|placeholder|changeme|TODO)'; then
+            MISSING_VARS="${MISSING_VARS} ${VAR_NAME}(placeholder)"
+        fi
+    done
+    if [ -n "$MISSING_VARS" ]; then
+        echo "WARNING: .env issues:${MISSING_VARS}" >&2
+    fi
+else
+    echo "WARNING: No .env file found. Copy .env.example and configure credentials." >&2
+fi
+
+# 3. CLI profile check (reads local config, no network)
+if command -v twilio >/dev/null 2>&1; then
+    ACTIVE_PROFILE=$(twilio profiles:list 2>/dev/null | grep -E '(true|Active)' | head -1)
+    if [ -z "$ACTIVE_PROFILE" ]; then
+        echo "WARNING: No active Twilio CLI profile. Run 'twilio profiles:create' or 'twilio profiles:use <name>'." >&2
+    fi
+fi
+
+echo "Run /preflight for full environment validation." >&2
+
+# --- Reset Session Tracking ---
 # Reset session-start timestamp for the flywheel
 date +%s > "$SESSION_DIR/.session-start"
 

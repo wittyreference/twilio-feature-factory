@@ -83,6 +83,7 @@ Agent Teams coordinate multiple Claude Code instances for parallel work. Use `/t
 | Twilio CLI reference | [.claude/references/twilio-cli.md](/.claude/references/twilio-cli.md) |
 | Hooks reference | `.claude/skills/hooks-reference.md` (load on demand) |
 | Autonomous mode | `.claude/skills/autonomous-guide.md` (load on demand) |
+| Headless runner | `scripts/run-headless.sh --help` (CI/CD, `claude -p` wrapper) |
 | Agent teams details | `.claude/skills/agent-teams-guide.md` (load on demand) |
 | Doc flywheel | `.claude/skills/doc-flywheel.md` (load on demand) |
 | Implementation progress | Todo file (see [Meta-Development Mode](#meta-development-mode)) |

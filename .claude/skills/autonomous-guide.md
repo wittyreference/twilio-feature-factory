@@ -55,4 +55,42 @@ Removes budget/turn limits, auto-approves phase transitions. Session summary dis
 
 See [Feature Factory CLAUDE.md](/agents/feature-factory/CLAUDE.md) for full documentation.
 
+## Headless Path (CI/CD / Unattended)
+
+Run Claude Code non-interactively with `claude -p`. No terminal UI, no human input — true fire-and-forget. Acknowledgment via env var (CI/CD pattern).
+
+```bash
+# One-off task
+CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh "Run npm test and fix failures"
+
+# Pre-defined task
+CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --task test-fix
+
+# Complex task from file
+CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --prompt-file .meta/plans/validation-plan.md --max-turns 80
+
+# CI/CD pipeline (low turn limit for quick checks)
+CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --task validate --max-turns 20
+```
+
+**Pre-defined tasks:**
+
+| Task | What it does |
+|------|-------------|
+| `validate` | Run /preflight, then npm test --bail |
+| `test-fix` | Run tests, fix failures, commit fixes |
+| `lint-fix` | Run linter, fix errors, commit fixes |
+| `typecheck` | Run tsc --noEmit, fix type errors, commit fixes |
+| `deploy-dev` | Run /preflight, then deploy to dev |
+
+**Key differences from interactive autonomous mode:**
+- Uses `claude -p` (non-interactive) — no terminal UI, no countdown, no typing prompt
+- Acknowledgment via `CLAUDE_HEADLESS_ACKNOWLEDGED=true` env var only
+- Configurable `--max-turns` (default 30)
+- Machine-readable output via `--output-format stream-json`
+- Supports `--prompt-file` for complex multi-step plans
+- Audit logs saved to `.claude/autonomous-sessions/headless-*.log`
+
+See `scripts/run-headless.sh --help` for full usage.
+
 > **Note**: Agent teams should NOT be used in autonomous overnight runs. Teammates cannot resume sessions, so if a teammate's session is interrupted, its work is lost. Keep team tasks small enough to complete in one session.

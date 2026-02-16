@@ -7,7 +7,8 @@ This directory contains CLI scripts for project setup and maintenance.
 | Script | Command | Purpose |
 |--------|---------|---------|
 | `setup.js` | `npm run setup` | Interactive setup for provisioning Twilio resources |
-| `enable-autonomous.sh` | `./scripts/enable-autonomous.sh` | Launch Claude Code in autonomous mode |
+| `enable-autonomous.sh` | `./scripts/enable-autonomous.sh` | Launch Claude Code in autonomous mode (interactive) |
+| `run-headless.sh` | `./scripts/run-headless.sh` | Run Claude Code non-interactively via `claude -p` (CI/CD) |
 
 ## Setup Script
 
@@ -163,3 +164,66 @@ Session logs are saved to `.claude/autonomous-sessions/autonomous-YYYYMMDD-HHMMS
 - Session start/end timestamps
 - Acknowledgment method
 - All tool invocations (via hooks)
+
+## Headless Runner Script
+
+The `run-headless.sh` script runs Claude Code non-interactively via `claude -p` for CI/CD and unattended workflows.
+
+### What It Does
+
+1. **Validates environment**: Project root, `claude` CLI, env vars
+2. **Requires env var acknowledgment**: `CLAUDE_HEADLESS_ACKNOWLEDGED=true` (no interactive prompt)
+3. **Launches `claude -p`**: Non-interactive — receives prompt, executes autonomously, exits
+4. **Creates audit log**: Logs to `.claude/autonomous-sessions/headless-YYYYMMDD-HHMMSS.log`
+5. **Captures output**: Streams to both stdout and audit log via `tee`
+
+### Usage
+
+```bash
+# One-off prompt
+CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh "Run npm test and fix failures"
+
+# Pre-defined task
+CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --task test-fix
+
+# Complex prompt from file
+CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --prompt-file .meta/plans/validation-plan.md --max-turns 80
+
+# Custom turn limit
+CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --task validate --max-turns 20
+```
+
+### Pre-defined Tasks
+
+| Task | Prompt |
+|------|--------|
+| `validate` | Run /preflight, then `npm test --bail`. Report results. |
+| `test-fix` | Run tests, fix failures, re-run, commit fixes. |
+| `lint-fix` | Run linter, fix errors, commit fixes. |
+| `typecheck` | Run `tsc --noEmit` in MCP server, fix errors, commit. |
+| `deploy-dev` | Run /preflight, then deploy to dev. Report URLs. |
+
+### Task Prompt Files
+
+For complex tasks that don't fit in a one-liner, store prompt files in `scripts/headless-tasks/`:
+
+- `validate.md` — Full validation plan with step-by-step reporting
+- `test-fix.md` — Test-fix cycle with retry logic
+
+Use with: `./scripts/run-headless.sh --prompt-file scripts/headless-tasks/validate.md`
+
+### Key Differences from enable-autonomous.sh
+
+| | `enable-autonomous.sh` | `run-headless.sh` |
+|-|----------------------|-------------------|
+| Mode | Interactive (`claude`) | Non-interactive (`claude -p`) |
+| Acknowledgment | Type phrase in terminal | Env var `CLAUDE_HEADLESS_ACKNOWLEDGED=true` |
+| Terminal | Required (box UI, countdown) | Not required |
+| Human present | Yes (types acknowledgment) | No (fire-and-forget) |
+| Turn limit | None (runs until done) | `--max-turns` (default 30) |
+| Output | Interactive terminal | `stream-json` (machine-readable) |
+| Use case | Developer at keyboard | CI/CD, cron, unattended |
+
+### Permissions
+
+Same `--allowedTools` list as `enable-autonomous.sh`. Same quality gates enforced. Same things still blocked (force push, destructive ops).

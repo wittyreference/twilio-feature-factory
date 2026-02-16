@@ -148,7 +148,7 @@ exports.handler = async function (context, event, callback) {
 
     return callback(null, response);
   } catch (error) {
-    console.error('Failed to finalize AI demo:', error.message);
+    console.log('Failed to finalize AI demo:', error.message);
 
     response.setStatusCode(500);
     response.setBody({
@@ -212,7 +212,7 @@ async function generateClaudeSummary(transcript) {
     }
     return 'Summary could not be generated.';
   } catch (error) {
-    console.error('Claude summary error:', error.message);
+    console.log('Claude summary error:', error.message);
     return 'Summary generation failed. See full transcript for details.';
   }
 }

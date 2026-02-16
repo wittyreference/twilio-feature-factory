@@ -88,7 +88,7 @@ exports.handler = async function (context, event, callback) {
         console.log(`Created transcript ${transcriptSid} for recording ${RecordingSid}`);
       } catch (transcriptError) {
         // Log but don't fail the callback - transcript creation is async
-        console.error('Failed to create transcript:', transcriptError.message);
+        console.log('Failed to create transcript:', transcriptError.message);
       }
     }
 
@@ -171,7 +171,7 @@ exports.handler = async function (context, event, callback) {
 
     return callback(null, response);
   } catch (error) {
-    console.error('Recording callback error:', error.message);
+    console.log('Recording callback error:', error.message);
 
     response.setStatusCode(200); // Return 200 to prevent Twilio retries
     response.setBody({

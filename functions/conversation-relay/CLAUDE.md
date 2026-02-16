@@ -391,7 +391,7 @@ const transcript = await client.intelligence.v2.transcripts.create({
 | Call says "not configured" (8s) | CONVERSATION_RELAY_URL not set after deploy | Redeploy with correct env var or set in Twilio Console |
 | Transcript callback skipping | Checking for `status === 'completed'` | Voice Intelligence sends `event_type: voice_intelligence_transcript_available`, not `status` |
 | "Unique name already exists" on callback | Twilio sends duplicate callbacks | Handle error 54301 gracefully - document was created on first callback |
-| Error 82005 in notifications | Function ran but called console.error() | Check serverless logs for the actual error message |
+| Error 82005 in notifications | Function has a stray `console.error()` call | Replace with `console.log()` — never use `console.error()` in Twilio Functions |
 
 ## Environment Variables
 

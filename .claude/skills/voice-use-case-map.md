@@ -119,7 +119,7 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 ## Use Case 1: Voice Notifications
 
-**Summary:** Outbound information delivery — appointment reminders, payment alerts, OTPs, emergency notifications. The most common entry point on the use case ladder. The core pattern is simple: create a call via API, play a message, optionally collect a response, hang up.
+**Summary:** Outbound information delivery — appointment reminders, payment alerts, OTPs, emergency notifications. The most common entry point on the use case ladder. The core pattern is simple: create a call via API, <Play> or <Say> a message, optionally collect a response, hang up.
 
 ### Software Tools
 

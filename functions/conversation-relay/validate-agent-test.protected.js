@@ -193,7 +193,7 @@ exports.handler = async function (context, event, callback) {
     });
 
   } catch (error) {
-    console.error('Error validating agent test:', error);
+    console.log('Error validating agent test:', error.message);
     results.errors.push(error.message);
 
     return callback(null, {

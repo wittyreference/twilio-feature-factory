@@ -305,7 +305,7 @@ exports.handler = async (context, event, callback) => {
   console.log(`Message ${MessageSid}: ${MessageStatus}`);
 
   if (MessageStatus === 'failed' || MessageStatus === 'undelivered') {
-    console.error(`Delivery failed: ${ErrorCode} - ${ErrorMessage}`);
+    console.log(`Delivery failed: ${ErrorCode} - ${ErrorMessage}`);
     // Handle failure (retry, alert, etc.)
   }
 

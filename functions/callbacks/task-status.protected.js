@@ -99,7 +99,7 @@ exports.handler = async function (context, event, callback) {
 
     return callback(null, response);
   } catch (error) {
-    console.error('Error processing TaskRouter event callback:', error.message);
+    console.log('Error processing TaskRouter event callback:', error.message);
 
     const response = new Twilio.Response();
     response.setStatusCode(200);

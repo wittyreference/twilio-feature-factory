@@ -136,7 +136,7 @@ exports.handler = async function (context, event, callback) {
 
     return callback(null, response);
   } catch (error) {
-    console.error('Transcript callback error:', error.message);
+    console.log('Transcript callback error:', error.message);
 
     response.setStatusCode(200); // Return 200 to prevent retries
     response.setBody({
@@ -310,7 +310,7 @@ async function sendSmsSummary(client, context, callSid, transcript, insights, du
     console.log(`SMS summary sent: ${message.sid} to ${smsTo}`);
     return { sent: true, messageSid: message.sid };
   } catch (err) {
-    console.error(`Failed to send SMS: ${err.message}`);
+    console.log(`Failed to send SMS: ${err.message}`);
     return { sent: false, error: err.message };
   }
 }

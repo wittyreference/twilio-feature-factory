@@ -100,7 +100,7 @@ exports.handler = async function (context, event, callback) {
       return callback(null, response);
     }
   } catch (error) {
-    console.error('Error in fallback handler (this is bad):', error.message);
+    console.log('Error in fallback handler (this is bad):', error.message);
 
     // Return something safe even if our logging failed
     if (isVoice) {

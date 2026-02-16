@@ -85,7 +85,7 @@ exports.handler = async function (context, event, callback) {
     });
 
   } catch (error) {
-    console.error('Error starting agent test:', error);
+    console.log('Error starting agent test:', error.message);
 
     return callback(null, {
       statusCode: 500,

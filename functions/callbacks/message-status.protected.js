@@ -76,7 +76,7 @@ exports.handler = async function (context, event, callback) {
 
     return callback(null, response);
   } catch (error) {
-    console.error('Error processing message status callback:', error.message);
+    console.log('Error processing message status callback:', error.message);
 
     // Still return 200 to prevent Twilio retries
     // The error is logged and can be detected via Function logs

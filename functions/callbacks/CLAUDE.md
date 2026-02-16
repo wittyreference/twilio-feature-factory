@@ -130,9 +130,9 @@ Twilio Functions generate debugger alerts based on log level:
 |-----------|------------|--------|
 | `console.log` | None | Silent — use for all operational logging |
 | `console.warn` | 82004 | Generates warning alert — avoid in callbacks |
-| `console.error` | 82005 | Generates error alert — reserve for catch blocks only |
+| `console.error` | 82005 | Generates error alert — **never use in Twilio Functions** |
 
-**Pattern**: Use `console.log` for all status reporting, including error conditions in callback data (e.g., message delivery failures with ErrorCode). Only use `console.error` in catch blocks for actual function failures. Never use `console.warn`.
+**Pattern**: Use `console.log` for **all** logging in Twilio Functions, including error conditions and catch blocks. `console.error()` and `console.warn()` generate debugger alerts (82005/82004) that pollute monitoring and mask real issues. There is no legitimate reason to use them in serverless functions.
 
 **Response bodies**: Always pass a string to `Twilio.Response.setBody()`, not a plain object. Use `JSON.stringify()` and set `Content-Type: application/json`. Passing an object causes `Buffer.from(object)` TypeError in the runtime.
 
@@ -147,11 +147,11 @@ response.setBody(JSON.stringify({ success: true }));
 
 ## Debugging Callbacks
 
-**Two-bug masking**: Multiple independent root causes can produce the same debugger alert code. When an error persists after a fix, check whether a second cause is generating the same code. For example, 82005 alerts can come from both a `setBody(object)` crash AND `console.error()` logging — fixing one doesn't silence the other.
+**Two-bug masking**: Multiple independent root causes can produce the same debugger alert code. When an error persists after a fix, check whether a second cause is generating the same code. For example, 82005 alerts can come from both a `setBody(object)` crash AND stray `console.error()` calls — fixing one doesn't silence the other.
 
 **Interpreting `responseBody` in debugger alerts**:
 - `responseBody: null` → the function crashed before writing a response. Look for runtime errors (TypeError, missing modules, unhandled rejections).
-- `responseBody` with valid data → the function completed successfully, but something else triggered the alert (e.g., `console.error` or `console.warn` calls). Look at log statements, not execution flow.
+- `responseBody` with valid data → the function completed successfully, but something else triggered the alert (e.g., stray `console.error` or `console.warn` calls). Look at log statements, not execution flow.
 
 This distinction narrows root cause investigation significantly.
 

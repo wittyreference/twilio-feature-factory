@@ -109,7 +109,7 @@ exports.handler = async function (context, event, callback) {
 
     return callback(null, response);
   } catch (error) {
-    console.error('Failed to initiate AI demo call:', error.message);
+    console.log('Failed to initiate AI demo call:', error.message);
 
     response.setStatusCode(500);
     response.setBody({

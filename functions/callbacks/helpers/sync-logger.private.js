@@ -90,7 +90,7 @@ async function logToSync(context, resourceType, resourceSid, callbackData) {
     }
 
     // Re-throw unexpected errors
-    console.error(`Error logging to Sync: ${error.message}`);
+    console.log(`Error logging to Sync: ${error.message}`);
     throw error;
   }
 }
@@ -155,7 +155,7 @@ async function cleanupCallbackData(context, resourceType, resourceSid) {
     console.log(`Cleaned up Sync document ${documentName}`);
   } catch (error) {
     if (error.code !== 20404) {
-      console.error(`Error cleaning up Sync document: ${error.message}`);
+      console.log(`Error cleaning up Sync document: ${error.message}`);
     }
   }
 }

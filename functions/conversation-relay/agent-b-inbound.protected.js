@@ -24,7 +24,7 @@ exports.handler = async function (context, event, callback) {
   const relayUrl = context.AGENT_B_RELAY_URL;
 
   if (!relayUrl) {
-    console.error('AGENT_B_RELAY_URL not configured');
+    console.log('AGENT_B_RELAY_URL not configured');
     twiml.say({
       voice: 'Polly.Amy',
     }, 'Agent B relay URL is not configured. Please check the environment variables.');

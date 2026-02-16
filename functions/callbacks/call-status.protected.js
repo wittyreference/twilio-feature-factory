@@ -91,7 +91,7 @@ exports.handler = async function (context, event, callback) {
 
     return callback(null, response);
   } catch (error) {
-    console.error('Error processing call status callback:', error.message);
+    console.log('Error processing call status callback:', error.message);
 
     const response = new Twilio.Response();
     response.setStatusCode(200);

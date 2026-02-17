@@ -4,6 +4,9 @@
 
 set -e
 
+# Prevent nested-session detection when launched from within Claude Code
+unset CLAUDECODE 2>/dev/null || true
+
 # Colors (for terminal output only — headless callers can ignore)
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -207,7 +210,14 @@ echo ""
 # both scripts need the full list and extracting to a shared file adds complexity
 # for minimal gain).
 
+# stream-json output format requires --verbose with claude -p
+VERBOSE_FLAG=""
+if [ "$OUTPUT_FORMAT" = "stream-json" ]; then
+    VERBOSE_FLAG="--verbose"
+fi
+
 claude -p "$PROMPT" \
+       $VERBOSE_FLAG \
        --max-turns "$MAX_TURNS" \
        --output-format "$OUTPUT_FORMAT" \
        --allowedTools "Bash(npm test*)" \

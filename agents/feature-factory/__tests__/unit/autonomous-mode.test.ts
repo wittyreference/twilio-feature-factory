@@ -5,6 +5,7 @@ import { jest, describe, it, expect, beforeEach, afterEach, afterAll } from '@je
 import {
   displayAutonomousWarning,
   ACKNOWLEDGMENT_PHRASE,
+  requireAcknowledgment,
   generateSessionSummary,
   createAuditLogger,
   isAutonomousCICD,
@@ -224,6 +225,18 @@ describe('Autonomous Mode', () => {
       delete process.env.FEATURE_FACTORY_AUTONOMOUS_ACKNOWLEDGED;
 
       expect(isAutonomousCICD()).toBe(false);
+    });
+
+    it('should resolve requireAcknowledgment() via env vars without readline', async () => {
+      process.env.FEATURE_FACTORY_AUTONOMOUS = 'true';
+      process.env.FEATURE_FACTORY_AUTONOMOUS_ACKNOWLEDGED = 'true';
+
+      const result = await requireAcknowledgment();
+
+      expect(result.enabled).toBe(true);
+      expect(result.acknowledged).toBe(true);
+      expect(result.acknowledgedVia).toBe('environment');
+      expect(result.acknowledgedAt).toBeInstanceOf(Date);
     });
 
     it('should read FEATURE_FACTORY_MAX_DURATION_PER_AGENT from environment', () => {

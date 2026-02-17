@@ -137,6 +137,16 @@ export const ACKNOWLEDGMENT_PHRASE = 'I ACKNOWLEDGE THE RISKS';
 export async function requireAcknowledgment(
   maxAttempts: number = 3
 ): Promise<AutonomousModeConfig> {
+  // Defense-in-depth: skip readline entirely if env vars indicate CI/CD
+  if (isAutonomousCICD()) {
+    return {
+      enabled: true,
+      acknowledged: true,
+      acknowledgedVia: 'environment',
+      acknowledgedAt: new Date(),
+    };
+  }
+
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,

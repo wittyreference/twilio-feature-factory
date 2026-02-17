@@ -39,16 +39,22 @@ export interface CopyBackResult {
 export async function createSandbox(config: SandboxConfig): Promise<SandboxInfo> {
   const { sourceDirectory, verbose } = config;
 
-  // Verify source is a git repo
+  // Verify source is a git repo, auto-init if not
   try {
     execSync('git rev-parse --git-dir', {
       cwd: sourceDirectory,
       stdio: 'pipe',
     });
   } catch {
-    throw new Error(
-      `Source directory is not a git repository: ${sourceDirectory}`
-    );
+    if (verbose) {
+      console.log('  [sandbox] Source is not a git repo, auto-initializing...');
+    }
+    execSync('git init', { cwd: sourceDirectory, stdio: 'pipe' });
+    execSync('git add -A', { cwd: sourceDirectory, stdio: 'pipe' });
+    execSync('git commit -m "sandbox: initial state" --allow-empty', {
+      cwd: sourceDirectory,
+      stdio: 'pipe',
+    });
   }
 
   // Verify clean working tree

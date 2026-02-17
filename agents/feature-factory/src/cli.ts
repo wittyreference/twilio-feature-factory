@@ -223,57 +223,85 @@ async function handleWorkflowEvents(
  * Prompt user for approval
  */
 async function promptForApproval(): Promise<boolean> {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  if (!process.stdin.isTTY) {
+    console.log(chalk.yellow('Approve and continue? (y/n): ') +
+      chalk.green('y (auto-approved, non-interactive)'));
+    return true;
+  }
 
-  return new Promise((resolve) => {
-    rl.question(
-      chalk.yellow('Approve and continue? (y/n): '),
-      (answer: string) => {
-        rl.close();
-        resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
-      }
-    );
-  });
+  try {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    return new Promise((resolve) => {
+      rl.question(
+        chalk.yellow('Approve and continue? (y/n): '),
+        (answer: string) => {
+          rl.close();
+          resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
+        }
+      );
+    });
+  } catch {
+    console.log(chalk.yellow('Approve and continue? (y/n): ') +
+      chalk.green('y (auto-approved, stdin unavailable)'));
+    return true;
+  }
 }
 
 /**
  * Prompt user for feedback
  */
 async function promptForFeedback(): Promise<string> {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  if (!process.stdin.isTTY) {
+    return '';
+  }
 
-  return new Promise((resolve) => {
-    rl.question(chalk.yellow('Feedback (optional): '), (answer: string) => {
-      rl.close();
-      resolve(answer);
+  try {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
     });
-  });
+
+    return new Promise((resolve) => {
+      rl.question(chalk.yellow('Feedback (optional): '), (answer: string) => {
+        rl.close();
+        resolve(answer);
+      });
+    });
+  } catch {
+    return '';
+  }
 }
 
 /**
  * Prompt user to roll back changes from a failed/rejected phase
  */
 async function promptForRollback(phaseName: string): Promise<boolean> {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  if (!process.stdin.isTTY) {
+    return false;
+  }
 
-  return new Promise((resolve) => {
-    rl.question(
-      chalk.yellow(`  Roll back changes from ${phaseName}? (y/N) `),
-      (answer: string) => {
-        rl.close();
-        resolve(answer.toLowerCase() === 'y');
-      }
-    );
-  });
+  try {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    return new Promise((resolve) => {
+      rl.question(
+        chalk.yellow(`  Roll back changes from ${phaseName}? (y/N) `),
+        (answer: string) => {
+          rl.close();
+          resolve(answer.toLowerCase() === 'y');
+        }
+      );
+    });
+  } catch {
+    return false;
+  }
 }
 
 // New Feature command

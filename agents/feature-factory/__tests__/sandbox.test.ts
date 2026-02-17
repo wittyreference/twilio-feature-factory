@@ -71,14 +71,28 @@ describe('Sandbox Lifecycle', () => {
     ).rejects.toThrow('clean working tree');
   });
 
-  it('should fail on non-git directory', async () => {
+  it('should auto-init git on non-git directory', async () => {
     const nonGitDir = await fs.mkdtemp(path.join(os.tmpdir(), 'sandbox-nogit-'));
+    writeFileSync(path.join(nonGitDir, 'readme.txt'), 'hello');
 
+    let sandbox: Awaited<ReturnType<typeof createSandbox>> | null = null;
     try {
-      await expect(
-        createSandbox({ sourceDirectory: nonGitDir })
-      ).rejects.toThrow('not a git repository');
+      sandbox = await createSandbox({ sourceDirectory: nonGitDir });
+
+      // Sandbox should have been created successfully
+      const stat = await fs.stat(sandbox.sandboxDirectory);
+      expect(stat.isDirectory()).toBe(true);
+
+      // The cloned file should be present
+      const content = await fs.readFile(
+        path.join(sandbox.sandboxDirectory, 'readme.txt'),
+        'utf-8'
+      );
+      expect(content).toBe('hello');
     } finally {
+      if (sandbox) {
+        await cleanupSandbox(sandbox.sandboxDirectory);
+      }
       await fs.rm(nonGitDir, { recursive: true, force: true });
     }
   });

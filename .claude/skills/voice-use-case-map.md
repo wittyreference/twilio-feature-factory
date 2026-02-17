@@ -2,7 +2,7 @@
 
 Definitive per-use-case product mapping for Twilio Voice. Load this skill when a user describes what they want to build and you need to recommend which Twilio products, services, and features to include.
 
-**Provenance:** Derived from the Twilio Voice Use Case Domain Expert reference (10 use case slides + summary ladder). Each slide shows a grid of ~60 products with relevant items highlighted per use case. Items marked with `(†)` were borderline in the source material and should be verified with the user.
+**Provenance:** Derived from the Twilio Voice Use Case Domain Expert reference (10 use case slides + summary ladder), enriched with Twilio documentation research for prerequisites, operational gotchas, and cross-cutting constraints.
 
 **Complements:** `.claude/skills/voice.md` — that file covers decision frameworks and architectural patterns. This file covers *which products to recommend* for each use case.
 
@@ -24,6 +24,8 @@ Each product entry within a use case includes:
 - **Why** this product is relevant for the specific use case
 - **When** to invoke it (trigger conditions, key parameters)
 - **When NOT** to invoke it (common misapplications)
+- **Prereqs** — what must exist (Console config, services, infrastructure) before this product works
+- **Gotcha** — critical pitfall that causes silent failure or data loss (only on products that have them)
 
 ---
 
@@ -121,13 +123,17 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 **Summary:** Outbound information delivery — appointment reminders, payment alerts, OTPs, emergency notifications. The most common entry point on the use case ladder. The core pattern is simple: create a call via API, <Play> or <Say> a message, optionally collect a response, hang up.
 
+> Outbound notifications require express consent from recipients. Calls prohibited before 8 AM / after 9 PM in the recipient's local time zone.
+
 ### Software Tools
 
 - **Conversational Intelligence**: Post-call analysis of notification campaigns at scale. Use to detect opt-out intent in recorded responses, monitor sentiment across thousands of calls, and identify failed delivery patterns. Don't use for real-time decisions during the notification call itself.
+  - Prereqs: Intelligence Service SID created in Twilio Console (no API to create — must be manual).
 
 - **Studio**: Visual flow builder for notification sequences. Relevant for teams without developer resources who need to build simple outbound flows. Per project convention, **always prefer Functions over Studio** — Claude Code handles the complexity better.
 
 - **Event Streams**: Stream call events (initiated, ringing, answered, completed) to your analytics pipeline in real time. Essential for monitoring delivery rates across large campaigns. Set up a Webhook or Kinesis sink to track which notifications reached humans vs machines vs failures.
+  - Prereqs: Sink configured (Webhook URL, Kinesis ARN + IAM role, or Segment write key).
 
 - **Functions**: Host your TwiML endpoints for notification call flows. The `action` URL on `<Gather>` and the initial TwiML URL both point here. Keep notification functions simple — play message, optionally gather confirmation, end call.
 
@@ -140,8 +146,10 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 - **`<Say>`**: Primary TwiML verb for notifications. Delivers dynamic TTS content — appointment times, account balances, OTP codes. Use SSML for pauses, emphasis, or spelling out digits. Pair with `<Gather>` when you need the recipient to confirm or respond.
 
 - **Recording**: Record notification calls for compliance and dispute resolution. Set `Record=true` on the Calls API create request to capture the entire call. Particularly important for payment reminders and legal notifications where proof of delivery matters.
+  - Gotcha: Use `source_sid` (Recording SID) for Voice Intelligence transcript creation, NOT `media_url`. The Intelligence API cannot authenticate against protected URLs.
 
 - **`<Transcribe>`**: Transcribe recorded notification calls for searchable compliance archives. Most useful when combined with `<Gather speech>` to capture and log what the recipient said in response. Not needed for simple one-way announcements with no interaction.
+  - Prereqs: Conversational Intelligence Service SID for advanced features (entity detection, PII redaction). Basic transcription works without it.
 
 - **Voice Insights**: Monitor notification campaign performance — answer rates, call duration, call quality scores. The Reports API provides aggregate metrics across campaigns. Use Call Summary to investigate individual failed deliveries. Essential for optimizing large-volume notification systems.
 
@@ -151,17 +159,22 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 ### Features
 
-- **Branded Calls**: Display your business name on the recipient's phone instead of just a number. Critical for notification answer rates — recipients are far more likely to pick up a call labeled "Valley Medical Center" than an unknown number. Requires Voice Integrity approval. Mobile only; use CNAM for landline recipients.
+- **Branded Calls**: Display your business name on the recipient's phone instead of just a number. Critical for notification answer rates — recipients are far more likely to pick up a call labeled "Valley Medical Center" than an unknown number. Mobile only; use CNAM for landline recipients.
+  - Prereqs: Approved Business Profile in Trust Hub + Voice Integrity approval.
 
-- **Enhanced Branded Calling**: Name + logo + call reason on the recipient's screen. Ideal for high-value notifications (healthcare appointments, financial alerts) where trust drives answer rates. Requires SHAKEN/STIR Level A attestation plus signed LOA. Currently in Public Beta.
+- **Enhanced Branded Calling**: Name + logo + call reason on the recipient's screen. Ideal for high-value notifications (healthcare appointments, financial alerts) where trust drives answer rates. Currently in Public Beta.
+  - Prereqs: Approved Business Profile in Trust Hub + Voice Integrity approval. Additionally requires A-level SHAKEN/STIR attestation + signed LOA.
 
 - **SHAKEN/STIR**: Cryptographic attestation proving the calling number is legitimate. Produces the green checkmark on mobile phones. Required foundation for Branded Calling and Enhanced Branded Calling. Set up per-number via Trust Hub with Business Profile.
+  - Prereqs: Primary Customer Profile approved in Trust Hub. BYOC numbers may only receive B or C attestation.
+  - Gotcha: When forwarding calls with preserved caller ID, you must pass the `CallToken` from the inbound webhook to the outbound Calls/Participants API call. `<Dial>` preserves caller ID automatically.
 
 - **CNAM**: Caller Name delivery for landline recipients. Branded Calls only works on mobile — CNAM is the landline equivalent. Register your business name against your Twilio numbers so landline caller ID displays show your name.
 
 - **CPS (Calls Per Second)**: Rate limiting for outbound call volume. Default is 1 CPS — far too low for any meaningful notification campaign. Self-serve up to 5 CPS via Console. Above 5 requires offline approval. Plan CPS needs based on campaign size and delivery window.
 
 - **AMD (Answering Machine Detection)**: Critical for notifications where reaching a human matters. Set `MachineDetection=Enable` on the Calls API create request — returns `AnsweredBy` in the status callback so you can branch logic (play TTS to human, leave voicemail for machine). Use `DetectMessageEnd` mode to wait for the voicemail beep before playing. Don't use for inbound calls or `<Dial>` verb calls.
+  - Gotcha: Does NOT work with SIP Trunking, `<Dial><Client>`, `<Dial><Conference>`, or `<Dial><Queue>`. Synchronous mode (without `AsyncAmd=true`) creates ~4s dead air — real humans hang up. Use `AsyncAmd=true` on Calls API to avoid dead air.
 
 - **SSML TTS**: Fine-grained control over how notification text is spoken. Use `<say-as interpret-as="telephone">` for phone numbers, `<say-as interpret-as="date">` for dates, `<break>` for pauses between information chunks. Essential for notifications with numbers, codes, or structured data.
 
@@ -184,10 +197,12 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 ### Software Tools
 
 - **Conversational Intelligence**: Analyze self-service interactions to find where callers abandon or escalate. Detect recurring intents that the IVR doesn't handle well. Use entity detection to identify products, account types, or issues mentioned during AI-powered self-service sessions.
+  - Prereqs: Intelligence Service SID created in Twilio Console (no API to create — must be manual).
 
 - **Studio**: Visual IVR builder. Per project convention, **always prefer Functions** — complex IVR flows in Studio become unmaintainable spider webs.
 
 - **Event Streams**: Stream IVR interaction events for real-time monitoring of containment rates. Track which menu options callers select, where they drop off, and how long they spend in self-service before escalating.
+  - Prereqs: Sink configured (Webhook URL, Kinesis ARN + IAM role, or Segment write key).
 
 - **Functions**: Host all IVR logic as serverless functions. Each menu level, payment flow, and AI handoff gets its own function. The `action` URL on `<Gather>` chains functions together to build the IVR tree.
 
@@ -201,19 +216,27 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 - **`<Gather>`**: The primary IVR interaction verb. Captures DTMF digits or speech input from callers. Set `input="dtmf speech"` for dual-mode. Use `numDigits` for fixed-length input (account numbers), `finishOnKey` for variable-length. The `action` URL receives the caller's input for routing.
 
-- **`<Pay>`**: PCI-compliant payment capture within the IVR. Handles credit card number, expiration, CVV, and ZIP code collection via DTMF with automatic PCI scope reduction. Configure a payment connector (Stripe, Braintree, etc.) in the Console. Don't build your own DTMF-based payment capture — `<Pay>` handles PCI compliance automatically.
+- **`<Pay>`**: PCI-compliant payment capture within the IVR. Handles credit card number, expiration, CVV, and ZIP code collection via DTMF with automatic PCI scope reduction. Don't build your own DTMF-based payment capture — `<Pay>` handles PCI compliance automatically.
+  - Prereqs: Payment connector configured in Console (Stripe, Braintree, CardConnect, Chase, Adyen, or Generic).
+  - Gotcha: PCI Mode is **irreversible and account-wide** — redacts ALL logs, disables native transcription, auto-deletes recordings after 1 year. Create a separate sub-account for payments. DTMF input only (no speech). Star key (`*`) terminates payment at any time.
 
 - **Conversation Relay**: LLM-powered dynamic conversations replacing rigid menu trees. The caller speaks naturally and the AI agent handles intent detection, slot filling, and response generation. Use when static `<Gather>` menus can't handle the interaction complexity. Requires a WebSocket server with LLM integration.
+  - Prereqs: WebSocket server at `wss://` endpoint, ngrok or public URL for development.
+  - Gotcha: Voice name format differs from `<Say>` — use `en-US-Chirp3-HD-Aoede` not `Google.en-US-Chirp3-HD-Aoede`. 10 consecutive malformed WebSocket messages terminates connection (error 64105). Check `message.last`, never `message.isFinal`.
 
 - **VirtualAgent**: Google Dialogflow integration for AI-powered IVR. Only use if the customer has an existing Dialogflow virtual agent. Otherwise, recommend Conversation Relay for direct LLM integration.
+  - Prereqs: Existing Google Dialogflow CX agent with telephony integration configured.
 
 - **Recording**: Record self-service sessions for QA, compliance, and dispute resolution. Especially important for payment and account-change interactions. Use `<Start><Record>` to begin recording at specific points in the flow rather than recording the entire call.
 
 - **`<Transcribe>`**: Transcribe self-service interactions for searchable records. Useful for AI-powered sessions where you need to audit what the AI said and what the caller requested.
+  - Prereqs: Conversational Intelligence Service SID for advanced features (entity detection, PII redaction). Basic transcription works without it.
 
 - **Voice Insights**: Monitor IVR performance — call duration distributions, drop-off points, quality scores. Use Call Events to see the TwiML execution timeline and identify slow or failing steps in the IVR flow.
 
 - **`<Stream>`**: Send real-time audio to external services during the IVR session. Use `<Start><Stream>` (unidirectional) for live transcription monitoring, or `<Connect><Stream>` (bidirectional) for third-party AI that needs to both listen and speak.
+  - Prereqs (bidirectional): WebSocket server accepting `wss://` connections.
+  - Gotcha: `<Connect><Stream>` (bidirectional) blocks all subsequent TwiML until WebSocket closes. Cannot stop a bidirectional stream without ending the call. Audio is strictly mulaw 8kHz base64 — no format negotiation.
 
 ### Connectivity
 
@@ -230,6 +253,7 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 ### Features
 
 - **SHAKEN/STIR**: Verify incoming caller identity. Check the `StirVerstat` webhook parameter to assess caller trustworthiness — useful for fraud screening before allowing account access via IVR.
+  - Prereqs: Primary Customer Profile approved in Trust Hub. BYOC numbers may only receive B or C attestation.
 
 - **CNAM**: Look up the caller's name for personalized IVR greetings. "Welcome back, John" creates a better experience than generic prompts.
 
@@ -242,6 +266,7 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 - **SIP Header Manipulation**: Pass custom data in SIP headers when transferring calls from IVR to other systems. Include context like "caller selected billing" so the receiving system knows the IVR outcome.
 
 - **AMD**: Detect answering machines on outbound IVR calls (callback scenarios). If the IVR offers "press 1 for a callback," use AMD when placing that callback to detect whether a human answered.
+  - Gotcha: Does NOT work with SIP Trunking, `<Dial><Client>`, `<Dial><Conference>`, or `<Dial><Queue>`. Synchronous mode (without `AsyncAmd=true`) creates ~4s dead air — real humans hang up. Use `AsyncAmd=true` on Calls API to avoid dead air.
 
 - **SSML TTS**: Essential for IVR prompts. Use `<prosody>` to slow down account numbers, `<break>` between menu options, `<emphasis>` for important information. Makes robotic menus sound natural.
 
@@ -266,14 +291,18 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 ### Software Tools
 
 - **Conversational Intelligence**: Real-time and post-call analysis of agent-customer interactions. Detect sentiment shifts, identify coaching opportunities, flag compliance violations. At scale, reveals which agents handle which topics best.
+  - Prereqs: Intelligence Service SID created in Twilio Console (no API to create — must be manual).
 
 - **Studio**: Visual flow builder for routing logic. Per project convention, **always use Functions instead**.
 
 - **Event Streams**: Stream contact center events (call queued, agent assigned, call completed) to your workforce management and analytics platforms. Essential for real-time dashboards showing queue depth, wait times, and agent utilization.
+  - Prereqs: Sink configured (Webhook URL, Kinesis ARN + IAM role, or Segment write key).
 
 - **TaskRouter**: The routing engine for inbound contact centers. Matches incoming calls to available agents based on skills (language, product expertise, tier), queue priority, and agent availability. Manages Workspaces, Workers, TaskQueues, and Workflows. Use this over simple `<Queue>` whenever agents have different skills.
+  - Prereqs: Workspace, Workers, TaskQueues, and Workflow configured before routing works.
 
 - **Sync**: Real-time state synchronization for agent dashboards and supervisor panels. Store agent availability, queue metrics, and call context in Sync Documents/Maps that update in real-time across all connected clients.
+  - Prereqs: Sync Service created (`TWILIO_SYNC_SERVICE_SID`).
 
 - **Functions**: Host all routing logic, TwiML generation, and TaskRouter event handlers. Conference management, warm transfer orchestration, and agent assignment all run as Functions.
 
@@ -284,24 +313,33 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 ### Core Services
 
 - **Conference**: The backbone of contact center calls. Every agent-customer interaction should use Conference (not `<Dial>`) because you'll need warm transfer, hold, mute, coaching, or whisper at some point. Create a uniquely-named conference per call, add customer and agent as participants.
+  - Gotcha: In warm transfers, `endConferenceOnExit` must be deliberately assigned per participant — set `true` on customer and receiving agent, `false` on transferring agent. Updating a participant's TwiML via REST pulls them OUT of the conference (one-document-per-call rule).
 
 - **`<Say>`**: IVR prompts before routing, hold announcements, whisper messages to agents before connecting. "You're receiving a billing call from a premium customer."
 
 - **`<Gather>`**: IVR front-end for intent detection and self-service before routing to agents. Capture the reason for calling to inform routing decisions.
 
 - **`<Pay>`**: Agent-assisted payment capture. The agent guides the caller through payment while `<Pay>` handles PCI-compliant card collection. Reduces PCI scope — the agent never hears card numbers.
+  - Prereqs: Payment connector configured in Console (Stripe, Braintree, CardConnect, Chase, Adyen, or Generic).
+  - Gotcha: PCI Mode is **irreversible and account-wide** — redacts ALL logs, disables native transcription, auto-deletes recordings after 1 year. Create a separate sub-account for payments. DTMF input only (no speech). Star key (`*`) terminates payment at any time.
 
 - **Conversation Relay**: AI-powered front-end before human agents. Handle simple queries via AI, escalate complex ones to humans. The AI agent can also assist the human agent in real-time with suggested responses.
+  - Prereqs: WebSocket server at `wss://` endpoint, ngrok or public URL for development.
+  - Gotcha: Voice name format differs from `<Say>` — use `en-US-Chirp3-HD-Aoede` not `Google.en-US-Chirp3-HD-Aoede`. 10 consecutive malformed WebSocket messages terminates connection (error 64105). Check `message.last`, never `message.isFinal`.
 
 - **VirtualAgent**: Dialogflow-based front-end. Only if the customer has existing Dialogflow infrastructure.
+  - Prereqs: Existing Google Dialogflow CX agent with telephony integration configured.
 
 - **Recording**: Record all agent-customer interactions for QA, compliance, training, and dispute resolution. Use conference-level recording for the full interaction, or per-participant recording when you need to isolate agent vs customer audio.
 
 - **`<Transcribe>`**: Real-time or post-call transcription of agent interactions. Powers live captioning, real-time agent assist, and post-call summarization.
+  - Prereqs: Conversational Intelligence Service SID for advanced features (entity detection, PII redaction). Basic transcription works without it.
 
 - **Voice Insights**: Monitor call quality across the contact center. Identify agents with poor audio quality, detect network issues, and track call disposition patterns. Conference Insights specifically shows participant-level quality.
 
 - **`<Stream>`**: Send real-time audio to AI services for live transcription, sentiment analysis, or agent assist. Use `<Start><Stream>` (unidirectional) alongside the Conference to monitor without disrupting the call.
+  - Prereqs (bidirectional): WebSocket server accepting `wss://` connections.
+  - Gotcha: `<Connect><Stream>` (bidirectional) blocks all subsequent TwiML until WebSocket closes. Cannot stop a bidirectional stream without ending the call. Audio is strictly mulaw 8kHz base64 — no format negotiation.
 
 ### Connectivity
 
@@ -320,10 +358,14 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 ### Features
 
 - **Branded Calls**: Display the contact center's business name on outbound callbacks. When an agent calls a customer back, the customer sees the business name, increasing answer rates.
+  - Prereqs: Approved Business Profile in Trust Hub + Voice Integrity approval.
 
 - **Enhanced Branded Calling**: Name + logo + call reason for premium callback experiences. "Valley Medical — Your test results are ready."
+  - Prereqs: Approved Business Profile in Trust Hub + Voice Integrity approval. Additionally requires A-level SHAKEN/STIR attestation + signed LOA.
 
 - **SHAKEN/STIR**: Attestation for outbound callbacks and verification of inbound caller identity.
+  - Prereqs: Primary Customer Profile approved in Trust Hub. BYOC numbers may only receive B or C attestation.
+  - Gotcha: When forwarding calls with preserved caller ID, you must pass the `CallToken` from the inbound webhook to the outbound Calls/Participants API call. `<Dial>` preserves caller ID automatically.
 
 - **CNAM**: Caller name lookup for inbound calls. Agents see the caller's name before answering.
 
@@ -346,6 +388,7 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 - **Multimodal Realtime API** `(†)`: Enable multimodal interactions (voice + visual) for agent-assisted scenarios where screen sharing or visual aids complement the voice call.
 
 - **AMD**: Detect answering machines on outbound callbacks. When an agent or system calls a customer back, AMD determines if a human answered so the agent isn't wasted on voicemail.
+  - Gotcha: Does NOT work with SIP Trunking, `<Dial><Client>`, `<Dial><Conference>`, or `<Dial><Queue>`. Synchronous mode (without `AsyncAmd=true`) creates ~4s dead air — real humans hang up. Use `AsyncAmd=true` on Calls API to avoid dead air.
 
 - **SSML TTS**: IVR prompts, hold announcements, whisper messages. Use natural-sounding voices for customer-facing prompts and clear, concise whispers for agent instructions.
 
@@ -387,19 +430,25 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 **Summary:** Proactive outbound calling campaigns — collections, surveys, appointment confirmations, proactive support. The key difference from inbound: both parties join via the Participants API (not incoming PSTN + agent dial-in), and AMD optimizes agent time by only connecting agents when humans answer.
 
+> TCPA requires express written consent for automated sales/marketing calls. Maintain DNC registry compliance. Penalties are $500-$1,500 per violation per call.
+
 ### Software Tools
 
 *Same infrastructure as Inbound Contact Center (Use Case 3) — TaskRouter, Sync, Event Streams, Functions, etc. The software tooling is identical; the difference is in call flow patterns.*
 
 - **Conversational Intelligence**: Analyze outbound campaign effectiveness. Detect customer sentiment, identify successful pitch patterns, and flag compliance issues across thousands of outbound calls.
+  - Prereqs: Intelligence Service SID created in Twilio Console (no API to create — must be manual).
 
 - **Studio**: Per project convention, **always use Functions**.
 
 - **Event Streams**: Stream campaign events to analytics. Track dial attempts, connect rates, agent utilization, and disposition codes in real-time.
+  - Prereqs: Sink configured (Webhook URL, Kinesis ARN + IAM role, or Segment write key).
 
 - **TaskRouter**: Route answered outbound calls to available agents. In outbound, TaskRouter assigns agents to answered calls rather than routing incoming calls to agents. The flow reverses: call first, route to agent on answer.
+  - Prereqs: Workspace, Workers, TaskQueues, and Workflow configured before routing works.
 
 - **Sync**: Coordinate campaign state across dialer instances. Track which numbers have been called, agent availability, and campaign progress in real-time.
+  - Prereqs: Sync Service created (`TWILIO_SYNC_SERVICE_SID`).
 
 - **Functions**: Host the outbound dialer logic — Conference creation, Participants API calls, AMD result handling, and agent connection orchestration.
 
@@ -410,24 +459,33 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 ### Core Services
 
 - **Conference**: Central to the outbound pattern. Create a conference, add the customer via Participants API with AMD, then add the agent when the customer answers. This pattern ensures agents only spend time on live conversations.
+  - Gotcha: In warm transfers, `endConferenceOnExit` must be deliberately assigned per participant — set `true` on customer and receiving agent, `false` on transferring agent. Updating a participant's TwiML via REST pulls them OUT of the conference (one-document-per-call rule).
 
 - **`<Say>`**: Play announcements while the agent connects, or deliver automated messages when AMD detects a machine.
 
 - **`<Gather>`**: Collect customer responses during outbound interactions — survey answers, payment confirmations, appointment selections.
 
 - **`<Pay>`**: Agent-assisted payment collection during outbound collection calls. PCI-compliant card capture while the agent guides the customer.
+  - Prereqs: Payment connector configured in Console (Stripe, Braintree, CardConnect, Chase, Adyen, or Generic).
+  - Gotcha: PCI Mode is **irreversible and account-wide** — redacts ALL logs, disables native transcription, auto-deletes recordings after 1 year. Create a separate sub-account for payments. DTMF input only (no speech). Star key (`*`) terminates payment at any time.
 
 - **Conversation Relay**: AI-powered outbound conversations. The AI agent handles the initial outbound call and escalates to a human agent when needed. Useful for high-volume campaigns where AI handles routine interactions.
+  - Prereqs: WebSocket server at `wss://` endpoint, ngrok or public URL for development.
+  - Gotcha: Voice name format differs from `<Say>` — use `en-US-Chirp3-HD-Aoede` not `Google.en-US-Chirp3-HD-Aoede`. 10 consecutive malformed WebSocket messages terminates connection (error 64105). Check `message.last`, never `message.isFinal`.
 
 - **VirtualAgent**: Dialogflow-based outbound automation. Only if existing Dialogflow infrastructure exists.
+  - Prereqs: Existing Google Dialogflow CX agent with telephony integration configured.
 
 - **Recording**: Record all outbound calls for compliance (TCPA, TSR), quality monitoring, and dispute resolution. Especially critical for collections and sales where regulatory scrutiny is high.
 
 - **`<Transcribe>`**: Transcribe outbound calls for compliance auditing. Regulators may require proof of what was said during collections or sales calls.
+  - Prereqs: Conversational Intelligence Service SID for advanced features (entity detection, PII redaction). Basic transcription works without it.
 
 - **Voice Insights**: Campaign analytics — connect rates, average handle time, agent performance, call quality. Reports API provides aggregate campaign metrics.
 
 - **`<Stream>`**: Real-time audio streaming for live compliance monitoring and agent assist during outbound calls.
+  - Prereqs (bidirectional): WebSocket server accepting `wss://` connections.
+  - Gotcha: `<Connect><Stream>` (bidirectional) blocks all subsequent TwiML until WebSocket closes. Cannot stop a bidirectional stream without ending the call. Audio is strictly mulaw 8kHz base64 — no format negotiation.
 
 ### Connectivity
 
@@ -438,14 +496,19 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 *Largely identical to Inbound Contact Center with outbound-specific emphasis:*
 
 - **Branded Calls**: Essential for outbound. Answer rates for unknown numbers are dismally low. Branded Calling showing your business name can double or triple answer rates on outbound campaigns.
+  - Prereqs: Approved Business Profile in Trust Hub + Voice Integrity approval.
 
 - **Enhanced Branded Calling**: Business name + logo + call reason. "Valley Collections — Payment arrangement available." Dramatically improves answer rates for sensitive outbound calls.
+  - Prereqs: Approved Business Profile in Trust Hub + Voice Integrity approval. Additionally requires A-level SHAKEN/STIR attestation + signed LOA.
 
 - **SHAKEN/STIR**: Required for outbound legitimacy. Without attestation, outbound calls are increasingly blocked by carriers.
+  - Prereqs: Primary Customer Profile approved in Trust Hub. BYOC numbers may only receive B or C attestation.
+  - Gotcha: When forwarding calls with preserved caller ID, you must pass the `CallToken` from the inbound webhook to the outbound Calls/Participants API call. `<Dial>` preserves caller ID automatically.
 
 - **CNAM**: Register business name for landline caller ID display on outbound calls.
 
 - **AMD**: The most critical feature for outbound contact centers. Detect human vs answering machine on every outbound call. Agents only connect to humans — answering machines get automated messages or are flagged for retry. This single feature drives the entire efficiency model of outbound contact centers. Use `MachineDetection=Enable` on every Participants API call.
+  - Gotcha: Does NOT work with SIP Trunking, `<Dial><Client>`, `<Dial><Conference>`, or `<Dial><Queue>`. Synchronous mode (without `AsyncAmd=true`) creates ~4s dead air — real humans hang up. Use `AsyncAmd=true` on Calls API to avoid dead air.
 
 - **Anomaly Detection**: Monitor outbound campaigns for unusual patterns — sudden spikes in blocked calls, unexpected carrier rejections, or potential toll fraud.
 
@@ -472,8 +535,10 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 ### Software Tools
 
 - **Conversational Intelligence**: Post-call analysis of AI agent interactions. Detect hallucinations, identify conversations where the AI failed to resolve the caller's need, and monitor prompt injection attempts. Essential for AI agent quality assurance at scale.
+  - Prereqs: Intelligence Service SID created in Twilio Console (no API to create — must be manual).
 
 - **Event Streams**: Stream AI agent events for monitoring dashboards. Track conversation duration, escalation rates, and error events across all AI agent sessions.
+  - Prereqs: Sink configured (Webhook URL, Kinesis ARN + IAM role, or Segment write key).
 
 - **Functions**: Host the WebSocket server for ConversationRelay, LLM integration logic, tool definitions, and escalation handlers. The AI agent's "brain" runs in Functions.
 
@@ -488,16 +553,23 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 - **`<Gather>`**: Capture DTMF input alongside AI conversation. Some interactions require keypad input (account numbers, PIN verification) even within an AI-powered flow.
 
 - **Conversation Relay**: The primary integration path. Establishes a WebSocket connection between the active call and your server. Twilio handles speech-to-text and text-to-speech; your server handles LLM logic, tool execution, and conversation management. Supports interruption handling, turn detection, and DTMF.
+  - Prereqs: WebSocket server at `wss://` endpoint, ngrok or public URL for development.
+  - Gotcha: Voice name format differs from `<Say>` — use `en-US-Chirp3-HD-Aoede` not `Google.en-US-Chirp3-HD-Aoede`. 10 consecutive malformed WebSocket messages terminates connection (error 64105). Check `message.last`, never `message.isFinal`. WebSocket disconnection = call ends (no auto-reconnect) unless an `action` URL fallback is implemented on the `<Connect>` verb.
 
 - **VirtualAgent**: Google Dialogflow CX integration. Twilio routes the call to a Dialogflow agent that handles conversation management. Only use if the customer has invested in Dialogflow infrastructure.
+  - Prereqs: Existing Google Dialogflow CX agent with telephony integration configured.
 
 - **Recording**: Record all AI agent conversations for debugging, compliance, and training data. Critical for identifying when the AI makes mistakes — you need the recording to understand what happened.
+  - Gotcha: Use `source_sid` (Recording SID) for Voice Intelligence transcript creation, NOT `media_url`. The Intelligence API cannot authenticate against protected URLs.
 
 - **`<Transcribe>`**: Transcribe AI agent conversations for compliance logging and quality review. ConversationRelay provides real-time transcripts, but `<Transcribe>` creates permanent searchable records.
+  - Prereqs: Conversational Intelligence Service SID for advanced features (entity detection, PII redaction). Basic transcription works without it.
 
 - **Voice Insights**: Monitor AI agent call quality — audio issues, latency, dropped calls. Poor audio quality directly degrades AI agent performance because STT accuracy drops.
 
 - **`<Stream>`**: While ConversationRelay is the primary path, `<Stream>` can be used for auxiliary audio processing (e.g., background noise analysis, emotion detection) alongside the AI conversation.
+  - Prereqs (bidirectional): WebSocket server accepting `wss://` connections.
+  - Gotcha: `<Connect><Stream>` (bidirectional) blocks all subsequent TwiML until WebSocket closes. Cannot stop a bidirectional stream without ending the call. Audio is strictly mulaw 8kHz base64 — no format negotiation.
 
 ### Connectivity
 
@@ -527,13 +599,15 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 **Summary:** Third-party or custom-built AI voice agents using Media Streams (`<Stream>`). The "build" approach — route raw audio to your own or a third-party AI platform via bidirectional WebSocket. Best for teams with existing AI infrastructure, specialized models, or ISVs building AI products on top of Twilio.
 
-**Key difference from Use Case 5:** ConversationRelay and VirtualAgent are NOT used. Instead, `<Connect><Stream>` provides bidirectional audio, and your platform handles all STT, LLM, and TTS processing.
+**Key difference from Use Case 5:** ConversationRelay and VirtualAgent are NOT used. Instead, `<Connect><Stream>` provides bidirectional audio, and your platform handles all STT, LLM, and TTS processing. Audio is strictly mulaw 8kHz base64-encoded — your platform must encode/decode this format. A bidirectional stream cannot be stopped without ending the call.
 
 ### Software Tools
 
 - **Conversational Intelligence**: Post-call analysis of third-party AI interactions. Works the same as Use Case 5 — analyze recordings and transcriptions after the call, regardless of which AI platform handled the conversation.
+  - Prereqs: Intelligence Service SID created in Twilio Console (no API to create — must be manual).
 
 - **Event Streams**: Stream call events for monitoring your AI platform's performance.
+  - Prereqs: Sink configured (Webhook URL, Kinesis ARN + IAM role, or Segment write key).
 
 - **Functions**: Host the WebSocket endpoint that receives bidirectional audio from `<Connect><Stream>`. Your function bridges Twilio audio to your AI platform.
 
@@ -548,12 +622,16 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 - **`<Gather>`**: Capture DTMF or speech before connecting to the AI platform. Useful for authentication or intent collection before AI handoff.
 
 - **Recording**: Record all calls for debugging and compliance. Since your AI platform handles the conversation, recording provides the ground truth for what actually happened on the call.
+  - Gotcha: Use `source_sid` (Recording SID) for Voice Intelligence transcript creation, NOT `media_url`. The Intelligence API cannot authenticate against protected URLs.
 
 - **`<Transcribe>`**: Post-call transcription via Twilio's engine. Your AI platform likely produces its own transcripts, but `<Transcribe>` provides an independent Twilio-side record.
+  - Prereqs: Conversational Intelligence Service SID for advanced features (entity detection, PII redaction). Basic transcription works without it.
 
 - **Voice Insights**: Monitor call quality. Poor audio quality on the Twilio side will degrade your AI platform's STT accuracy — Voice Insights helps isolate whether quality issues are on the Twilio leg or your platform.
 
 - **`<Stream>`**: The core integration point. `<Connect><Stream>` establishes a bidirectional WebSocket — Twilio sends caller audio, your platform sends AI-generated audio back. Only inbound audio track is available on bidirectional streams. Only 1 bidirectional stream per call. The WebSocket blocks subsequent TwiML until closed.
+  - Prereqs: WebSocket server accepting `wss://` connections.
+  - Gotcha: `<Connect><Stream>` (bidirectional) blocks all subsequent TwiML until WebSocket closes. Cannot stop a bidirectional stream without ending the call. Audio is strictly mulaw 8kHz base64 — no format negotiation.
 
 ### Connectivity
 
@@ -583,13 +661,17 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 **Summary:** High-volume outbound dialing optimized for sales conversations. A specialized variant of the Outbound Contact Center focused on maximizing agent talk time, answer rates, and conversion. Every feature decision centers on: did the salesperson talk to a human, and did the conversation go well?
 
+> TCPA/TSR compliance is non-negotiable: express written consent, DNC registry checks, quiet hours (8 AM-9 PM recipient's time zone), state-level variations may be stricter. Penalties are per-call.
+
 ### Software Tools
 
 - **Conversational Intelligence**: Analyze sales conversations at scale. Detect buying signals, objection patterns, competitor mentions, and successful closing techniques. Train new sales reps by surfacing top-performer conversation patterns.
+  - Prereqs: Intelligence Service SID created in Twilio Console (no API to create — must be manual).
 
 - **Studio**: Per project convention, **always use Functions**.
 
 - **Event Streams**: Stream dialer events for real-time campaign dashboards — dial rate, connect rate, average talk time, dispositions.
+  - Prereqs: Sink configured (Webhook URL, Kinesis ARN + IAM role, or Segment write key).
 
 - **Functions**: Host the dialer logic — outbound call creation, AMD handling, Conference management, agent connection, and disposition recording.
 
@@ -600,14 +682,18 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 ### Core Services
 
 - **Conference**: Every sales call runs through Conference. Create conference, dial customer with AMD, connect salesperson on human answer. Supervisors can join for coaching (`coach=true`) without the customer knowing.
+  - Gotcha: In warm transfers, `endConferenceOnExit` must be deliberately assigned per participant — set `true` on customer and receiving agent, `false` on transferring agent. Updating a participant's TwiML via REST pulls them OUT of the conference (one-document-per-call rule).
 
 - **`<Say>`**: Brief messages during agent connection ("Thank you for your patience, connecting you now") and voicemail drops when AMD detects a machine.
 
 - **Conversation Relay**: AI-assisted sales — the AI agent handles initial qualification before connecting to a human salesperson. Or the AI provides real-time coaching suggestions to the salesperson via whisper.
+  - Prereqs: WebSocket server at `wss://` endpoint, ngrok or public URL for development.
+  - Gotcha: Voice name format differs from `<Say>` — use `en-US-Chirp3-HD-Aoede` not `Google.en-US-Chirp3-HD-Aoede`. 10 consecutive malformed WebSocket messages terminates connection (error 64105). Check `message.last`, never `message.isFinal`.
 
 - **Recording**: Record every sales call. Required for sales compliance, dispute resolution, and performance coaching. Use conference recording to capture the full interaction.
 
 - **`<Transcribe>`**: Transcribe sales calls for Conversational Intelligence analysis, coaching, and compliance review.
+  - Prereqs: Conversational Intelligence Service SID for advanced features (entity detection, PII redaction). Basic transcription works without it.
 
 - **Voice Insights**: Sales campaign performance analytics — connect rates, call quality, agent performance comparisons.
 
@@ -624,16 +710,21 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 ### Features
 
 - **Branded Calls**: Critical for sales answer rates. Unknown numbers go to voicemail. Branded calls showing your company name get answered. This single feature can transform campaign ROI.
+  - Prereqs: Approved Business Profile in Trust Hub + Voice Integrity approval.
 
 - **Enhanced Branded Calling**: Name + logo + call reason. "Acme Software — Regarding your free trial." The highest-performing outbound caller ID option.
+  - Prereqs: Approved Business Profile in Trust Hub + Voice Integrity approval. Additionally requires A-level SHAKEN/STIR attestation + signed LOA.
 
 - **SHAKEN/STIR**: Foundation for branded calling and carrier trust. Without attestation, sales calls increasingly get blocked.
+  - Prereqs: Primary Customer Profile approved in Trust Hub. BYOC numbers may only receive B or C attestation.
+  - Gotcha: When forwarding calls with preserved caller ID, you must pass the `CallToken` from the inbound webhook to the outbound Calls/Participants API call. `<Dial>` preserves caller ID automatically.
 
 - **CNAM**: Landline caller ID registration. Ensures your business name shows on landline phones.
 
 - **CPS (Calls Per Second)**: Rate limiting is the primary constraint on sales dialer throughput. Default 1 CPS is unusable for sales. Self-serve to 5 CPS, then request offline approval for higher limits. Plan CPS based on team size and target connect rates.
 
 - **AMD**: The efficiency engine of the sales dialer. Without AMD, salespeople waste 30-50% of their time listening to voicemail greetings. With AMD, they only get connected to live humans. Use `MachineDetection=Enable` on every outbound call. Consider `DetectMessageEnd` for voicemail drops.
+  - Gotcha: Does NOT work with SIP Trunking, `<Dial><Client>`, `<Dial><Conference>`, or `<Dial><Queue>`. Synchronous mode (without `AsyncAmd=true`) creates ~4s dead air — real humans hang up. Use `AsyncAmd=true` on Calls API to avoid dead air.
 
 - **SSML TTS**: Natural-sounding voicemail drops when AMD detects a machine. Pre-record the salesperson's voice or use high-quality TTS for consistent messaging.
 
@@ -656,6 +747,7 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 ### Software Tools
 
 - **Conversational Intelligence**: Analyze call tracking recordings to extract marketing intelligence — what products are callers asking about, what campaigns drive the highest-quality leads (not just volume).
+  - Prereqs: Intelligence Service SID created in Twilio Console (no API to create — must be manual).
 
 - **Studio**: Simple call tracking flows can use Studio, but **Functions are preferred** per project convention.
 
@@ -672,6 +764,7 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 - **Recording**: Record tracked calls for lead qualification and marketing analysis. Which campaigns generate calls that convert?
 
 - **`<Transcribe>`**: Transcribe tracked calls for keyword analysis and lead scoring.
+  - Prereqs: Conversational Intelligence Service SID for advanced features (entity detection, PII redaction). Basic transcription works without it.
 
 - **Voice Insights**: Call quality and performance metrics per tracking number (campaign).
 
@@ -702,8 +795,10 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 ### Software Tools
 
 - **Conversational Intelligence**: Analyze recordings from SIP Trunk traffic for quality monitoring and compliance.
+  - Prereqs: Intelligence Service SID created in Twilio Console (no API to create — must be manual).
 
 - **Event Streams**: Stream trunk-level events for monitoring call volume, routing, and failures.
+  - Prereqs: Sink configured (Webhook URL, Kinesis ARN + IAM role, or Segment write key).
 
 ### Core Services
 
@@ -724,6 +819,7 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 ### Features
 
 - **SHAKEN/STIR**: Attestation for outbound trunk calls. Ensures calls from the SIP trunk are properly signed to avoid carrier blocking.
+  - Prereqs: Primary Customer Profile approved in Trust Hub. BYOC numbers may only receive B or C attestation.
 
 - **CNAM**: Caller name registration for outbound trunk calls.
 
@@ -752,8 +848,10 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 ### Software Tools
 
 - **Conversational Intelligence**: The primary product for this use case. Provides transcription, entity detection, sentiment analysis, PII redaction, topic detection, and custom language operators. Process thousands of calls to extract business intelligence at scale.
+  - Prereqs: Intelligence Service SID created in Twilio Console (no API to create — must be manual).
 
 - **Event Streams**: Stream transcription completion events and intelligence results to downstream analytics pipelines.
+  - Prereqs: Sink configured (Webhook URL, Kinesis ARN + IAM role, or Segment write key).
 
 - **Functions**: Host transcription webhooks, processing logic, and integrations with downstream systems. Trigger Conversational Intelligence jobs, process results, and route intelligence to the right systems.
 
@@ -764,14 +862,20 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 ### Core Services
 
 - **Conversation Relay**: When real-time transcription is needed during live calls, ConversationRelay provides streaming STT as part of the AI agent flow. The transcription is a byproduct of the AI conversation that can be captured and analyzed.
+  - Prereqs: WebSocket server at `wss://` endpoint, ngrok or public URL for development.
+  - Gotcha: Voice name format differs from `<Say>` — use `en-US-Chirp3-HD-Aoede` not `Google.en-US-Chirp3-HD-Aoede`. 10 consecutive malformed WebSocket messages terminates connection (error 64105). Check `message.last`, never `message.isFinal`.
 
 - **Recording**: The input for batch transcription. Calls must be recorded before they can be transcribed at scale. Configure recording on calls, conferences, or trunks, then process the recordings through Conversational Intelligence.
+  - Gotcha: Use `source_sid` (Recording SID) for Voice Intelligence transcript creation, NOT `media_url`. The Intelligence API cannot authenticate against protected URLs.
 
 - **`<Transcribe>`**: Twilio's built-in transcription capability. Attach to recordings for automatic transcription. Simpler than full Conversational Intelligence but lacks advanced features (entity detection, sentiment, PII redaction).
+  - Prereqs: Conversational Intelligence Service SID for advanced features (entity detection, PII redaction). Basic transcription works without it.
 
 - **Voice Insights**: Call metadata that enriches transcription analysis — call duration, quality scores, participant information. Combine Voice Insights data with transcription data for complete call intelligence.
 
 - **`<Stream>`**: Real-time audio streaming for live transcription. Use `<Start><Stream>` to send audio to your transcription service during the call without disrupting the conversation.
+  - Prereqs (bidirectional): WebSocket server accepting `wss://` connections.
+  - Gotcha: `<Connect><Stream>` (bidirectional) blocks all subsequent TwiML until WebSocket closes. Cannot stop a bidirectional stream without ending the call. Audio is strictly mulaw 8kHz base64 — no format negotiation.
 
 ### Connectivity
 
@@ -849,6 +953,66 @@ Foundation: PSTN Connectivity (Elastic SIP Trunking)
 ### Cross-Reference
 
 For decision frameworks, architectural patterns, and implementation guidance, see `.claude/skills/voice.md`.
+
+---
+
+## Operational Reference
+
+Cross-cutting tuning and optimization notes organized by product. These are quality/performance considerations, not silent-failure gotchas (those are inline per use case above).
+
+### AMD Tuning
+
+- **Destination type matters**: Residential numbers typically have shorter greetings (~3s); business lines have longer greetings (~8-10s). Adjust `MachineDetectionTimeout` accordingly — lower values for residential campaigns, higher for B2B.
+- **Async vs sync**: `AsyncAmd=true` delivers the AMD result via `AsyncAmdStatusCallback` and lets TwiML execute immediately. Synchronous mode blocks TwiML until detection completes (~4s). Always use async for outbound campaigns.
+- **`MachineDetectionSpeechThreshold`**: Duration of initial speech (ms) before classifying as human. Default 2400ms. Lower values detect humans faster but increase false machine classifications.
+- **`MachineDetectionSpeechEndThreshold`**: Silence duration (ms) to mark end of machine greeting. Default 1200ms. Affects when `DetectMessageEnd` fires for voicemail drops.
+
+### Conference
+
+- **`waitUrl` doesn't auto-loop**: If you use a custom `waitUrl`, the hold music plays once and stops. Use `<Play loop="0">` in the wait TwiML to loop indefinitely. Or use `waitUrl=""` for silence.
+- **Participant data disappears after call ends**: Conference participant metadata is transient. Use Voice Insights for historical conference data. If you need persistent participant state, store it in Sync during the call.
+- **Conference name uniqueness**: Conference names are scoped to the account. Use unique, descriptive names (e.g., `call-{callSid}-{timestamp}`) to avoid collisions. Reusing a conference name while a previous conference with that name is still active merges the calls.
+
+### `<Stream>`
+
+- **Audio format**: mulaw encoding, 8kHz sample rate, base64-encoded. No format negotiation — your WebSocket server must handle this format.
+- **Regional availability**: Media Streams are available in US1, IE1, and AU1 regions. Ensure your Twilio account region and WebSocket server are co-located for low latency.
+- **Unidirectional tracks**: `<Start><Stream>` supports up to 4 simultaneous tracks (inbound, outbound, or both) per call. Bidirectional streams via `<Connect><Stream>` are limited to 1 per call.
+
+### ConversationRelay
+
+- **STT provider selection**: Google is the default and works best in clean audio environments. Deepgram may perform better in noisy environments or with heavy accents. Specify via the `speechModel` attribute.
+- **Reconnection pattern**: ConversationRelay WebSocket disconnection ends the call. Implement an `action` URL on the `<Connect>` verb to catch disconnections and either reconnect or gracefully end the call.
+- **`intelligenceService` attribute**: Pass the Conversational Intelligence Service SID directly in the `<ConversationRelay>` TwiML to enable automatic post-call analysis without separate API calls.
+- **TTS with ElevenLabs**: ElevenLabs is a supported TTS provider. When using it, be aware that text normalization (numbers, abbreviations) may differ from Google. Test with your specific content.
+
+### Event Streams
+
+- **Voice event types and delays**: 7 voice event types are available. Gateway events (call initiated, ringing) arrive ~90s after occurrence. Complete call summary events can take ~30 minutes.
+- **At-least-once delivery**: Events may be delivered more than once. Idempotent processing is required — use the event `sid` for deduplication.
+- **Sink types**: Three options — Webhook (HTTP POST), Kinesis (AWS stream), Segment (customer data platform write key). Choose based on your analytics infrastructure.
+- **Analytics, not real-time state**: Event Streams provides analytics events for dashboards and reporting. Do not use them for real-time call state management — use StatusCallbacks for that.
+
+### Conversational Intelligence
+
+- **PII audio redaction**: Audio-level PII redaction (bleeping out sensitive audio) is only available for `en-US`. Text-level PII redaction works for all supported languages.
+- **Dual-channel recording**: Recommended for speaker diarization. Single-channel recordings require the system to guess who is speaking, which reduces accuracy.
+- **Product name**: The product was renamed from "Voice Intelligence" to "Conversational Intelligence." API paths still use `intelligence/v2`. Documentation may reference either name.
+
+### Recording
+
+- **Method comparison**:
+  - **Calls API `Record` param**: Records entire call from start. Simplest option. Set `Record=record-from-answer` on call creation.
+  - **`<Start><Record>`**: Start/stop recording mid-call via TwiML. Use when you only want to record specific segments.
+  - **`<Dial record>`**: Records the `<Dial>` leg only. Captures the two-party conversation after connection.
+  - **Conference `record`**: Records the conference mix. Use `recordingStatusCallback` to get the Recording SID when complete.
+- **Choose based on control needed**: Full-call recording for compliance, segment recording for targeted capture, conference recording for multi-party calls.
+
+### SHAKEN/STIR
+
+- **Three attestation levels**: A (full — you own the number and chose the caller), B (partial — you originated the call but didn't assign the number), C (gateway — you're just passing the call through). Only A attestation produces the green checkmark on mobile.
+- **PASSporT timestamp**: The cryptographic token has a 1-minute validity window. Clock skew between your systems and Twilio can cause attestation failures.
+- **E.164 formatting required**: Phone numbers in SHAKEN/STIR must be in E.164 format (`+1XXXXXXXXXX`). Non-E.164 numbers cannot receive attestation.
 
 ---
 

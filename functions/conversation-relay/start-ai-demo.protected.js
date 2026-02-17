@@ -30,28 +30,28 @@ exports.handler = async function (context, event, callback) {
   // Validate required parameters
   if (!toNumber) {
     response.setStatusCode(400);
-    response.setBody({
+    response.setBody(JSON.stringify({
       success: false,
       error: 'Missing "to" parameter or TEST_PHONE_NUMBER environment variable',
-    });
+    }));
     return callback(null, response);
   }
 
   if (!relayUrl) {
     response.setStatusCode(400);
-    response.setBody({
+    response.setBody(JSON.stringify({
       success: false,
       error: 'Missing "relayUrl" parameter or CONVERSATION_RELAY_URL environment variable',
-    });
+    }));
     return callback(null, response);
   }
 
   if (!fromNumber) {
     response.setStatusCode(400);
-    response.setBody({
+    response.setBody(JSON.stringify({
       success: false,
       error: 'Missing TWILIO_PHONE_NUMBER environment variable',
-    });
+    }));
     return callback(null, response);
   }
 
@@ -97,7 +97,7 @@ exports.handler = async function (context, event, callback) {
     console.log(`AI Demo call initiated: ${call.sid} to ${toNumber}`);
 
     response.setStatusCode(200);
-    response.setBody({
+    response.setBody(JSON.stringify({
       success: true,
       callSid: call.sid,
       status: call.status,
@@ -105,18 +105,18 @@ exports.handler = async function (context, event, callback) {
       from: fromNumber,
       relayUrl: relayUrl,
       message: 'AI demo call initiated. Answer your phone to speak with the AI agent.',
-    });
+    }));
 
     return callback(null, response);
   } catch (error) {
     console.log('Failed to initiate AI demo call:', error.message);
 
     response.setStatusCode(500);
-    response.setBody({
+    response.setBody(JSON.stringify({
       success: false,
       error: error.message,
       code: error.code,
-    });
+    }));
 
     return callback(null, response);
   }

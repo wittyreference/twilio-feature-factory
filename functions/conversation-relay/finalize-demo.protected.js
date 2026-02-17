@@ -42,13 +42,13 @@ exports.handler = async function (context, event, callback) {
   // Validate required fields
   if (!callSid) {
     response.setStatusCode(400);
-    response.setBody({ success: false, error: 'Missing callSid' });
+    response.setBody(JSON.stringify({ success: false, error: 'Missing callSid' }));
     return callback(null, response);
   }
 
   if (!transcript || !Array.isArray(transcript)) {
     response.setStatusCode(400);
-    response.setBody({ success: false, error: 'Missing or invalid transcript' });
+    response.setBody(JSON.stringify({ success: false, error: 'Missing or invalid transcript' }));
     return callback(null, response);
   }
 
@@ -138,23 +138,23 @@ exports.handler = async function (context, event, callback) {
     }
 
     response.setStatusCode(200);
-    response.setBody({
+    response.setBody(JSON.stringify({
       success: true,
       callSid,
       summary,
       syncDocument: syncServiceSid ? `ai-demo-${callSid}` : null,
       smsSent: !!(smsTo && smsFrom),
-    });
+    }));
 
     return callback(null, response);
   } catch (error) {
     console.log('Failed to finalize AI demo:', error.message);
 
     response.setStatusCode(500);
-    response.setBody({
+    response.setBody(JSON.stringify({
       success: false,
       error: error.message,
-    });
+    }));
 
     return callback(null, response);
   }

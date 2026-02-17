@@ -236,6 +236,29 @@ await client.calls(participantCallSid)
 // This removes them from conference and may tear it down!
 ```
 
+## Logging and Response Rules
+
+Twilio Functions generate debugger alerts based on log level:
+
+| Log Level | Alert Code | Effect |
+|-----------|------------|--------|
+| `console.log` | None | Silent — use for all operational logging |
+| `console.warn` | 82004 | Generates warning alert — **never use** |
+| `console.error` | 82005 | Generates error alert — **never use** |
+
+Use `console.log` for **all** logging, including error conditions and catch blocks.
+
+**Response bodies**: Always pass a string to `Twilio.Response.setBody()`, not a plain object. Use `JSON.stringify()` and set `Content-Type: application/json`. Passing an object causes `Buffer.from(object)` TypeError in the runtime.
+
+```javascript
+// WRONG — triggers Buffer TypeError
+response.setBody({ success: true });
+
+// RIGHT — explicit JSON serialization
+response.appendHeader('Content-Type', 'application/json');
+response.setBody(JSON.stringify({ success: true }));
+```
+
 ## File Naming Conventions
 
 - `*.js` - Public endpoints (no signature validation)

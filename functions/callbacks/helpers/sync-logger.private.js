@@ -18,7 +18,7 @@ async function logToSync(context, resourceType, resourceSid, callbackData) {
   const syncServiceSid = context.TWILIO_SYNC_SERVICE_SID;
 
   if (!syncServiceSid) {
-    console.warn('TWILIO_SYNC_SERVICE_SID not configured, skipping Sync logging');
+    console.log('TWILIO_SYNC_SERVICE_SID not configured, skipping Sync logging');
     return null;
   }
 

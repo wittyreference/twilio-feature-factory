@@ -30,15 +30,15 @@ exports.handler = async function (context, event, callback) {
 
   // Security check: Validate account_sid matches our account
   if (account_sid && account_sid !== context.ACCOUNT_SID) {
-    console.warn(`Rejected: account_sid mismatch (${account_sid} vs ${context.ACCOUNT_SID})`);
+    console.log(`Rejected: account_sid mismatch (${account_sid} vs ${context.ACCOUNT_SID})`);
     response.setStatusCode(403);
-    response.setBody({ success: false, error: 'Invalid account' });
+    response.setBody(JSON.stringify({ success: false, error: 'Invalid account' }));
     return callback(null, response);
   }
 
   if (!transcript_sid) {
     response.setStatusCode(400);
-    response.setBody({ success: false, error: 'Missing transcript_sid' });
+    response.setBody(JSON.stringify({ success: false, error: 'Missing transcript_sid' }));
     return callback(null, response);
   }
 
@@ -47,7 +47,7 @@ exports.handler = async function (context, event, callback) {
   if (event_type !== 'voice_intelligence_transcript_available') {
     console.log(`Transcript ${transcript_sid} event_type: ${event_type}, skipping`);
     response.setStatusCode(200);
-    response.setBody({ success: true, skipped: true, event_type });
+    response.setBody(JSON.stringify({ success: true, skipped: true, event_type }));
     return callback(null, response);
   }
 
@@ -124,7 +124,7 @@ exports.handler = async function (context, event, callback) {
     );
 
     response.setStatusCode(200);
-    response.setBody({
+    response.setBody(JSON.stringify({
       success: true,
       transcriptSid: transcript_sid,
       callSid,
@@ -132,17 +132,17 @@ exports.handler = async function (context, event, callback) {
       operatorCount: operatorResults.length,
       smsSent: smsResult.sent,
       messageSid: smsResult.messageSid,
-    });
+    }));
 
     return callback(null, response);
   } catch (error) {
     console.log('Transcript callback error:', error.message);
 
     response.setStatusCode(200); // Return 200 to prevent retries
-    response.setBody({
+    response.setBody(JSON.stringify({
       success: false,
       error: error.message,
-    });
+    }));
 
     return callback(null, response);
   }

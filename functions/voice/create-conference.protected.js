@@ -19,7 +19,8 @@ exports.handler = async (context, event, callback) => {
   if (!participantNumber) {
     const response = new Twilio.Response();
     response.setStatusCode(400);
-    response.setBody({ error: 'Missing required parameter: To' });
+    response.appendHeader('Content-Type', 'application/json');
+    response.setBody(JSON.stringify({ error: 'Missing required parameter: To' }));
     return callback(null, response);
   }
 
@@ -64,23 +65,23 @@ exports.handler = async (context, event, callback) => {
     const response = new Twilio.Response();
     response.setStatusCode(200);
     response.appendHeader('Content-Type', 'application/json');
-    response.setBody({
+    response.setBody(JSON.stringify({
       success: true,
       conferenceName,
       callSid: participant.callSid,
       participantSid: participant.accountSid,
       status: participant.status
-    });
+    }));
 
     return callback(null, response);
   } catch (error) {
     const response = new Twilio.Response();
     response.setStatusCode(error.status || 500);
     response.appendHeader('Content-Type', 'application/json');
-    response.setBody({
+    response.setBody(JSON.stringify({
       error: error.message,
       code: error.code
-    });
+    }));
 
     return callback(null, response);
   }

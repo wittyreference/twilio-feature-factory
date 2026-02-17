@@ -393,6 +393,20 @@ const transcript = await client.intelligence.v2.transcripts.create({
 | "Unique name already exists" on callback | Twilio sends duplicate callbacks | Handle error 54301 gracefully - document was created on first callback |
 | Error 82005 in notifications | Function has a stray `console.error()` call | Replace with `console.log()` — never use `console.error()` in Twilio Functions |
 
+## Logging and Response Rules
+
+Use `console.log` for **all** logging in Twilio Functions, including error conditions and catch blocks. `console.error()` generates 82005 alerts and `console.warn()` generates 82004 alerts — never use either.
+
+Always pass a string to `Twilio.Response.setBody()`:
+
+```javascript
+// WRONG — triggers Buffer TypeError
+response.setBody({ success: true });
+
+// RIGHT — explicit JSON serialization
+response.setBody(JSON.stringify({ success: true }));
+```
+
 ## Environment Variables
 
 ```text

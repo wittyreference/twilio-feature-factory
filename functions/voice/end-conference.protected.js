@@ -11,7 +11,8 @@ exports.handler = async (context, event, callback) => {
   if (!conferenceSid && !conferenceName) {
     const response = new Twilio.Response();
     response.setStatusCode(400);
-    response.setBody({ error: 'Missing required parameter: ConferenceSid or ConferenceName' });
+    response.appendHeader('Content-Type', 'application/json');
+    response.setBody(JSON.stringify({ error: 'Missing required parameter: ConferenceSid or ConferenceName' }));
     return callback(null, response);
   }
 
@@ -34,10 +35,10 @@ exports.handler = async (context, event, callback) => {
         const response = new Twilio.Response();
         response.setStatusCode(404);
         response.appendHeader('Content-Type', 'application/json');
-        response.setBody({
+        response.setBody(JSON.stringify({
           error: 'Conference not found or not in progress',
           conferenceName
-        });
+        }));
         return callback(null, response);
       }
 
@@ -48,22 +49,22 @@ exports.handler = async (context, event, callback) => {
     const response = new Twilio.Response();
     response.setStatusCode(200);
     response.appendHeader('Content-Type', 'application/json');
-    response.setBody({
+    response.setBody(JSON.stringify({
       success: true,
       conferenceSid: conference.sid,
       friendlyName: conference.friendlyName,
       status: conference.status
-    });
+    }));
 
     return callback(null, response);
   } catch (error) {
     const response = new Twilio.Response();
     response.setStatusCode(error.status || 500);
     response.appendHeader('Content-Type', 'application/json');
-    response.setBody({
+    response.setBody(JSON.stringify({
       error: error.message,
       code: error.code
-    });
+    }));
 
     return callback(null, response);
   }

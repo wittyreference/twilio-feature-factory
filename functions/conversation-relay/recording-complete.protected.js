@@ -32,15 +32,15 @@ exports.handler = async function (context, event, callback) {
 
   // Security check: Validate AccountSid matches our account
   if (AccountSid && AccountSid !== context.ACCOUNT_SID) {
-    console.warn(`Rejected: AccountSid mismatch (${AccountSid} vs ${context.ACCOUNT_SID})`);
+    console.log(`Rejected: AccountSid mismatch (${AccountSid} vs ${context.ACCOUNT_SID})`);
     response.setStatusCode(403);
-    response.setBody({ success: false, error: 'Invalid account' });
+    response.setBody(JSON.stringify({ success: false, error: 'Invalid account' }));
     return callback(null, response);
   }
 
   if (!CallSid) {
     response.setStatusCode(400);
-    response.setBody({ success: false, error: 'Missing CallSid' });
+    response.setBody(JSON.stringify({ success: false, error: 'Missing CallSid' }));
     return callback(null, response);
   }
 
@@ -161,23 +161,23 @@ exports.handler = async function (context, event, callback) {
     }
 
     response.setStatusCode(200);
-    response.setBody({
+    response.setBody(JSON.stringify({
       success: true,
       recordingSid: RecordingSid,
       callSid: CallSid,
       status: RecordingStatus,
       transcriptSid: transcriptSid,
-    });
+    }));
 
     return callback(null, response);
   } catch (error) {
     console.log('Recording callback error:', error.message);
 
     response.setStatusCode(200); // Return 200 to prevent Twilio retries
-    response.setBody({
+    response.setBody(JSON.stringify({
       success: false,
       error: error.message,
-    });
+    }));
 
     return callback(null, response);
   }

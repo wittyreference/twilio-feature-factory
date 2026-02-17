@@ -75,11 +75,17 @@ done
 
 # ============================================
 # 5. NO .META REFERENCES IN SHIPPED CODE
+# Uses git grep to only search tracked files (ignores gitignored .meta/ directories)
+# Excludes: test files and meta-mode detection code (legitimate routing logic)
 # ============================================
 echo -e "\n5. Shipped Code Check:"
-if grep -rqE '\.meta/' functions/ agents/ 2>/dev/null; then
+META_SHIPPED=$(git grep -nE '\.meta/' -- 'functions/' 'agents/' 2>/dev/null \
+    | grep -v '\.test\.\(ts\|js\)' \
+    | grep -vE '(Uses|if|when) \.meta/' \
+    || true)
+if [[ -n "$META_SHIPPED" ]]; then
     echo "   ✗ Found .meta/ references in shipped code"
-    grep -rnE '\.meta/' functions/ agents/ 2>/dev/null | head -5 | sed 's/^/      /'
+    echo "$META_SHIPPED" | head -5 | sed 's/^/      /'
     ERRORS=$((ERRORS + 1))
 else
     echo "   ✓ No .meta/ references in functions/ or agents/"

@@ -27,12 +27,11 @@ else
 fi
 
 # Check 2: Shipped code (functions/, agents/) should not reference .meta/
-# Exclude: dist/ (compiled output), test files, and comments documenting meta-mode detection
+# Uses git grep to only search tracked files (ignores gitignored .meta/ directories)
+# Exclude: test files and comments documenting meta-mode detection
 echo ""
 echo "Checking shipped code directories..."
-META_REFS=$(grep -rnE '\.meta/' functions/ agents/ 2>/dev/null \
-    | grep -v '/dist/' \
-    | grep -v '/node_modules/' \
+META_REFS=$(git grep -nE '\.meta/' -- 'functions/' 'agents/' 2>/dev/null \
     | grep -v '\.test\.\(ts\|js\)' \
     | grep -vE '^\s*//' \
     | grep -vE '(Uses|if) \.meta/' \

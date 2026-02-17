@@ -25,7 +25,7 @@ Move stable learnings to permanent docs:
 
 ## 3. Clear
 
-Remove promoted entries from learnings.md to keep it focused.
+Before removing promoted entries from learnings.md, **always copy them to learnings-archive.md first** (append at top, below header). Then remove from learnings.md. This preserves the full discovery history.
 
 ## Automation
 

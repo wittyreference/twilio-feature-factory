@@ -77,6 +77,13 @@ Provide your test generation results in the following JSON structure:
 - coverageGoals: What the tests aim to cover
 - allTestsFailing: Confirmation that all tests fail (MUST be true)
 
+## Key Assertions for Twilio Code
+
+When writing tests for Twilio Functions and ConversationRelay handlers, verify these invariants:
+- When testing Functions that return \`Twilio.Response\`, verify \`setBody\` receives a string (\`JSON.stringify\`)
+- When testing ConversationRelay handlers, verify \`message.last\` is used, not \`message.isFinal\`
+- When testing Functions with logging, verify no \`console.error\` outside catch blocks
+
 ## Verification
 
 After creating tests, run them to verify they fail:

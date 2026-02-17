@@ -30,7 +30,7 @@ Guidelines:
 
 Remember: The caller cannot see text, only hear your responses. Optimize for spoken clarity.`,
 
-  defaultVoice: 'Polly.Matthew',
+  defaultVoice: 'Google.en-US-Neural2-F',
   defaultLanguage: 'en-US',
 
   // No tools for basic assistant

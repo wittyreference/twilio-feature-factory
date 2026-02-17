@@ -43,7 +43,7 @@ exports.handler = function(context, event, callback) {
   const connect = twiml.connect();
   connect.conversationRelay({
     url: context.CONVERSATION_RELAY_URL,
-    voice: 'Polly.Matthew',
+    voice: 'Google.en-US-Neural2-F',
     language: 'en-US',
     // ... configured options
   });
@@ -58,7 +58,7 @@ Generates WebSocket server handling ConversationRelay protocol:
 ```typescript
 // Generated output handles:
 // - 'setup' message with callSid, from, to
-// - 'prompt' message with voicePrompt, confidence, isFinal
+// - 'prompt' message with voicePrompt, confidence, last
 // - 'dtmf' message with digit
 // - 'interrupt' message when user interrupts
 ```
@@ -93,7 +93,7 @@ const response = await anthropic.messages.create({
 | Type | Fields | Purpose |
 |------|--------|---------|
 | `setup` | callSid, streamSid, from, to | Initial handshake |
-| `prompt` | voicePrompt, confidence, isFinal | User speech |
+| `prompt` | voicePrompt, confidence, last | User speech |
 | `dtmf` | digit | Keypad input |
 | `interrupt` | - | User interrupted AI |
 

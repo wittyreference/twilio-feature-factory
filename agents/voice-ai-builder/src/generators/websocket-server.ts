@@ -159,7 +159,7 @@ function generateServerCode(input: WebSocketGeneratorInput): string {
   // Prompt handler
   lines.push("      case 'prompt':");
   lines.push('        if (!context) break;');
-  lines.push('        if (message.isFinal && message.voicePrompt) {');
+  lines.push('        if (message.last && message.voicePrompt) {');
   lines.push('          context.turnCount++;');
   lines.push('          if (context.turnCount > MAX_TURNS) {');
   lines.push("            ws.send(JSON.stringify({ type: 'end' }));");

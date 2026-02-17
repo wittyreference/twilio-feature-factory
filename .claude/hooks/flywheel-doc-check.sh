@@ -194,6 +194,16 @@ if [ "$NEW_FILES_COUNT" -gt 3 ]; then
     SUGGESTIONS="${SUGGESTIONS}• .meta/design-decisions.md - review if architectural decisions were made\n"
 fi
 
+# Root CLAUDE.md changes may affect SDK agent prompt invariants
+if echo "$ALL_FILES" | grep -q "^CLAUDE.md$"; then
+    SUGGESTIONS="${SUGGESTIONS}• agents/feature-factory/src/agents/ - review agent prompts for invariant drift\n"
+fi
+
+# ConversationRelay or voice skill changes may affect voice-ai-builder templates
+if echo "$ALL_FILES" | grep -qE "(conversation-relay/CLAUDE|skills/voice)"; then
+    SUGGESTIONS="${SUGGESTIONS}• agents/voice-ai-builder/ - review templates for pattern drift\n"
+fi
+
 # Check for CLI reference updates needed
 if echo "$ALL_FILES" | grep -qE "(twilio|cli)" && ! echo "$ALL_FILES" | grep -q "twilio-cli.md"; then
     SUGGESTIONS="${SUGGESTIONS}• .claude/references/twilio-cli.md - if new CLI patterns discovered\n"

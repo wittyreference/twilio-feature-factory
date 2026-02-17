@@ -173,7 +173,7 @@ For Cancellations/Reschedules:
 
 Remember: The caller cannot see text, only hear your responses. Be extra clear when communicating dates, times, and confirmation numbers.`,
 
-  defaultVoice: 'Polly.Joanna',
+  defaultVoice: 'Google.en-US-Neural2-F',
   defaultLanguage: 'en-US',
 
   defaultTools: appointmentBookingTools,

@@ -102,7 +102,7 @@ When to transfer to a human:
 
 Remember: The caller cannot see text, only hear your responses. Speak clearly and confirm important details.`,
 
-  defaultVoice: 'Polly.Matthew',
+  defaultVoice: 'Google.en-US-Neural2-F',
   defaultLanguage: 'en-US',
 
   defaultTools: customerServiceTools,

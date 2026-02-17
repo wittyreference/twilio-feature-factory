@@ -17,7 +17,7 @@ export interface GeneratedFile {
  * Voice configuration options for ConversationRelay
  */
 export interface VoiceOptions {
-  /** TTS voice identifier (e.g., 'Polly.Matthew', 'Google.en-US-Neural2-D') */
+  /** TTS voice identifier (e.g., 'Google.en-US-Neural2-F', 'Google.en-US-Neural2-D') */
   voice: string;
   /** Language code (e.g., 'en-US', 'es-ES') */
   language: string;

@@ -81,7 +81,7 @@ wss.on('connection', (ws: WebSocket) => {
       case 'prompt':
         // Handle user speech
         if (!context) break;
-        if (message.isFinal && message.voicePrompt) {
+        if (message.last && message.voicePrompt) {
           context.turnCount++;
 
           // Check turn limit
@@ -126,6 +126,6 @@ wss.on('connection', (ws: WebSocket) => {
   });
 
   ws.on('error', (error) => {
-    console.error('WebSocket error:', error);
+    console.log('WebSocket error:', error);
   });
 });

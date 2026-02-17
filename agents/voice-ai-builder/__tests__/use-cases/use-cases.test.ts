@@ -77,7 +77,7 @@ describe('Basic Assistant Config', () => {
   });
 
   it('should have default voice and language', () => {
-    expect(config.defaultVoice).toBe('Polly.Matthew');
+    expect(config.defaultVoice).toBe('Google.en-US-Neural2-F');
     expect(config.defaultLanguage).toBe('en-US');
   });
 
@@ -184,8 +184,8 @@ describe('Appointment Booking Config', () => {
     expect(config.escalationTriggers!.length).toBeGreaterThan(0);
   });
 
-  it('should use female voice for appointment booking', () => {
-    expect(config.defaultVoice).toBe('Polly.Joanna');
+  it('should use Google Neural voice for appointment booking', () => {
+    expect(config.defaultVoice).toBe('Google.en-US-Neural2-F');
   });
 
   it('should have longer silence timeout', () => {
@@ -268,9 +268,6 @@ describe('UseCaseConfig interface compliance', () => {
 
   it('all configs should have valid voice identifiers', () => {
     const validVoices = [
-      'Polly.Matthew',
-      'Polly.Joanna',
-      'Polly.Amy',
       'Google.en-US-Neural2-D',
       'Google.en-US-Neural2-F',
     ];

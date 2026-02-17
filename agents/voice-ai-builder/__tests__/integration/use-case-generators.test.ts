@@ -105,7 +105,7 @@ describe('Use Case Integration: appointment-booking', () => {
   const config = appointmentBookingConfig;
 
   describe('TwiML Handler Generation', () => {
-    it('should use Joanna voice for appointment booking', () => {
+    it('should use Google Neural voice for appointment booking', () => {
       const input: TwimlGeneratorInput = {
         useCaseType: 'appointment-booking',
         relayUrl: 'wss://example.com/relay',
@@ -120,7 +120,7 @@ describe('Use Case Integration: appointment-booking', () => {
       const result = generateTwimlHandler(input);
       const handler = result.find((f) => f.type === 'twiml-handler');
 
-      expect(handler?.content).toContain('Polly.Joanna');
+      expect(handler?.content).toContain('Google.en-US-Neural2-F');
     });
   });
 

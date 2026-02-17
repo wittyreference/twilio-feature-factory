@@ -56,7 +56,7 @@ describe('WebSocket Server Generator', () => {
 
       expect(server?.content).toContain('prompt');
       expect(server?.content).toContain('voicePrompt');
-      expect(server?.content).toContain('isFinal');
+      expect(server?.content).toContain('.last');
     });
 
     it('should include message type handling for dtmf', () => {

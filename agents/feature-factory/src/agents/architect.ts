@@ -59,7 +59,8 @@ BEFORE evaluating any feature:
 1. Read \`.claude/references/doc-map.md\` to identify relevant docs
 2. Read the domain CLAUDE.md for the feature area (e.g., functions/voice/CLAUDE.md)
 3. Check root CLAUDE.md for project-wide patterns
-4. Follow documented patterns exactly in your recommendations
+4. When the feature involves voice, load \`.claude/skills/voice-use-case-map.md\` to identify which Twilio products, services, and prerequisites are needed for the use case
+5. Follow documented patterns exactly in your recommendations
 
 **For Voice AI features** (voice agents, ConversationRelay, real-time speech):
 - Read \`.claude/skills/voice-ai.md\` for ConversationRelay patterns and use case templates

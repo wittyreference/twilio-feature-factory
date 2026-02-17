@@ -70,6 +70,22 @@ Scan for these problematic patterns in TwiML files:
 | \`<Record>\` without \`maxLength\` | Unlimited recording size | Add maxLength limit |
 | Missing XML declaration | Parser issues | Add <?xml version="1.0"?> |
 | \`<Conference>\` without \`endConferenceOnExit\` check | Orphaned participants | Audit who has this flag |
+| \`setBody(object)\` without JSON.stringify | Buffer.from TypeError (silent crash) | Always \`JSON.stringify()\` + Content-Type header |
+| \`console.error()\` in non-catch blocks | 82005 debugger alerts | Use \`console.log()\` for operational logging |
+| \`message.isFinal\` instead of \`message.last\` | Silent utterance loss in ConversationRelay | Check \`message.last\`, never \`message.isFinal\` |
+
+## Twilio Runtime Invariants
+
+These rules have each caused real debugging time. Violating them causes silent failures or data loss.
+
+- \`Twilio.Response.setBody()\` requires strings — always \`JSON.stringify()\` + set Content-Type \`application/json\`
+- \`console.error()\` triggers 82005 alerts, \`console.warn()\` triggers 82004 — use \`console.log()\` for operational logging
+- ConversationRelay uses \`message.last\`, NEVER \`message.isFinal\` — checking isFinal silently drops all follow-up utterances
+- ConversationRelay voice name format: \`en-US-Chirp3-HD-Aoede\` (no \`Google.\` prefix). Polly voices may be blocked (error 64101)
+- \`<Start><Recording>\` syntax is \`twiml.start().recording({...})\`, NOT \`.record()\`
+- Voice Intelligence: use \`source_sid\` (Recording SID) for transcript creation, NOT \`media_url\`
+- One TwiML document controls a call at a time — updating participant TwiML via REST exits their current state
+- Env vars can reset on \`twilio serverless:deploy\` — verify after deployment
 
 ## Security Checks
 

@@ -525,8 +525,9 @@ Context for what customers are asking for today:
 
 ## Related Resources
 
+- [Voice Use Case Product Map](/.claude/skills/voice-use-case-map.md) - Per-use-case product recommendations, prerequisites, and gotchas
 - [functions/voice/CLAUDE.md](/functions/voice/CLAUDE.md) - TwiML verb reference
-- [functions/conversation-relay/CLAUDE.md](/functions/conversation-relay/CLAUDE.md) - Real-time Voice AI
+- [functions/conversation-relay/CLAUDE.md](/functions/conversation-relay/CLAUDE.md) - Real-time Voice AI (protocol, streaming, LLM integration, context management)
 - [Voice MCP Tools](/agents/mcp-servers/twilio/src/tools/voice.ts) - 29 tools including:
   - Call management: `get_call_logs`, `make_call`, `get_call`, `update_call`
   - Recordings (account-level): `get_recording`, `list_recordings`, `delete_recording`

@@ -68,7 +68,7 @@ BEFORE writing specifications:
 4. Follow documented patterns exactly in your specifications
 
 **For Voice AI specifications** (when architect provides voiceAiConfig):
-- Read \`.claude/skills/voice-ai.md\` for ConversationRelay protocol and message types
+- Read \`functions/conversation-relay/CLAUDE.md\` for ConversationRelay protocol and message types
 - Include WebSocket message handling specs (setup, prompt, dtmf, interrupt)
 - Specify tool implementations if tools are defined in voiceAiConfig
 - Include voice configuration validation tests

@@ -20,7 +20,7 @@ const connect = twiml.connect();
 
 connect.conversationRelay({
   url: 'wss://your-server.com/relay',
-  voice: 'Polly.Amy',
+  voice: 'Google.en-US-Neural2-F',
   language: 'en-US'
 });
 
@@ -31,7 +31,7 @@ return callback(null, twiml);
 ```javascript
 connect.conversationRelay({
   url: 'wss://your-server.com/relay',        // WebSocket endpoint
-  voice: 'Polly.Amy',                        // TTS voice
+  voice: 'Google.en-US-Neural2-F',                        // TTS voice
   language: 'en-US',                         // Language code
   transcriptionProvider: 'google',           // 'google' or 'deepgram'
   speechModel: 'telephony',                  // Speech recognition model
@@ -153,11 +153,34 @@ wss.on('connection', (ws) => {
 
 ## Integration with Claude/LLMs
 
-### Anthropic Claude Integration
+### Anthropic Claude Integration (Streaming — Recommended for Voice)
+
+Streaming delivers tokens as they're generated, enabling natural real-time voice:
+
 ```javascript
 const Anthropic = require('@anthropic-ai/sdk');
 const anthropic = new Anthropic();
 
+async function processWithLLM(systemPrompt, messages, ws) {
+  const stream = await anthropic.messages.stream({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1024,
+    system: systemPrompt,
+    messages: messages,
+  });
+
+  stream.on('text', (text) => {
+    ws.send(JSON.stringify({ type: 'text', token: text }));
+  });
+
+  const finalMessage = await stream.finalMessage();
+  return finalMessage.content[0].text;
+}
+```
+
+### Anthropic Claude Integration (Non-Streaming)
+
+```javascript
 async function processWithLLM(userMessage) {
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -191,7 +214,7 @@ const openai = new OpenAI();
 
 async function processWithLLM(userMessage) {
   const response = await openai.chat.completions.create({
-    model: 'gpt-4',
+    model: 'gpt-4o',
     messages: [
       { role: 'user', content: userMessage }
     ]
@@ -201,22 +224,82 @@ async function processWithLLM(userMessage) {
 }
 ```
 
+### Recommended Models
+
+| Provider | Model | Best For |
+|----------|-------|----------|
+| Anthropic | `claude-sonnet-4-20250514` | Best balance of quality and latency |
+| Anthropic | `claude-haiku-4-5-20251001` | Fastest, good for simple interactions |
+| OpenAI | `gpt-4o` | Best quality |
+| OpenAI | `gpt-4o-mini` | Faster, lower cost |
+
 ## Voice Options
 
-**Important**: Some voice/provider combinations may cause error 64101 "Invalid TTS settings". Google Neural voices are recommended for reliability.
+**Important**: Some voice/provider combinations may cause error 64101 "Invalid TTS settings". Google Neural voices are recommended for reliability. Polly voices may be blocked.
 
 ### Google Voices (Recommended)
-- `Google.en-US-Neural2-F` - US English, Female (recommended)
+- `Google.en-US-Neural2-F` - US English, Female (default for Voice AI Builder)
 - `Google.en-US-Neural2-J` - US English, Male
 - `Google.en-US-Neural2-A` - US English Neural
 - `Google.en-GB-Neural2-B` - British English Neural
 
-### Amazon Polly Voices
-- `Polly.Amy` - British English, Female (may be blocked in some configs)
+### Amazon Polly Voices (May Be Blocked)
+- `Polly.Amy` - British English, Female
 - `Polly.Brian` - British English, Male
 - `Polly.Joanna` - US English, Female
 - `Polly.Matthew` - US English, Male
-- `Polly.Ivy` - US English, Child Female
+
+### Transcription Providers
+
+| Provider | Best For |
+|----------|----------|
+| `google` | Default, good accuracy, wide language support |
+| `deepgram` | Noisy environments, faster latency |
+
+### Speech Models
+
+| Model | Best For |
+|-------|----------|
+| `telephony` | Phone calls (recommended — optimized for 8kHz audio) |
+| `default` | General purpose |
+
+## Context Management Strategies
+
+Voice calls can last many turns. Without context management, LLM context windows overflow on long calls.
+
+### Sliding Window (Recommended for Voice)
+
+Keep only the last N messages:
+
+```javascript
+function manageContext(messages) {
+  const WINDOW_SIZE = 20;
+  return messages.length > WINDOW_SIZE
+    ? messages.slice(-WINDOW_SIZE)
+    : messages;
+}
+```
+
+### Summary
+
+Periodically summarize older messages and replace history:
+
+```javascript
+async function manageContext(messages) {
+  if (messages.length > 30) {
+    const summary = await summarizeConversation(messages.slice(0, -10));
+    return [
+      { role: 'user', content: `Previous conversation summary: ${summary}` },
+      ...messages.slice(-10),
+    ];
+  }
+  return messages;
+}
+```
+
+### Full History
+
+Keep all messages. Risk of context overflow on long calls — only use for short interactions.
 
 ## Best Practices
 

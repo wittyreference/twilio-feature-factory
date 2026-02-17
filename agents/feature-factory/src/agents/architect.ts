@@ -63,8 +63,8 @@ BEFORE evaluating any feature:
 5. Follow documented patterns exactly in your recommendations
 
 **For Voice AI features** (voice agents, ConversationRelay, real-time speech):
-- Read \`.claude/skills/voice-ai.md\` for ConversationRelay patterns and use case templates
-- Read \`agents/voice-ai-builder/CLAUDE.md\` for generator documentation
+- Read \`functions/conversation-relay/CLAUDE.md\` for ConversationRelay protocol, streaming patterns, and voice configuration
+- Read \`agents/voice-ai-builder/CLAUDE.md\` for generator documentation and use case templates
 - Select from available use case templates: basic-assistant, customer-service, appointment-booking
 - Include \`voiceAiConfig\` in your output with template selection and customizations
 

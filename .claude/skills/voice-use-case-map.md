@@ -4,7 +4,7 @@ Definitive per-use-case product mapping for Twilio Voice. Load this skill when a
 
 **Provenance:** Derived from the Twilio Voice Use Case Domain Expert reference (10 use case slides + summary ladder), enriched with Twilio documentation research for prerequisites, operational gotchas, and cross-cutting constraints.
 
-**Complements:** `.claude/skills/voice.md` — that file covers decision frameworks and architectural patterns. This file covers *which products to recommend* for each use case.
+**Complements:** `.claude/skills/voice.md` — that file covers decision frameworks and architectural patterns. This file covers *which products to recommend* for each use case. For ConversationRelay protocol details, streaming patterns, and LLM integration, see `functions/conversation-relay/CLAUDE.md`.
 
 ---
 

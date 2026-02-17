@@ -8,16 +8,20 @@ This project uses Claude Code hooks (configured in `.claude/settings.json`) to e
 |------|-------|---------|
 | `pre-write-validate.sh` | PreToolUse (Write/Edit) | Blocks credentials, magic test numbers; warns on naming |
 | `pre-bash-validate.sh` | PreToolUse (Bash) | Blocks --no-verify, pending-actions, validates deploy |
-| `flywheel-doc-check.sh` | PreToolUse (Bash) | Suggests doc updates including todo.md |
-| `post-write.sh` | PostToolUse (Write/Edit) | Auto-lints JS/TS files with ESLint |
+| `post-write.sh` | PostToolUse (Write/Edit) | Auto-lints JS/TS files, tracks files to .session-files |
+| `flywheel-doc-check.sh` | PostToolUse (Write/Edit) | Suggests doc updates based on 4 sources (git status, commits, session-files, pattern-db) |
 | `post-bash.sh` | PostToolUse (Bash) | Logs deploy/test completions |
-| `session-start-log.sh` | SessionStart (all) | Logs session starts, captures compaction summaries, resets session tracking |
-| `post-compact-summary.sh` | SessionStart (compact) | Extracts compaction summary from transcript |
-| `subagent-log.sh` | SubagentStop | Logs workflow activity |
+| `subagent-log.sh` | SubagentStop | Logs workflow activity, triggers flywheel |
 | `teammate-idle-check.sh` | TeammateIdle | Quality gate before teammate goes idle |
 | `task-completed-check.sh` | TaskCompleted | TDD/coverage/credential gate on task completion |
+| `session-checklist.sh` | Stop | Warns about uncommitted changes, unpushed commits, stale learnings |
 | `archive-plan.sh` | Stop | Archives plan files with metadata |
 | `notify-ready.sh` | Stop | Desktop notification when done |
+| `pre-compact.sh` | PreCompact | Creates compaction marker for post-compact-summary |
+| `session-start-log.sh` | SessionStart (all) | Logs session starts, resets session tracking (.session-start, .session-files) |
+| `post-compact-summary.sh` | SessionStart (compact) | Extracts compaction summary from transcript |
+| `_meta-mode.sh` | *(sourced by other hooks)* | Helper: detects `.meta/` directory, sets environment-aware paths |
+| `flywheel-session-summary.sh` | *(sourced by other hooks)* | Helper: generates session summary for flywheel processing |
 
 ## What Gets Blocked (Exit Code 2)
 

@@ -25,6 +25,8 @@ const Anthropic = require('@anthropic-ai/sdk');
  *   AGENT_ID - Unique identifier for this agent (default: agent-{role})
  *   SYNC_SERVICE_SID - Twilio Sync Service SID for transcript storage
  *   TEST_SESSION_ID - Unique ID for this test session
+ *   SYSTEM_PROMPT - Custom system prompt (overrides default role-based prompt)
+ *   UC_ID - Use case identifier for logging context (e.g., UC1, UC5)
  */
 
 // Configuration
@@ -34,6 +36,8 @@ const AGENT_ID = process.env.AGENT_ID || `agent-${AGENT_ROLE}`;
 const SYNC_SERVICE_SID = process.env.TWILIO_SYNC_SERVICE_SID;
 const TEST_SESSION_ID = process.env.TEST_SESSION_ID || `test-${Date.now()}`;
 const MAX_TURNS = parseInt(process.env.MAX_TURNS || '8', 10);
+const CUSTOM_SYSTEM_PROMPT = process.env.SYSTEM_PROMPT || null;
+const UC_ID = process.env.UC_ID || 'generic';
 
 // System prompts for different roles
 const SYSTEM_PROMPTS = {
@@ -210,7 +214,7 @@ async function storeTranscript(context) {
 // Send message to Claude
 async function sendToLLM(context) {
   try {
-    const systemPrompt = SYSTEM_PROMPTS[context.role] || SYSTEM_PROMPTS.answerer;
+    const systemPrompt = CUSTOM_SYSTEM_PROMPT || SYSTEM_PROMPTS[context.role] || SYSTEM_PROMPTS.answerer;
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -242,9 +246,11 @@ console.log(`
   Port: ${PORT}
   Role: ${AGENT_ROLE.toUpperCase()}
   Agent ID: ${AGENT_ID}
+  Use Case: ${UC_ID}
   Session ID: ${TEST_SESSION_ID}
   Max Turns: ${MAX_TURNS}
   Sync Storage: ${SYNC_SERVICE_SID ? 'Enabled' : 'Disabled'}
+  System Prompt: ${CUSTOM_SYSTEM_PROMPT ? 'Custom (SYSTEM_PROMPT env)' : `Default (${AGENT_ROLE})`}
 
   Ready for connections...
 =================================================

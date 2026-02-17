@@ -171,11 +171,12 @@ The `run-headless.sh` script runs Claude Code non-interactively via `claude -p` 
 
 ### What It Does
 
-1. **Validates environment**: Project root, `claude` CLI, env vars
-2. **Requires env var acknowledgment**: `CLAUDE_HEADLESS_ACKNOWLEDGED=true` (no interactive prompt)
-3. **Launches `claude -p`**: Non-interactive — receives prompt, executes autonomously, exits
-4. **Creates audit log**: Logs to `.claude/autonomous-sessions/headless-YYYYMMDD-HHMMSS.log`
-5. **Captures output**: Streams to both stdout and audit log via `tee`
+1. **Clears nested-session env**: Unsets `CLAUDECODE` to prevent child `claude -p` from detecting a parent session
+2. **Validates environment**: Project root, `claude` CLI, env vars
+3. **Requires env var acknowledgment**: `CLAUDE_HEADLESS_ACKNOWLEDGED=true` (no interactive prompt)
+4. **Launches `claude -p`**: Non-interactive — receives prompt, executes autonomously, exits. Automatically adds `--verbose` when output format is `stream-json` (required by the CLI).
+5. **Creates audit log**: Logs to `.claude/autonomous-sessions/headless-YYYYMMDD-HHMMSS.log`
+6. **Captures output**: Streams to both stdout and audit log via `tee`
 
 ### Usage
 

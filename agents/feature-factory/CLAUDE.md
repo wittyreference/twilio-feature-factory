@@ -210,6 +210,8 @@ FEATURE_FACTORY_AUTONOMOUS_ACKNOWLEDGED=true \
 npx feature-factory new-feature "Add voice AI"
 ```
 
+When env vars are set, `requireAcknowledgment()` returns immediately without creating a readline interface. Phase approval prompts (`promptForApproval`, `promptForFeedback`, `promptForRollback`) detect non-TTY stdin and auto-approve/skip gracefully, so piped or headless invocations never block on readline.
+
 ### Session Summary
 
 When autonomous mode completes, you receive a comprehensive summary:
@@ -262,7 +264,7 @@ npx feature-factory new-feature "Add voice AI" --dangerously-autonomous --no-san
 
 ### Prerequisites
 
-- Source directory must be a **git repository**
+- Source directory must be a **git repository** (if not, sandbox auto-initializes one with `git init && git add -A && git commit`)
 - Working tree must be **clean** (no uncommitted changes). The CLI will error with a file list and instructions to commit or stash if dirty.
 
 ### What Gets Copied Back

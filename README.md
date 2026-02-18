@@ -38,8 +38,6 @@ Twilio Agent Factory is an **AI-powered development system** for building Twilio
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Extended Thinking**: This project configures `MAX_THINKING_TOKENS=63999` for deep reasoning during complex planning. See [CLAUDE.md](CLAUDE.md) for details.
-
 ## The Architecture
 
 ```text
@@ -143,9 +141,14 @@ During execution, autonomous agents have access to:
 
 ## Available Tools
 
-### Development Commands
+### Workflow Commands
 
-Specialized agents for different development phases:
+| Command | What It Does |
+|---------|--------------|
+| `/orchestrate [workflow] [task]` | Run full development pipelines |
+| `/team [workflow] [task]` | Coordinate parallel multi-agent work |
+
+### Development Subagents
 
 | Command | What It Does |
 |---------|--------------|
@@ -153,16 +156,23 @@ Specialized agents for different development phases:
 | `/spec [feature]` | Create technical specifications |
 | `/test-gen [feature]` | Generate failing tests (TDD Red Phase) |
 | `/dev [task]` | Implement to pass tests (TDD Green Phase) |
-| `/review` | Code review and security audit |
-| `/docs` | Update documentation |
+| `/review [target]` | Code review and security audit |
+| `/test [scope]` | Execute and validate test suites |
+| `/docs [scope]` | Update documentation |
 
 ### Utility Commands
 
 | Command | What It Does |
 |---------|--------------|
+| `/commit [scope]` | Git commit with pre-commit checks and conventional messages |
+| `/push` | Push to remote with test verification |
+| `/preflight` | Environment verification (CLI profile, env vars, auth) |
+| `/deploy [env]` | Deploy with validation checks |
+| `/e2e-test [scope]` | E2E tests against live Twilio |
+| `/validate [type] [SID]` | Deep validation of individual Twilio resources |
+| `/context [action]` | Context optimization (summarize, load, analyze) |
 | `/twilio-docs [topic]` | Search Twilio documentation |
 | `/twilio-logs` | Analyze Twilio debugger logs |
-| `/deploy [env]` | Deploy with validation checks |
 
 ### Agent Teams (Experimental)
 
@@ -187,46 +197,41 @@ Twilio APIs exposed as tools Claude Code can invoke:
 - **TaskRouter**: Create tasks, list workers
 - **Debugger**: Error logs, usage records
 
-## Headless Automation
+## Feature Factory
 
-For CI/CD pipelines or programmatic access, the **Feature Factory** can run workflows without Claude Code:
+The Feature Factory runs development workflows autonomously with three execution modes:
+
+- **Interactive CLI** — Standard Claude Code session with `/orchestrate`
+- **Autonomous mode** — `--dangerously-autonomous` with sandbox isolation (on by default)
+- **Headless** — `scripts/run-headless.sh` for CI/CD pipelines, no TTY required
+
+Built-in safeguards:
+- Stall detection and automatic phase retry
+- Git checkpoints at each pipeline stage
+- Quality gates always enforced (TDD, lint, coverage, credential safety)
 
 ```bash
-npx feature-factory new-feature "add SMS verification"
+# Headless example
+./scripts/run-headless.sh "add SMS verification to the login flow"
 ```
 
-This is useful for:
-- Automated development pipelines
-- Scheduled code generation
-- Integration with other tools
+See [agents/feature-factory/CLAUDE.md](agents/feature-factory/CLAUDE.md) for architecture and [scripts/CLAUDE.md](scripts/CLAUDE.md) for runner details.
 
-See [agents/README.md](agents/README.md) for details.
-
-## What's Implemented vs Planned
-
-### Implemented ✓
+## What's Implemented
 
 **Development Tools**
-- 7 specialized slash commands (architect, spec, test-gen, dev, qa, review, docs)
-- MCP Server with 220+ Twilio API tools (P0-P3 complete)
+- 18 slash commands across workflow, development, and utility categories
+- MCP Server with 248 Twilio API tools across 25 modules
 - Voice AI Builder with TwiML and WebSocket generators
+- Feature Factory with autonomous mode, stall detection, and sandbox isolation
 
 **Serverless Functions**
 - Voice, Messaging, Verify, Sync, TaskRouter, Conversation Relay
 
 **Coordination**
-- Agent Teams with 4 pre-configured team workflows (new-feature, bug-fix, code-review, refactor)
-- `TeammateIdle` and `TaskCompleted` quality gate hooks
-
-### Planned 🚧
-
-**Additional Workflows**
-- `bug-fix` workflow (logs → architect → test → dev → review)
-- `refactor` workflow (test → architect → dev → review)
-
-**Autonomous Workers**
-- Event-driven agents that respond to validation failures
-- Background workers for continuous verification
+- Agent Teams with 4 pre-configured workflows (new-feature, bug-fix, code-review, refactor)
+- 16 safety and quality hooks
+- Work discovery and background polling in Feature Factory
 
 ## Project Structure
 
@@ -242,12 +247,15 @@ twilio-agent-factory/
 │   └── callbacks/           # Status callback handlers
 ├── agents/                  # AI development tooling
 │   ├── mcp-servers/twilio/  # MCP server for Twilio APIs
-│   ├── feature-factory/     # Headless workflow orchestration
+│   ├── feature-factory/     # Autonomous workflow orchestration
+│   ├── doc-generator/       # Documentation generation
 │   └── voice-ai-builder/    # Voice AI app generator
 ├── .claude/                 # Claude Code configuration
-│   ├── commands/            # Slash command definitions
-│   ├── hooks/               # Automation hooks
-│   └── skills/              # Context engineering skills
+│   ├── commands/            # Slash command definitions (18)
+│   ├── hooks/               # Safety and quality hooks (16)
+│   ├── rules/               # Declarative agent rules
+│   ├── skills/              # Context engineering skills
+│   └── workflows/           # Workflow definitions
 └── __tests__/               # Test suites
 ```
 
@@ -255,9 +263,16 @@ twilio-agent-factory/
 
 | Command | Description |
 |---------|-------------|
+| `npm run setup` | First-time project setup |
 | `npm start` | Start local development server |
+| `npm run start:ngrok` | Start with ngrok tunnel |
 | `npm test` | Run unit and integration tests |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run test:coverage` | Run tests with coverage report |
+| `npm run test:e2e` | Run Newman E2E tests |
+| `npm run test:all` | Run all tests (unit + integration + E2E) |
 | `npm run lint` | Check for linting errors |
+| `npm run lint:fix` | Auto-fix linting errors |
 | `npm run deploy:dev` | Deploy to dev environment |
 | `npm run deploy:prod` | Deploy to production |
 
@@ -311,17 +326,32 @@ End-to-end testing for ConversationRelay requires a real phone call and ngrok tu
 
 ## Safety Features
 
-Claude Code hooks protect your code automatically:
+16 Claude Code hooks protect your code automatically:
 
-- **Credential blocking** - Prevents hardcoded Twilio SIDs and tokens
-- **ABOUTME enforcement** - Requires documentation comments on new functions
-- **Auto-lint** - Runs ESLint with auto-fix on save
-- **Deploy validation** - Runs tests and lint before deployment
-- **Git safety** - Blocks `--no-verify` and force push to main
+**Security**
+- Credential blocking (hardcoded SIDs, tokens, API keys)
+- Git safety (blocks `--no-verify`, force push to main)
+
+**Quality**
+- ABOUTME enforcement on new files
+- Auto-lint with ESLint on save
+- Deploy validation (tests + lint before deployment)
+
+**Session Management**
+- Session start logging and checklist verification
+- Context compaction summaries
+
+**Documentation Flywheel**
+- Post-write change tracking
+- Doc suggestion generation from code changes
+
+**Agent Coordination**
+- Teammate idle check and task completion gates
+- Subagent activity logging
 
 ## Prerequisites
 
-- Node.js 18-22 (Twilio Serverless requirement)
+- Node.js 20 or 22 (Twilio Serverless requirement)
 - Twilio CLI (`npm install -g twilio-cli`)
 - Twilio Serverless plugin (`twilio plugins:install @twilio-labs/plugin-serverless`)
 - Claude Code

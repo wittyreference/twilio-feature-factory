@@ -138,7 +138,7 @@ import {
   extractAgents,
   generateApiDocs,
   generateMermaidDiagrams,
-} from '@twilio-agent-factory/doc-generator';
+} from '@twilio-feature-factory/doc-generator';
 import { readFileSync } from 'fs';
 
 // Extract from source files

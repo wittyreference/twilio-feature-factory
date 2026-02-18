@@ -91,7 +91,7 @@ claude --version
 
 ```bash
 # Navigate to your project
-cd twilio-agent-factory
+cd twilio-feature-factory
 
 # Install dependencies
 npm install
@@ -121,7 +121,7 @@ The setup script provisions:
 ### Start Claude Code
 
 ```bash
-cd twilio-agent-factory
+cd twilio-feature-factory
 claude
 ```
 

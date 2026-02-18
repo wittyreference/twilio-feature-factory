@@ -79,8 +79,8 @@ During execution, autonomous agents have access to:
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/wittyreference/twilio-agent-factory.git
-   cd twilio-agent-factory
+   git clone https://github.com/wittyreference/twilio-feature-factory.git
+   cd twilio-feature-factory
    ```
 
 2. **Install dependencies**
@@ -236,7 +236,7 @@ See [agents/feature-factory/CLAUDE.md](agents/feature-factory/CLAUDE.md) for arc
 ## Project Structure
 
 ```text
-twilio-agent-factory/
+twilio-feature-factory/
 ├── functions/               # Twilio serverless functions
 │   ├── voice/               # Voice call handlers (TwiML)
 │   ├── messaging/           # SMS/MMS handlers

@@ -1,5 +1,5 @@
 {
-  "name": "@twilio-agent-factory/voice-ai-builder",
+  "name": "@twilio-feature-factory/voice-ai-builder",
   "version": "0.1.0",
   "description": "Voice AI application generator using Twilio ConversationRelay",
   "type": "module",

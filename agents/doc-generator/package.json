@@ -1,5 +1,5 @@
 {
-  "name": "@twilio-agent-factory/doc-generator",
+  "name": "@twilio-feature-factory/doc-generator",
   "version": "0.1.0",
   "description": "Auto-generates API documentation and Mermaid diagrams for Twilio Agent Factory",
   "type": "module",

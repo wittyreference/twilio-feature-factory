@@ -130,7 +130,7 @@ done
 
 # Must be in project root
 if [ ! -f "package.json" ] || [ ! -d ".claude" ]; then
-    echo -e "${RED}Error: Must be run from the twilio-agent-factory root directory${NC}" >&2
+    echo -e "${RED}Error: Must be run from the twilio-feature-factory root directory${NC}" >&2
     exit 1
 fi
 

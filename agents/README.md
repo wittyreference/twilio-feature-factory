@@ -129,7 +129,7 @@ See [voice-ai-builder/CLAUDE.md](voice-ai-builder/CLAUDE.md) for full documentat
 **Critical**: The agents directory is intentionally decoupled from `functions/`:
 
 ```text
-twilio-agent-factory/
+twilio-feature-factory/
 ├── functions/              ← TWILIO SERVERLESS (production code)
 │   ├── voice/                  Voice call handlers (TwiML)
 │   ├── messaging/              SMS/MMS handlers

@@ -1,7 +1,7 @@
 ---
 archived: 2026-02-01T12:00:00-08:00
 branch: main
-project: twilio-agent-factory
+project: twilio-feature-factory
 source: ~/.claude/plans/example-plan.md
 title: Example Plan Template
 ---

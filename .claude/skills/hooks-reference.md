@@ -73,7 +73,7 @@ When a Claude Code session ends, `archive-plan.sh` preserves the current plan fi
 ```yaml
 archived: 2026-02-01T15:30:45-08:00
 branch: main
-project: twilio-agent-factory
+project: twilio-feature-factory
 source: ~/.claude/plans/deep-nibbling-castle.md
 title: Plan Title From First Heading
 ```

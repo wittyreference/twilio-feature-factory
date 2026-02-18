@@ -79,7 +79,7 @@ These functions require the following environment variables:
 These functions are auto-deployed during setup via:
 
 ```bash
-npx twilio-agent-factory setup
+npx twilio-feature-factory setup
 ```
 
 Or manually:

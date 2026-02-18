@@ -155,7 +155,7 @@ prompt_acknowledgment() {
 main() {
     # Check if we're in the right directory
     if [ ! -f "package.json" ] || [ ! -d ".claude" ]; then
-        echo -e "${RED}Error: Must be run from the twilio-agent-factory root directory${NC}"
+        echo -e "${RED}Error: Must be run from the twilio-feature-factory root directory${NC}"
         exit 1
     fi
 

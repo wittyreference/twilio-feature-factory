@@ -3,6 +3,16 @@
 # ABOUTME: Logs deployment completions and sends notifications for key operations.
 
 # ============================================
+# PARSE TOOL INPUT FROM STDIN
+# ============================================
+# Claude Code passes tool input as JSON on stdin, not env vars.
+# Capture it before anything else consumes stdin.
+_POST_BASH_HOOK_INPUT=""
+if [ ! -t 0 ]; then
+    _POST_BASH_HOOK_INPUT="$(cat)"
+fi
+
+# ============================================
 # COMPACT-PENDING MARKER CHECK
 # ============================================
 # After auto-compaction, PreCompact leaves a marker file. Pick it up here
@@ -24,7 +34,10 @@ _check_compact_pending() {
 }
 _check_compact_pending
 
-COMMAND="${CLAUDE_TOOL_INPUT_COMMAND:-}"
+COMMAND=""
+if [ -n "$_POST_BASH_HOOK_INPUT" ] && command -v jq &> /dev/null; then
+    COMMAND="$(echo "$_POST_BASH_HOOK_INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)"
+fi
 
 # Exit if no command
 if [ -z "$COMMAND" ]; then

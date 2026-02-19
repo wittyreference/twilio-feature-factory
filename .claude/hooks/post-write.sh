@@ -3,6 +3,22 @@
 # ABOUTME: Environment-aware: tracks files to .meta/ (meta) or .claude/ (shipped).
 
 # ============================================
+# PARSE TOOL INPUT FROM STDIN
+# ============================================
+# Claude Code passes tool input as JSON on stdin, not env vars.
+# Capture it before anything else consumes stdin.
+HOOK_INPUT=""
+if [ ! -t 0 ]; then
+    HOOK_INPUT="$(cat)"
+fi
+
+# Extract file path from JSON input (Write: .tool_input.file_path, Edit: .tool_input.file_path)
+FILE_PATH=""
+if [ -n "$HOOK_INPUT" ] && command -v jq &> /dev/null; then
+    FILE_PATH="$(echo "$HOOK_INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)"
+fi
+
+# ============================================
 # COMPACT-PENDING MARKER CHECK
 # ============================================
 # After auto-compaction, PreCompact leaves a marker file. Pick it up here
@@ -23,8 +39,6 @@ _check_compact_pending() {
     fi
 }
 _check_compact_pending
-
-FILE_PATH="${CLAUDE_TOOL_INPUT_FILE_PATH:-}"
 
 # Exit early if no file path
 if [ -z "$FILE_PATH" ]; then

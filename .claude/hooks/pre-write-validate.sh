@@ -2,8 +2,18 @@
 # ABOUTME: Pre-write validation hook for credential safety, ABOUTME, and meta isolation.
 # ABOUTME: Blocks writes containing hardcoded credentials, missing headers, or violating meta mode.
 
-FILE_PATH="${CLAUDE_TOOL_INPUT_FILE_PATH:-}"
-CONTENT="${CLAUDE_TOOL_INPUT_CONTENT:-}"
+# Claude Code passes tool input as JSON on stdin, not env vars.
+HOOK_INPUT=""
+if [ ! -t 0 ]; then
+    HOOK_INPUT="$(cat)"
+fi
+
+FILE_PATH=""
+CONTENT=""
+if [ -n "$HOOK_INPUT" ] && command -v jq &> /dev/null; then
+    FILE_PATH="$(echo "$HOOK_INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)"
+    CONTENT="$(echo "$HOOK_INPUT" | jq -r '.tool_input.content // .tool_input.new_string // empty' 2>/dev/null)"
+fi
 
 # Exit early if no content to validate
 if [ -z "$CONTENT" ]; then

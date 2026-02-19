@@ -2,7 +2,16 @@
 # ABOUTME: Pre-bash validation hook for git and deployment safety.
 # ABOUTME: Blocks dangerous git operations and validates test status before deploy.
 
-COMMAND="${CLAUDE_TOOL_INPUT_COMMAND:-}"
+# Claude Code passes tool input as JSON on stdin, not env vars.
+HOOK_INPUT=""
+if [ ! -t 0 ]; then
+    HOOK_INPUT="$(cat)"
+fi
+
+COMMAND=""
+if [ -n "$HOOK_INPUT" ] && command -v jq &> /dev/null; then
+    COMMAND="$(echo "$HOOK_INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)"
+fi
 
 # Exit if no command
 if [ -z "$COMMAND" ]; then

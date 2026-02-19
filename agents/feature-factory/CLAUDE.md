@@ -51,6 +51,13 @@ src/
 │   ├── index.ts          # Exports
 │   ├── work-discovery.ts # Work item types and priority classification
 │   └── work-poller.ts    # Event-driven work queue from validation failures
+├── worker/               # Autonomous worker infrastructure
+│   ├── index.ts          # Barrel exports
+│   ├── autonomous-worker.ts  # Main worker loop (sources → queue → orchestrator)
+│   ├── persistent-queue.ts   # File-based queue (.feature-factory/work-queue.json)
+│   ├── approval-policy.ts    # Tier-based routing (auto-execute/confirm/escalate)
+│   ├── work-sources.ts       # Debugger alerts, file queue sources
+│   └── worker-status.ts      # Status file read/write
 ├── metrics/              # Process metrics collection
 │   ├── index.ts          # Exports
 │   └── process-metrics.ts # Timing, quality, learning metrics
@@ -639,6 +646,144 @@ Rollback is **not offered** when:
 
 Source: `src/checkpoints.ts` — `createCheckpoint()`, `rollbackToCheckpoint()`, `cleanupCheckpoints()`, `listCheckpoints()`, `sanitizePhaseSlug()`
 Tests: `__tests__/checkpoints.test.ts`, `__tests__/orchestrator.test.ts` — "Git Checkpoints" describe block
+
+## Autonomous Worker
+
+The autonomous worker connects work discovery to workflow execution. It polls work sources, queues items with priority, applies an approval policy, and executes workflows through the orchestrator.
+
+### Architecture
+
+```
+Work Sources                    Persistent Queue              Orchestrator
+┌──────────────────┐           ┌──────────────┐           ┌──────────────────┐
+│ Debugger Alerts  │──poll──►  │              │──next──►  │                  │
+│ File Queue       │           │  Priority    │           │  runWorkflow()   │
+│ Validation Fails │           │  Sorted      │           │  (bug-fix,       │
+└──────────────────┘           │  Queue       │           │   refactor,      │
+                               └──────────────┘           │   new-feature)   │
+                                      │                   └──────────────────┘
+                               Approval Policy
+                               ┌──────────────┐
+                               │ Tier 1-2: ✓  │
+                               │ Tier 3: ?    │
+                               │ Tier 4: ✗    │
+                               └──────────────┘
+```
+
+### CLI Commands
+
+```bash
+# Start the worker loop
+npx feature-factory worker start
+npx feature-factory worker start --poll-interval 30000 --max-budget 25 -v
+npx feature-factory worker start --enable-debugger-alerts
+
+# Check worker status
+npx feature-factory worker status
+
+# Stop the worker gracefully (signal file)
+npx feature-factory worker stop
+
+# Manage queue
+npx feature-factory worker queue list
+npx feature-factory worker queue add "Fix timeout in verification flow" --priority high --workflow bug-fix
+npx feature-factory worker queue remove <workId>
+```
+
+### Configuration
+
+```typescript
+interface AutonomousWorkerConfig {
+  workingDirectory: string;           // Where to persist files
+  pollIntervalMs?: number;            // Default: 60000 (1 minute)
+  maxBudgetUsd?: number;              // Default: 50
+  maxItemBudgetUsd?: number;          // Default: 10
+  approvalPolicy?: Partial<ApprovalPolicy>;  // Override tier defaults
+  verbose?: boolean;                  // Default: false
+  enableSandbox?: boolean;            // Default: true
+  onConfirmationRequired?: (work) => Promise<boolean>;  // Tier 3 callback
+  onExecuteWorkflow?: (type, description, budget) => Promise<WorkflowResult>;
+}
+```
+
+### Approval Policy
+
+| Tier | Default Action | Description |
+|------|---------------|-------------|
+| 1 | `auto-execute` | Simple config fix, high confidence |
+| 2 | `auto-execute` | Code fix, medium-high confidence |
+| 3 | `confirm` | Requires confirmation callback |
+| 4 | `escalate` | External/unknown, human required |
+
+Override precedence: `sourceOverrides` > `priorityOverrides` > tier defaults.
+
+Budget enforcement: items exceeding `maxAutoExecuteBudgetUsd` ($10 default) are bumped from auto-execute to confirm.
+
+### Work Sources
+
+| Source | Type | Description |
+|--------|------|-------------|
+| `createDebuggerAlertSource(client)` | `debugger-alert` | Polls `client.monitor.v1.alerts.list()` |
+| `createFileQueueSource(dir)` | `user-request` | Reads `.feature-factory/manual-queue.json` |
+| Validation failures | `validation-failure` | Via WorkPoller event listener (existing) |
+
+The `WorkSourceProvider` interface makes adding sources trivial:
+```typescript
+interface WorkSourceProvider {
+  name: string;
+  source: WorkSource;
+  enabled: boolean;
+  poll(): Promise<DiscoveredWork[]>;
+}
+```
+
+### File Layout
+
+| File | Purpose |
+|------|---------|
+| `.feature-factory/work-queue.json` | Persistent work queue |
+| `.feature-factory/worker-status.json` | Worker status snapshot |
+| `.feature-factory/worker.lock` | Lock file (prevents multiple instances) |
+| `.feature-factory/worker-stop-signal` | Stop signal (checked each poll) |
+| `.feature-factory/manual-queue.json` | Manual queue (user-added items) |
+
+### Programmatic Usage
+
+```typescript
+import {
+  AutonomousWorker,
+  createFileQueueSource,
+  createDebuggerAlertSource,
+} from '@twilio-feature-factory/feature-factory';
+
+const worker = new AutonomousWorker({
+  workingDirectory: process.cwd(),
+  pollIntervalMs: 30000,
+  maxBudgetUsd: 25,
+  onExecuteWorkflow: async (type, description, budget) => {
+    // Connect to FeatureFactoryOrchestrator here
+    const orchestrator = new FeatureFactoryOrchestrator({ maxBudgetUsd: budget });
+    const events = orchestrator.runWorkflow(type, description);
+    for await (const event of events) { /* handle events */ }
+    return { success: true, costUsd: 1.50, resolution: 'Fixed' };
+  },
+});
+
+worker.registerSource(createFileQueueSource(process.cwd()));
+
+worker.on('work-completed', (work, result) => {
+  console.log(`Completed: ${work.summary} ($${result.costUsd})`);
+});
+
+await worker.start();
+```
+
+### Module
+
+Source: `src/worker/` — `autonomous-worker.ts`, `persistent-queue.ts`, `approval-policy.ts`, `work-sources.ts`, `worker-status.ts`
+Tests: `__tests__/worker/`, `__tests__/integration/autonomous-worker-flow.test.ts`
+
+Exports: `AutonomousWorker`, `PersistentQueue`, `evaluateApproval`, `createDefaultPolicy`, `createDebuggerAlertSource`, `createFileQueueSource`, `saveWorkerStatus`, `loadWorkerStatus`
 
 ## Process Validation Infrastructure
 

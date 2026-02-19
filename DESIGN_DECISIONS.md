@@ -1240,6 +1240,76 @@ When making architectural decisions:
 ### Decision Template
 
 ```markdown
+## Decision 27: File-Based Worker Status Over HTTP API
+
+### Context
+
+The autonomous worker needs to report its status (running, processing, idle) and statistics (completed, escalated, failed, cost). Two approaches: a long-running HTTP API daemon, or file-based status with CLI reads.
+
+### Decision
+
+**File-based status files with CLI commands for reading. No HTTP daemon.**
+
+### Rationale
+
+1. Feature Factory is a dev tool, not a production service — a daemon adds operational complexity for no user benefit
+2. File-based status follows the same pattern as `session.ts` (PatternTracker/session persistence), maintaining codebase consistency
+3. Lock files and stop-signal files are more reliable across shell sessions and background processes than process signals
+4. HTTP can be layered on later if needed; file-based provides the data layer either way
+
+### Alternatives Considered
+
+- **HTTP API daemon**: Rejected — unnecessary for a dev tool, adds process management complexity
+- **Unix socket IPC**: Rejected — platform-specific, harder to inspect manually
+
+### Consequences
+
+- Worker status is a snapshot (last-write-wins), not real-time
+- Multiple CLI reads are cheap; no connection overhead
+- Debugging is simple: `cat .feature-factory/worker-status.json`
+
+### Status
+
+**Accepted** - 2026-02-18
+
+---
+
+## Decision 28: Tier-Based Approval Policy
+
+### Context
+
+The autonomous worker processes work items from multiple sources with varying risk levels. Some items can be auto-executed safely, others need human review. Need a configurable policy that's safe by default but relaxable.
+
+### Decision
+
+**Tier-based routing with override precedence: source > priority > tier defaults. Tier 1-2 auto-execute, tier 3 confirm, tier 4 escalate.**
+
+### Rationale
+
+1. Aligns with the existing four-tier risk model (Decision 2)
+2. Safe defaults: only well-understood, high-confidence fixes auto-execute
+3. Source overrides allow trusted sources (user-request) to bypass tier restrictions
+4. Budget enforcement prevents expensive auto-executions regardless of tier
+5. `manual-review` workflows always escalate, providing a hard stop
+
+### Alternatives Considered
+
+- **Binary allow/deny**: Too coarse — no middle ground for "ask first"
+- **ML-based risk scoring**: Over-engineered for a dev tool; tiers are explicit and debuggable
+- **Always-confirm**: Too cautious — defeats the purpose of autonomous work
+
+### Consequences
+
+- Clear, predictable routing decisions that users can reason about
+- Override system allows teams to tune policy to their risk tolerance
+- Budget cap provides financial safety net independent of tier logic
+
+### Status
+
+**Accepted** - 2026-02-18
+
+---
+
 ## Decision N: [Title]
 
 ### Context
@@ -1308,3 +1378,5 @@ When making architectural decisions:
 | 2026-02-15 | D24 | E2E validation as headless task prompt, not queue system |
 | 2026-02-15 | D25 | Scope-parallel refactoring via Task subagents (complements role-parallel Agent Teams) |
 | 2026-02-15 | D26 | Session bootstrap as hook enhancement (auto-verification + architectural invariants) |
+| 2026-02-18 | D27 | File-based worker status over HTTP API (dev tool pattern, consistent with session.ts) |
+| 2026-02-18 | D28 | Tier-based approval policy (source > priority > tier defaults, budget enforcement) |

@@ -64,6 +64,15 @@ if [[ "$FUNCTIONS_CHANGED" -gt 0 ]]; then
     ITEMS+=("E2E: $FUNCTIONS_CHANGED function file(s) modified — consider running npm run test:e2e")
 fi
 
+# --- 7. Plugin drift check (if syncable files were touched) ---
+DRIFT_SCRIPT="$PROJECT_ROOT/scripts/plugin-drift-check.sh"
+if [[ -x "$DRIFT_SCRIPT" ]] && command -v jq &>/dev/null; then
+    DRIFT_COUNT=$("$DRIFT_SCRIPT" --count 2>/dev/null) || DRIFT_COUNT=0
+    if [[ "$DRIFT_COUNT" -gt 0 ]]; then
+        ITEMS+=("PLUGIN: $DRIFT_COUNT factory file(s) drifted from plugin — run /plugin-sync to review")
+    fi
+fi
+
 # ============================================
 # Output checklist (only if there are items)
 # ============================================

@@ -1,0 +1,100 @@
+{
+  "plugin_repo": "../twilio-claude-plugin",
+  "mappings": {
+    "skills": [
+      { "factory": ".claude/skills/context-compression.md", "plugin": "skills/context-compression/SKILL.md", "adaptation": "frontmatter" },
+      { "factory": ".claude/skills/context-fundamentals.md", "plugin": "skills/context-fundamentals/SKILL.md", "adaptation": "frontmatter" },
+      { "factory": ".claude/skills/deep-validation.md", "plugin": "skills/deep-validation/SKILL.md", "adaptation": "frontmatter,strip-mcp,strip-factory-paths" },
+      { "factory": ".claude/skills/memory-systems.md", "plugin": "skills/memory-systems/SKILL.md", "adaptation": "frontmatter" },
+      { "factory": ".claude/skills/multi-agent-patterns.md", "plugin": "skills/multi-agent-patterns/SKILL.md", "adaptation": "frontmatter" },
+      { "factory": ".claude/skills/tdd-workflow.md", "plugin": "skills/tdd-workflow/SKILL.md", "adaptation": "frontmatter,generalize-agents" },
+      { "factory": ".claude/skills/voice-use-case-map.md", "plugin": "skills/voice-use-case-map/SKILL.md", "adaptation": "frontmatter" },
+      { "factory": "functions/voice/CLAUDE.md", "plugin": "skills/voice/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/messaging/CLAUDE.md", "plugin": "skills/messaging/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/verify/CLAUDE.md", "plugin": "skills/verify/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/sync/CLAUDE.md", "plugin": "skills/sync/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/taskrouter/CLAUDE.md", "plugin": "skills/taskrouter/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/conversation-relay/CLAUDE.md", "plugin": "skills/conversation-relay/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/messaging-services/CLAUDE.md", "plugin": "skills/messaging-services/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": ".claude/references/twilio-cli.md", "plugin": "skills/twilio-cli/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "CLAUDE.md", "plugin": "skills/twilio-invariants/SKILL.md", "adaptation": "frontmatter,extract-invariants" }
+    ],
+    "commands": [
+      { "factory": ".claude/commands/commit.md", "plugin": "commands/commit.md", "adaptation": "strip-factory-paths" },
+      { "factory": ".claude/commands/context.md", "plugin": "commands/context.md", "adaptation": "strip-factory-paths" },
+      { "factory": ".claude/commands/deploy.md", "plugin": "commands/deploy.md", "adaptation": "strip-factory-paths" },
+      { "factory": ".claude/commands/preflight.md", "plugin": "commands/preflight.md", "adaptation": "strip-factory-paths" },
+      { "factory": ".claude/commands/push.md", "plugin": "commands/push.md", "adaptation": "strip-factory-paths" },
+      { "factory": ".claude/commands/test.md", "plugin": "commands/test.md", "adaptation": "strip-factory-paths" },
+      { "factory": ".claude/commands/twilio-docs.md", "plugin": "commands/twilio-docs.md", "adaptation": "minimal" },
+      { "factory": ".claude/commands/twilio-logs.md", "plugin": "commands/twilio-logs.md", "adaptation": "minimal" }
+    ],
+    "hooks": [
+      { "factory": ".claude/hooks/pre-write-validate.sh", "plugin": "hooks/pre-write-validate.sh", "adaptation": "strip-meta-mode" },
+      { "factory": ".claude/hooks/pre-bash-validate.sh", "plugin": "hooks/pre-bash-validate.sh", "adaptation": "strip-meta-mode,strip-flywheel,strip-auto-clear" },
+      { "factory": ".claude/hooks/post-write.sh", "plugin": "hooks/post-write.sh", "adaptation": "strip-meta-mode" },
+      { "factory": ".claude/hooks/post-bash.sh", "plugin": "hooks/post-bash.sh", "adaptation": "strip-meta-mode,strip-flywheel,strip-compact" },
+      { "factory": ".claude/hooks/subagent-log.sh", "plugin": "hooks/subagent-log.sh", "adaptation": "minimal" },
+      { "factory": ".claude/hooks/session-checklist.sh", "plugin": "hooks/session-checklist.sh", "adaptation": "strip-meta-mode,simplify" },
+      { "factory": ".claude/hooks/notify-ready.sh", "plugin": "hooks/notify-ready.sh", "adaptation": "minimal" }
+    ],
+    "agents": [
+      { "factory": ".claude/commands/architect.md", "plugin": "agents/architect.md", "adaptation": "frontmatter-agent,strip-factory-paths,generalize-role" },
+      { "factory": ".claude/commands/dev.md", "plugin": "agents/dev.md", "adaptation": "frontmatter-agent,strip-factory-paths,generalize-role" },
+      { "factory": ".claude/commands/docs.md", "plugin": "agents/docs.md", "adaptation": "frontmatter-agent,strip-factory-paths,generalize-role" },
+      { "factory": ".claude/commands/orchestrate.md", "plugin": "agents/orchestrate.md", "adaptation": "frontmatter-agent,strip-factory-paths,strip-team-refs" },
+      { "factory": ".claude/commands/review.md", "plugin": "agents/review.md", "adaptation": "frontmatter-agent,strip-factory-paths,generalize-role" },
+      { "factory": ".claude/commands/spec.md", "plugin": "agents/spec.md", "adaptation": "frontmatter-agent,strip-factory-paths,generalize-role" },
+      { "factory": ".claude/commands/test-gen.md", "plugin": "agents/test-gen.md", "adaptation": "frontmatter-agent,strip-factory-paths,generalize-role" }
+    ]
+  },
+  "excluded": {
+    "skills": [
+      ".claude/skills/agent-teams-guide.md",
+      ".claude/skills/autonomous-guide.md",
+      ".claude/skills/doc-flywheel.md",
+      ".claude/skills/hooks-reference.md",
+      ".claude/skills/verify-docs.md",
+      ".claude/skills/voice.md"
+    ],
+    "commands": [
+      ".claude/commands/e2e-test.md",
+      ".claude/commands/team.md",
+      ".claude/commands/validate.md",
+      ".claude/commands/plugin-sync.md"
+    ],
+    "hooks": [
+      ".claude/hooks/_meta-mode.sh",
+      ".claude/hooks/archive-plan.sh",
+      ".claude/hooks/flywheel-doc-check.sh",
+      ".claude/hooks/flywheel-session-summary.sh",
+      ".claude/hooks/post-compact-summary.sh",
+      ".claude/hooks/pre-compact.sh",
+      ".claude/hooks/session-start-log.sh",
+      ".claude/hooks/task-completed-check.sh",
+      ".claude/hooks/teammate-idle-check.sh"
+    ],
+    "infrastructure": [
+      "agents/mcp-servers/",
+      "agents/feature-factory/",
+      "agents/voice-ai-builder/"
+    ]
+  },
+  "adaptation_types": {
+    "frontmatter": "Add YAML frontmatter block with name and description fields",
+    "frontmatter-agent": "Add YAML frontmatter with name, description, and model: opus",
+    "strip-mcp": "Remove MCP tool references (validate_call, etc.), replace with CLI alternatives",
+    "strip-factory-paths": "Remove references to functions/, agents/, .claude/, .meta/ internal paths",
+    "strip-meta-mode": "Remove _meta-mode.sh sourcing and CLAUDE_META_MODE checks",
+    "strip-flywheel": "Remove flywheel-doc-check.sh calls and pending-actions integration",
+    "strip-auto-clear": "Remove auto-clear pending actions section from pre-commit flow",
+    "strip-compact": "Remove compact-pending marker detection and processing",
+    "strip-team-refs": "Remove /team references and Agent Teams mentions",
+    "generalize-agents": "Replace factory-specific agent names with generic terms",
+    "generalize-role": "Rewrite from factory command perspective to portable agent perspective",
+    "extract-invariants": "Extract only the Architectural Invariants section from full CLAUDE.md",
+    "restructure": "Significant structural changes beyond simple stripping",
+    "simplify": "Reduce to core functionality, removing factory-specific checks",
+    "minimal": "Little or no adaptation needed, near-identical copy"
+  }
+}

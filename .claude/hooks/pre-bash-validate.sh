@@ -112,6 +112,26 @@ if echo "$COMMAND" | grep -qE "^git\s+commit"; then
     fi
 
     # ============================================
+    # PLUGIN SYNC AWARENESS (Non-blocking)
+    # ============================================
+    SYNC_MAP="$PROJECT_ROOT/.claude/plugin-sync-map.json"
+    if [[ -f "$SYNC_MAP" ]] && command -v jq &>/dev/null; then
+        STAGED_LIST=$(git diff --staged --name-only 2>/dev/null)
+        if [[ -n "$STAGED_LIST" ]]; then
+            SYNCABLE_PATHS=$(jq -r '.mappings | to_entries[] | .value[] | .factory' "$SYNC_MAP" 2>/dev/null)
+            SYNCABLE_STAGED=0
+            while IFS= read -r staged_file; do
+                if echo "$SYNCABLE_PATHS" | grep -qF "$staged_file"; then
+                    SYNCABLE_STAGED=$((SYNCABLE_STAGED + 1))
+                fi
+            done <<< "$STAGED_LIST"
+            if [[ "$SYNCABLE_STAGED" -gt 0 ]]; then
+                echo "Note: $SYNCABLE_STAGED syncable file(s) staged. Plugin may need updating after commit." >&2
+            fi
+        fi
+    fi
+
+    # ============================================
     # COMMIT CHECKLIST PROMPT (Non-blocking)
     # ============================================
     echo "" >&2

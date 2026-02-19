@@ -37,7 +37,7 @@
     "@twilio-labs/serverless-runtime-types": "^4.0.0",
     "dotenv": "^17.2.3",
     "@eslint/js": "^9.39.0",
-    "eslint": "^9.39.0",
+    "eslint": "^10.0.0",
     "globals": "^16.0.0",
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.54.0",

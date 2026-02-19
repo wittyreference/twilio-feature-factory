@@ -1,6 +1,8 @@
 // ABOUTME: Core orchestrator for Feature Factory workflows.
 // ABOUTME: Coordinates subagents in TDD-enforced development pipelines.
 
+import * as fs from 'fs';
+import * as path from 'path';
 import Anthropic from '@anthropic-ai/sdk';
 import type {
   FeatureFactoryConfig} from './config.js';
@@ -114,6 +116,66 @@ export class FeatureFactoryOrchestrator {
     // Save initial state
     this.persistState();
 
+    // Load learnings and failure patterns from prior sessions (best-effort)
+    let learningsContext = '';
+    try {
+      const workDir = this.config.workingDirectory;
+      const hasMetaDir = fs.existsSync(path.join(workDir, '.meta'));
+
+      // Read learnings file (same path logic as LearningCaptureEngine)
+      const learningsPath = hasMetaDir
+        ? path.join(workDir, '.meta', 'learnings.md')
+        : path.join(workDir, '.claude', 'learnings.md');
+      const rawLearnings = fs.existsSync(learningsPath)
+        ? fs.readFileSync(learningsPath, 'utf-8')
+        : '';
+
+      // Read pattern database (same path logic as PatternTracker)
+      const patternDbPath = hasMetaDir
+        ? path.join(workDir, '.meta', 'pattern-db.json')
+        : path.join(workDir, '.claude', 'pattern-db.json');
+      interface PatternEntry {
+        patternId: string;
+        summary: string;
+        occurrenceCount: number;
+        resolved: boolean;
+      }
+      let unresolvedPatterns: PatternEntry[] = [];
+      if (fs.existsSync(patternDbPath)) {
+        const db = JSON.parse(fs.readFileSync(patternDbPath, 'utf-8'));
+        if (db.patterns) {
+          unresolvedPatterns = Object.values(db.patterns as Record<string, PatternEntry>)
+            .filter((p) => !p.resolved);
+        }
+      }
+
+      if (rawLearnings || unresolvedPatterns.length > 0) {
+        learningsContext = '# Prior Learnings\n\n';
+        if (rawLearnings) {
+          // Truncate to avoid context bloat — last 2000 chars most relevant
+          const truncated = rawLearnings.length > 2000
+            ? '...\n' + rawLearnings.slice(-2000)
+            : rawLearnings;
+          learningsContext += truncated + '\n\n';
+        }
+        if (unresolvedPatterns.length > 0) {
+          learningsContext += '## Known Failure Patterns\n\n';
+          for (const p of unresolvedPatterns.slice(0, 10)) {
+            learningsContext += `- **${p.patternId}** (seen ${p.occurrenceCount}x): ${p.summary}\n`;
+          }
+          learningsContext += '\n';
+        }
+      }
+      if (this.config.verbose && learningsContext) {
+        console.log('  [orchestrator] Loaded prior learnings for context injection');
+      }
+    } catch {
+      // Learning injection is best-effort — don't block workflows
+      if (this.config.verbose) {
+        console.log('  [orchestrator] No learnings available (files not found or unreadable)');
+      }
+    }
+
     // Emit workflow started event
     yield {
       type: 'workflow-started',
@@ -148,7 +210,7 @@ export class FeatureFactoryOrchestrator {
           : undefined;
 
         yield* this.executePhaseWithRetry(
-          phase, i, workflow.phases.length, description, additionalContext
+          phase, i, workflow.phases.length, description, additionalContext, learningsContext
         );
         if ((this.state!.status as string) === 'failed') {
           return;
@@ -602,6 +664,10 @@ export class FeatureFactoryOrchestrator {
   ): string {
     let prompt = `# Task\n\n${context.featureDescription}\n\n`;
 
+    if (context.learningsContext) {
+      prompt += context.learningsContext;
+    }
+
     if (context.additionalContext) {
       prompt += `# Additional Context\n\n${context.additionalContext}\n\n`;
     }
@@ -958,7 +1024,8 @@ export class FeatureFactoryOrchestrator {
     phaseIndex: number,
     totalPhases: number,
     description: string,
-    additionalContext?: string
+    additionalContext?: string,
+    learningsContext?: string
   ): AsyncGenerator<WorkflowEvent> {
     const maxRetries = phase.maxRetries ?? this.config.maxRetriesPerPhase;
 
@@ -1118,6 +1185,7 @@ export class FeatureFactoryOrchestrator {
         workingDirectory: this.config.workingDirectory,
         previousPhaseResults: this.state!.phaseResults,
         additionalContext: effectiveContext,
+        learningsContext,
       };
 
       // Execute agent

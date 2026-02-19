@@ -199,6 +199,9 @@ export interface AgentContext {
 
   /** Additional context from user or previous agents */
   additionalContext?: string;
+
+  /** Injected learnings and failure patterns from prior sessions */
+  learningsContext?: string;
 }
 
 /**

@@ -531,11 +531,11 @@ export class ComprehensiveValidator {
       }
 
       // Log diagnosis summary
-      console.error(`[ComprehensiveValidator] ${validatorName} FAILED`);
-      console.error(`  Summary: ${diagnosis.summary}`);
-      console.error(`  Root cause: ${diagnosis.rootCause.description} (confidence: ${diagnosis.rootCause.confidence})`);
+      console.log(`[ComprehensiveValidator] ${validatorName} FAILED`);
+      console.log(`  Summary: ${diagnosis.summary}`);
+      console.log(`  Root cause: ${diagnosis.rootCause.description} (confidence: ${diagnosis.rootCause.confidence})`);
       if (diagnosis.suggestedFixes.length > 0) {
-        console.error(`  Suggested fix: ${diagnosis.suggestedFixes[0].description}`);
+        console.log(`  Suggested fix: ${diagnosis.suggestedFixes[0].description}`);
       }
     } catch (error) {
       // DiagnosticBridge may throw for non-ValidationResult types

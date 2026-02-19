@@ -865,6 +865,38 @@ workerCmd
       pollIntervalMs: parseInt(options.pollInterval, 10),
       maxBudgetUsd: parseFloat(options.maxBudget),
       verbose: options.verbose,
+      onExecuteWorkflow: async (workflowType, description, budgetUsd) => {
+        const { FeatureFactoryOrchestrator } = await import('./orchestrator.js');
+        const orchestrator = new FeatureFactoryOrchestrator({
+          maxBudgetUsd: budgetUsd,
+          approvalMode: 'none',
+          workingDirectory: process.cwd(),
+          verbose: options.verbose,
+        });
+        let totalCost = 0;
+        let success = true;
+        let resolution = '';
+        let error = '';
+        try {
+          for await (const event of orchestrator.runWorkflow(workflowType, description)) {
+            if (options.verbose) {
+              console.log(chalk.gray(`  [workflow] ${event.type}`));
+            }
+            if (event.type === 'workflow-completed') {
+              totalCost = event.totalCostUsd;
+              resolution = `Completed workflow: ${event.workflow}`;
+            }
+            if (event.type === 'workflow-error') {
+              success = false;
+              error = event.error;
+            }
+          }
+        } catch (err) {
+          success = false;
+          error = err instanceof Error ? err.message : String(err);
+        }
+        return { success, costUsd: totalCost, resolution, error };
+      },
     });
 
     // Register file queue source

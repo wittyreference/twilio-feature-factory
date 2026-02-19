@@ -2,7 +2,6 @@
 
 This skill provides techniques for compressing Twilio-specific content to preserve context budget.
 
-
 ## When to Compress
 
 Compress when you encounter:

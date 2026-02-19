@@ -27,6 +27,16 @@ export {
   // Two-way conversation validation
   type TwoWayValidationOptions,
   type TwoWayValidationResult,
+  // Sync validation
+  type SyncDocumentValidationOptions,
+  type SyncDocumentValidationResult,
+  type SyncListValidationOptions,
+  type SyncListValidationResult,
+  type SyncMapValidationOptions,
+  type SyncMapValidationResult,
+  // TaskRouter validation
+  type TaskRouterValidationOptions,
+  type TaskRouterValidationResult,
   // Event types for autonomous work discovery
   type ValidationEventType,
   type ValidationFailureEvent,

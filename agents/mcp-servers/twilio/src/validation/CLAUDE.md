@@ -444,6 +444,128 @@ Available factory methods:
 - `messagingService(client, serviceSid)` - Messaging Service
 - `envVar(name, value, required)` - Environment variable
 
+### Sync Document (validateSyncDocument)
+
+Validate a Sync Document's data structure:
+
+```typescript
+const result = await validator.validateSyncDocument('IS123', 'my-doc', {
+  expectedKeys: ['status', 'count'],   // Keys that must exist
+  strictKeys: true,                     // Fail on unexpected keys
+  expectedTypes: { status: 'string', count: 'number' },
+  checkDebugger: false,
+});
+
+// Result:
+// - success: true if all checks passed
+// - documentSid, uniqueName, serviceSid, revision
+// - data: the document data object
+// - dataKeys: array of keys in data
+// - dateExpires: ISO string if TTL set
+// - debuggerCheck: optional CheckResult
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| expectedKeys | - | Keys expected in document data |
+| strictKeys | false | Fail if unexpected keys exist |
+| expectedTypes | - | Expected type per key (string/number/boolean/object/array) |
+| checkDebugger | false | Check debugger for related alerts |
+| alertLookbackSeconds | 120 | Debugger lookback window |
+
+### Sync List (validateSyncList)
+
+Validate a Sync List's items:
+
+```typescript
+const result = await validator.validateSyncList('IS123', 'my-list', {
+  minItems: 1,                          // At least 1 item
+  maxItems: 100,                        // At most 100 items
+  exactItems: 5,                        // Exactly 5 (overrides min/max)
+  expectedItemKeys: ['name', 'email'],  // Keys in each item's data
+  checkDebugger: false,
+});
+
+// Result:
+// - success: true if count constraints met
+// - listSid, uniqueName, serviceSid, revision
+// - itemCount, items[]: { index, data }
+// - itemsWithMissingKeys[]: { index, missingKeys[] } (warnings)
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| minItems | - | Minimum item count |
+| maxItems | - | Maximum item count |
+| exactItems | - | Exact count (overrides min/max) |
+| itemLimit | 100 | Max items to fetch |
+| expectedItemKeys | - | Keys expected in each item's data |
+| checkDebugger | false | Check debugger for related alerts |
+
+### Sync Map (validateSyncMap)
+
+Validate a Sync Map's keys and values:
+
+```typescript
+const result = await validator.validateSyncMap('IS123', 'my-map', {
+  expectedKeys: ['config', 'settings'], // Map keys that must exist
+  expectedValueKeys: ['name', 'value'], // Keys in each item's data
+  checkDebugger: false,
+});
+
+// Result:
+// - success: true if expected keys found
+// - mapSid, uniqueName, serviceSid, revision
+// - itemCount, keys[], items[]: { key, data }
+// - expectedKeysFound[], expectedKeysMissing[]
+// - itemsWithMissingValueKeys[]: { key, missingKeys[] } (warnings)
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| expectedKeys | - | Map item keys that must exist |
+| itemLimit | 100 | Max items to fetch |
+| expectedValueKeys | - | Keys expected in each item's value data |
+| checkDebugger | false | Check debugger for related alerts |
+
+**Note**: Missing value keys are warnings (not errors) because Sync Maps can intentionally have heterogeneous item schemas.
+
+### TaskRouter (validateTaskRouter)
+
+Rich validation for TaskRouter tasks:
+
+```typescript
+const result = await validator.validateTaskRouter('WS123', 'WT456', {
+  expectedStatus: 'completed',
+  expectedAttributeKeys: ['language', 'skill'],
+  includeReservations: true,
+  includeEvents: true,
+  eventLimit: 50,
+  checkDebugger: true,
+});
+
+// Result:
+// - success: true if all checks passed
+// - taskSid, workspaceSid, assignmentStatus, age, priority
+// - reason, taskQueueSid, workflowSid
+// - attributes: parsed JSON object
+// - reservations[]: { sid, workerSid, workerName, reservationStatus }
+// - events[]: { sid, eventType, description, eventDate }
+// - debuggerCheck: optional CheckResult
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| expectedStatus | - | Expected assignment status |
+| checkAttributes | true | Parse attributes JSON |
+| expectedAttributeKeys | - | Keys expected in attributes |
+| includeReservations | false | Fetch reservation history |
+| includeEvents | false | Fetch event history |
+| eventLimit | 50 | Max events to fetch |
+| checkDebugger | false | Check debugger for related alerts |
+
+**Note**: This method returns `TaskRouterValidationResult` (richer than the existing `validateTask()` which returns `ValidationResult`). Both coexist — use `validateTaskRouter()` for detailed task inspection.
+
 ## ValidationResult Structure
 
 ```typescript

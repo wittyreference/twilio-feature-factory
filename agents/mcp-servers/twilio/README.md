@@ -1,6 +1,6 @@
 # @twilio-feature-factory/mcp-twilio
 
-MCP server exposing 248+ Twilio API operations as tools for Claude agents.
+MCP server exposing 261+ Twilio API operations as tools for Claude agents.
 
 ## Install
 
@@ -38,7 +38,7 @@ for await (const message of query({
 
 ## Tool Coverage
 
-248 tools across 25 modules:
+261 tools across 25 modules:
 
 | Priority | Modules | Tools |
 |----------|---------|-------|
@@ -46,7 +46,7 @@ for await (const message of query({
 | P1 (High Value) | lookups, studio, messaging-services, serverless | 40 |
 | P2 (Specialized) | intelligence, video, proxy, trusthub, content, voice-config, regulatory, media | 97 |
 | P3 (Edge Cases) | trunking, accounts, iam, pricing, notify, addresses | 61 |
-| Validation | deep-validator, comprehensive-validator | 28 |
+| Validation | deep-validator, comprehensive-validator | 32 |
 
 ## Deep Validation
 

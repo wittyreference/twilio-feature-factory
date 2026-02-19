@@ -263,6 +263,136 @@ export function validationTools(context: TwilioContext) {
     }
   );
 
+  const validateSyncDocument = createTool(
+    'validate_sync_document',
+    'Validate a Sync Document - checks data structure, expected keys, types. Use after writing to a Sync Document to verify it contains the expected data.',
+    z.object({
+      serviceSid: z.string().describe('Sync Service SID (IS...)'),
+      documentSidOrName: z.string().describe('Document SID (ET...) or unique name'),
+      expectedKeys: z.array(z.string()).optional().describe('Keys expected in document data'),
+      strictKeys: z.boolean().optional().default(false).describe('Fail if unexpected keys exist'),
+      expectedTypes: z.record(z.enum(['string', 'number', 'boolean', 'object', 'array'])).optional().describe('Expected type for each key'),
+      checkDebugger: z.boolean().optional().default(false).describe('Check debugger for related alerts'),
+    }),
+    async ({ serviceSid, documentSidOrName, expectedKeys, strictKeys, expectedTypes, checkDebugger }) => {
+      const validator = new DeepValidator(client);
+      const result = await validator.validateSyncDocument(serviceSid, documentSidOrName, {
+        expectedKeys,
+        strictKeys,
+        expectedTypes: expectedTypes as Record<string, 'string' | 'number' | 'boolean' | 'object' | 'array'>,
+        checkDebugger,
+      });
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify(result, null, 2),
+        }],
+      };
+    }
+  );
+
+  const validateSyncList = createTool(
+    'validate_sync_list',
+    'Validate a Sync List - checks item count constraints and item data structure. Use after adding items to a Sync List to verify the list state.',
+    z.object({
+      serviceSid: z.string().describe('Sync Service SID (IS...)'),
+      listSidOrName: z.string().describe('List SID (ES...) or unique name'),
+      minItems: z.number().optional().describe('Minimum items expected'),
+      maxItems: z.number().optional().describe('Maximum items expected'),
+      exactItems: z.number().optional().describe('Exact item count expected (overrides min/max)'),
+      expectedItemKeys: z.array(z.string()).optional().describe('Keys expected in each item\'s data'),
+      checkDebugger: z.boolean().optional().default(false).describe('Check debugger for related alerts'),
+    }),
+    async ({ serviceSid, listSidOrName, minItems, maxItems, exactItems, expectedItemKeys, checkDebugger }) => {
+      const validator = new DeepValidator(client);
+      const result = await validator.validateSyncList(serviceSid, listSidOrName, {
+        minItems,
+        maxItems,
+        exactItems,
+        expectedItemKeys,
+        checkDebugger,
+      });
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify(result, null, 2),
+        }],
+      };
+    }
+  );
+
+  const validateSyncMap = createTool(
+    'validate_sync_map',
+    'Validate a Sync Map - checks for expected keys and item data structure. Use after writing to a Sync Map to verify keys and values.',
+    z.object({
+      serviceSid: z.string().describe('Sync Service SID (IS...)'),
+      mapSidOrName: z.string().describe('Map SID (MP...) or unique name'),
+      expectedKeys: z.array(z.string()).optional().describe('Map item keys expected to exist'),
+      expectedValueKeys: z.array(z.string()).optional().describe('Keys expected in each item\'s value data'),
+      checkDebugger: z.boolean().optional().default(false).describe('Check debugger for related alerts'),
+    }),
+    async ({ serviceSid, mapSidOrName, expectedKeys, expectedValueKeys, checkDebugger }) => {
+      const validator = new DeepValidator(client);
+      const result = await validator.validateSyncMap(serviceSid, mapSidOrName, {
+        expectedKeys,
+        expectedValueKeys,
+        checkDebugger,
+      });
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify(result, null, 2),
+        }],
+      };
+    }
+  );
+
+  const validateTask = createTool(
+    'validate_task',
+    'Deep validate a TaskRouter task - checks status, attributes, reservations, events, and debugger. Richer than basic task status check.',
+    z.object({
+      taskSid: z.string().describe('Task SID (WT...)'),
+      workspaceSid: z.string().optional().describe('Workspace SID (WS...). Uses default from context if not provided.'),
+      expectedStatus: z.string().optional().describe('Expected assignment status (e.g., "completed", "assigned")'),
+      expectedAttributeKeys: z.array(z.string()).optional().describe('Keys expected in task attributes JSON'),
+      includeReservations: z.boolean().optional().default(false).describe('Include reservation history'),
+      includeEvents: z.boolean().optional().default(false).describe('Include task event history'),
+      eventLimit: z.number().optional().default(50).describe('Max events to fetch'),
+      checkDebugger: z.boolean().optional().default(false).describe('Check debugger for related alerts'),
+    }),
+    async ({ taskSid, workspaceSid, expectedStatus, expectedAttributeKeys, includeReservations, includeEvents, eventLimit, checkDebugger }) => {
+      const wsSid = workspaceSid || context.taskrouterWorkspaceSid;
+      if (!wsSid) {
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({ success: false, errors: ['No workspace SID provided and TWILIO_TASKROUTER_WORKSPACE_SID not set'] }, null, 2),
+          }],
+        };
+      }
+
+      const validator = new DeepValidator(client);
+      const result = await validator.validateTaskRouter(wsSid, taskSid, {
+        expectedStatus,
+        expectedAttributeKeys,
+        includeReservations,
+        includeEvents,
+        eventLimit,
+        checkDebugger,
+      });
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify(result, null, 2),
+        }],
+      };
+    }
+  );
+
   return [
     validateCall,
     validateMessage,
@@ -272,5 +402,9 @@ export function validationTools(context: TwilioContext) {
     validateTranscript,
     validateTwoWay,
     validateLanguageOperator,
+    validateSyncDocument,
+    validateSyncList,
+    validateSyncMap,
+    validateTask,
   ];
 }

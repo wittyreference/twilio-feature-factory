@@ -30,6 +30,24 @@ interface MockClientConfig {
   serverlessLogsData: Array<Record<string, unknown>>;
   serverlessLogsError: Error | null;
   serverlessEnvironmentsData: Array<Record<string, unknown>>;
+  // Sync mock configs
+  syncDocumentData: Record<string, unknown> | null;
+  syncDocumentError: Error | null;
+  syncListData: Record<string, unknown> | null;
+  syncListError: Error | null;
+  syncListItemsData: Array<Record<string, unknown>>;
+  syncListItemsError: Error | null;
+  syncMapData: Record<string, unknown> | null;
+  syncMapError: Error | null;
+  syncMapItemsData: Array<Record<string, unknown>>;
+  syncMapItemsError: Error | null;
+  // TaskRouter mock configs
+  taskData: Record<string, unknown> | null;
+  taskError: Error | null;
+  taskReservationsData: Array<Record<string, unknown>>;
+  taskReservationsError: Error | null;
+  taskEventsData: Array<Record<string, unknown>>;
+  taskEventsError: Error | null;
 }
 
 // Create a mock Twilio client for testing
@@ -57,6 +75,24 @@ function createMockClient(overrides: Partial<MockClientConfig> = {}) {
     serverlessLogsData: [],
     serverlessLogsError: null,
     serverlessEnvironmentsData: [{ sid: 'ZE123', uniqueName: 'production', domainName: 'test.twil.io' }],
+    // Sync defaults
+    syncDocumentData: null,
+    syncDocumentError: null,
+    syncListData: null,
+    syncListError: null,
+    syncListItemsData: [],
+    syncListItemsError: null,
+    syncMapData: null,
+    syncMapError: null,
+    syncMapItemsData: [],
+    syncMapItemsError: null,
+    // TaskRouter defaults
+    taskData: null,
+    taskError: null,
+    taskReservationsData: [],
+    taskReservationsError: null,
+    taskEventsData: [],
+    taskEventsError: null,
     ...overrides,
   };
 
@@ -166,6 +202,91 @@ function createMockClient(overrides: Partial<MockClientConfig> = {}) {
               },
             },
           }),
+        }),
+      },
+    },
+    // Sync mocks
+    sync: {
+      v1: {
+        services: (_serviceSid: string) => ({
+          documents: (_docSidOrName: string) => ({
+            fetch: async () => {
+              if (config.syncDocumentError) throw config.syncDocumentError;
+              return config.syncDocumentData || {
+                sid: 'ET123',
+                uniqueName: _docSidOrName.startsWith('ET') ? undefined : _docSidOrName,
+                revision: '1',
+                data: { status: 'active', count: 42 },
+                dateExpires: null,
+              };
+            },
+          }),
+          syncLists: (_listSidOrName: string) => ({
+            fetch: async () => {
+              if (config.syncListError) throw config.syncListError;
+              return config.syncListData || {
+                sid: 'ES123',
+                uniqueName: _listSidOrName.startsWith('ES') ? undefined : _listSidOrName,
+                revision: '3',
+              };
+            },
+            syncListItems: {
+              list: async () => {
+                if (config.syncListItemsError) throw config.syncListItemsError;
+                return config.syncListItemsData;
+              },
+            },
+          }),
+          syncMaps: (_mapSidOrName: string) => ({
+            fetch: async () => {
+              if (config.syncMapError) throw config.syncMapError;
+              return config.syncMapData || {
+                sid: 'MP123',
+                uniqueName: _mapSidOrName.startsWith('MP') ? undefined : _mapSidOrName,
+                revision: '2',
+              };
+            },
+            syncMapItems: {
+              list: async () => {
+                if (config.syncMapItemsError) throw config.syncMapItemsError;
+                return config.syncMapItemsData;
+              },
+            },
+          }),
+        }),
+      },
+    },
+    // TaskRouter mocks
+    taskrouter: {
+      v1: {
+        workspaces: (_workspaceSid: string) => ({
+          tasks: (_taskSid: string) => ({
+            fetch: async () => {
+              if (config.taskError) throw config.taskError;
+              return config.taskData || {
+                sid: _taskSid,
+                assignmentStatus: 'reserved',
+                age: 120,
+                priority: 0,
+                reason: null,
+                taskQueueSid: 'WQ123',
+                workflowSid: 'WW123',
+                attributes: '{"language":"en","skill":"support"}',
+              };
+            },
+            reservations: {
+              list: async () => {
+                if (config.taskReservationsError) throw config.taskReservationsError;
+                return config.taskReservationsData;
+              },
+            },
+          }),
+          events: {
+            list: async () => {
+              if (config.taskEventsError) throw config.taskEventsError;
+              return config.taskEventsData;
+            },
+          },
         }),
       },
     },
@@ -1413,6 +1534,569 @@ describe('DeepValidator', () => {
 
       expect(result.ok).toBe(false);
       expect(result.message).toContain('not set');
+    });
+  });
+
+  // ==================== SYNC DOCUMENT VALIDATION ====================
+
+  describe('validateSyncDocument', () => {
+    it('should validate a document successfully', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncDocument('IS123', 'my-doc');
+
+      expect(result.success).toBe(true);
+      expect(result.documentSid).toBe('ET123');
+      expect(result.uniqueName).toBe('my-doc');
+      expect(result.serviceSid).toBe('IS123');
+      expect(result.revision).toBe('1');
+      expect(result.dataKeys).toContain('status');
+      expect(result.dataKeys).toContain('count');
+    });
+
+    it('should include document metadata', async () => {
+      const client = createMockClient({
+        syncDocumentData: {
+          sid: 'ET456',
+          uniqueName: 'test-doc',
+          revision: '5',
+          data: { name: 'Test', version: 2 },
+          dateExpires: new Date('2026-12-31T00:00:00Z'),
+        },
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncDocument('IS123', 'test-doc');
+
+      expect(result.documentSid).toBe('ET456');
+      expect(result.revision).toBe('5');
+      expect(result.data).toEqual({ name: 'Test', version: 2 });
+      expect(result.dateExpires).toBeDefined();
+    });
+
+    it('should detect missing expected keys', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncDocument('IS123', 'my-doc', {
+        expectedKeys: ['status', 'count', 'missing_key'],
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some(e => e.includes('missing_key'))).toBe(true);
+    });
+
+    it('should detect unexpected keys in strict mode', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncDocument('IS123', 'my-doc', {
+        expectedKeys: ['status'],
+        strictKeys: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some(e => e.includes('Unexpected keys'))).toBe(true);
+      expect(result.errors.some(e => e.includes('count'))).toBe(true);
+    });
+
+    it('should validate expected types', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncDocument('IS123', 'my-doc', {
+        expectedTypes: { status: 'string', count: 'string' }, // count is number, not string
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some(e => e.includes('"count"') && e.includes('string') && e.includes('number'))).toBe(true);
+    });
+
+    it('should detect array type correctly', async () => {
+      const client = createMockClient({
+        syncDocumentData: {
+          sid: 'ET123',
+          uniqueName: null,
+          revision: '1',
+          data: { items: [1, 2, 3] },
+          dateExpires: null,
+        },
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncDocument('IS123', 'ET123', {
+        expectedTypes: { items: 'array' },
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('should handle fetch error gracefully', async () => {
+      const fetchError = new Error('Document not found');
+      (fetchError as Error & { code: number }).code = 20404;
+
+      const client = createMockClient({
+        syncDocumentError: fetchError,
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncDocument('IS123', 'nonexistent');
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some(e => e.includes('Failed to fetch document'))).toBe(true);
+      expect(result.data).toEqual({});
+      expect(result.dataKeys).toEqual([]);
+    });
+
+    it('should include validationDuration', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncDocument('IS123', 'my-doc');
+
+      expect(result.validationDuration).toBeGreaterThanOrEqual(0);
+      expect(typeof result.validationDuration).toBe('number');
+    });
+  });
+
+  // ==================== SYNC LIST VALIDATION ====================
+
+  describe('validateSyncList', () => {
+    it('should validate a list successfully', async () => {
+      const client = createMockClient({
+        syncListItemsData: [
+          { index: 0, data: { name: 'Alice' } },
+          { index: 1, data: { name: 'Bob' } },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncList('IS123', 'my-list');
+
+      expect(result.success).toBe(true);
+      expect(result.listSid).toBe('ES123');
+      expect(result.uniqueName).toBe('my-list');
+      expect(result.itemCount).toBe(2);
+      expect(result.items).toHaveLength(2);
+    });
+
+    it('should enforce exact item count', async () => {
+      const client = createMockClient({
+        syncListItemsData: [
+          { index: 0, data: { name: 'Alice' } },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncList('IS123', 'my-list', {
+        exactItems: 3,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some(e => e.includes('exactly 3') && e.includes('found 1'))).toBe(true);
+    });
+
+    it('should enforce minimum item count', async () => {
+      const client = createMockClient({
+        syncListItemsData: [
+          { index: 0, data: { a: 1 } },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncList('IS123', 'my-list', {
+        minItems: 5,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some(e => e.includes('at least 5'))).toBe(true);
+    });
+
+    it('should enforce maximum item count', async () => {
+      const client = createMockClient({
+        syncListItemsData: [
+          { index: 0, data: { a: 1 } },
+          { index: 1, data: { a: 2 } },
+          { index: 2, data: { a: 3 } },
+          { index: 3, data: { a: 4 } },
+          { index: 4, data: { a: 5 } },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncList('IS123', 'my-list', {
+        maxItems: 3,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some(e => e.includes('at most 3'))).toBe(true);
+    });
+
+    it('should detect items with missing expected keys', async () => {
+      const client = createMockClient({
+        syncListItemsData: [
+          { index: 0, data: { name: 'Alice', email: 'a@b.com' } },
+          { index: 1, data: { name: 'Bob' } }, // missing email
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncList('IS123', 'my-list', {
+        expectedItemKeys: ['name', 'email'],
+      });
+
+      expect(result.success).toBe(true); // missing keys are warnings
+      expect(result.itemsWithMissingKeys).toHaveLength(1);
+      expect(result.itemsWithMissingKeys[0].index).toBe(1);
+      expect(result.itemsWithMissingKeys[0].missingKeys).toContain('email');
+      expect(result.warnings.some(w => w.includes('1 items missing expected keys'))).toBe(true);
+    });
+
+    it('should handle empty list', async () => {
+      const client = createMockClient({
+        syncListItemsData: [],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncList('IS123', 'my-list');
+
+      expect(result.success).toBe(true);
+      expect(result.itemCount).toBe(0);
+      expect(result.items).toHaveLength(0);
+    });
+
+    it('should handle fetch error gracefully', async () => {
+      const fetchError = new Error('List not found');
+
+      const client = createMockClient({
+        syncListError: fetchError,
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncList('IS123', 'nonexistent');
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some(e => e.includes('Failed to fetch list'))).toBe(true);
+    });
+
+    it('should include list metadata', async () => {
+      const client = createMockClient({
+        syncListItemsData: [{ index: 0, data: { x: 1 } }],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncList('IS123', 'my-list');
+
+      expect(result.serviceSid).toBe('IS123');
+      expect(result.revision).toBe('3');
+    });
+
+    it('should include validationDuration', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncList('IS123', 'my-list');
+
+      expect(result.validationDuration).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  // ==================== SYNC MAP VALIDATION ====================
+
+  describe('validateSyncMap', () => {
+    it('should validate a map successfully', async () => {
+      const client = createMockClient({
+        syncMapItemsData: [
+          { key: 'user-1', data: { name: 'Alice', role: 'admin' } },
+          { key: 'user-2', data: { name: 'Bob', role: 'member' } },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncMap('IS123', 'my-map');
+
+      expect(result.success).toBe(true);
+      expect(result.mapSid).toBe('MP123');
+      expect(result.uniqueName).toBe('my-map');
+      expect(result.itemCount).toBe(2);
+      expect(result.keys).toContain('user-1');
+      expect(result.keys).toContain('user-2');
+    });
+
+    it('should detect found and missing expected keys', async () => {
+      const client = createMockClient({
+        syncMapItemsData: [
+          { key: 'config', data: { theme: 'dark' } },
+          { key: 'settings', data: { lang: 'en' } },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncMap('IS123', 'my-map', {
+        expectedKeys: ['config', 'settings', 'preferences'],
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.expectedKeysFound).toContain('config');
+      expect(result.expectedKeysFound).toContain('settings');
+      expect(result.expectedKeysMissing).toContain('preferences');
+      expect(result.errors.some(e => e.includes('preferences'))).toBe(true);
+    });
+
+    it('should succeed when all expected keys exist', async () => {
+      const client = createMockClient({
+        syncMapItemsData: [
+          { key: 'a', data: { x: 1 } },
+          { key: 'b', data: { x: 2 } },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncMap('IS123', 'my-map', {
+        expectedKeys: ['a', 'b'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.expectedKeysFound).toEqual(['a', 'b']);
+      expect(result.expectedKeysMissing).toEqual([]);
+    });
+
+    it('should detect items with missing value keys (as warnings)', async () => {
+      const client = createMockClient({
+        syncMapItemsData: [
+          { key: 'user-1', data: { name: 'Alice', email: 'a@b.com' } },
+          { key: 'user-2', data: { name: 'Bob' } }, // missing email
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncMap('IS123', 'my-map', {
+        expectedValueKeys: ['name', 'email'],
+      });
+
+      expect(result.success).toBe(true); // value key mismatches are warnings
+      expect(result.itemsWithMissingValueKeys).toHaveLength(1);
+      expect(result.itemsWithMissingValueKeys[0].key).toBe('user-2');
+      expect(result.itemsWithMissingValueKeys[0].missingKeys).toContain('email');
+      expect(result.warnings.some(w => w.includes('1 items missing expected value keys'))).toBe(true);
+    });
+
+    it('should handle empty map', async () => {
+      const client = createMockClient({
+        syncMapItemsData: [],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncMap('IS123', 'my-map');
+
+      expect(result.success).toBe(true);
+      expect(result.itemCount).toBe(0);
+      expect(result.keys).toEqual([]);
+    });
+
+    it('should handle fetch error gracefully', async () => {
+      const fetchError = new Error('Map not found');
+
+      const client = createMockClient({
+        syncMapError: fetchError,
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncMap('IS123', 'nonexistent');
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some(e => e.includes('Failed to fetch map'))).toBe(true);
+    });
+
+    it('should include map metadata', async () => {
+      const client = createMockClient({
+        syncMapItemsData: [{ key: 'k', data: { v: 1 } }],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncMap('IS123', 'my-map');
+
+      expect(result.serviceSid).toBe('IS123');
+      expect(result.revision).toBe('2');
+    });
+
+    it('should include validationDuration', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateSyncMap('IS123', 'my-map');
+
+      expect(result.validationDuration).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  // ==================== TASKROUTER VALIDATION ====================
+
+  describe('validateTaskRouter', () => {
+    it('should validate a task successfully', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT456');
+
+      expect(result.success).toBe(true);
+      expect(result.taskSid).toBe('WT456');
+      expect(result.workspaceSid).toBe('WS123');
+      expect(result.assignmentStatus).toBe('reserved');
+    });
+
+    it('should include task metadata', async () => {
+      const client = createMockClient({
+        taskData: {
+          sid: 'WT789',
+          assignmentStatus: 'assigned',
+          age: 300,
+          priority: 5,
+          reason: 'escalated',
+          taskQueueSid: 'WQ456',
+          workflowSid: 'WW789',
+          attributes: '{"type":"support","tier":"premium"}',
+        },
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT789');
+
+      expect(result.assignmentStatus).toBe('assigned');
+      expect(result.age).toBe(300);
+      expect(result.priority).toBe(5);
+      expect(result.reason).toBe('escalated');
+      expect(result.taskQueueSid).toBe('WQ456');
+      expect(result.workflowSid).toBe('WW789');
+    });
+
+    it('should parse task attributes', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT456');
+
+      expect(result.attributes).toEqual({ language: 'en', skill: 'support' });
+    });
+
+    it('should error on invalid attributes JSON', async () => {
+      const client = createMockClient({
+        taskData: {
+          sid: 'WT456',
+          assignmentStatus: 'reserved',
+          age: 10,
+          priority: 0,
+          reason: null,
+          taskQueueSid: null,
+          workflowSid: null,
+          attributes: 'not-valid-json{{{',
+        },
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT456');
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some(e => e.includes('Failed to parse task attributes'))).toBe(true);
+    });
+
+    it('should detect missing expected attribute keys', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT456', {
+        expectedAttributeKeys: ['language', 'skill', 'priority_level'],
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some(e => e.includes('priority_level'))).toBe(true);
+    });
+
+    it('should check expected status', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT456', {
+        expectedStatus: 'completed',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some(e => e.includes('Expected status "completed"') && e.includes('"reserved"'))).toBe(true);
+    });
+
+    it('should succeed when expected status matches', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT456', {
+        expectedStatus: 'reserved',
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('should fetch reservations when requested', async () => {
+      const client = createMockClient({
+        taskReservationsData: [
+          { sid: 'WR001', workerSid: 'WK001', workerName: 'Alice', reservationStatus: 'accepted' },
+          { sid: 'WR002', workerSid: 'WK002', workerName: 'Bob', reservationStatus: 'rejected' },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT456', {
+        includeReservations: true,
+      });
+
+      expect(result.reservations).toHaveLength(2);
+      expect(result.reservations[0].sid).toBe('WR001');
+      expect(result.reservations[0].workerName).toBe('Alice');
+      expect(result.reservations[1].reservationStatus).toBe('rejected');
+    });
+
+    it('should fetch events when requested', async () => {
+      const client = createMockClient({
+        taskEventsData: [
+          { sid: 'EV001', eventType: 'task.created', description: 'Task created', eventDate: new Date('2026-02-18T10:00:00Z') },
+          { sid: 'EV002', eventType: 'task.reserved', description: 'Task reserved', eventDate: new Date('2026-02-18T10:01:00Z') },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT456', {
+        includeEvents: true,
+      });
+
+      expect(result.events).toHaveLength(2);
+      expect(result.events[0].eventType).toBe('task.created');
+      expect(result.events[1].eventType).toBe('task.reserved');
+    });
+
+    it('should handle fetch error gracefully', async () => {
+      const fetchError = new Error('Task not found');
+      (fetchError as Error & { code: number }).code = 20404;
+
+      const client = createMockClient({
+        taskError: fetchError,
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WTnotexist');
+
+      expect(result.success).toBe(false);
+      expect(result.assignmentStatus).toBe('error');
+      expect(result.errors.some(e => e.includes('Failed to fetch task'))).toBe(true);
+    });
+
+    it('should include validationDuration', async () => {
+      const client = createMockClient();
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT456');
+
+      expect(result.validationDuration).toBeGreaterThanOrEqual(0);
+      expect(typeof result.validationDuration).toBe('number');
     });
   });
 });

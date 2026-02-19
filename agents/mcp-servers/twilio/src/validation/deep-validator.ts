@@ -376,6 +376,177 @@ export interface PrerequisiteValidationResult {
   validationDuration: number;
 }
 
+// ===== Sync Document Validation =====
+
+/**
+ * Options for Sync Document validation.
+ */
+export interface SyncDocumentValidationOptions {
+  /** Keys expected to exist in document data */
+  expectedKeys?: string[];
+  /** Fail if data contains keys not in expectedKeys. Default: false */
+  strictKeys?: boolean;
+  /** Expected types for keys: { key: 'string' | 'number' | 'boolean' | 'object' | 'array' } */
+  expectedTypes?: Record<string, 'string' | 'number' | 'boolean' | 'object' | 'array'>;
+  /** Check debugger for related alerts. Default: false */
+  checkDebugger?: boolean;
+  /** Debugger lookback window in seconds. Default: 120 */
+  alertLookbackSeconds?: number;
+}
+
+/**
+ * Result from Sync Document validation.
+ */
+export interface SyncDocumentValidationResult {
+  success: boolean;
+  documentSid: string;
+  uniqueName?: string;
+  serviceSid: string;
+  revision: string;
+  data: Record<string, unknown>;
+  dataKeys: string[];
+  dateExpires?: string;
+  debuggerCheck?: CheckResult;
+  errors: string[];
+  warnings: string[];
+  validationDuration: number;
+}
+
+// ===== Sync List Validation =====
+
+/**
+ * Options for Sync List validation.
+ */
+export interface SyncListValidationOptions {
+  /** Minimum number of items expected */
+  minItems?: number;
+  /** Maximum number of items expected */
+  maxItems?: number;
+  /** Exact number of items expected (overrides min/max) */
+  exactItems?: number;
+  /** Max items to fetch. Default: 100 */
+  itemLimit?: number;
+  /** Keys expected in each list item's data */
+  expectedItemKeys?: string[];
+  /** Check debugger for related alerts. Default: false */
+  checkDebugger?: boolean;
+  /** Debugger lookback window in seconds. Default: 120 */
+  alertLookbackSeconds?: number;
+}
+
+/**
+ * Result from Sync List validation.
+ */
+export interface SyncListValidationResult {
+  success: boolean;
+  listSid: string;
+  uniqueName?: string;
+  serviceSid: string;
+  revision: string;
+  itemCount: number;
+  items: Array<{ index: number; data: Record<string, unknown> }>;
+  itemsWithMissingKeys: Array<{ index: number; missingKeys: string[] }>;
+  debuggerCheck?: CheckResult;
+  errors: string[];
+  warnings: string[];
+  validationDuration: number;
+}
+
+// ===== Sync Map Validation =====
+
+/**
+ * Options for Sync Map validation.
+ */
+export interface SyncMapValidationOptions {
+  /** Map item keys expected to exist */
+  expectedKeys?: string[];
+  /** Max items to fetch. Default: 100 */
+  itemLimit?: number;
+  /** Keys expected in each map item's value (data) */
+  expectedValueKeys?: string[];
+  /** Check debugger for related alerts. Default: false */
+  checkDebugger?: boolean;
+  /** Debugger lookback window in seconds. Default: 120 */
+  alertLookbackSeconds?: number;
+}
+
+/**
+ * Result from Sync Map validation.
+ */
+export interface SyncMapValidationResult {
+  success: boolean;
+  mapSid: string;
+  uniqueName?: string;
+  serviceSid: string;
+  revision: string;
+  itemCount: number;
+  keys: string[];
+  items: Array<{ key: string; data: Record<string, unknown> }>;
+  expectedKeysFound: string[];
+  expectedKeysMissing: string[];
+  itemsWithMissingValueKeys: Array<{ key: string; missingKeys: string[] }>;
+  debuggerCheck?: CheckResult;
+  errors: string[];
+  warnings: string[];
+  validationDuration: number;
+}
+
+// ===== TaskRouter Validation =====
+
+/**
+ * Options for TaskRouter task validation.
+ */
+export interface TaskRouterValidationOptions {
+  /** Expected task assignment status */
+  expectedStatus?: string;
+  /** Check that attributes JSON parses successfully. Default: true */
+  checkAttributes?: boolean;
+  /** Keys expected in parsed task attributes */
+  expectedAttributeKeys?: string[];
+  /** Include reservation history. Default: false */
+  includeReservations?: boolean;
+  /** Include task event history. Default: false */
+  includeEvents?: boolean;
+  /** Max events to fetch. Default: 50 */
+  eventLimit?: number;
+  /** Check debugger for related alerts. Default: false */
+  checkDebugger?: boolean;
+  /** Debugger lookback window in seconds. Default: 120 */
+  alertLookbackSeconds?: number;
+}
+
+/**
+ * Result from TaskRouter task validation.
+ */
+export interface TaskRouterValidationResult {
+  success: boolean;
+  taskSid: string;
+  workspaceSid: string;
+  assignmentStatus: string;
+  age: number;
+  priority: number;
+  reason?: string;
+  taskQueueSid?: string;
+  workflowSid?: string;
+  attributes: Record<string, unknown>;
+  reservations: Array<{
+    sid: string;
+    workerSid: string;
+    workerName?: string;
+    reservationStatus: string;
+  }>;
+  events: Array<{
+    sid: string;
+    eventType: string;
+    description?: string;
+    eventDate: Date;
+  }>;
+  debuggerCheck?: CheckResult;
+  errors: string[];
+  warnings: string[];
+  validationDuration: number;
+}
+
 /**
  * Validation event types emitted by DeepValidator.
  */
@@ -392,7 +563,11 @@ export type ValidationEventType =
   | 'operator'
   | 'conversation-relay'
   | 'prerequisites'
-  | 'two-way';
+  | 'two-way'
+  | 'sync-document'
+  | 'sync-list'
+  | 'sync-map'
+  | 'task-router';
 
 /**
  * Validation failure event payload.
@@ -401,7 +576,9 @@ export interface ValidationFailureEvent {
   type: ValidationEventType;
   result: ValidationResult | DebuggerValidationResult | ServerlessLogsValidationResult |
           RecordingValidationResult | TranscriptValidationResult | LanguageOperatorValidationResult |
-          ConversationRelayValidationResult | PrerequisiteValidationResult | TwoWayValidationResult;
+          ConversationRelayValidationResult | PrerequisiteValidationResult | TwoWayValidationResult |
+          SyncDocumentValidationResult | SyncListValidationResult | SyncMapValidationResult |
+          TaskRouterValidationResult;
   diagnosis?: Diagnosis;
   timestamp: Date;
 }
@@ -2607,6 +2784,474 @@ export class DeepValidator extends EventEmitter {
     }
 
     return turns;
+  }
+
+  // ==================== Sync + TaskRouter Validators ====================
+
+  /**
+   * Validates a Sync Document by fetching it and checking data structure.
+   */
+  async validateSyncDocument(
+    serviceSid: string,
+    docSidOrName: string,
+    options: SyncDocumentValidationOptions = {}
+  ): Promise<SyncDocumentValidationResult> {
+    const startTime = Date.now();
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    try {
+      const doc = await this.client.sync.v1
+        .services(serviceSid)
+        .documents(docSidOrName)
+        .fetch();
+
+      const data = (doc.data ?? {}) as Record<string, unknown>;
+      const dataKeys = Object.keys(data);
+
+      // Check expected keys
+      if (options.expectedKeys) {
+        for (const key of options.expectedKeys) {
+          if (!(key in data)) {
+            errors.push(`Missing expected key: ${key}`);
+          }
+        }
+      }
+
+      // Strict key check: fail if unexpected keys exist
+      if (options.strictKeys && options.expectedKeys) {
+        const unexpected = dataKeys.filter(k => !options.expectedKeys!.includes(k));
+        if (unexpected.length > 0) {
+          errors.push(`Unexpected keys found: ${unexpected.join(', ')}`);
+        }
+      }
+
+      // Type validation
+      if (options.expectedTypes) {
+        for (const [key, expectedType] of Object.entries(options.expectedTypes)) {
+          if (key in data) {
+            const value = data[key];
+            let actualType: string;
+            if (Array.isArray(value)) {
+              actualType = 'array';
+            } else {
+              actualType = typeof value;
+            }
+            if (actualType !== expectedType) {
+              errors.push(`Key "${key}" expected type ${expectedType} but got ${actualType}`);
+            }
+          }
+        }
+      }
+
+      // Debugger check
+      let debuggerCheck: CheckResult | undefined;
+      if (options.checkDebugger) {
+        debuggerCheck = await this.checkDebuggerAlerts(serviceSid, {
+          ...DEFAULT_OPTIONS,
+          alertLookbackSeconds: options.alertLookbackSeconds ?? 120,
+        });
+        if (!debuggerCheck.passed) {
+          warnings.push(`Debugger: ${debuggerCheck.message}`);
+        }
+      }
+
+      const result: SyncDocumentValidationResult = {
+        success: errors.length === 0,
+        documentSid: doc.sid,
+        uniqueName: doc.uniqueName || undefined,
+        serviceSid,
+        revision: doc.revision,
+        data,
+        dataKeys,
+        dateExpires: doc.dateExpires ? doc.dateExpires.toISOString() : undefined,
+        debuggerCheck,
+        errors,
+        warnings,
+        validationDuration: Date.now() - startTime,
+      };
+
+      this.emitValidationEvent('sync-document', result);
+      return result;
+    } catch (error) {
+      const result: SyncDocumentValidationResult = {
+        success: false,
+        documentSid: docSidOrName,
+        serviceSid,
+        revision: '',
+        data: {},
+        dataKeys: [],
+        errors: [`Failed to fetch document: ${error instanceof Error ? error.message : String(error)}`],
+        warnings,
+        validationDuration: Date.now() - startTime,
+      };
+
+      this.emitValidationEvent('sync-document', result);
+      return result;
+    }
+  }
+
+  /**
+   * Validates a Sync List by fetching it and checking items.
+   */
+  async validateSyncList(
+    serviceSid: string,
+    listSidOrName: string,
+    options: SyncListValidationOptions = {}
+  ): Promise<SyncListValidationResult> {
+    const startTime = Date.now();
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    const itemLimit = options.itemLimit ?? 100;
+
+    try {
+      const list = await this.client.sync.v1
+        .services(serviceSid)
+        .syncLists(listSidOrName)
+        .fetch();
+
+      // Fetch items
+      const rawItems = await this.client.sync.v1
+        .services(serviceSid)
+        .syncLists(listSidOrName)
+        .syncListItems.list({ limit: itemLimit });
+
+      const items = rawItems.map(item => ({
+        index: item.index,
+        data: (item.data ?? {}) as Record<string, unknown>,
+      }));
+      const itemCount = items.length;
+
+      // Count constraints
+      if (options.exactItems !== undefined) {
+        if (itemCount !== options.exactItems) {
+          errors.push(`Expected exactly ${options.exactItems} items but found ${itemCount}`);
+        }
+      } else {
+        if (options.minItems !== undefined && itemCount < options.minItems) {
+          errors.push(`Expected at least ${options.minItems} items but found ${itemCount}`);
+        }
+        if (options.maxItems !== undefined && itemCount > options.maxItems) {
+          errors.push(`Expected at most ${options.maxItems} items but found ${itemCount}`);
+        }
+      }
+
+      // Item key checks
+      const itemsWithMissingKeys: Array<{ index: number; missingKeys: string[] }> = [];
+      if (options.expectedItemKeys) {
+        for (const item of items) {
+          const missingKeys = options.expectedItemKeys.filter(k => !(k in item.data));
+          if (missingKeys.length > 0) {
+            itemsWithMissingKeys.push({ index: item.index, missingKeys });
+          }
+        }
+        if (itemsWithMissingKeys.length > 0) {
+          warnings.push(`${itemsWithMissingKeys.length} items missing expected keys`);
+        }
+      }
+
+      // Debugger check
+      let debuggerCheck: CheckResult | undefined;
+      if (options.checkDebugger) {
+        debuggerCheck = await this.checkDebuggerAlerts(serviceSid, {
+          ...DEFAULT_OPTIONS,
+          alertLookbackSeconds: options.alertLookbackSeconds ?? 120,
+        });
+        if (!debuggerCheck.passed) {
+          warnings.push(`Debugger: ${debuggerCheck.message}`);
+        }
+      }
+
+      const result: SyncListValidationResult = {
+        success: errors.length === 0,
+        listSid: list.sid,
+        uniqueName: list.uniqueName || undefined,
+        serviceSid,
+        revision: list.revision,
+        itemCount,
+        items,
+        itemsWithMissingKeys,
+        debuggerCheck,
+        errors,
+        warnings,
+        validationDuration: Date.now() - startTime,
+      };
+
+      this.emitValidationEvent('sync-list', result);
+      return result;
+    } catch (error) {
+      const result: SyncListValidationResult = {
+        success: false,
+        listSid: listSidOrName,
+        serviceSid,
+        revision: '',
+        itemCount: 0,
+        items: [],
+        itemsWithMissingKeys: [],
+        errors: [`Failed to fetch list: ${error instanceof Error ? error.message : String(error)}`],
+        warnings,
+        validationDuration: Date.now() - startTime,
+      };
+
+      this.emitValidationEvent('sync-list', result);
+      return result;
+    }
+  }
+
+  /**
+   * Validates a Sync Map by fetching it and checking items.
+   */
+  async validateSyncMap(
+    serviceSid: string,
+    mapSidOrName: string,
+    options: SyncMapValidationOptions = {}
+  ): Promise<SyncMapValidationResult> {
+    const startTime = Date.now();
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    const itemLimit = options.itemLimit ?? 100;
+
+    try {
+      const map = await this.client.sync.v1
+        .services(serviceSid)
+        .syncMaps(mapSidOrName)
+        .fetch();
+
+      // Fetch items
+      const rawItems = await this.client.sync.v1
+        .services(serviceSid)
+        .syncMaps(mapSidOrName)
+        .syncMapItems.list({ limit: itemLimit });
+
+      const items = rawItems.map(item => ({
+        key: item.key,
+        data: (item.data ?? {}) as Record<string, unknown>,
+      }));
+      const keys = items.map(i => i.key);
+
+      // Expected keys check
+      const expectedKeysFound: string[] = [];
+      const expectedKeysMissing: string[] = [];
+      if (options.expectedKeys) {
+        for (const key of options.expectedKeys) {
+          if (keys.includes(key)) {
+            expectedKeysFound.push(key);
+          } else {
+            expectedKeysMissing.push(key);
+          }
+        }
+        if (expectedKeysMissing.length > 0) {
+          errors.push(`Missing expected map keys: ${expectedKeysMissing.join(', ')}`);
+        }
+      }
+
+      // Value key checks (warnings, not errors — maps can be heterogeneous)
+      const itemsWithMissingValueKeys: Array<{ key: string; missingKeys: string[] }> = [];
+      if (options.expectedValueKeys) {
+        for (const item of items) {
+          const missingKeys = options.expectedValueKeys.filter(k => !(k in item.data));
+          if (missingKeys.length > 0) {
+            itemsWithMissingValueKeys.push({ key: item.key, missingKeys });
+          }
+        }
+        if (itemsWithMissingValueKeys.length > 0) {
+          warnings.push(`${itemsWithMissingValueKeys.length} items missing expected value keys`);
+        }
+      }
+
+      // Debugger check
+      let debuggerCheck: CheckResult | undefined;
+      if (options.checkDebugger) {
+        debuggerCheck = await this.checkDebuggerAlerts(serviceSid, {
+          ...DEFAULT_OPTIONS,
+          alertLookbackSeconds: options.alertLookbackSeconds ?? 120,
+        });
+        if (!debuggerCheck.passed) {
+          warnings.push(`Debugger: ${debuggerCheck.message}`);
+        }
+      }
+
+      const result: SyncMapValidationResult = {
+        success: errors.length === 0,
+        mapSid: map.sid,
+        uniqueName: map.uniqueName || undefined,
+        serviceSid,
+        revision: map.revision,
+        itemCount: items.length,
+        keys,
+        items,
+        expectedKeysFound,
+        expectedKeysMissing,
+        itemsWithMissingValueKeys,
+        debuggerCheck,
+        errors,
+        warnings,
+        validationDuration: Date.now() - startTime,
+      };
+
+      this.emitValidationEvent('sync-map', result);
+      return result;
+    } catch (error) {
+      const result: SyncMapValidationResult = {
+        success: false,
+        mapSid: mapSidOrName,
+        serviceSid,
+        revision: '',
+        itemCount: 0,
+        keys: [],
+        items: [],
+        expectedKeysFound: [],
+        expectedKeysMissing: [],
+        itemsWithMissingValueKeys: [],
+        errors: [`Failed to fetch map: ${error instanceof Error ? error.message : String(error)}`],
+        warnings,
+        validationDuration: Date.now() - startTime,
+      };
+
+      this.emitValidationEvent('sync-map', result);
+      return result;
+    }
+  }
+
+  /**
+   * Validates a TaskRouter task with rich detail.
+   * Returns TaskRouterValidationResult (richer than the existing validateTask which returns ValidationResult).
+   */
+  async validateTaskRouter(
+    workspaceSid: string,
+    taskSid: string,
+    options: TaskRouterValidationOptions = {}
+  ): Promise<TaskRouterValidationResult> {
+    const startTime = Date.now();
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    const checkAttributes = options.checkAttributes ?? true;
+
+    try {
+      const task = await this.client.taskrouter.v1
+        .workspaces(workspaceSid)
+        .tasks(taskSid)
+        .fetch();
+
+      // Parse attributes
+      let attributes: Record<string, unknown> = {};
+      if (checkAttributes) {
+        try {
+          attributes = JSON.parse(task.attributes || '{}');
+        } catch (_e) {
+          errors.push(`Failed to parse task attributes JSON: ${task.attributes}`);
+        }
+      }
+
+      // Expected status check
+      if (options.expectedStatus && task.assignmentStatus !== options.expectedStatus) {
+        errors.push(`Expected status "${options.expectedStatus}" but got "${task.assignmentStatus}"`);
+      }
+
+      // Expected attribute keys
+      if (options.expectedAttributeKeys) {
+        for (const key of options.expectedAttributeKeys) {
+          if (!(key in attributes)) {
+            errors.push(`Missing expected attribute key: ${key}`);
+          }
+        }
+      }
+
+      // Reservations
+      let reservations: TaskRouterValidationResult['reservations'] = [];
+      if (options.includeReservations) {
+        try {
+          const rawReservations = await this.client.taskrouter.v1
+            .workspaces(workspaceSid)
+            .tasks(taskSid)
+            .reservations.list({ limit: 50 });
+
+          reservations = rawReservations.map(r => ({
+            sid: r.sid,
+            workerSid: r.workerSid,
+            workerName: r.workerName || undefined,
+            reservationStatus: r.reservationStatus,
+          }));
+        } catch (_e) {
+          warnings.push('Failed to fetch reservations');
+        }
+      }
+
+      // Events
+      let events: TaskRouterValidationResult['events'] = [];
+      if (options.includeEvents) {
+        try {
+          const eventLimit = options.eventLimit ?? 50;
+          const rawEvents = await this.client.taskrouter.v1
+            .workspaces(workspaceSid)
+            .events.list({
+              taskSid,
+              limit: eventLimit,
+            });
+
+          events = rawEvents.map(e => ({
+            sid: e.sid,
+            eventType: e.eventType,
+            description: e.description || undefined,
+            eventDate: e.eventDate,
+          }));
+        } catch (_e) {
+          warnings.push('Failed to fetch events');
+        }
+      }
+
+      // Debugger check
+      let debuggerCheck: CheckResult | undefined;
+      if (options.checkDebugger) {
+        debuggerCheck = await this.checkDebuggerAlerts(taskSid, {
+          ...DEFAULT_OPTIONS,
+          alertLookbackSeconds: options.alertLookbackSeconds ?? 120,
+        });
+        if (!debuggerCheck.passed) {
+          warnings.push(`Debugger: ${debuggerCheck.message}`);
+        }
+      }
+
+      const result: TaskRouterValidationResult = {
+        success: errors.length === 0,
+        taskSid: task.sid,
+        workspaceSid,
+        assignmentStatus: task.assignmentStatus,
+        age: task.age,
+        priority: task.priority,
+        reason: task.reason || undefined,
+        taskQueueSid: task.taskQueueSid || undefined,
+        workflowSid: task.workflowSid || undefined,
+        attributes,
+        reservations,
+        events,
+        debuggerCheck,
+        errors,
+        warnings,
+        validationDuration: Date.now() - startTime,
+      };
+
+      this.emitValidationEvent('task-router', result);
+      return result;
+    } catch (error) {
+      const result: TaskRouterValidationResult = {
+        success: false,
+        taskSid,
+        workspaceSid,
+        assignmentStatus: 'error',
+        age: 0,
+        priority: 0,
+        attributes: {},
+        reservations: [],
+        events: [],
+        errors: [`Failed to fetch task: ${error instanceof Error ? error.message : String(error)}`],
+        warnings,
+        validationDuration: Date.now() - startTime,
+      };
+
+      this.emitValidationEvent('task-router', result);
+      return result;
+    }
   }
 
   private sleep(ms: number): Promise<void> {

@@ -1609,4 +1609,296 @@ describe('FeatureFactoryOrchestrator', () => {
       expect(orchestrator.getConfig().gitCheckpoints).toBe(true);
     });
   });
+
+  describe('Learnings Context Injection', () => {
+    function getPromptFromCall(callIndex: number): string {
+      return (mockCreate.mock.calls[callIndex][0].messages[0].content as string);
+    }
+
+    it('should inject learnings from .claude/learnings.md into prompt', async () => {
+      fs.mkdirSync(path.join(tempDir, '.claude'), { recursive: true });
+      fs.writeFileSync(
+        path.join(tempDir, '.claude', 'learnings.md'),
+        '## Session 2025-06-15\n- Webhook timeouts need 30s config\n- Use console.log not console.error'
+      );
+
+      mockCreate
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Test feature')) {
+        events.push(event);
+      }
+
+      const prompt = getPromptFromCall(0);
+      expect(prompt).toContain('# Prior Learnings');
+      expect(prompt).toContain('Webhook timeouts need 30s config');
+    });
+
+    it('should prefer .meta/ learnings over .claude/ learnings', async () => {
+      fs.mkdirSync(path.join(tempDir, '.meta'), { recursive: true });
+      fs.writeFileSync(
+        path.join(tempDir, '.meta', 'learnings.md'),
+        '- Meta learning: always check response codes'
+      );
+      fs.mkdirSync(path.join(tempDir, '.claude'), { recursive: true });
+      fs.writeFileSync(
+        path.join(tempDir, '.claude', 'learnings.md'),
+        '- Claude learning: should not appear'
+      );
+
+      mockCreate
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Test feature')) {
+        events.push(event);
+      }
+
+      const prompt = getPromptFromCall(0);
+      expect(prompt).toContain('Meta learning');
+      expect(prompt).not.toContain('should not appear');
+    });
+
+    it('should inject unresolved patterns from pattern-db.json and exclude resolved ones', async () => {
+      fs.mkdirSync(path.join(tempDir, '.claude'), { recursive: true });
+      fs.writeFileSync(
+        path.join(tempDir, '.claude', 'pattern-db.json'),
+        JSON.stringify({
+          patterns: {
+            'webhook-timeout': {
+              patternId: 'webhook-timeout',
+              summary: 'Webhook calls timing out after 15s',
+              occurrenceCount: 3,
+              resolved: false,
+            },
+            'twiml-parse-error': {
+              patternId: 'twiml-parse-error',
+              summary: 'TwiML XML not properly closed',
+              occurrenceCount: 1,
+              resolved: true,
+            },
+          },
+        })
+      );
+
+      mockCreate
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Test feature')) {
+        events.push(event);
+      }
+
+      const prompt = getPromptFromCall(0);
+      expect(prompt).toContain('## Known Failure Patterns');
+      expect(prompt).toContain('webhook-timeout');
+      expect(prompt).toContain('seen 3x');
+      expect(prompt).not.toContain('twiml-parse-error');
+    });
+
+    it('should truncate learnings > 2000 chars preserving tail', async () => {
+      fs.mkdirSync(path.join(tempDir, '.claude'), { recursive: true });
+      fs.writeFileSync(
+        path.join(tempDir, '.claude', 'learnings.md'),
+        'OLD_START\n' + 'x'.repeat(2500) + '\nRECENT_END\n'
+      );
+
+      mockCreate
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Test feature')) {
+        events.push(event);
+      }
+
+      const prompt = getPromptFromCall(0);
+      expect(prompt).toContain('RECENT_END');
+      expect(prompt).toContain('...\n');
+      expect(prompt).not.toContain('OLD_START');
+    });
+
+    it('should inject max 10 patterns when more than 10 exist', async () => {
+      fs.mkdirSync(path.join(tempDir, '.claude'), { recursive: true });
+      const patterns: Record<string, unknown> = {};
+      for (let i = 0; i < 15; i++) {
+        patterns[`pattern-${i}`] = {
+          patternId: `pattern-${i}`,
+          summary: `Summary for pattern ${i}`,
+          occurrenceCount: 1,
+          resolved: false,
+        };
+      }
+      fs.writeFileSync(
+        path.join(tempDir, '.claude', 'pattern-db.json'),
+        JSON.stringify({ patterns })
+      );
+
+      mockCreate
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Test feature')) {
+        events.push(event);
+      }
+
+      const prompt = getPromptFromCall(0);
+      const patternMatches = prompt.match(/- \*\*pattern-/g);
+      expect(patternMatches).not.toBeNull();
+      expect(patternMatches!.length).toBe(10);
+    });
+
+    it('should not crash when learnings and pattern files are missing', async () => {
+      // Don't create any learnings or pattern files — tempDir is empty
+
+      mockCreate
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Test feature')) {
+        events.push(event);
+      }
+
+      const completedEvent = events.find(e => e.type === 'workflow-completed');
+      expect(completedEvent).toBeDefined();
+    });
+
+    it('should not crash when pattern-db.json contains invalid JSON', async () => {
+      fs.mkdirSync(path.join(tempDir, '.claude'), { recursive: true });
+      fs.writeFileSync(
+        path.join(tempDir, '.claude', 'pattern-db.json'),
+        '{invalid json!!!}'
+      );
+
+      mockCreate
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Test feature')) {
+        events.push(event);
+      }
+
+      const completedEvent = events.find(e => e.type === 'workflow-completed');
+      expect(completedEvent).toBeDefined();
+    });
+
+    it('should inject same learnings into all phase prompts', async () => {
+      fs.mkdirSync(path.join(tempDir, '.claude'), { recursive: true });
+      fs.writeFileSync(
+        path.join(tempDir, '.claude', 'learnings.md'),
+        '- Learnings marker string XYZ123'
+      );
+
+      mockCreate
+        .mockResolvedValueOnce(createMockResponse(VALID_ARCHITECT_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_SPEC_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_TEST_GEN_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DEV_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_QA_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_REVIEW_OUTPUT))
+        .mockResolvedValueOnce(createMockResponse(VALID_DOCS_OUTPUT));
+
+      const orchestrator = new FeatureFactoryOrchestrator({
+        workingDirectory: tempDir,
+        twilioMcpEnabled: false,
+        approvalMode: 'none',
+      });
+
+      const events: WorkflowEvent[] = [];
+      for await (const event of orchestrator.runWorkflow('new-feature', 'Test feature')) {
+        events.push(event);
+      }
+
+      // All 7 phases should have the learnings marker in their prompt
+      expect(mockCreate.mock.calls.length).toBe(7);
+      for (let i = 0; i < 7; i++) {
+        const prompt = mockCreate.mock.calls[i][0].messages[0].content as string;
+        expect(prompt).toContain('XYZ123');
+      }
+    });
+  });
 });

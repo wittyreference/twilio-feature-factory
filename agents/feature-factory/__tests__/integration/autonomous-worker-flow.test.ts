@@ -267,4 +267,100 @@ describe('Autonomous Worker Flow (Integration)', () => {
       expect(status!.stats.failed).toBe(1);
     });
   });
+
+  describe('onExecuteWorkflow callback behavior', () => {
+    it('should pass correct arguments to onExecuteWorkflow callback', async () => {
+      const capturedArgs: { type: string; description: string; budget: number }[] = [];
+
+      const worker = new AutonomousWorker(createConfig(tempDir, {
+        maxItemBudgetUsd: 7.50,
+        onExecuteWorkflow: async (type, description, budget) => {
+          capturedArgs.push({ type, description, budget });
+          return { success: true, costUsd: 0.25 };
+        },
+      }));
+
+      worker.addToQueue(createWork({
+        id: 'args-test',
+        suggestedWorkflow: 'bug-fix',
+        description: 'Fix the timeout issue',
+        tier: 1 as AutomationTier,
+      }));
+
+      await worker.pollOnce();
+
+      expect(capturedArgs).toHaveLength(1);
+      expect(capturedArgs[0].type).toBe('bug-fix');
+      expect(capturedArgs[0].description).toBe('Fix the timeout issue');
+      expect(capturedArgs[0].budget).toBe(7.50);
+    });
+
+    it('should emit work-completed on successful callback result', async () => {
+      const worker = new AutonomousWorker(createConfig(tempDir, {
+        onExecuteWorkflow: async () => ({
+          success: true,
+          costUsd: 1.50,
+          resolution: 'Bug fixed',
+        }),
+      }));
+
+      worker.addToQueue(createWork({ id: 'success-test', tier: 1 as AutomationTier }));
+
+      const completed: DiscoveredWork[] = [];
+      worker.on('work-completed', (w: DiscoveredWork) => completed.push(w));
+
+      await worker.pollOnce();
+
+      expect(completed).toHaveLength(1);
+      expect(completed[0].id).toBe('success-test');
+
+      const status = loadWorkerStatus(tempDir);
+      expect(status!.stats.completed).toBe(1);
+    });
+
+    it('should track failed workflows in stats when callback returns failure', async () => {
+      const worker = new AutonomousWorker(createConfig(tempDir, {
+        onExecuteWorkflow: async () => ({
+          success: false,
+          costUsd: 0.75,
+          error: 'Tests did not pass',
+        }),
+      }));
+
+      worker.addToQueue(createWork({ id: 'failure-test', tier: 1 as AutomationTier }));
+
+      const failed: { work: DiscoveredWork; error: Error }[] = [];
+      worker.on('work-failed', (w: DiscoveredWork, err: Error) => failed.push({ work: w, error: err }));
+
+      await worker.pollOnce();
+
+      expect(failed).toHaveLength(1);
+      expect(failed[0].error.message).toBe('Tests did not pass');
+
+      const status = loadWorkerStatus(tempDir);
+      expect(status!.stats.failed).toBe(1);
+      expect(status!.stats.totalCostUsd).toBeCloseTo(0.75, 2);
+    });
+
+    it('should handle thrown exceptions from callback gracefully', async () => {
+      const worker = new AutonomousWorker(createConfig(tempDir, {
+        onExecuteWorkflow: async () => {
+          throw new Error('Orchestrator crashed unexpectedly');
+        },
+      }));
+
+      worker.addToQueue(createWork({ id: 'throw-test', tier: 1 as AutomationTier }));
+
+      const failed: { work: DiscoveredWork; error: Error }[] = [];
+      worker.on('work-failed', (w: DiscoveredWork, err: Error) => failed.push({ work: w, error: err }));
+
+      await worker.pollOnce();
+
+      expect(failed).toHaveLength(1);
+      expect(failed[0].error.message).toBe('Orchestrator crashed unexpectedly');
+
+      const status = loadWorkerStatus(tempDir);
+      expect(status!.stats.failed).toBe(1);
+    });
+  });
 });

@@ -357,4 +357,70 @@ describe('ComprehensiveValidator', () => {
       expect(result.summary.duration).toBeGreaterThanOrEqual(0);
     });
   });
+
+  describe('processFailure logging', () => {
+    let logSpy: jest.SpyInstance;
+    let errorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+      errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      logSpy.mockRestore();
+      errorSpy.mockRestore();
+    });
+
+    it('should use console.log for operational failure logging, not console.error', async () => {
+      // Create a failing client that triggers processFailure via validateVoiceAIFlow
+      const failingClient = {
+        ...mockClient,
+        calls: jest.fn().mockReturnValue({
+          fetch: jest.fn().mockResolvedValue({
+            sid: 'CA_log_test_call',
+            status: 'failed',
+          }),
+        }),
+        insights: {
+          v1: {
+            calls: jest.fn().mockReturnValue({
+              events: {
+                list: jest.fn().mockResolvedValue([]),
+              },
+            }),
+          },
+        },
+      } as unknown as import('twilio').Twilio;
+
+      const loggingValidator = new ComprehensiveValidator(failingClient, {
+        projectRoot: tempDir,
+        sessionId: 'test-logging-session',
+        captureLearnings: true,
+        trackPatterns: true,
+      });
+
+      await loggingValidator.validateVoiceAIFlow({
+        callSid: 'CA_log_test_call',
+      });
+
+      // Check that console.log was called with [ComprehensiveValidator] messages
+      const logCalls = logSpy.mock.calls
+        .map((args: unknown[]) => args.join(' '))
+        .filter((msg: string) => msg.includes('[ComprehensiveValidator]'));
+
+      // Check that console.error was NOT called with [ComprehensiveValidator] messages
+      const errorCalls = errorSpy.mock.calls
+        .map((args: unknown[]) => args.join(' '))
+        .filter((msg: string) => msg.includes('[ComprehensiveValidator]'));
+
+      // Operational logging should use console.log
+      expect(logCalls.length).toBeGreaterThan(0);
+      expect(logCalls.some((msg: string) => msg.includes('FAILED'))).toBe(true);
+
+      // console.error should NOT have any [ComprehensiveValidator] messages
+      // (it's only used in catch blocks for actual errors, not operational logging)
+      expect(errorCalls.length).toBe(0);
+    });
+  });
 });

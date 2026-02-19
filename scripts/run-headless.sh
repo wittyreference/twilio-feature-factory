@@ -358,6 +358,7 @@ claude -p "$PROMPT" \
        --allowedTools "WebFetch" \
        --allowedTools "Task" \
        --allowedTools "Skill" \
+       --allowedTools "mcp__twilio__*" \
        2>&1 | tee -a "$SESSION_LOG"
 
 EXIT_CODE=${PIPESTATUS[0]}

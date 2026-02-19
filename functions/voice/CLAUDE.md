@@ -259,6 +259,56 @@ response.appendHeader('Content-Type', 'application/json');
 response.setBody(JSON.stringify({ success: true }));
 ```
 
+## Gotchas
+
+### Conference Participants API vs TwiML `<Conference>`
+
+The Participants API and TwiML `<Conference>` verb have different parameter formats:
+
+| Parameter | Participants API | TwiML `<Conference>` |
+|-----------|-----------------|---------------------|
+| `Record` / `record` | Boolean: `true` or `false` | String: `record-from-start`, `record-from-answer`, etc. |
+
+Passing TwiML values to the Participants API (e.g., `Record: 'record-from-start'`) returns HTTP 400.
+
+### Recording Callback URLs Must Be Absolute
+
+`<Start><Recording>` requires absolute callback URLs. Relative paths like `/callbacks/call-status` trigger error 11200. The recording completes, but the status callback never fires.
+
+```javascript
+// WRONG — generates 11200
+start.recording({
+  recordingStatusCallback: '/callbacks/call-status',
+});
+
+// RIGHT — absolute URL
+start.recording({
+  recordingStatusCallback: `https://${context.DOMAIN_NAME}/callbacks/call-status`,
+});
+```
+
+Note: `<Gather action>` and `<Dial action>` resolve relative URLs correctly against the function domain. This inconsistency only affects `<Start><Recording>`.
+
+### Dial `action` URL Should Not Be the Inbound Handler
+
+When `<Dial action="/voice/my-handler">` is set, the handler fires again after the Dial completes. If the handler creates one-time resources (e.g., Sync documents with unique names), the second invocation produces "Unique name already exists" errors (54302). Use a dedicated Dial-complete handler, or make the resource creation idempotent.
+
+### Deployment Resets Phone Number Webhooks
+
+`twilio serverless:deploy` can reset phone number voice URLs to previous values. Always verify and re-set webhooks after every deployment:
+
+```bash
+twilio phone-numbers:update PNxxxx --voice-url https://your-service-dev.twil.io/voice/your-handler
+```
+
+### Conference Recording Captures Hold Music
+
+When using `Record=true` on the Conference Participants API, recording starts from conference creation. If AMD classification takes time before the agent joins, the recording captures minutes of hold music. Transcripts get dominated by `[music]` tags, reducing topic keyword coverage.
+
+### Avoid Duplicate Recordings
+
+Don't combine `--record` CLI flag (or `Record=true` API param) with `<Start><Recording>` TwiML — this creates two recordings (one OutboundAPI 1-channel, one TwiML 2-channel). Pick one method.
+
 ## File Naming Conventions
 
 - `*.js` - Public endpoints (no signature validation)

@@ -137,8 +137,10 @@ export const ACKNOWLEDGMENT_PHRASE = 'I ACKNOWLEDGE THE RISKS';
 export async function requireAcknowledgment(
   maxAttempts: number = 3
 ): Promise<AutonomousModeConfig> {
-  // Defense-in-depth: skip readline entirely if env vars indicate CI/CD
-  if (isAutonomousCICD()) {
+  // Skip readline entirely if pre-acknowledged via environment variable.
+  // Checks ACKNOWLEDGED alone (not isAutonomousCICD which also requires AUTONOMOUS=true)
+  // to prevent ERR_USE_AFTER_CLOSE when stdin is closed in non-interactive contexts.
+  if (process.env.FEATURE_FACTORY_AUTONOMOUS_ACKNOWLEDGED === 'true') {
     return {
       enabled: true,
       acknowledged: true,

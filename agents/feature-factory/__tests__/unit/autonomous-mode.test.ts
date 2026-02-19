@@ -239,6 +239,17 @@ describe('Autonomous Mode', () => {
       expect(result.acknowledgedAt).toBeInstanceOf(Date);
     });
 
+    it('should resolve requireAcknowledgment() with ACKNOWLEDGED alone (no AUTONOMOUS)', async () => {
+      delete process.env.FEATURE_FACTORY_AUTONOMOUS;
+      process.env.FEATURE_FACTORY_AUTONOMOUS_ACKNOWLEDGED = 'true';
+
+      const result = await requireAcknowledgment();
+
+      expect(result.enabled).toBe(true);
+      expect(result.acknowledged).toBe(true);
+      expect(result.acknowledgedVia).toBe('environment');
+    });
+
     it('should read FEATURE_FACTORY_MAX_DURATION_PER_AGENT from environment', () => {
       process.env.FEATURE_FACTORY_MAX_DURATION_PER_AGENT = '600000';
 

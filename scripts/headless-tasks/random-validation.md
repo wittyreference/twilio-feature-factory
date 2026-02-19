@@ -20,7 +20,7 @@ Pick a random use case from this list (or honor `FORCE_USE_CASE` env var if set)
 
 Check the env var first:
 ```bash
-echo "FORCE_USE_CASE=${FORCE_USE_CASE:-not set}"
+printenv FORCE_USE_CASE || echo "not set"
 ```
 
 If `FORCE_USE_CASE` is set (e.g., `UC3`), use that. Otherwise, pick one at random.

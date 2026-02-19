@@ -330,6 +330,7 @@ claude -p "$PROMPT" \
        --allowedTools "Bash(pgrep*)" \
        --allowedTools "Bash(pgrep:*)" \
        --allowedTools "Bash(env*)" \
+       --allowedTools "Bash(printenv*)" \
        --allowedTools "Bash(date*)" \
        --allowedTools "Bash(sort*)" \
        --allowedTools "Bash(sort:*)" \

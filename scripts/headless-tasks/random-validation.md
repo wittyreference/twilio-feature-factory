@@ -1,72 +1,97 @@
-<!-- ABOUTME: Headless-optimized random use case: select UC, build via slash commands, deploy, deep validate, capture learnings. -->
-<!-- ABOUTME: Skips infrastructure validation (covered by npm test) and goes straight to building. -->
+<!-- ABOUTME: Headless-optimized random use case: select UC, build inline, deploy, deep validate, capture learnings. -->
+<!-- ABOUTME: Skips infrastructure validation and slash commands (which terminate headless sessions). -->
 
-You are running headless via `claude -p`. You have NO interactive terminal. Do NOT use AskUserQuestion — it will block forever. Do NOT run infrastructure validation phases (Phases 0-16 from real-world-validation.md) — those are covered by `npm test`.
+You are running headless via `claude -p`. You have NO interactive terminal.
 
-Your job: select a random use case, build it end-to-end using slash commands, deploy, deep validate with MCP tools, and capture learnings.
+**CRITICAL CONSTRAINTS — read these first:**
+- Do NOT use `AskUserQuestion` — it blocks forever in headless mode
+- Do NOT use the `Skill` tool or slash commands (`/architect`, `/spec`, `/dev`, etc.) — they terminate the headless session prematurely
+- Do NOT run infrastructure validation phases (Phases 0-16) — covered by `npm test`
+- Do NOT use `${}` parameter substitution or `$()` command substitution in Bash — the sandbox blocks them
+- Do NOT try to create temp directories with `mkdir` — use a git branch instead
+
+**Your job**: select a use case, build it end-to-end INLINE (no slash commands), deploy, deep validate with MCP tools, and capture learnings.
 
 ## Step 1: Select Use Case
 
-Pick a random use case from this list (or honor `FORCE_USE_CASE` env var if set):
-
-- UC1: Voice Notifications
-- UC2: Self-Service Automation (IVR)
-- UC3: Inbound Contact Center
-- UC4: Outbound Contact Center
-- UC5: AI Agents (Buy/Native)
-- UC6: AI Agents (Build/3PP)
-- UC7: Sales Dialer
-- UC8: Call Tracking
-
-Check the env var first:
+Check for a forced use case first:
 ```bash
-printenv FORCE_USE_CASE || echo "not set"
+python3 -c "import os; print(os.environ.get('FORCE_USE_CASE', 'not set'))"
 ```
 
-If `FORCE_USE_CASE` is set (e.g., `UC3`), use that. Otherwise, pick one at random.
-
-## Step 2: Read the Use Case Catalog
-
-Read `.meta/random-validation.md` and find the catalog entry for your selected use case. Note:
-- The **Scenario Prompt** (you'll pass this to `/architect`)
-- The **Expected Functions** (what should be built)
-- The **Validators** (which MCP tools to run)
-- The **Agent-to-Agent Architecture** and **System Prompts** (for live testing)
-- The **Dynamic Exit Criteria** (what must pass)
-
-## Step 3: Create Temp Working Directory
-
-All build work happens in a temp clone, NOT the main repo:
-
+If set (e.g., `UC3`), use that. Otherwise, pick one at random using:
 ```bash
-RUN_ID="validation-$(date +%Y%m%d-%H%M%S)-${UC_ID,,}"
-VALIDATION_DIR=".validation-temp/${RUN_ID}"
-mkdir -p "$VALIDATION_DIR"
-git clone --local . "$VALIDATION_DIR"
-cp .env "$VALIDATION_DIR/.env"
-cd "$VALIDATION_DIR"
-npm install
+python3 -c "import random; ucs = ['UC1','UC2','UC3','UC4','UC5','UC6','UC7','UC8']; print(random.choice(ucs))"
 ```
 
-**CRITICAL**: Verify you are in the temp clone before building:
+Use case list:
+- UC1: Voice Notifications (outbound call + AMD + Gather + recording + Sync)
+- UC2: Self-Service Automation (IVR with DTMF/speech menus)
+- UC3: Inbound Contact Center (queue + TaskRouter + agent transfer)
+- UC4: Outbound Contact Center (predictive dial + agent connect)
+- UC5: AI Agents — ConversationRelay (native voice AI)
+- UC6: AI Agents — Media Streams (3PP integration via WebSocket)
+- UC7: Sales Dialer (click-to-call + recording + disposition)
+- UC8: Call Tracking (tracking numbers + whisper + recording + Sync)
+
+## Step 2: Read the Catalog
+
+Read `.meta/random-validation.md` and find the catalog entry for your selected use case. Note the Scenario Prompt, Expected Functions, Validators, and Dynamic Exit Criteria.
+
+## Step 3: Set Up Working Branch
+
+Work on a dedicated branch (no temp clone — the sandbox blocks it):
 ```bash
-pwd  # Must show .validation-temp/
+git checkout -b validation-ucN-YYYYMMDD
 ```
 
-## Step 4: Build via Slash Commands (Paradigm 1)
+## Step 4: Architecture Review (INLINE — no /architect)
 
-Run the full build lifecycle using slash commands. Pass the Scenario Prompt from the catalog entry.
+Read the relevant domain CLAUDE.md files for your use case:
+- `functions/voice/CLAUDE.md` for voice UCs
+- `functions/messaging/CLAUDE.md` for messaging UCs
+- `functions/conversation-relay/CLAUDE.md` for UC5
+- `functions/callbacks/CLAUDE.md` for status callbacks
+- `functions/sync/CLAUDE.md` if Sync is involved
 
-1. `/architect <scenario prompt>` — Design the architecture
-2. `/spec` — Create detailed specification from architect output
-3. `/test-gen` — Write failing tests (TDD Red Phase)
-4. `/dev` — Implement to pass tests (TDD Green Phase)
-5. `/review` — Code review and security audit
-6. `/docs` — Update documentation
+Then read 1-2 existing functions in the same domain to understand patterns.
 
-After each step, verify it completed without errors before proceeding.
+Design the architecture yourself. Decide:
+- Which functions to create (file names, access levels, directories)
+- Call flow / message flow
+- TwiML verbs and attributes
+- Environment variables needed
+- Callback URLs
 
-## Step 5: Deploy
+Write a brief architecture summary as text output, then IMMEDIATELY proceed to Step 5. Do not stop here.
+
+## Step 5: Write Code (INLINE — no /spec, /test-gen, /dev)
+
+Write the implementation files directly using the Write tool:
+
+1. **Write the function files** in the appropriate `functions/` subdirectory
+   - Include ABOUTME comments at the top
+   - Follow patterns from existing functions in the same directory
+   - Use `context.getTwilioClient()` for API calls
+   - Use `callback(null, twiml)` or `callback(null, response)` for returns
+
+2. **Write basic tests** in `__tests__/` that verify:
+   - The handler function exists and is callable
+   - TwiML output contains expected verbs
+   - Error cases return appropriate responses
+
+3. **Run tests** to verify:
+```bash
+npm test -- --testPathPattern="your-test-file" --bail
+```
+
+4. **Commit working code**:
+```bash
+git add functions/your-files __tests__/your-tests
+git commit -m "feat: Add UCN functions for validation run"
+```
+
+## Step 6: Deploy
 
 ```bash
 npm run deploy:dev
@@ -74,32 +99,35 @@ npm run deploy:dev
 
 Verify deployment succeeded by checking the output for function URLs.
 
-## Step 6: Deep Validation with MCP Tools
+## Step 7: Configure Webhooks (if needed)
 
-Run the validators listed in the use case catalog entry. Common pattern:
+For inbound UCs (UC2, UC3, UC5, UC6, UC8), configure the phone number webhook to point to the deployed function URL. Use MCP tools:
+- `mcp__twilio__list_phone_numbers` to find available numbers
+- `mcp__twilio__configure_webhook` to set the voice/SMS URL
 
-1. **validate_debugger** — Check for zero alerts in the validation window
-2. **validate_call** — If a call was placed, validate completion and duration
-3. **validate_recording** — Verify recording completed with media URL
-4. **validate_transcript** — Verify transcription with topic keywords
-5. **validate_two_way** — For multi-party UCs (UC3, UC4, UC7, UC8)
-6. **validate_message** — For UC5 (SMS confirmation)
+## Step 8: Live Validation with MCP Tools
 
-If MCP validation tools are not available, fall back to Twilio CLI:
-```bash
-twilio api:core:calls:fetch --sid <CALL_SID>
-twilio api:core:recordings:list --call-sid <CALL_SID>
-twilio debugger:logs:list --start-date $(date -u +%Y-%m-%dT%H:%M:%SZ -d '30 minutes ago')
-```
+Place a test call or send a test message using MCP tools:
+- `mcp__twilio__make_call` for voice UCs
+- `mcp__twilio__send_sms` for messaging UCs
 
-## Step 7: Capture Learnings
+Then run deep validation:
+1. `mcp__twilio__validate_debugger` — Check for zero alerts
+2. `mcp__twilio__validate_call` — Validate call completed, check duration
+3. `mcp__twilio__validate_recording` — Verify recording has media URL
+4. `mcp__twilio__validate_transcript` — Verify transcription with topic keywords
+5. `mcp__twilio__validate_two_way` — For multi-party UCs (UC3, UC4, UC7, UC8)
 
-Write discoveries to the MAIN repo's `.meta/learnings.md` (not the temp clone). Use absolute paths:
+Record all SIDs (Call SID, Recording SID, Transcript SID) as you go.
+
+## Step 9: Capture Learnings
+
+Write discoveries to `.meta/learnings.md` (use absolute path). Append to the file using the Edit tool:
 
 ```markdown
 ## [DATE] Random Validation — UCN: Name (Headless)
 
-**Run ID**: validation-YYYYMMDD-HHMMSS-ucN
+**Run ID**: validation-YYYYMMDD-ucN
 **Mode**: Headless (`claude -p`)
 
 **Discoveries:**
@@ -109,35 +137,28 @@ Write discoveries to the MAIN repo's `.meta/learnings.md` (not the temp clone). 
    - Impact: How it affects future runs
 ```
 
-## Step 8: Report Results
+## Step 10: Report Results
 
-Print a summary table:
+Print a summary table as your final output:
 
 | Step | Status | Notes |
 |------|--------|-------|
 | Use Case Selection | UC? | ... |
-| Architect | PASS/FAIL | ... |
-| Spec | PASS/FAIL | ... |
-| Test-Gen | PASS/FAIL | ... |
-| Dev | PASS/FAIL | ... |
-| Review | PASS/FAIL | ... |
-| Deploy | PASS/FAIL | ... |
-| Deep Validation | PASS/FAIL | ... |
+| Architecture | PASS/FAIL | ... |
+| Code Written | PASS/FAIL | files created |
+| Tests | PASS/FAIL | X passing, Y failing |
+| Deploy | PASS/FAIL | URLs |
+| Live Validation | PASS/FAIL | SIDs |
 | Learnings Captured | YES/NO | ... |
 
-## Step 9: Cleanup
+## Pacing
 
-```bash
-cd /  # Leave the temp clone
-rm -rf "$VALIDATION_DIR"
-```
+You have up to 120 turns. Budget roughly:
+- Steps 1-3: 5 turns (setup)
+- Step 4: 5 turns (architecture)
+- Step 5: 30 turns (code + tests)
+- Step 6-7: 10 turns (deploy + configure)
+- Step 8: 15 turns (validation)
+- Steps 9-10: 5 turns (learnings + report)
 
-## Constraints
-
-- **Do NOT use AskUserQuestion** — you are running headless with no terminal
-- **Do NOT run infrastructure validation** — those phases burn turns without building anything
-- **Do NOT build in the main repo** — always use the temp clone
-- **Do NOT skip steps** — if a step fails, report it and continue to the next
-- **Commit working code** in the temp clone as you go using `/commit`
-
-**Recommended invocation:** `--max-turns 120` (default 30 is insufficient for full build lifecycle).
+Do NOT spend more than 10 turns on any setup/infrastructure issue. If something is blocked, adapt and move on.

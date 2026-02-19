@@ -2,7 +2,7 @@
   "mcpServers": {
     "twilio": {
       "command": "node",
-      "args": ["agents/mcp-servers/twilio/dist/index.js"],
+      "args": ["agents/mcp-servers/twilio/dist/serve.js"],
       "env": {
         "TWILIO_ACCOUNT_SID": "${TWILIO_ACCOUNT_SID}",
         "TWILIO_AUTH_TOKEN": "${TWILIO_AUTH_TOKEN}",

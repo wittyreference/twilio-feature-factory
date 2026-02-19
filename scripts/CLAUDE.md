@@ -204,6 +204,7 @@ CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --task validate --ma
 | `typecheck` | Run `tsc --noEmit` in MCP server, fix errors, commit. |
 | `deploy-dev` | Run /preflight, then deploy to dev. Report URLs. |
 | `e2e-validate` | Full E2E: deploy, live calls, callback verification, auto-fix. Use `--max-turns 80`. |
+| `random-validation` | Random use case build + deploy + deep validation. Use `--max-turns 120`. |
 
 ### Task Prompt Files
 
@@ -213,6 +214,7 @@ For complex tasks that don't fit in a one-liner, store prompt files in `scripts/
 - `test-fix.md` — Test-fix cycle with retry logic
 - `e2e-validate.md` — Autonomous E2E validation: deploy → live calls → callback verification → auto-fix (3 phases, 3 retries each)
 - `parallel-refactor.md` — Scope-parallel refactoring: spawns one Task subagent per domain/package, each self-verifying. Requires companion spec at `.meta/refactor-spec.md`.
+- `random-validation.md` — Headless-optimized random use case: select UC, build via slash commands, deploy, deep validate, capture learnings.
 
 Use with: `./scripts/run-headless.sh --prompt-file scripts/headless-tasks/validate.md`
 

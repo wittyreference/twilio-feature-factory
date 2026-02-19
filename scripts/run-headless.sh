@@ -43,6 +43,9 @@ resolve_task_prompt() {
         e2e-validate)
             cat "$(dirname "$0")/headless-tasks/e2e-validate.md"
             ;;
+        random-validation)
+            cat "$(dirname "$0")/headless-tasks/random-validation.md"
+            ;;
         *)
             echo ""
             ;;
@@ -63,7 +66,7 @@ Options:
   --list-tasks       List available pre-defined tasks
   --help             Show this help message
 
-Pre-defined tasks: validate, test-fix, lint-fix, typecheck, deploy-dev, e2e-validate
+Pre-defined tasks: validate, test-fix, lint-fix, typecheck, deploy-dev, e2e-validate, random-validation
 
 Environment:
   CLAUDE_HEADLESS_ACKNOWLEDGED=true  Required. Confirms you accept autonomous risks.
@@ -85,6 +88,7 @@ list_tasks() {
     echo "  typecheck     Run tsc --noEmit, fix type errors, commit fixes"
     echo "  deploy-dev    Run /preflight, then deploy to dev environment"
     echo "  e2e-validate  Full E2E: deploy, live calls, callback verification, auto-fix (use --max-turns 80)"
+    echo "  random-validation  Random use case build + deploy + deep validation (use --max-turns 120)"
 }
 
 # Parse arguments
@@ -151,6 +155,13 @@ if [ "$CLAUDE_HEADLESS_ACKNOWLEDGED" != "true" ]; then
     echo "" >&2
     echo "Risks: Twilio API calls (charges apply), real calls/SMS, git commits." >&2
     exit 1
+fi
+
+# Source .env if present (provides Twilio credentials for MCP server)
+if [ -f ".env" ]; then
+    set -a
+    source .env
+    set +a
 fi
 
 # Resolve prompt from --task, --prompt-file, or positional argument
@@ -310,6 +321,33 @@ claude -p "$PROMPT" \
        --allowedTools "Bash(xargs:*)" \
        --allowedTools "Bash(python3*)" \
        --allowedTools "Bash(python3:*)" \
+       --allowedTools "Bash(npm ls*)" \
+       --allowedTools "Bash(npm ls:*)" \
+       --allowedTools "Bash(npm audit*)" \
+       --allowedTools "Bash(npm ci*)" \
+       --allowedTools "Bash(stat*)" \
+       --allowedTools "Bash(stat:*)" \
+       --allowedTools "Bash(pgrep*)" \
+       --allowedTools "Bash(pgrep:*)" \
+       --allowedTools "Bash(env*)" \
+       --allowedTools "Bash(date*)" \
+       --allowedTools "Bash(sort*)" \
+       --allowedTools "Bash(sort:*)" \
+       --allowedTools "Bash(uniq*)" \
+       --allowedTools "Bash(uniq:*)" \
+       --allowedTools "Bash(diff*)" \
+       --allowedTools "Bash(diff:*)" \
+       --allowedTools "Bash(cp*)" \
+       --allowedTools "Bash(cp:*)" \
+       --allowedTools "Bash(mv*)" \
+       --allowedTools "Bash(mv:*)" \
+       --allowedTools "Bash(rm*)" \
+       --allowedTools "Bash(rm:*)" \
+       --allowedTools "Bash(touch*)" \
+       --allowedTools "Bash(git clone*)" \
+       --allowedTools "Bash(git init*)" \
+       --allowedTools "Bash(git tag*)" \
+       --allowedTools "Bash(set*)" \
        --allowedTools "Read" \
        --allowedTools "Write" \
        --allowedTools "Edit" \

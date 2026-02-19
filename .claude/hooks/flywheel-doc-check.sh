@@ -102,8 +102,10 @@ if [ -n "$PATTERN_DB" ] && command -v jq &> /dev/null; then
     fi
 fi
 
-# Deduplicate and clean up
-ALL_FILES=$(echo "$ALL_FILES" | grep -v "^$" | sort -u)
+# Deduplicate, clean up, and exclude flywheel's own output files to prevent
+# recursive re-firing (editing pending-actions.md triggers post-write, which
+# tracks it in .session-files, which the next flywheel run picks up)
+ALL_FILES=$(echo "$ALL_FILES" | grep -v "^$" | grep -v "pending-actions\.md" | grep -v "\.session-files" | grep -v "\.session-start" | grep -v "\.last-doc-check" | sort -u)
 
 if [ -z "$ALL_FILES" ]; then
     # No files to analyze

@@ -5,6 +5,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as readline from 'readline';
 import { FeatureFactoryOrchestrator } from './orchestrator.js';
 import {
@@ -829,6 +831,258 @@ sessionsCmd
       console.log(chalk.green(`\n✓ Cleaned up ${deleted} old session(s).\n`));
     } else {
       console.log(chalk.gray('\nNo sessions to clean up.\n'));
+    }
+  });
+
+// Worker subcommand group
+const workerCmd = program
+  .command('worker')
+  .description('Manage the autonomous worker');
+
+// Worker start
+workerCmd
+  .command('start')
+  .description('Start the autonomous worker loop')
+  .option('--poll-interval <ms>', 'Poll interval in milliseconds', '60000')
+  .option('--max-budget <usd>', 'Maximum total budget in USD', '50')
+  .option('--enable-debugger-alerts', 'Enable Twilio debugger alert polling')
+  .option('--no-file-queue', 'Disable file-based manual queue')
+  .option('-v, --verbose', 'Enable verbose logging')
+  .action(async (options: {
+    pollInterval: string;
+    maxBudget: string;
+    enableDebuggerAlerts: boolean;
+    fileQueue: boolean;
+    verbose: boolean;
+  }) => {
+    const { AutonomousWorker } = await import('./worker/autonomous-worker.js');
+    const { createFileQueueSource } = await import('./worker/work-sources.js');
+
+    console.log(chalk.bold('\n🏭 Feature Factory — Autonomous Worker\n'));
+
+    const worker = new AutonomousWorker({
+      workingDirectory: process.cwd(),
+      pollIntervalMs: parseInt(options.pollInterval, 10),
+      maxBudgetUsd: parseFloat(options.maxBudget),
+      verbose: options.verbose,
+    });
+
+    // Register file queue source
+    if (options.fileQueue !== false) {
+      worker.registerSource(createFileQueueSource(process.cwd()));
+      if (options.verbose) {
+        console.log(chalk.gray('  File queue source: enabled'));
+      }
+    }
+
+    // Register debugger alert source if enabled
+    if (options.enableDebuggerAlerts) {
+      try {
+        const { createDebuggerAlertSource } = await import('./worker/work-sources.js');
+        const twilio = await import('twilio' as string);
+        const client = twilio.default(
+          process.env.TWILIO_ACCOUNT_SID,
+          process.env.TWILIO_AUTH_TOKEN
+        );
+        worker.registerSource(createDebuggerAlertSource(client));
+        if (options.verbose) {
+          console.log(chalk.gray('  Debugger alert source: enabled'));
+        }
+      } catch (error) {
+        console.log(chalk.yellow(`  Debugger alerts skipped: ${error instanceof Error ? error.message : 'twilio not available'}`));
+      }
+    }
+
+    // Set up event handlers
+    worker.on('worker-started', () => {
+      console.log(chalk.green('Worker started. Polling for work...'));
+      console.log(chalk.gray(`  Poll interval: ${options.pollInterval}ms`));
+      console.log(chalk.gray(`  Budget: $${options.maxBudget}`));
+      console.log(chalk.gray('  Press Ctrl+C or run `feature-factory worker stop` to exit\n'));
+    });
+
+    worker.on('work-picked-up', (work) => {
+      console.log(chalk.cyan(`  Picked up: ${work.summary} [${work.priority}, tier ${work.tier}]`));
+    });
+
+    worker.on('work-completed', (work) => {
+      console.log(chalk.green(`  Completed: ${work.summary}`));
+    });
+
+    worker.on('work-escalated', (work, reason) => {
+      console.log(chalk.yellow(`  Escalated: ${work.summary} — ${reason}`));
+    });
+
+    worker.on('work-failed', (work, error) => {
+      console.log(chalk.red(`  Failed: ${work.summary} — ${error.message}`));
+    });
+
+    worker.on('worker-stopped', () => {
+      console.log(chalk.gray('\nWorker stopped.'));
+      const stats = worker.getQueueStats();
+      console.log(chalk.gray(`  Queue: ${stats.pendingCount} pending, ${stats.totalItems} total`));
+    });
+
+    // Handle SIGINT/SIGTERM
+    const shutdown = async () => {
+      console.log(chalk.gray('\n  Shutting down...'));
+      await worker.stop();
+      process.exit(0);
+    };
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
+
+    try {
+      await worker.start();
+    } catch (error) {
+      console.error(chalk.red(`\nFailed to start worker: ${error instanceof Error ? error.message : 'Unknown error'}`));
+      process.exit(1);
+    }
+  });
+
+// Worker status
+workerCmd
+  .command('status')
+  .description('Show autonomous worker status')
+  .action(async () => {
+    const { loadWorkerStatus } = await import('./worker/worker-status.js');
+    const status = loadWorkerStatus(process.cwd());
+
+    if (!status) {
+      console.log(chalk.yellow('\nNo worker status found. Worker may not have run yet.\n'));
+      return;
+    }
+
+    const statusColor = {
+      idle: chalk.gray,
+      running: chalk.green,
+      processing: chalk.cyan,
+      stopping: chalk.yellow,
+      stopped: chalk.gray,
+    }[status.status] || chalk.white;
+
+    console.log(chalk.bold('\n🏭 Worker Status\n'));
+    console.log(`  Status: ${statusColor(status.status)}`);
+    console.log(chalk.gray(`  Started: ${status.startedAt}`));
+    if (status.lastPollAt) {
+      console.log(chalk.gray(`  Last poll: ${status.lastPollAt}`));
+    }
+    console.log();
+    console.log(chalk.bold('  Stats:'));
+    console.log(chalk.gray(`    Completed: ${status.stats.completed}`));
+    console.log(chalk.gray(`    Escalated: ${status.stats.escalated}`));
+    console.log(chalk.gray(`    Failed: ${status.stats.failed}`));
+    console.log(chalk.gray(`    Total cost: $${status.stats.totalCostUsd.toFixed(4)}`));
+    console.log();
+    console.log(chalk.bold('  Queue:'));
+    console.log(chalk.gray(`    Pending: ${status.queueStats.pending}`));
+    console.log(chalk.gray(`    In progress: ${status.queueStats.inProgress}`));
+    console.log(chalk.gray(`    Total: ${status.queueStats.total}`));
+    console.log();
+  });
+
+// Worker stop
+workerCmd
+  .command('stop')
+  .description('Signal the worker to stop gracefully')
+  .action(() => {
+    const signalDir = path.join(process.cwd(), '.feature-factory');
+    if (!fs.existsSync(signalDir)) {
+      fs.mkdirSync(signalDir, { recursive: true });
+    }
+
+    const signalPath = path.join(signalDir, 'worker-stop-signal');
+    fs.writeFileSync(signalPath, new Date().toISOString(), 'utf-8');
+    console.log(chalk.yellow('\nStop signal sent. Worker will stop after current poll cycle.\n'));
+  });
+
+// Worker queue subcommand group
+const workerQueueCmd = workerCmd
+  .command('queue')
+  .description('Manage the worker queue');
+
+// Queue list
+workerQueueCmd
+  .command('list')
+  .description('List items in the worker queue')
+  .action(async () => {
+    const { PersistentQueue } = await import('./worker/persistent-queue.js');
+    const queue = new PersistentQueue(process.cwd());
+    const items = queue.getAll();
+
+    if (items.length === 0) {
+      console.log(chalk.yellow('\nQueue is empty.\n'));
+      return;
+    }
+
+    console.log(chalk.bold(`\n📋 Worker Queue (${items.length} items)\n`));
+
+    for (const item of items) {
+      const statusColor = {
+        pending: chalk.white,
+        'in-progress': chalk.cyan,
+        completed: chalk.green,
+        escalated: chalk.yellow,
+        deferred: chalk.gray,
+      }[item.status] || chalk.white;
+
+      console.log(`  ${chalk.bold(item.id)} ${statusColor(`[${item.status}]`)}`);
+      console.log(chalk.gray(`    ${item.summary}`));
+      console.log(chalk.gray(`    Priority: ${item.priority}, Tier: ${item.tier}, Workflow: ${item.suggestedWorkflow}`));
+      console.log(chalk.gray(`    Source: ${item.source}, Discovered: ${item.discoveredAt}`));
+      console.log();
+    }
+
+    const stats = queue.getStats();
+    console.log(chalk.gray(`  Pending: ${stats.pendingCount} | In Progress: ${stats.inProgressCount} | Total: ${stats.totalItems}`));
+    console.log();
+  });
+
+// Queue add
+workerQueueCmd
+  .command('add <description>')
+  .description('Add a manual work item to the queue')
+  .option('-p, --priority <priority>', 'Priority (critical, high, medium, low)', 'medium')
+  .option('-w, --workflow <workflow>', 'Workflow type (bug-fix, refactor, new-feature)', 'bug-fix')
+  .action(async (
+    description: string,
+    options: { priority: string; workflow: string }
+  ) => {
+    const { PersistentQueue } = await import('./worker/persistent-queue.js');
+    const queue = new PersistentQueue(process.cwd());
+
+    const workId = `manual-${Date.now().toString(36)}`;
+    queue.add({
+      id: workId,
+      discoveredAt: new Date(),
+      source: 'user-request',
+      priority: options.priority as 'critical' | 'high' | 'medium' | 'low',
+      tier: 2,
+      suggestedWorkflow: options.workflow as 'bug-fix' | 'refactor' | 'new-feature',
+      summary: description,
+      description: `User-requested work: ${description}`,
+      status: 'pending',
+      tags: ['manual'],
+    });
+
+    console.log(chalk.green(`\n✓ Added work item: ${workId}`));
+    console.log(chalk.gray(`  Description: ${description}`));
+    console.log(chalk.gray(`  Priority: ${options.priority}, Workflow: ${options.workflow}\n`));
+  });
+
+// Queue remove
+workerQueueCmd
+  .command('remove <workId>')
+  .description('Remove an item from the worker queue')
+  .action(async (workId: string) => {
+    const { PersistentQueue } = await import('./worker/persistent-queue.js');
+    const queue = new PersistentQueue(process.cwd());
+
+    const removed = queue.remove(workId);
+    if (removed) {
+      console.log(chalk.green(`\n✓ Removed work item: ${workId}\n`));
+    } else {
+      console.log(chalk.yellow(`\nWork item '${workId}' not found in queue.\n`));
     }
   });
 

@@ -197,3 +197,30 @@ export {
   ReplayVerifier,
   createReplayVerifier,
 } from './verification/index.js';
+
+// Worker module (autonomous worker infrastructure)
+export {
+  AutonomousWorker,
+  type AutonomousWorkerConfig,
+  type AutonomousWorkerEvents,
+  type WorkflowResult,
+  PersistentQueue,
+  type PersistentQueueConfig,
+  type QueueStats,
+  evaluateApproval,
+  createDefaultPolicy,
+  type ApprovalPolicy,
+  type ApprovalAction,
+  type ApprovalDecision,
+  type ApprovalEvaluationOptions,
+  createDebuggerAlertSource,
+  createFileQueueSource,
+  type WorkSourceProvider,
+  saveWorkerStatus,
+  loadWorkerStatus,
+  type WorkerStatus,
+  type WorkerState,
+  type WorkerStats,
+  type CurrentWorkInfo,
+  type QueueStatsSnapshot,
+} from './worker/index.js';

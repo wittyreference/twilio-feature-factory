@@ -20,6 +20,11 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'harness.html'));
 });
 
+// Serve the Voice SDK browser bundle from node_modules
+app.get('/sdk/twilio.min.js', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '../../../node_modules/@twilio/voice-sdk/dist/twilio.min.js'));
+});
+
 // Generate access tokens for the browser client
 app.get('/api/token', (req, res) => {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Voice SDK Test Harness</title>
   <!--
-    ABOUTME: Minimal browser softphone for Voice SDK E2E testing.
+    ABOUTME: Minimal browser softphone for Voice SDK 2.x E2E testing.
     ABOUTME: Exposes DOM elements for Playwright assertions — status, call-sid, errors.
   -->
   <style>
@@ -57,7 +57,8 @@
   <h3>Event Log</h3>
   <div id="log"></div>
 
-  <script src="https://sdk.twilio.com/js/client/releases/1.14/twilio.min.js"></script>
+  <!-- Voice SDK 2.x served from local Express server (no CDN available for 2.x) -->
+  <script src="/sdk/twilio.min.js"></script>
   <script>
     const statusEl = document.getElementById('status');
     const identityEl = document.getElementById('identity');
@@ -155,15 +156,26 @@
         identityEl.textContent = data.identity;
         log('Token received for identity: ' + data.identity);
 
+        // Voice SDK 2.x: construct Device then explicitly register
         device = new Twilio.Device(data.token, {
           codecPreferences: ['opus', 'pcmu'],
-          enableRingingState: true
+          logLevel: 'warn'
         });
 
-        device.on('ready', () => {
+        device.on('registered', () => {
           setStatus('registered');
           btnDial.disabled = false;
           log('Device registered and ready');
+        });
+
+        device.on('registering', () => {
+          setStatus('registering');
+          log('Device registering...');
+        });
+
+        device.on('unregistered', () => {
+          setStatus('offline');
+          log('Device unregistered');
         });
 
         device.on('error', (err) => {
@@ -180,15 +192,8 @@
           bindCallEvents(call, 'inbound');
         });
 
-        device.on('disconnect', () => {
-          setStatus('registered');
-          log('Device disconnected');
-        });
-
-        device.on('offline', () => {
-          setStatus('offline');
-          log('Device offline');
-        });
+        // SDK 2.x requires explicit registration
+        await device.register();
 
       } catch (err) {
         setStatus('offline');
@@ -197,7 +202,7 @@
       }
     }
 
-    btnDial.addEventListener('click', () => {
+    btnDial.addEventListener('click', async () => {
       const to = dialInput.value.trim();
       if (!to || !device) return;
 
@@ -205,11 +210,17 @@
       setStatus('connecting');
       log('Dialing: ' + to);
 
-      const params = { To: to };
-      activeCall = device.connect(params);
-      btnDial.disabled = true;
-      btnHangup.disabled = false;
-      bindCallEvents(activeCall, 'outbound');
+      try {
+        // SDK 2.x: connect() returns a Promise<Call>
+        activeCall = await device.connect({ params: { To: to } });
+        btnDial.disabled = true;
+        btnHangup.disabled = false;
+        bindCallEvents(activeCall, 'outbound');
+      } catch (err) {
+        setError(err.message || 'Connect failed');
+        log('Connect error: ' + (err.message || JSON.stringify(err)));
+        setStatus('registered');
+      }
     });
 
     btnHangup.addEventListener('click', () => {
@@ -217,7 +228,9 @@
         activeCall.disconnect();
         log('Hangup requested');
       }
-      device.disconnectAll();
+      if (device) {
+        device.disconnectAll();
+      }
     });
 
     btnAccept.addEventListener('click', () => {

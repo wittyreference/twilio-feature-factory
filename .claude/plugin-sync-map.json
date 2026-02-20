@@ -4,7 +4,7 @@
     "skills": [
       { "factory": ".claude/skills/context-compression.md", "plugin": "skills/context-compression/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/skills/context-fundamentals.md", "plugin": "skills/context-fundamentals/SKILL.md", "adaptation": "frontmatter" },
-      { "factory": ".claude/skills/deep-validation.md", "plugin": "skills/deep-validation/SKILL.md", "adaptation": "frontmatter,strip-mcp,strip-factory-paths" },
+      { "factory": ".claude/skills/deep-validation.md", "plugin": "skills/deep-validation/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": ".claude/skills/memory-systems.md", "plugin": "skills/memory-systems/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/skills/multi-agent-patterns.md", "plugin": "skills/multi-agent-patterns/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/skills/tdd-workflow.md", "plugin": "skills/tdd-workflow/SKILL.md", "adaptation": "frontmatter,generalize-agents" },
@@ -27,7 +27,9 @@
       { "factory": ".claude/commands/push.md", "plugin": "commands/push.md", "adaptation": "strip-factory-paths" },
       { "factory": ".claude/commands/test.md", "plugin": "commands/test.md", "adaptation": "strip-factory-paths" },
       { "factory": ".claude/commands/twilio-docs.md", "plugin": "commands/twilio-docs.md", "adaptation": "minimal" },
-      { "factory": ".claude/commands/twilio-logs.md", "plugin": "commands/twilio-logs.md", "adaptation": "minimal" }
+      { "factory": ".claude/commands/twilio-logs.md", "plugin": "commands/twilio-logs.md", "adaptation": "minimal" },
+      { "factory": ".claude/commands/validate.md", "plugin": "commands/validate.md", "adaptation": "strip-factory-paths" },
+      { "factory": ".claude/commands/wrap-up.md", "plugin": "commands/wrap-up.md", "adaptation": "strip-factory-paths,strip-meta-mode" }
     ],
     "hooks": [
       { "factory": ".claude/hooks/pre-write-validate.sh", "plugin": "hooks/pre-write-validate.sh", "adaptation": "strip-meta-mode" },
@@ -60,7 +62,6 @@
     "commands": [
       ".claude/commands/e2e-test.md",
       ".claude/commands/team.md",
-      ".claude/commands/validate.md",
       ".claude/commands/plugin-sync.md"
     ],
     "hooks": [

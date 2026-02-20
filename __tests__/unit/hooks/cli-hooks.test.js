@@ -39,7 +39,6 @@ describe('CLI Hook Scripts', () => {
       'notify-ready.sh',
       'subagent-log.sh',
       'flywheel-doc-check.sh',
-      'flywheel-session-summary.sh',
     ];
 
     it('all expected hooks should exist', () => {

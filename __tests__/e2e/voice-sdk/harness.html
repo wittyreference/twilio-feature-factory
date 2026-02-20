@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice SDK Test Harness</title>
+  <!--
+    ABOUTME: Minimal browser softphone for Voice SDK E2E testing.
+    ABOUTME: Exposes DOM elements for Playwright assertions — status, call-sid, errors.
+  -->
+  <style>
+    body { font-family: monospace; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+    .status-bar { padding: 8px 12px; margin-bottom: 16px; border-radius: 4px; font-weight: bold; }
+    .status-bar.offline { background: #fee2e2; color: #991b1b; }
+    .status-bar.registering { background: #fef3c7; color: #92400e; }
+    .status-bar.registered { background: #d1fae5; color: #065f46; }
+    .status-bar.connecting { background: #fef3c7; color: #92400e; }
+    .status-bar.ringing { background: #dbeafe; color: #1e40af; }
+    .status-bar.connected { background: #d1fae5; color: #065f46; }
+    .status-bar.disconnected { background: #f3f4f6; color: #374151; }
+    .controls { margin: 16px 0; }
+    .controls input { width: 200px; padding: 6px; font-family: monospace; }
+    .controls button { padding: 6px 16px; margin-left: 4px; cursor: pointer; }
+    .incoming { margin: 16px 0; padding: 12px; border: 2px dashed #3b82f6; display: none; }
+    .incoming.active { display: block; }
+    #log { background: #f9fafb; border: 1px solid #e5e7eb; padding: 8px; height: 200px; overflow-y: auto; font-size: 12px; white-space: pre-wrap; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h2>Voice SDK Test Harness</h2>
+
+  <div id="status" class="status-bar offline">offline</div>
+
+  <div>
+    <strong>Identity:</strong> <span id="identity">—</span>
+  </div>
+  <div>
+    <strong>Call SID:</strong> <span id="call-sid">—</span>
+  </div>
+  <div id="error" class="hidden" style="color: #dc2626; margin: 8px 0;"></div>
+
+  <div class="controls">
+    <input id="dial-input" type="text" placeholder="+15551234567 or client:name" />
+    <button id="btn-dial" disabled>Dial</button>
+    <button id="btn-hangup" disabled>Hangup</button>
+  </div>
+
+  <div id="incoming-panel" class="incoming">
+    <strong>Incoming call from:</strong> <span id="incoming-from">—</span>
+    <div style="margin-top: 8px;">
+      <button id="btn-accept">Accept</button>
+      <button id="btn-reject">Reject</button>
+    </div>
+  </div>
+
+  <h3>Event Log</h3>
+  <div id="log"></div>
+
+  <script src="https://sdk.twilio.com/js/client/releases/1.14/twilio.min.js"></script>
+  <script>
+    const statusEl = document.getElementById('status');
+    const identityEl = document.getElementById('identity');
+    const callSidEl = document.getElementById('call-sid');
+    const errorEl = document.getElementById('error');
+    const dialInput = document.getElementById('dial-input');
+    const btnDial = document.getElementById('btn-dial');
+    const btnHangup = document.getElementById('btn-hangup');
+    const btnAccept = document.getElementById('btn-accept');
+    const btnReject = document.getElementById('btn-reject');
+    const incomingPanel = document.getElementById('incoming-panel');
+    const incomingFrom = document.getElementById('incoming-from');
+    const logEl = document.getElementById('log');
+
+    let device = null;
+    let activeCall = null;
+    let incomingCall = null;
+
+    function setStatus(status) {
+      statusEl.textContent = status;
+      statusEl.className = 'status-bar ' + status;
+    }
+
+    function setError(msg) {
+      errorEl.textContent = msg;
+      errorEl.classList.remove('hidden');
+    }
+
+    function clearError() {
+      errorEl.textContent = '';
+      errorEl.classList.add('hidden');
+    }
+
+    function log(msg) {
+      const ts = new Date().toISOString().split('T')[1].slice(0, 12);
+      logEl.textContent += ts + ' ' + msg + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function bindCallEvents(call, direction) {
+      call.on('accept', () => {
+        setStatus('connected');
+        callSidEl.textContent = call.parameters.CallSid || '—';
+        log(direction + ' call connected (SID: ' + (call.parameters.CallSid || 'unknown') + ')');
+      });
+
+      call.on('disconnect', () => {
+        setStatus('disconnected');
+        log(direction + ' call disconnected');
+        activeCall = null;
+        btnHangup.disabled = true;
+        btnDial.disabled = false;
+      });
+
+      call.on('cancel', () => {
+        setStatus('registered');
+        log(direction + ' call cancelled');
+        activeCall = null;
+        incomingCall = null;
+        incomingPanel.classList.remove('active');
+        btnHangup.disabled = true;
+        btnDial.disabled = false;
+      });
+
+      call.on('reject', () => {
+        setStatus('registered');
+        log(direction + ' call rejected');
+        activeCall = null;
+        incomingCall = null;
+        btnHangup.disabled = true;
+        btnDial.disabled = false;
+      });
+
+      call.on('error', (err) => {
+        setError(err.message || 'Call error');
+        log('Call error: ' + (err.message || JSON.stringify(err)));
+      });
+    }
+
+    async function init() {
+      try {
+        setStatus('registering');
+        log('Fetching access token...');
+
+        const tokenUrl = window.TOKEN_URL || '/api/token';
+        const identity = window.IDENTITY || undefined;
+        const params = identity ? '?identity=' + encodeURIComponent(identity) : '';
+        const resp = await fetch(tokenUrl + params);
+
+        if (!resp.ok) {
+          throw new Error('Token fetch failed: ' + resp.status);
+        }
+
+        const data = await resp.json();
+        identityEl.textContent = data.identity;
+        log('Token received for identity: ' + data.identity);
+
+        device = new Twilio.Device(data.token, {
+          codecPreferences: ['opus', 'pcmu'],
+          enableRingingState: true
+        });
+
+        device.on('ready', () => {
+          setStatus('registered');
+          btnDial.disabled = false;
+          log('Device registered and ready');
+        });
+
+        device.on('error', (err) => {
+          setError(err.message || 'Device error');
+          log('Device error: ' + (err.message || JSON.stringify(err)));
+        });
+
+        device.on('incoming', (call) => {
+          incomingCall = call;
+          incomingFrom.textContent = call.parameters.From || 'unknown';
+          incomingPanel.classList.add('active');
+          setStatus('ringing');
+          log('Incoming call from: ' + (call.parameters.From || 'unknown'));
+          bindCallEvents(call, 'inbound');
+        });
+
+        device.on('disconnect', () => {
+          setStatus('registered');
+          log('Device disconnected');
+        });
+
+        device.on('offline', () => {
+          setStatus('offline');
+          log('Device offline');
+        });
+
+      } catch (err) {
+        setStatus('offline');
+        setError(err.message);
+        log('Init error: ' + err.message);
+      }
+    }
+
+    btnDial.addEventListener('click', () => {
+      const to = dialInput.value.trim();
+      if (!to || !device) return;
+
+      clearError();
+      setStatus('connecting');
+      log('Dialing: ' + to);
+
+      const params = { To: to };
+      activeCall = device.connect(params);
+      btnDial.disabled = true;
+      btnHangup.disabled = false;
+      bindCallEvents(activeCall, 'outbound');
+    });
+
+    btnHangup.addEventListener('click', () => {
+      if (activeCall) {
+        activeCall.disconnect();
+        log('Hangup requested');
+      }
+      device.disconnectAll();
+    });
+
+    btnAccept.addEventListener('click', () => {
+      if (incomingCall) {
+        incomingCall.accept();
+        activeCall = incomingCall;
+        incomingCall = null;
+        incomingPanel.classList.remove('active');
+        btnDial.disabled = true;
+        btnHangup.disabled = false;
+        log('Incoming call accepted');
+      }
+    });
+
+    btnReject.addEventListener('click', () => {
+      if (incomingCall) {
+        incomingCall.reject();
+        incomingCall = null;
+        incomingPanel.classList.remove('active');
+        setStatus('registered');
+        log('Incoming call rejected');
+      }
+    });
+
+    // Auto-initialize on load
+    init();
+  </script>
+</body>
+</html>

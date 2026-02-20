@@ -220,7 +220,7 @@ See [agents/feature-factory/CLAUDE.md](agents/feature-factory/CLAUDE.md) for arc
 ## What's Implemented
 
 **Development Tools**
-- 18 slash commands across workflow, development, and utility categories
+- 20 slash commands across workflow, development, and utility categories
 - MCP Server with 248 Twilio API tools across 25 modules
 - Voice AI Builder with TwiML and WebSocket generators
 - Feature Factory with autonomous mode, stall detection, and sandbox isolation

@@ -303,3 +303,4 @@ The following slash commands are available for specialized tasks:
 | `/validate [type] [SID]` | Deep validation of individual Twilio resources |
 | `/context [action]` | Context optimization - summarize, load, or analyze context |
 | `/wrap-up [scope]` | End-of-session doc updates — learnings, CLAUDE.md, todo, pending actions |
+| `/plugin-sync` | Detect and reconcile drift between factory source and plugin distribution |

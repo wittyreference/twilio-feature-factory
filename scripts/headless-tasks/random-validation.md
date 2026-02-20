@@ -120,9 +120,9 @@ Then run deep validation:
 
 Record all SIDs (Call SID, Recording SID, Transcript SID) as you go.
 
-## Step 9: Capture Learnings
+## Step 9A: Capture Twilio Learnings
 
-Write discoveries to `.meta/learnings.md` (use absolute path). Append to the file using the Edit tool:
+Write Twilio-specific discoveries to `.meta/learnings.md` (use absolute path). Append to the file using the Edit tool:
 
 ```markdown
 ## [DATE] Random Validation — UCN: Name (Headless)
@@ -136,6 +136,36 @@ Write discoveries to `.meta/learnings.md` (use absolute path). Append to the fil
    - Context: Which phase, which product
    - Impact: How it affects future runs
 ```
+
+## Step 9B: Capture System Tooling Observations
+
+In the same learnings entry, add a "System Tooling" sub-heading for observations about the
+development infrastructure itself. This is where most system tooling issues surface — 6 of 8
+headless gotchas in `scripts/CLAUDE.md` were discovered during headless runs.
+
+Observe and record:
+
+| Category | What to Check | Notes |
+|----------|--------------|-------|
+| MCP tools | Did all validation tools (`validate_call`, etc.) respond? Any timeouts or crashes? | Record tool name + error if any |
+| Sandbox behavior | Were any Bash commands blocked? Which substitutions failed? | `${}`, `$()`, `printenv` are known blocked |
+| Hook behavior | Did post-write track files? Did flywheel fire? Any unexpected blocks? | Check `.meta/.session-files` if accessible |
+| Skill loading | Were any skills referenced in output? Did they contain accurate info? | N/A in headless (skills loaded via Skill tool, which is forbidden) |
+| Git operations | Did branch creation, commits work? Any git errors? | Record if sandbox blocked git ops |
+| Turn budget | How many turns used vs budget? Where was time spent? | Record: setup/code/deploy/validate split |
+
+Add to the learnings entry:
+
+```markdown
+**System Tooling:**
+
+| Observation | Category | Impact |
+|-------------|----------|--------|
+| [What happened] | [MCP/Sandbox/Hook/Git/Budget] | [How it affects future runs] |
+```
+
+If a system tooling issue is blocking (prevents completion), record it but do not spend
+more than 5 turns trying to work around it. Move to the next step.
 
 ## Step 10: Report Results
 

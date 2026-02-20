@@ -93,6 +93,14 @@ fi
 # CREDENTIAL SAFETY CHECK
 # ============================================
 
+# Skip credential checks for test files, docs, and env examples
+if [[ "$FILE_PATH" =~ \.test\.(js|ts)$ ]] || [[ "$FILE_PATH" =~ \.spec\.(js|ts)$ ]] || \
+   [[ "$FILE_PATH" =~ __tests__/ ]] || [[ "$FILE_PATH" =~ \.md$ ]] || \
+   [[ "$FILE_PATH" =~ \.env\.example$ ]] || [[ "$FILE_PATH" =~ \.env\.sample$ ]]; then
+    # Test files, docs, and env examples may contain example credentials
+    exit 0
+fi
+
 # Pattern for Twilio Account SID (not in env var reference)
 if echo "$CONTENT" | grep -E "AC[a-f0-9]{32}" | grep -vqE "(process\.env|context\.|TWILIO_ACCOUNT_SID|ACCOUNT_SID)"; then
     echo "BLOCKED: Hardcoded Twilio Account SID detected!" >&2

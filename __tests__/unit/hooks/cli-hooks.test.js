@@ -7,6 +7,28 @@ const path = require('path');
 
 const HOOKS_DIR = path.join(__dirname, '../../../.claude/hooks');
 
+/**
+ * Helper to run a hook with JSON on stdin (matching Claude Code's hook protocol).
+ * Hooks receive tool input as JSON on stdin, not env vars.
+ */
+function runHookWithStdin(hookPath, stdinJson, extraEnv = {}) {
+  try {
+    const result = execSync(`bash "${hookPath}"`, {
+      input: stdinJson,
+      env: { ...process.env, ...extraEnv },
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    return { exitCode: 0, stderr: '', stdout: result };
+  } catch (error) {
+    return {
+      exitCode: error.status,
+      stderr: error.stderr || '',
+      stdout: error.stdout || '',
+    };
+  }
+}
+
 describe('CLI Hook Scripts', () => {
   describe('Hook Files', () => {
     const expectedHooks = [
@@ -32,7 +54,6 @@ describe('CLI Hook Scripts', () => {
         const hookPath = path.join(HOOKS_DIR, hook);
         if (fs.existsSync(hookPath)) {
           const stats = fs.statSync(hookPath);
-          // Check if executable bit is set (owner, group, or other)
           const isExecutable = (stats.mode & 0o111) !== 0;
           expect(isExecutable).toBe(true);
         }
@@ -53,25 +74,15 @@ describe('CLI Hook Scripts', () => {
   describe('pre-write-validate.sh - Credential Safety', () => {
     const hookPath = path.join(HOOKS_DIR, 'pre-write-validate.sh');
 
-    function runHook(content, filePath = 'test.js') {
-      try {
-        execSync(`bash "${hookPath}"`, {
-          env: {
-            ...process.env,
-            CLAUDE_TOOL_INPUT_CONTENT: content,
-            CLAUDE_TOOL_INPUT_FILE_PATH: filePath,
-            CLAUDE_ALLOW_PRODUCTION_WRITE: 'true',
-          },
-          encoding: 'utf-8',
-          stdio: ['pipe', 'pipe', 'pipe'],
-        });
-        return { exitCode: 0, stderr: '' };
-      } catch (error) {
-        return {
-          exitCode: error.status,
-          stderr: error.stderr || '',
-        };
-      }
+    function runHook(content, filePath = 'scripts/test-func.js') {
+      const stdinJson = JSON.stringify({
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Write',
+        tool_input: { file_path: filePath, content },
+      });
+      return runHookWithStdin(hookPath, stdinJson, {
+        CLAUDE_ALLOW_PRODUCTION_WRITE: 'true',
+      });
     }
 
     it('should block hardcoded Account SID', () => {
@@ -129,23 +140,14 @@ describe('CLI Hook Scripts', () => {
     const hookPath = path.join(HOOKS_DIR, 'pre-bash-validate.sh');
 
     function runHook(command) {
-      try {
-        execSync(`bash "${hookPath}"`, {
-          env: {
-            ...process.env,
-            CLAUDE_TOOL_INPUT_COMMAND: command,
-            SKIP_PENDING_ACTIONS: 'true',
-          },
-          encoding: 'utf-8',
-          stdio: ['pipe', 'pipe', 'pipe'],
-        });
-        return { exitCode: 0, stderr: '' };
-      } catch (error) {
-        return {
-          exitCode: error.status,
-          stderr: error.stderr || '',
-        };
-      }
+      const stdinJson = JSON.stringify({
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Bash',
+        tool_input: { command },
+      });
+      return runHookWithStdin(hookPath, stdinJson, {
+        SKIP_PENDING_ACTIONS: 'true',
+      });
     }
 
     it('should block git commit --no-verify', () => {

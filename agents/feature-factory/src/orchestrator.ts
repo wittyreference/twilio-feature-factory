@@ -52,6 +52,23 @@ import { createCheckpoint, cleanupCheckpoints } from './checkpoints.js';
 import type { PersistedSession, HookContext, PrePhaseHookEvent, CheckpointCreatedEvent } from './types.js';
 
 /**
+ * Serializable replay scenario data persisted to disk after workflow completion.
+ * Used to reconstruct ReplayScenario instances for later verification.
+ */
+export interface PersistedReplayScenario {
+  id: string;
+  name: string;
+  description: string;
+  workflowType: WorkflowType;
+  capturedLearnings: string[];
+  resolution: string;
+  phaseResults: Record<string, { success: boolean; output: string; error?: string }>;
+  totalCostUsd: number;
+  totalTurns: number;
+  completedAt: string;
+}
+
+/**
  * Feature Factory Orchestrator
  *
  * Coordinates specialized subagents in TDD-enforced development pipelines.
@@ -243,6 +260,9 @@ export class FeatureFactoryOrchestrator {
       this.state.status = 'completed';
       this.state.completedAt = new Date();
       this.persistState();
+
+      // Store replay scenario for later verification
+      this.storeReplayScenario(workflowType, description, learningsContext);
 
       yield {
         type: 'workflow-completed',
@@ -1335,5 +1355,95 @@ export class FeatureFactoryOrchestrator {
     lines.push('- Check the current state of files before making changes.');
 
     return lines.join('\n');
+  }
+
+  /**
+   * Store completed workflow as a replay scenario for later verification.
+   * Persists scenario data to .feature-factory/replay-scenarios.json.
+   */
+  private storeReplayScenario(
+    workflowType: WorkflowType,
+    description: string,
+    learningsContext: string
+  ): void {
+    if (!this.state) return;
+
+    const scenario: PersistedReplayScenario = {
+      id: this.state.sessionId,
+      name: `${workflowType}: ${description.slice(0, 80)}`,
+      description,
+      workflowType,
+      capturedLearnings: learningsContext
+        ? learningsContext.split('\n').filter((l: string) => l.trim().startsWith('-')).map((l: string) => l.trim().replace(/^-\s*/, ''))
+        : [],
+      resolution: Object.values(this.state.phaseResults)
+        .map(r => JSON.stringify(r.output || {}).slice(0, 200))
+        .filter(Boolean)
+        .join(' | '),
+      phaseResults: Object.fromEntries(
+        Object.entries(this.state.phaseResults).map(([agent, result]) => [
+          agent,
+          { success: !result.error, output: JSON.stringify(result.output || {}), error: result.error },
+        ])
+      ),
+      totalCostUsd: this.state.totalCostUsd,
+      totalTurns: this.state.totalTurns,
+      completedAt: new Date().toISOString(),
+    };
+
+    try {
+      const workDir = this.config.workingDirectory;
+      const scenariosDir = path.join(workDir, '.feature-factory');
+      const scenariosPath = path.join(scenariosDir, 'replay-scenarios.json');
+
+      if (!fs.existsSync(scenariosDir)) {
+        fs.mkdirSync(scenariosDir, { recursive: true });
+      }
+
+      let scenarios: PersistedReplayScenario[] = [];
+      if (fs.existsSync(scenariosPath)) {
+        try {
+          scenarios = JSON.parse(fs.readFileSync(scenariosPath, 'utf-8'));
+        } catch {
+          scenarios = [];
+        }
+      }
+
+      scenarios.push(scenario);
+
+      // Keep last 50 scenarios
+      if (scenarios.length > 50) {
+        scenarios = scenarios.slice(-50);
+      }
+
+      fs.writeFileSync(scenariosPath, JSON.stringify(scenarios, null, 2));
+
+      if (this.config.verbose) {
+        console.log(`  [orchestrator] Stored replay scenario: ${scenario.id}`);
+      }
+    } catch (error) {
+      // Best-effort — don't fail the workflow for scenario storage
+      if (this.config.verbose) {
+        console.log(`  [orchestrator] Failed to store replay scenario: ${error instanceof Error ? error.message : 'Unknown'}`);
+      }
+    }
+  }
+
+  /**
+   * Load persisted replay scenarios from disk.
+   */
+  loadReplayScenarios(): PersistedReplayScenario[] {
+    const workDir = this.config.workingDirectory;
+    const scenariosPath = path.join(workDir, '.feature-factory', 'replay-scenarios.json');
+
+    if (!fs.existsSync(scenariosPath)) {
+      return [];
+    }
+
+    try {
+      return JSON.parse(fs.readFileSync(scenariosPath, 'utf-8'));
+    } catch {
+      return [];
+    }
   }
 }

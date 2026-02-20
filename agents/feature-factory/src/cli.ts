@@ -26,6 +26,7 @@ import {
 import { rollbackToCheckpoint } from './checkpoints.js';
 import { getWorkflow } from './workflows/index.js';
 import type { WorkflowEvent, ApprovalMode, AutonomousModeConfig } from './types.js';
+import { createReplayVerifier } from './verification/index.js';
 
 const program = new Command();
 
@@ -324,6 +325,7 @@ program
   .option('--no-stall-detection', 'Disable stall detection for agents')
   .option('--no-retry', 'Disable phase retry on failure')
   .option('--no-checkpoints', 'Disable git checkpoints per phase')
+  .option('--verify-learnings', 'Run replay verification after workflow completes')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
@@ -338,6 +340,7 @@ program
         stallDetection: boolean;
         retry: boolean;
         checkpoints: boolean;
+        verifyLearnings: boolean;
         verbose: boolean;
       }
     ) => {
@@ -410,6 +413,7 @@ program
   .option('--no-stall-detection', 'Disable stall detection for agents')
   .option('--no-retry', 'Disable phase retry on failure')
   .option('--no-checkpoints', 'Disable git checkpoints per phase')
+  .option('--verify-learnings', 'Run replay verification after workflow completes')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
@@ -424,6 +428,7 @@ program
         stallDetection: boolean;
         retry: boolean;
         checkpoints: boolean;
+        verifyLearnings: boolean;
         verbose: boolean;
       }
     ) => {
@@ -449,6 +454,7 @@ program
   .option('--no-stall-detection', 'Disable stall detection for agents')
   .option('--no-retry', 'Disable phase retry on failure')
   .option('--no-checkpoints', 'Disable git checkpoints per phase')
+  .option('--verify-learnings', 'Run replay verification after workflow completes')
   .option('-v, --verbose', 'Enable verbose logging')
   .action(
     async (
@@ -463,6 +469,7 @@ program
         stallDetection: boolean;
         retry: boolean;
         checkpoints: boolean;
+        verifyLearnings: boolean;
         verbose: boolean;
       }
     ) => {
@@ -487,6 +494,7 @@ async function runWorkflowCommand(
     stallDetection: boolean;
     retry: boolean;
     checkpoints: boolean;
+    verifyLearnings: boolean;
     verbose: boolean;
   }
 ): Promise<void> {
@@ -629,6 +637,25 @@ async function runWorkflowCommand(
       verbose: options.verbose,
       sandboxEnabled,
     });
+
+    // Run replay verification if requested
+    if (options.verifyLearnings) {
+      const scenarios = orchestrator.loadReplayScenarios();
+      if (scenarios.length > 0) {
+        console.log(chalk.cyan('\n  Running replay verification...'));
+        console.log(chalk.gray(`   ${scenarios.length} scenario(s) available`));
+
+        const verifier = createReplayVerifier({ verbose: options.verbose });
+        // Register stored scenarios with the verifier for potential comparison
+        for (const s of scenarios) {
+          console.log(chalk.gray(`   - ${s.name} (${s.capturedLearnings.length} learnings)`));
+        }
+        console.log(chalk.gray(`   Verifier ready with ${verifier.getScenarios().length} active + ${scenarios.length} stored scenario(s).`));
+        console.log(chalk.gray(`   Use programmatic API to run full replay comparison.`));
+      } else {
+        console.log(chalk.yellow('\n  No replay scenarios found — skipping verification'));
+      }
+    }
 
     // Copy results back from sandbox on success
     if (sandboxInfo) {

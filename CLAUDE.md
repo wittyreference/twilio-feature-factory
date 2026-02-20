@@ -83,6 +83,7 @@ Agent Teams coordinate multiple Claude Code instances for parallel work. Use `/t
 | Deep validation | [agents/mcp-servers/twilio/src/validation/CLAUDE.md](/agents/mcp-servers/twilio/src/validation/CLAUDE.md) |
 | Autonomous worker | [agents/feature-factory/CLAUDE.md](/agents/feature-factory/CLAUDE.md#autonomous-worker) |
 | Setup scripts | [scripts/CLAUDE.md](/scripts/CLAUDE.md) |
+| API changes/drift | [.claude/references/twilio-api-changes.md](/.claude/references/twilio-api-changes.md) |
 | Twilio CLI reference | [.claude/references/twilio-cli.md](/.claude/references/twilio-cli.md) |
 | Hooks reference | `.claude/skills/hooks-reference.md` (load on demand) |
 | Autonomous mode | `.claude/skills/autonomous-guide.md` (load on demand) |

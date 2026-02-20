@@ -60,6 +60,9 @@ if [ "$CLAUDE_META_MODE" = "true" ] && [ "$CLAUDE_ALLOW_PRODUCTION_WRITE" != "tr
             scripts/*)
                 ALLOWED=true
                 ;;
+            .github/*)
+                ALLOWED=true
+                ;;
             __tests__/*)
                 ALLOWED=true
                 ;;

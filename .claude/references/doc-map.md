@@ -14,6 +14,7 @@ Quick lookup for which documentation to check BEFORE taking action.
 | Voice AI Builder | [agents/voice-ai-builder/CLAUDE.md](/agents/voice-ai-builder/CLAUDE.md) | [conversation-relay/CLAUDE.md](/functions/conversation-relay/CLAUDE.md) |
 | Deep validation | [validation/CLAUDE.md](/agents/mcp-servers/twilio/src/validation/CLAUDE.md) | - |
 | Twilio CLI | [twilio-cli.md](/.claude/references/twilio-cli.md) | - |
+| API changes/drift | [twilio-api-changes.md](/.claude/references/twilio-api-changes.md) | [twilio-cli.md](/.claude/references/twilio-cli.md) |
 | Tool boundaries | [tool-boundaries.md](/.claude/references/tool-boundaries.md) | - |
 | Getting started | [WALKTHROUGH.md](/WALKTHROUGH.md) | - |
 
@@ -30,7 +31,7 @@ Quick lookup for which documentation to check BEFORE taking action.
 **Functions** (`functions/`): Each domain has its own CLAUDE.md
 - voice, messaging, conversation-relay, verify, sync, taskrouter, callbacks, messaging-services
 
-**References** (`.claude/references/`): twilio-cli.md, tool-boundaries.md, doc-map.md
+**References** (`.claude/references/`): twilio-cli.md, twilio-api-changes.md, tool-boundaries.md, doc-map.md
 
 ---
 
@@ -50,6 +51,7 @@ Quick lookup for which documentation to check BEFORE taking action.
 | `twilio serverless:*` | `.claude/references/twilio-cli.md` | Serverless section |
 | `twilio phone-numbers:*` | `.claude/references/twilio-cli.md` | Phone Numbers section |
 | `twilio api:*` | `.claude/references/twilio-cli.md` | API Commands section |
+| API drift/changes | `.claude/references/twilio-api-changes.md` | Breaking changes, new params |
 | `twilio profiles:*` | `.claude/references/twilio-cli.md` | Profile Management section |
 | `npm test` | Root `CLAUDE.md` | Testing section |
 | `npm run deploy` | `.claude/references/tool-boundaries.md` | Deployment boundaries |

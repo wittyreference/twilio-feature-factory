@@ -22,8 +22,22 @@ You are reviewing the latest Twilio API drift report and proposing changes to ke
    - List new endpoints that belong to domains with existing MCP tools.
    - Create a summary of suggested new tools (do not implement them).
 
-5. **Do NOT use slash commands** — they terminate headless sessions.
-6. **Do NOT use AskUserQuestion** — no terminal in headless mode.
+5. **Update reference docs** (low priority):
+   - Read `.claude/references/twilio-cli.md`
+   - If the drift report contains new endpoints in `twilio_api_v2010`:
+     - Check if corresponding `twilio api:core:*` commands exist
+     - Add missing command examples to the relevant section
+   - If CLI version changed:
+     - Note the version in the Quick Reference section
+   - Guard rails:
+     - Only append to existing sections (never restructure the file)
+     - Only add entries for resources that have MCP tools
+     - Keep additions under 20 lines per run
+     - Include a comment `<!-- Added by api-drift review YYYY-MM-DD -->` for traceability
+     - The file should remain under 1100 lines — run a sanity check
+
+6. **Do NOT use slash commands** — they terminate headless sessions.
+7. **Do NOT use AskUserQuestion** — no terminal in headless mode.
 
 ## Output
 

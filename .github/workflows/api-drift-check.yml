@@ -83,7 +83,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add scripts/api-sync/snapshots/ scripts/api-sync/reports/ scripts/api-sync/sync-state.json scripts/api-sync/inventory.json
+          git add scripts/api-sync/snapshots/ scripts/api-sync/reports/ \
+                 scripts/api-sync/sync-state.json scripts/api-sync/inventory.json \
+                 .claude/references/twilio-api-changes.md
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else

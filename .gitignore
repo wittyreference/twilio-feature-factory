@@ -44,6 +44,10 @@ npm-debug.log*
 # Newman reports
 newman/
 
+# Playwright
+test-results/
+playwright-report/
+
 # Local/private files
 .claude/settings.local.json
 /concept.md

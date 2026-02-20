@@ -10,7 +10,7 @@ module.exports = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/dist/',
-    '__tests__/e2e/voice-sdk/.*\\.spec\\.js$'
+    '__tests__/e2e/'
   ],
   collectCoverageFrom: [
     'functions/**/*.js',

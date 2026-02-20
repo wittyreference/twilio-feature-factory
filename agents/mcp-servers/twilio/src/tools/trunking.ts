@@ -257,6 +257,44 @@ export function trunkingTools(context: TwilioContext) {
     }
   );
 
+  const updateOriginationUrl = createTool(
+    'update_origination_url',
+    'Update an origination URL on a SIP trunk.',
+    z.object({
+      trunkSid: z.string().startsWith('TK').describe('SIP Trunk SID (starts with TK)'),
+      originationUrlSid: z.string().startsWith('OU').describe('Origination URL SID (starts with OU)'),
+      friendlyName: z.string().optional().describe('New friendly name'),
+      sipUrl: z.string().optional().describe('New SIP URI'),
+      priority: z.number().min(0).max(65535).optional().describe('New priority (lower = higher priority)'),
+      weight: z.number().min(1).max(65535).optional().describe('New weight for load balancing'),
+      enabled: z.boolean().optional().describe('Enable or disable the URL'),
+    }),
+    async ({ trunkSid, originationUrlSid, ...updates }) => {
+      const params: Record<string, unknown> = {};
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value !== undefined) {params[key] = value;}
+      });
+
+      const url = await client.trunking.v1.trunks(trunkSid).originationUrls(originationUrlSid).update(params);
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: url.sid,
+            friendlyName: url.friendlyName,
+            sipUrl: url.sipUrl,
+            priority: url.priority,
+            weight: url.weight,
+            enabled: url.enabled,
+            dateUpdated: url.dateUpdated,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
   const deleteOriginationUrl = createTool(
     'delete_origination_url',
     'Remove an origination URL from a SIP trunk.',
@@ -538,6 +576,66 @@ export function trunkingTools(context: TwilioContext) {
     }
   );
 
+  // ============ Trunk Recording Settings ============
+
+  const getTrunkRecording = createTool(
+    'get_trunk_recording',
+    'Get recording settings for a SIP trunk.',
+    z.object({
+      trunkSid: z.string().startsWith('TK').describe('SIP Trunk SID (starts with TK)'),
+    }),
+    async ({ trunkSid }) => {
+      const recording = await client.trunking.v1.trunks(trunkSid).recordings().fetch();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            trunkSid,
+            mode: recording.mode,
+            trim: recording.trim,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const updateTrunkRecording = createTool(
+    'update_trunk_recording',
+    'Update recording settings for a SIP trunk.',
+    z.object({
+      trunkSid: z.string().startsWith('TK').describe('SIP Trunk SID (starts with TK)'),
+      mode: z.enum([
+        'do-not-record',
+        'record-from-ringing',
+        'record-from-answer',
+        'record-from-ringing-dual',
+        'record-from-answer-dual',
+      ]).optional().describe('Recording mode'),
+      trim: z.enum(['trim-silence', 'do-not-trim']).optional().describe('Trim silence from recordings'),
+    }),
+    async ({ trunkSid, mode, trim }) => {
+      const params: Record<string, unknown> = {};
+      if (mode !== undefined) {params.mode = mode;}
+      if (trim !== undefined) {params.trim = trim;}
+
+      const recording = await client.trunking.v1.trunks(trunkSid).recordings().update(params);
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            trunkSid,
+            mode: recording.mode,
+            trim: recording.trim,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
   return [
     listTrunks,
     getTrunk,
@@ -546,6 +644,7 @@ export function trunkingTools(context: TwilioContext) {
     deleteTrunk,
     listOriginationUrls,
     createOriginationUrl,
+    updateOriginationUrl,
     deleteOriginationUrl,
     listTrunkIpAccessControlLists,
     associateIpAccessControlList,
@@ -556,5 +655,7 @@ export function trunkingTools(context: TwilioContext) {
     listTrunkPhoneNumbers,
     associatePhoneNumber,
     removePhoneNumberFromTrunk,
+    getTrunkRecording,
+    updateTrunkRecording,
   ];
 }

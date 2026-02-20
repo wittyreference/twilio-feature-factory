@@ -24,6 +24,7 @@ import { voiceConfigTools } from './tools/voice-config.js';
 import { regulatoryTools } from './tools/regulatory.js';
 import { mediaTools } from './tools/media.js';
 // P3 tools
+import { sipTools } from './tools/sip.js';
 import { trunkingTools } from './tools/trunking.js';
 import { accountsTools } from './tools/accounts.js';
 import { iamTools } from './tools/iam.js';
@@ -106,6 +107,7 @@ export function createTwilioMcpServer(config: TwilioMcpServerConfig = {}) {
       ...regulatoryTools(context),
       ...mediaTools(context),
       // P3 tools
+      ...sipTools(context),
       ...trunkingTools(context),
       ...accountsTools(context),
       ...iamTools(context),
@@ -141,6 +143,7 @@ export { voiceConfigTools } from './tools/voice-config.js';
 export { regulatoryTools } from './tools/regulatory.js';
 export { mediaTools } from './tools/media.js';
 // P3 tool exports
+export { sipTools } from './tools/sip.js';
 export { trunkingTools } from './tools/trunking.js';
 export { accountsTools } from './tools/accounts.js';
 export { iamTools } from './tools/iam.js';

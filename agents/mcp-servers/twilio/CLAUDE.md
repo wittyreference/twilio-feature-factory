@@ -4,7 +4,7 @@ This directory contains the Model Context Protocol (MCP) server that exposes Twi
 
 ## Purpose
 
-The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **261 tools across 25 modules** covering:
+The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **284 tools across 26 modules** covering:
 
 - **Messaging**: SMS/MMS, messaging services, content templates, notifications
 - **Voice**: Call management, conferences, recordings, media streams, Voice Insights, transcriptions, BYOC trunks, SIP trunking
@@ -41,7 +41,8 @@ src/
     ├── voice-config.ts   # Dialing permissions, BYOC (P2)
     ├── regulatory.ts     # Regulatory bundles (P2)
     ├── media.ts          # Video recordings, compositions (P2)
-    ├── trunking.ts       # SIP trunks, origination URLs (P3)
+    ├── sip.ts            # SIP IP ACLs, credential lists, IP addresses, credentials (P3)
+    ├── trunking.ts       # SIP trunks, origination URLs, recording settings (P3)
     ├── accounts.ts       # Subaccounts, usage records (P3)
     ├── iam.ts            # API keys, signing keys (P3)
     ├── pricing.ts        # Voice, SMS, number pricing (P3)
@@ -399,7 +400,32 @@ for await (const message of query({
 | `create_composition_hook` | Create auto-composition rule |
 | `delete_composition_hook` | Delete hook |
 
-### Trunking Tools (P3) - 17 tools
+### SIP Tools (P3) - 20 tools
+
+| Tool | Description |
+|------|-------------|
+| `list_sip_ip_access_control_lists` | List all IP ACLs in account |
+| `get_sip_ip_access_control_list` | Get IP ACL details |
+| `create_sip_ip_access_control_list` | Create IP ACL |
+| `update_sip_ip_access_control_list` | Rename IP ACL |
+| `delete_sip_ip_access_control_list` | Delete IP ACL |
+| `list_sip_ip_addresses` | List IPs in an ACL |
+| `get_sip_ip_address` | Get IP address entry details |
+| `create_sip_ip_address` | Add IP to ACL |
+| `update_sip_ip_address` | Update IP entry |
+| `delete_sip_ip_address` | Remove IP from ACL |
+| `list_sip_credential_lists` | List all credential lists |
+| `get_sip_credential_list` | Get credential list details |
+| `create_sip_credential_list` | Create credential list |
+| `update_sip_credential_list` | Rename credential list |
+| `delete_sip_credential_list` | Delete credential list |
+| `list_sip_credentials` | List credentials in a list |
+| `get_sip_credential` | Get credential details |
+| `create_sip_credential` | Add username/password credential |
+| `update_sip_credential` | Update credential password |
+| `delete_sip_credential` | Remove credential |
+
+### Trunking Tools (P3) - 20 tools
 
 | Tool | Description |
 |------|-------------|
@@ -410,6 +436,7 @@ for await (const message of query({
 | `delete_sip_trunk` | Delete a trunk |
 | `list_origination_urls` | List origination URLs |
 | `create_origination_url` | Add origination URL |
+| `update_origination_url` | Update origination URL priority/weight/enabled |
 | `delete_origination_url` | Remove origination URL |
 | `list_trunk_ip_access_control_lists` | List IP ACLs on trunk |
 | `associate_ip_access_control_list` | Associate IP ACL with trunk |
@@ -420,6 +447,8 @@ for await (const message of query({
 | `list_trunk_phone_numbers` | List phone numbers on trunk |
 | `associate_phone_number_to_trunk` | Add phone number to trunk |
 | `remove_phone_number_from_trunk` | Remove phone number from trunk |
+| `get_trunk_recording` | Get trunk recording settings |
+| `update_trunk_recording` | Update trunk recording mode/trim |
 
 ### Accounts Tools (P3) - 13 tools
 

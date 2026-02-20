@@ -39,8 +39,8 @@ describe('trunkingTools', () => {
   });
 
   describe('tool structure', () => {
-    it('should return an array of 17 tools', () => {
-      expect(tools).toHaveLength(17);
+    it('should return an array of 20 tools', () => {
+      expect(tools).toHaveLength(20);
     });
 
     it('should have list_sip_trunks tool with correct metadata', () => {
@@ -71,6 +71,30 @@ describe('trunkingTools', () => {
       const tool = tools.find(t => t.name === 'associate_ip_access_control_list');
       expect(tool).toBeDefined();
       expect(tool?.description).toContain('IP');
+      expect(tool?.inputSchema).toBeDefined();
+      expect(typeof tool?.handler).toBe('function');
+    });
+
+    it('should have update_origination_url tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'update_origination_url');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('Update');
+      expect(tool?.inputSchema).toBeDefined();
+      expect(typeof tool?.handler).toBe('function');
+    });
+
+    it('should have get_trunk_recording tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'get_trunk_recording');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('recording');
+      expect(tool?.inputSchema).toBeDefined();
+      expect(typeof tool?.handler).toBe('function');
+    });
+
+    it('should have update_trunk_recording tool with correct metadata', () => {
+      const tool = tools.find(t => t.name === 'update_trunk_recording');
+      expect(tool).toBeDefined();
+      expect(tool?.description).toContain('recording');
       expect(tool?.inputSchema).toBeDefined();
       expect(typeof tool?.handler).toBe('function');
     });
@@ -147,6 +171,96 @@ describe('trunkingTools', () => {
         expect(invalid.success).toBe(false);
       });
     });
+
+    describe('update_origination_url schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'update_origination_url');
+        schema = tool!.inputSchema;
+      });
+
+      it('should require trunkSid and originationUrlSid', () => {
+        const valid = schema.safeParse({
+          trunkSid: 'TKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          originationUrlSid: 'OUxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(valid.success).toBe(true);
+
+        const missingUrl = schema.safeParse({ trunkSid: 'TKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' });
+        expect(missingUrl.success).toBe(false);
+      });
+
+      it('should validate SID prefixes', () => {
+        const badTrunk = schema.safeParse({
+          trunkSid: 'XXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          originationUrlSid: 'OUxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(badTrunk.success).toBe(false);
+
+        const badUrl = schema.safeParse({
+          trunkSid: 'TKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          originationUrlSid: 'XXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(badUrl.success).toBe(false);
+      });
+
+      it('should accept optional update fields', () => {
+        const result = schema.safeParse({
+          trunkSid: 'TKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          originationUrlSid: 'OUxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          priority: 5,
+          weight: 20,
+          enabled: false,
+        });
+        expect(result.success).toBe(true);
+      });
+    });
+
+    describe('update_trunk_recording schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'update_trunk_recording');
+        schema = tool!.inputSchema;
+      });
+
+      it('should require trunkSid', () => {
+        const valid = schema.safeParse({ trunkSid: 'TKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' });
+        expect(valid.success).toBe(true);
+
+        const invalid = schema.safeParse({});
+        expect(invalid.success).toBe(false);
+      });
+
+      it('should validate recording mode enum', () => {
+        const valid = schema.safeParse({
+          trunkSid: 'TKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          mode: 'record-from-answer',
+        });
+        expect(valid.success).toBe(true);
+
+        const invalid = schema.safeParse({
+          trunkSid: 'TKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          mode: 'invalid-mode',
+        });
+        expect(invalid.success).toBe(false);
+      });
+
+      it('should validate trim enum', () => {
+        const valid = schema.safeParse({
+          trunkSid: 'TKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          trim: 'trim-silence',
+        });
+        expect(valid.success).toBe(true);
+
+        const invalid = schema.safeParse({
+          trunkSid: 'TKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          trim: 'invalid-trim',
+        });
+        expect(invalid.success).toBe(false);
+      });
+    });
   });
 
   describe('API integration', () => {
@@ -209,6 +323,29 @@ describe('trunkingTools', () => {
           expect(urlsResponse.success).toBe(true);
           expect(urlsResponse.count).toBeGreaterThanOrEqual(0);
           expect(Array.isArray(urlsResponse.originationUrls)).toBe(true);
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
+      'get_trunk_recording should return recording settings for a trunk',
+      async () => {
+        const listTrunksTool = tools.find(t => t.name === 'list_sip_trunks')!;
+        const getRecordingTool = tools.find(t => t.name === 'get_trunk_recording')!;
+
+        const trunksResult = await listTrunksTool.handler({ limit: 1 });
+        const trunksResponse = JSON.parse(trunksResult.content[0].text);
+
+        if (trunksResponse.count > 0) {
+          const trunkSid = trunksResponse.trunks[0].sid;
+
+          const recordingResult = await getRecordingTool.handler({ trunkSid });
+          const recordingResponse = JSON.parse(recordingResult.content[0].text);
+
+          expect(recordingResponse.success).toBe(true);
+          expect(recordingResponse.trunkSid).toBe(trunkSid);
+          expect(recordingResponse.mode).toBeDefined();
         }
       },
       20000

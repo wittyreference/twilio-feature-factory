@@ -1310,6 +1310,43 @@ The autonomous worker processes work items from multiple sources with varying ri
 
 ---
 
+## Decision 29: ReplayVerifier Integration via Persisted Scenarios
+
+### Context
+
+The ReplayVerifier (530 lines, 25 tests) was fully implemented but had zero call sites in production code. It validates that captured learnings improve fix performance by replaying scenarios with and without learnings. Without integration, it's dead code that could bit-rot.
+
+### Decision
+
+**Wire ReplayVerifier into the post-workflow completion path using file-based scenario persistence.**
+
+The orchestrator stores completed workflow data as `PersistedReplayScenario` objects in `.feature-factory/replay-scenarios.json` after successful workflows. The CLI `--verify-learnings` flag creates a `ReplayVerifier` instance and reports on stored scenarios. Full replay comparison runs are available via the programmatic API.
+
+### Rationale
+
+1. **File-based persistence matches D27 pattern** — consistent with worker status, queue, and session files
+2. **Separation of storage from execution** — scenarios are stored unconditionally on completion; replay runs are opt-in via CLI flag
+3. **No runtime overhead** — scenario storage is best-effort in a try/catch; failed storage never blocks workflow completion
+4. **Programmatic API preserved** — the full `ReplayVerifier.compare()` and `verifyAll()` interfaces remain available for headless/CI usage
+
+### Alternatives Considered
+
+- **Inline replay after every workflow**: Too expensive — each comparison runs the workflow twice (with and without learnings)
+- **Store only for bug-fix workflows**: Overly restrictive — learnings apply across all workflow types
+- **No persistence, only in-memory**: Would require active verifier during workflow, limiting to same-session comparison
+
+### Consequences
+
+- ReplayVerifier has ≥1 non-test, non-export call site in production code
+- Completed workflows generate growing scenario files (capped at 50 entries)
+- `--verify-learnings` is available on all three workflow commands (new-feature, bug-fix, refactor)
+
+### Status
+
+**Accepted** - 2026-02-20
+
+---
+
 ## Decision N: [Title]
 
 ### Context
@@ -1380,3 +1417,4 @@ The autonomous worker processes work items from multiple sources with varying ri
 | 2026-02-15 | D26 | Session bootstrap as hook enhancement (auto-verification + architectural invariants) |
 | 2026-02-18 | D27 | File-based worker status over HTTP API (dev tool pattern, consistent with session.ts) |
 | 2026-02-18 | D28 | Tier-based approval policy (source > priority > tier defaults, budget enforcement) |
+| 2026-02-20 | D29 | ReplayVerifier integration via persisted scenarios (file-based, --verify-learnings CLI flag) |

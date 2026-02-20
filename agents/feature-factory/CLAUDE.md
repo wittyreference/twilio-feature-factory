@@ -352,6 +352,9 @@ npx feature-factory new-feature "Add voice AI" --dangerously-autonomous
 # Autonomous without sandbox
 npx feature-factory new-feature "Add voice AI" --dangerously-autonomous --no-sandbox
 
+# Run with replay verification of learnings
+npx feature-factory bug-fix "Fix webhook timeout" --verify-learnings
+
 # Check status of recent workflows
 npx feature-factory status
 npx feature-factory status --all    # Show all sessions

@@ -38,54 +38,59 @@ if [ "$CLAUDE_META_MODE" = "true" ] && [ "$CLAUDE_ALLOW_PRODUCTION_WRITE" != "tr
     # Normalize file path (remove project root prefix for comparison)
     RELATIVE_PATH="${FILE_PATH#$PROJECT_ROOT/}"
 
-    # Allowed paths in meta mode
-    # - .meta/* - meta development files
-    # - .claude/* - Claude Code configuration (hooks, plans, etc.)
-    # - scripts/* - development scripts (often need updating)
-    # - __tests__/* - test files (part of development)
-    # - *.md in root - documentation files
+    # Only enforce meta-mode isolation for files INSIDE the project root.
+    # Files outside (e.g., ~/.claude/plans/, ~/.claude/memory/) are not
+    # production code — credential checks below still apply to them.
+    if [[ "$RELATIVE_PATH" != "$FILE_PATH" ]]; then
+        # Allowed paths in meta mode
+        # - .meta/* - meta development files
+        # - .claude/* - Claude Code configuration (hooks, plans, etc.)
+        # - scripts/* - development scripts (often need updating)
+        # - __tests__/* - test files (part of development)
+        # - *.md in root - documentation files
 
-    ALLOWED=false
-    case "$RELATIVE_PATH" in
-        .meta/*)
-            ALLOWED=true
-            ;;
-        .claude/*)
-            ALLOWED=true
-            ;;
-        scripts/*)
-            ALLOWED=true
-            ;;
-        __tests__/*)
-            ALLOWED=true
-            ;;
-        *.md)
-            # Root-level markdown files are docs
-            if [[ "$RELATIVE_PATH" != */* ]]; then
+        ALLOWED=false
+        case "$RELATIVE_PATH" in
+            .meta/*)
                 ALLOWED=true
-            fi
-            ;;
-    esac
+                ;;
+            .claude/*)
+                ALLOWED=true
+                ;;
+            scripts/*)
+                ALLOWED=true
+                ;;
+            __tests__/*)
+                ALLOWED=true
+                ;;
+            *.md)
+                # Root-level markdown files are docs
+                if [[ "$RELATIVE_PATH" != */* ]]; then
+                    ALLOWED=true
+                fi
+                ;;
+        esac
 
-    if [ "$ALLOWED" = "false" ]; then
-        echo "BLOCKED: Meta mode active - changes to production code blocked!" >&2
-        echo "" >&2
-        echo "You are in META DEVELOPMENT mode (.meta/ directory exists)." >&2
-        echo "Changes should go to .meta/ during meta-development." >&2
-        echo "" >&2
-        echo "Attempted to write: $RELATIVE_PATH" >&2
-        echo "" >&2
-        echo "Allowed paths in meta mode:" >&2
-        echo "  - .meta/*" >&2
-        echo "  - .claude/plans/*" >&2
-        echo "  - .claude/archive/*" >&2
-        echo "" >&2
-        echo "To intentionally promote changes to production code:" >&2
-        echo "  export CLAUDE_ALLOW_PRODUCTION_WRITE=true" >&2
-        echo "" >&2
-        echo "Or remove .meta/ directory to exit meta mode entirely." >&2
-        echo "" >&2
-        exit 2
+        if [ "$ALLOWED" = "false" ]; then
+            echo "BLOCKED: Meta mode active - changes to production code blocked!" >&2
+            echo "" >&2
+            echo "You are in META DEVELOPMENT mode (.meta/ directory exists)." >&2
+            echo "Changes should go to .meta/ during meta-development." >&2
+            echo "" >&2
+            echo "Attempted to write: $RELATIVE_PATH" >&2
+            echo "" >&2
+            echo "Allowed paths in meta mode:" >&2
+            echo "  - .meta/*" >&2
+            echo "  - .claude/plans/*" >&2
+            echo "  - .claude/archive/*" >&2
+            echo "" >&2
+            echo "To intentionally promote changes to production code:" >&2
+            echo "  export CLAUDE_ALLOW_PRODUCTION_WRITE=true" >&2
+            echo "" >&2
+            echo "Or remove .meta/ directory to exit meta mode entirely." >&2
+            echo "" >&2
+            exit 2
+        fi
     fi
 fi
 

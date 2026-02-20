@@ -23,6 +23,13 @@ This project uses Claude Code hooks (configured in `.claude/settings.json`) to e
 | `_meta-mode.sh` | *(sourced by other hooks)* | Helper: detects `.meta/` directory, sets environment-aware paths |
 | `flywheel-session-summary.sh` | *(sourced by other hooks)* | Helper: generates session summary for flywheel processing |
 
+## When a Hook Blocks You
+
+**Fix the hook, don't bypass the system.** If a hook is blocking legitimate work:
+- Open a separate Claude window and fix the hook behavior
+- Use `CLAUDE_ALLOW_PRODUCTION_WRITE=true` for one-off overrides
+- **NEVER rename `.meta/`** to disable meta mode — this breaks all session routing
+
 ## What Gets Blocked (Exit Code 2)
 
 - Hardcoded Twilio credentials (`AC...`, `SK...`, auth tokens)

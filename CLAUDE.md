@@ -51,6 +51,8 @@ When `.meta/` exists at the project root, this is a meta-development environment
 
 The hooks in `.claude/hooks/` auto-detect the environment. Claude must also follow this routing — when the user says "todo" or "learnings", use the meta-development paths if `.meta/` exists. See `.meta/CLAUDE.md` for full meta-development documentation.
 
+**NEVER rename or move `.meta/` to bypass hook enforcement.** If a hook is blocking legitimate work, fix the hook in a separate session. Renaming `.meta/` disables all meta-mode routing and leaves session state in the wrong locations.
+
 ## MCP Validation Tools (USE THESE!)
 
 **IMPORTANT**: Use MCP validation tools instead of CLI commands for Twilio validation. They provide deep validation beyond HTTP 200 — automatic polling, content quality checks, forbidden pattern detection, and unified error reporting.
@@ -299,3 +301,4 @@ The following slash commands are available for specialized tasks:
 | `/e2e-test [scope]` | E2E tests against live Twilio — real numbers, deep validation |
 | `/validate [type] [SID]` | Deep validation of individual Twilio resources |
 | `/context [action]` | Context optimization - summarize, load, or analyze context |
+| `/wrap-up [scope]` | End-of-session doc updates — learnings, CLAUDE.md, todo, pending actions |

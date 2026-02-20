@@ -7,7 +7,7 @@ const mockSyncDocFetch = jest.fn();
 
 jest.mock('twilio', () => {
   const TwilioMock = jest.fn(() => ({
-    calls: jest.fn((callSid) => ({
+    calls: jest.fn((_callSid) => ({
       fetch: mockCallFetch,
       notifications: { list: mockNotificationsList },
     })),

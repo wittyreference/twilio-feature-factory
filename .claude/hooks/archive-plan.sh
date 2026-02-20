@@ -4,31 +4,26 @@
 
 set -euo pipefail
 
-# Directories
-CLAUDE_PLANS_DIR="$HOME/.claude/plans"
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# Source shared meta-mode detection for consistent routing
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/_meta-mode.sh"
 
-# Environment detection: meta-development mode vs shipped product
-if [[ -d "$PROJECT_ROOT/.meta" ]]; then
-    # Meta mode: archive to local .meta/plans/ (gitignored)
-    ARCHIVE_DIR="$PROJECT_ROOT/.meta/plans"
-    LOG_DIR="$PROJECT_ROOT/.meta/logs"
-else
-    # Shipped mode: archive to .claude/archive/plans/ (committed)
-    ARCHIVE_DIR="$PROJECT_ROOT/.claude/archive/plans"
-    LOG_DIR="$PROJECT_ROOT/.claude/logs"
-fi
+# CLAUDE_PLANS_DIR (from _meta-mode.sh) = archive DESTINATION
+# ACTIVE_PLANS_DIR = SOURCE where Claude Code stores active plans
+ACTIVE_PLANS_DIR="$HOME/.claude/plans"
+ARCHIVE_DIR="$CLAUDE_PLANS_DIR"
+LOG_DIR="$CLAUDE_LOGS_DIR"
 
 # Ensure archive directory exists
 mkdir -p "$ARCHIVE_DIR"
 
 # Find the most recently modified plan file
-if [[ ! -d "$CLAUDE_PLANS_DIR" ]]; then
+if [[ ! -d "$ACTIVE_PLANS_DIR" ]]; then
     exit 0  # No plans directory, nothing to archive
 fi
 
 # macOS compatible: use ls -t to sort by modification time
-LATEST_PLAN=$(ls -t "$CLAUDE_PLANS_DIR"/*.md 2>/dev/null | head -1)
+LATEST_PLAN=$(ls -t "$ACTIVE_PLANS_DIR"/*.md 2>/dev/null | head -1)
 
 if [[ -z "$LATEST_PLAN" || ! -f "$LATEST_PLAN" ]]; then
     exit 0  # No plan files found
@@ -83,6 +78,10 @@ title: $TITLE
 
 # Log the archive action
 mkdir -p "$LOG_DIR"
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Archived plan: $ARCHIVE_FILENAME (mode: $(if [[ -d \"$PROJECT_ROOT/.meta\" ]]; then echo 'meta'; else echo 'shipped'; fi))" >> "$LOG_DIR/plan-archive.log"
+MODE="meta"
+if [[ "$CLAUDE_META_MODE" != "true" ]]; then
+    MODE="shipped"
+fi
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Archived plan: $ARCHIVE_FILENAME (mode: $MODE)" >> "$LOG_DIR/plan-archive.log"
 
 exit 0

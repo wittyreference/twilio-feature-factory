@@ -1,0 +1,1634 @@
+{
+  "get_account": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Addresses/{Sid}.json"
+    ],
+    "sdkPath": "client.api.v2010.accounts"
+  },
+  "list_accounts": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts.json"
+    ],
+    "sdkPath": "client.api.v2010.accounts.list"
+  },
+  "create_subaccount": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts.json"
+    ],
+    "sdkPath": "client.api.v2010.accounts.create"
+  },
+  "update_account": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{Sid}.json"
+    ],
+    "sdkPath": "client.api.v2010.accounts"
+  },
+  "list_usage_records": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Usage/Records.json"
+    ],
+    "sdkPath": "client.usage.records.list"
+  },
+  "list_usage_records_daily": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Usage/Records/Daily.json"
+    ],
+    "sdkPath": "client.usage.records.daily.list"
+  },
+  "list_usage_records_monthly": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Usage/Records/Monthly.json"
+    ],
+    "sdkPath": "client.usage.records.monthly.list"
+  },
+  "list_usage_triggers": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Usage/Triggers.json"
+    ],
+    "sdkPath": "client.usage.triggers.list"
+  },
+  "create_usage_trigger": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/Usage/Triggers.json"
+    ],
+    "sdkPath": "client.usage.triggers.create"
+  },
+  "get_usage_trigger": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Usage/Triggers/{Sid}.json"
+    ],
+    "sdkPath": "client.usage.triggers"
+  },
+  "update_usage_trigger": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/Usage/Triggers/{Sid}.json"
+    ],
+    "sdkPath": "client.usage.triggers"
+  },
+  "delete_usage_trigger": {
+    "endpoints": [
+      "twilio_api_v2010:delete:/2010-04-01/Accounts/{AccountSid}/Usage/Triggers/{Sid}.json"
+    ],
+    "sdkPath": "client.usage.triggers"
+  },
+  "get_account_balance": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Balance.json"
+    ],
+    "sdkPath": "client.balance.fetch"
+  },
+  "list_addresses": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Addresses.json"
+    ],
+    "sdkPath": "client.addresses.list"
+  },
+  "get_address": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Addresses/{Sid}.json"
+    ],
+    "sdkPath": "client.addresses"
+  },
+  "create_address": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/Addresses.json"
+    ],
+    "sdkPath": "client.addresses.create"
+  },
+  "update_address": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/Addresses/{Sid}.json"
+    ],
+    "sdkPath": "client.addresses"
+  },
+  "delete_address": {
+    "endpoints": [
+      "twilio_api_v2010:delete:/2010-04-01/Accounts/{AccountSid}/Addresses/{Sid}.json"
+    ],
+    "sdkPath": "client.addresses"
+  },
+  "list_address_phone_numbers": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Addresses/{AddressSid}/DependentPhoneNumbers.json"
+    ],
+    "sdkPath": "client.addresses"
+  },
+  "create_content_template": {
+    "endpoints": [
+      "twilio_content_v1:post:/v1/Content/{ContentSid}/ApprovalRequests/whatsapp"
+    ],
+    "sdkPath": "client.content.v1.contents.create"
+  },
+  "list_content_templates": {
+    "endpoints": [
+      "twilio_content_v1:post:/v1/Content/{ContentSid}/ApprovalRequests/whatsapp"
+    ],
+    "sdkPath": "client.content.v1.contents.list"
+  },
+  "get_content_template": {
+    "endpoints": [
+      "twilio_content_v1:post:/v1/Content/{ContentSid}/ApprovalRequests/whatsapp"
+    ],
+    "sdkPath": "client.content.v1.contents"
+  },
+  "delete_content_template": {
+    "endpoints": [
+      "twilio_content_v1:delete:/v1/Content/{Sid}"
+    ],
+    "sdkPath": "client.content.v1.contents"
+  },
+  "get_debugger_logs": {
+    "endpoints": [
+      "twilio_monitor_v1:get:/v1/Alerts"
+    ],
+    "sdkPath": "client.monitor.v1.alerts.list"
+  },
+  "analyze_errors": {
+    "endpoints": [
+      "twilio_monitor_v1:get:/v1/Alerts/{Sid}"
+    ],
+    "sdkPath": "client.monitor.v1.alerts.list"
+  },
+  "get_usage_records": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Usage/Records.json"
+    ],
+    "sdkPath": "client.usage.records.list"
+  },
+  "list_api_keys": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Keys.json"
+    ],
+    "sdkPath": "client.keys.list"
+  },
+  "get_api_key": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Keys/{Sid}.json"
+    ],
+    "sdkPath": "client.keys"
+  },
+  "create_api_key": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/Keys.json"
+    ],
+    "sdkPath": "client.newKeys.create"
+  },
+  "update_api_key": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/Keys/{Sid}.json"
+    ],
+    "sdkPath": "client.keys"
+  },
+  "delete_api_key": {
+    "endpoints": [
+      "twilio_api_v2010:delete:/2010-04-01/Accounts/{AccountSid}/Keys/{Sid}.json"
+    ],
+    "sdkPath": "client.keys"
+  },
+  "list_signing_keys": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/SigningKeys.json"
+    ],
+    "sdkPath": "client.signingKeys.list"
+  },
+  "create_signing_key": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/SigningKeys.json"
+    ],
+    "sdkPath": "client.newSigningKeys.create"
+  },
+  "delete_signing_key": {
+    "endpoints": [
+      "twilio_api_v2010:delete:/2010-04-01/Accounts/{AccountSid}/SigningKeys/{Sid}.json"
+    ],
+    "sdkPath": "client.signingKeys"
+  },
+  "list_intelligence_services": {
+    "endpoints": [
+      "twilio_intelligence_v2:get:/v2/Services"
+    ],
+    "sdkPath": "client.intelligence.v2.services.list"
+  },
+  "list_transcripts": {
+    "endpoints": [
+      "twilio_intelligence_v2:get:/v2/Transcripts/{TranscriptSid}/OperatorResults"
+    ],
+    "sdkPath": "client.intelligence.v2.transcripts.list"
+  },
+  "get_transcript": {
+    "endpoints": [
+      "twilio_intelligence_v2:get:/v2/Transcripts/{TranscriptSid}/OperatorResults/{OperatorSid}"
+    ],
+    "sdkPath": "client.intelligence.v2.transcripts"
+  },
+  "get_intelligence_service": {
+    "endpoints": [
+      "twilio_intelligence_v2:get:/v2/Services/{Sid}"
+    ],
+    "sdkPath": "client.intelligence.v2.services"
+  },
+  "delete_transcript": {
+    "endpoints": [
+      "twilio_intelligence_v2:get:/v2/Transcripts/{TranscriptSid}/OperatorResults/{OperatorSid}"
+    ],
+    "sdkPath": "client.intelligence.v2.transcripts"
+  },
+  "list_sentences": {
+    "endpoints": [
+      "twilio_intelligence_v2:get:/v2/Transcripts/{TranscriptSid}/Sentences"
+    ],
+    "sdkPath": "client.intelligence.v2"
+  },
+  "list_operator_results": {
+    "endpoints": [
+      "twilio_intelligence_v2:get:/v2/Transcripts/{TranscriptSid}/OperatorResults"
+    ],
+    "sdkPath": "client.intelligence.v2"
+  },
+  "get_transcript_media": {
+    "endpoints": [
+      "twilio_intelligence_v2:get:/v2/Transcripts/{Sid}/Media"
+    ],
+    "sdkPath": "client.intelligence.v2.transcripts.media.fetch"
+  },
+  "create_transcript": {
+    "endpoints": [
+      "twilio_intelligence_v2:post:/v2/Transcripts"
+    ],
+    "sdkPath": "client.intelligence.v2.transcripts.create"
+  },
+  "lookup_phone_number": {
+    "endpoints": [
+      "twilio_lookups_v2:get:/v2/PhoneNumbers/{PhoneNumber}"
+    ],
+    "sdkPath": "client.lookups.v2"
+  },
+  "check_fraud_risk": {
+    "endpoints": [
+      "twilio_lookups_v2:get:/v2/PhoneNumbers/{PhoneNumber}"
+    ],
+    "sdkPath": "client.lookups.v2.phoneNumbers"
+  },
+  "list_video_recordings": {
+    "endpoints": [
+      "twilio_video_v1:get:/v1/Recordings"
+    ],
+    "sdkPath": "client.video.v1.recordings.list"
+  },
+  "get_video_recording": {
+    "endpoints": [
+      "twilio_video_v1:get:/v1/Recordings/{Sid}"
+    ],
+    "sdkPath": "client.video.v1.recordings"
+  },
+  "list_compositions": {
+    "endpoints": [
+      "twilio_video_v1:get:/v1/Compositions"
+    ],
+    "sdkPath": "client.video.v1.compositions.list"
+  },
+  "delete_video_recording": {
+    "endpoints": [
+      "twilio_video_v1:delete:/v1/Recordings/{Sid}"
+    ],
+    "sdkPath": "client.video.v1.recordings"
+  },
+  "get_composition": {
+    "endpoints": [
+      "twilio_video_v1:get:/v1/Compositions/{Sid}"
+    ],
+    "sdkPath": "client.video.v1.compositions"
+  },
+  "create_composition": {
+    "endpoints": [
+      "twilio_video_v1:post:/v1/Compositions"
+    ],
+    "sdkPath": "client.video.v1.compositions.create"
+  },
+  "delete_composition": {
+    "endpoints": [
+      "twilio_video_v1:delete:/v1/Compositions/{Sid}"
+    ],
+    "sdkPath": "client.video.v1.compositions"
+  },
+  "list_composition_hooks": {
+    "endpoints": [
+      "twilio_video_v1:get:/v1/CompositionHooks"
+    ],
+    "sdkPath": "client.video.v1.compositionHooks.list"
+  },
+  "create_composition_hook": {
+    "endpoints": [
+      "twilio_video_v1:post:/v1/CompositionHooks"
+    ],
+    "sdkPath": "client.video.v1.compositionHooks.create"
+  },
+  "delete_composition_hook": {
+    "endpoints": [
+      "twilio_video_v1:delete:/v1/CompositionHooks/{Sid}"
+    ],
+    "sdkPath": "client.video.v1.compositionHooks"
+  },
+  "create_messaging_service": {
+    "endpoints": [
+      "twilio_messaging_v1:post:/v1/Services"
+    ],
+    "sdkPath": "client.messaging.v1.services.create"
+  },
+  "add_number_to_service": {
+    "endpoints": [
+      "twilio_messaging_v1:post:/v1/Services/{ServiceSid}/PhoneNumbers"
+    ],
+    "sdkPath": "client.messaging.v1"
+  },
+  "get_a2p_status": {
+    "endpoints": [
+      "twilio_messaging_v1:get:/v1/Services/{MessagingServiceSid}/Compliance/Usa2p"
+    ],
+    "sdkPath": "client.messaging.v1.services.usAppToPersonUsecases"
+  },
+  "list_messaging_services": {
+    "endpoints": [
+      "twilio_messaging_v1:get:/v1/Services/{ServiceSid}/AlphaSenders"
+    ],
+    "sdkPath": "client.messaging.v1.services.list"
+  },
+  "get_messaging_service": {
+    "endpoints": [
+      "twilio_messaging_v1:get:/v1/Services/{ServiceSid}/AlphaSenders/{Sid}"
+    ],
+    "sdkPath": "client.messaging.v1.services"
+  },
+  "update_messaging_service": {
+    "endpoints": [
+      "twilio_messaging_v1:post:/v1/Services/{Sid}"
+    ],
+    "sdkPath": "client.messaging.v1.services"
+  },
+  "delete_messaging_service": {
+    "endpoints": [
+      "twilio_messaging_v1:delete:/v1/Services/{ServiceSid}/AlphaSenders/{Sid}"
+    ],
+    "sdkPath": "client.messaging.v1.services"
+  },
+  "list_phone_numbers_in_service": {
+    "endpoints": [
+      "twilio_messaging_v1:get:/v1/Services/{ServiceSid}/AlphaSenders"
+    ],
+    "sdkPath": "client.messaging.v1"
+  },
+  "remove_number_from_service": {
+    "endpoints": [
+      "twilio_messaging_v1:get:/v1/Services/{ServiceSid}/AlphaSenders/{Sid}"
+    ],
+    "sdkPath": "client.messaging.v1"
+  },
+  "list_alpha_senders": {
+    "endpoints": [
+      "twilio_messaging_v1:get:/v1/Services/{ServiceSid}/AlphaSenders"
+    ],
+    "sdkPath": "client.messaging.v1"
+  },
+  "add_alpha_sender": {
+    "endpoints": [
+      "twilio_messaging_v1:post:/v1/Services/{ServiceSid}/AlphaSenders"
+    ],
+    "sdkPath": "client.messaging.v1"
+  },
+  "remove_alpha_sender": {
+    "endpoints": [
+      "twilio_messaging_v1:get:/v1/Services/{ServiceSid}/AlphaSenders/{Sid}"
+    ],
+    "sdkPath": "client.messaging.v1"
+  },
+  "list_short_codes": {
+    "endpoints": [
+      "twilio_messaging_v1:get:/v1/Services/{ServiceSid}/ShortCodes"
+    ],
+    "sdkPath": "client.messaging.v1"
+  },
+  "add_short_code": {
+    "endpoints": [
+      "twilio_messaging_v1:post:/v1/Services/{ServiceSid}/ShortCodes"
+    ],
+    "sdkPath": "client.messaging.v1"
+  },
+  "send_sms": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/Messages.json"
+    ],
+    "sdkPath": "client.messages.create"
+  },
+  "send_mms": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/Messages.json"
+    ],
+    "sdkPath": "client.messages.create"
+  },
+  "get_message_logs": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Messages.json"
+    ],
+    "sdkPath": "client.messages.list"
+  },
+  "get_message_status": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Messages/{MessageSid}/Media/{Sid}.json"
+    ],
+    "sdkPath": "client.messages"
+  },
+  "list_notify_services": {
+    "endpoints": [
+      "twilio_notify_v1:get:/v1/Services"
+    ],
+    "sdkPath": "client.notify.v1.services.list"
+  },
+  "get_notify_service": {
+    "endpoints": [
+      "twilio_notify_v1:get:/v1/Services/{ServiceSid}/Bindings/{Sid}"
+    ],
+    "sdkPath": "client.notify.v1.services"
+  },
+  "create_notify_service": {
+    "endpoints": [
+      "twilio_notify_v1:post:/v1/Services"
+    ],
+    "sdkPath": "client.notify.v1.services.create"
+  },
+  "update_notify_service": {
+    "endpoints": [
+      "twilio_notify_v1:post:/v1/Services/{Sid}"
+    ],
+    "sdkPath": "client.notify.v1.services"
+  },
+  "delete_notify_service": {
+    "endpoints": [
+      "twilio_notify_v1:delete:/v1/Services/{ServiceSid}/Bindings/{Sid}"
+    ],
+    "sdkPath": "client.notify.v1.services"
+  },
+  "list_notify_bindings": {
+    "endpoints": [
+      "twilio_notify_v1:get:/v1/Services/{ServiceSid}/Bindings"
+    ],
+    "sdkPath": "client.notify.v1.services"
+  },
+  "get_notify_binding": {
+    "endpoints": [
+      "twilio_notify_v1:get:/v1/Services/{ServiceSid}/Bindings/{Sid}"
+    ],
+    "sdkPath": "client.notify.v1.services"
+  },
+  "create_notify_binding": {
+    "endpoints": [
+      "twilio_notify_v1:post:/v1/Services/{ServiceSid}/Bindings"
+    ],
+    "sdkPath": "client.notify.v1.services"
+  },
+  "delete_notify_binding": {
+    "endpoints": [
+      "twilio_notify_v1:delete:/v1/Services/{ServiceSid}/Bindings/{Sid}"
+    ],
+    "sdkPath": "client.notify.v1.services"
+  },
+  "send_notification": {
+    "endpoints": [
+      "twilio_notify_v1:post:/v1/Services/{ServiceSid}/Notifications"
+    ],
+    "sdkPath": "client.notify.v1.services"
+  },
+  "list_phone_numbers": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers.json"
+    ],
+    "sdkPath": "client.incomingPhoneNumbers.list"
+  },
+  "configure_webhook": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/{Sid}.json"
+    ],
+    "sdkPath": "client.incomingPhoneNumbers"
+  },
+  "search_available_numbers": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/{CountryCode}/Local.json"
+    ],
+    "sdkPath": "client.availablePhoneNumbers"
+  },
+  "list_voice_pricing_countries": {
+    "endpoints": [
+      "twilio_pricing_v2:get:/v2/Trunking/Countries"
+    ],
+    "sdkPath": "client.pricing.v1.voice.countries.list"
+  },
+  "get_voice_pricing_country": {
+    "endpoints": [
+      "twilio_pricing_v2:get:/v2/Trunking/Countries/{IsoCountry}"
+    ],
+    "sdkPath": "client.pricing.v1.voice.countries"
+  },
+  "get_voice_pricing_number": {
+    "endpoints": [
+      "twilio_pricing_v2:get:/v2/Trunking/Numbers/{DestinationNumber}"
+    ],
+    "sdkPath": "client.pricing.v1.voice.numbers"
+  },
+  "list_messaging_pricing_countries": {
+    "endpoints": [
+      "twilio_pricing_v2:get:/v2/Trunking/Countries"
+    ],
+    "sdkPath": "client.pricing.v1.messaging.countries.list"
+  },
+  "get_messaging_pricing_country": {
+    "endpoints": [
+      "twilio_pricing_v2:get:/v2/Trunking/Countries/{IsoCountry}"
+    ],
+    "sdkPath": "client.pricing.v1.messaging.countries"
+  },
+  "list_phone_number_pricing_countries": {
+    "endpoints": [
+      "twilio_pricing_v2:get:/v2/Trunking/Countries"
+    ],
+    "sdkPath": "client.pricing.v1.phoneNumbers.countries.list"
+  },
+  "get_phone_number_pricing_country": {
+    "endpoints": [
+      "twilio_pricing_v2:get:/v2/Trunking/Countries/{IsoCountry}"
+    ],
+    "sdkPath": "client.pricing.v1.phoneNumbers.countries"
+  },
+  "create_proxy_service": {
+    "endpoints": [
+      "twilio_proxy_v1:post:/v1/Services"
+    ],
+    "sdkPath": "client.proxy.v1.services.create"
+  },
+  "create_proxy_session": {
+    "endpoints": [
+      "twilio_proxy_v1:post:/v1/Services/{ServiceSid}/Sessions"
+    ],
+    "sdkPath": "client.proxy.v1"
+  },
+  "add_proxy_participant": {
+    "endpoints": [
+      "twilio_proxy_v1:post:/v1/Services/{ServiceSid}/Sessions/{SessionSid}/Participants"
+    ],
+    "sdkPath": "client.proxy.v1"
+  },
+  "list_proxy_sessions": {
+    "endpoints": [
+      "twilio_proxy_v1:get:/v1/Services/{ServiceSid}/Sessions/{SessionSid}/Interactions"
+    ],
+    "sdkPath": "client.proxy.v1"
+  },
+  "list_proxy_services": {
+    "endpoints": [
+      "twilio_proxy_v1:get:/v1/Services/{ServiceSid}/Sessions/{SessionSid}/Interactions"
+    ],
+    "sdkPath": "client.proxy.v1.services.list"
+  },
+  "get_proxy_service": {
+    "endpoints": [
+      "twilio_proxy_v1:get:/v1/Services/{ServiceSid}/Sessions/{SessionSid}/Interactions/{Sid}"
+    ],
+    "sdkPath": "client.proxy.v1.services"
+  },
+  "update_proxy_service": {
+    "endpoints": [
+      "twilio_proxy_v1:post:/v1/Services/{Sid}"
+    ],
+    "sdkPath": "client.proxy.v1.services"
+  },
+  "delete_proxy_service": {
+    "endpoints": [
+      "twilio_proxy_v1:delete:/v1/Services/{ServiceSid}/Sessions/{SessionSid}/Interactions/{Sid}"
+    ],
+    "sdkPath": "client.proxy.v1.services"
+  },
+  "get_proxy_session": {
+    "endpoints": [
+      "twilio_proxy_v1:get:/v1/Services/{ServiceSid}/Sessions/{SessionSid}/Interactions/{Sid}"
+    ],
+    "sdkPath": "client.proxy.v1"
+  },
+  "update_proxy_session": {
+    "endpoints": [
+      "twilio_proxy_v1:post:/v1/Services/{ServiceSid}/Sessions/{Sid}"
+    ],
+    "sdkPath": "client.proxy.v1"
+  },
+  "delete_proxy_session": {
+    "endpoints": [
+      "twilio_proxy_v1:delete:/v1/Services/{ServiceSid}/Sessions/{SessionSid}/Interactions/{Sid}"
+    ],
+    "sdkPath": "client.proxy.v1"
+  },
+  "list_proxy_participants": {
+    "endpoints": [
+      "twilio_proxy_v1:get:/v1/Services/{ServiceSid}/Sessions/{SessionSid}/Participants"
+    ],
+    "sdkPath": "client.proxy.v1.services.sessions.participants.list"
+  },
+  "remove_proxy_participant": {
+    "endpoints": [
+      "twilio_proxy_v1:get:/v1/Services/{ServiceSid}/Sessions/{SessionSid}/Participants/{ParticipantSid}/MessageInteractions/{Sid}"
+    ],
+    "sdkPath": "client.proxy.v1"
+  },
+  "list_proxy_interactions": {
+    "endpoints": [
+      "twilio_proxy_v1:get:/v1/Services/{ServiceSid}/Sessions/{SessionSid}/Interactions"
+    ],
+    "sdkPath": "client.proxy.v1"
+  },
+  "list_proxy_phone_numbers": {
+    "endpoints": [
+      "twilio_proxy_v1:get:/v1/Services/{ServiceSid}/PhoneNumbers"
+    ],
+    "sdkPath": "client.proxy.v1.services.phoneNumbers.list"
+  },
+  "add_proxy_phone_number": {
+    "endpoints": [
+      "twilio_proxy_v1:post:/v1/Services/{ServiceSid}/PhoneNumbers"
+    ],
+    "sdkPath": "client.proxy.v1.services.phoneNumbers.create"
+  },
+  "remove_proxy_phone_number": {
+    "endpoints": [
+      "twilio_proxy_v1:delete:/v1/Services/{ServiceSid}/PhoneNumbers/{Sid}"
+    ],
+    "sdkPath": "client.proxy.v1.services.phoneNumbers.remove"
+  },
+  "list_regulatory_bundles": {
+    "endpoints": [
+      "twilio_numbers_v2:get:/v2/RegulatoryCompliance/Bundles"
+    ],
+    "sdkPath": "client.numbers.v2.regulatoryCompliance.bundles.list"
+  },
+  "get_bundle_status": {
+    "endpoints": [
+      "twilio_numbers_v2:get:/v2/RegulatoryCompliance/Bundles/{BundleSid}/Evaluations/{Sid}"
+    ],
+    "sdkPath": "client.numbers.v2.regulatoryCompliance"
+  },
+  "list_regulatory_supporting_documents": {
+    "endpoints": [
+      "twilio_numbers_v2:get:/v2/RegulatoryCompliance/Bundles"
+    ],
+    "sdkPath": "client.numbers.v2.regulatoryCompliance"
+  },
+  "list_regulations": {
+    "endpoints": [
+      "twilio_numbers_v2:get:/v2/RegulatoryCompliance/Regulations"
+    ],
+    "sdkPath": "client.numbers.v2.regulatoryCompliance.regulations.list"
+  },
+  "create_regulatory_bundle": {
+    "endpoints": [
+      "twilio_numbers_v2:post:/v2/RegulatoryCompliance/Bundles"
+    ],
+    "sdkPath": "client.numbers.v2.regulatoryCompliance.bundles.create"
+  },
+  "update_regulatory_bundle": {
+    "endpoints": [
+      "twilio_numbers_v2:post:/v2/RegulatoryCompliance/Bundles/{Sid}"
+    ],
+    "sdkPath": "client.numbers.v2.regulatoryCompliance"
+  },
+  "delete_regulatory_bundle": {
+    "endpoints": [
+      "twilio_numbers_v2:delete:/v2/RegulatoryCompliance/Bundles/{BundleSid}/ItemAssignments/{Sid}"
+    ],
+    "sdkPath": "client.numbers.v2.regulatoryCompliance.bundles"
+  },
+  "list_bundle_item_assignments": {
+    "endpoints": [
+      "twilio_numbers_v2:get:/v2/RegulatoryCompliance/Bundles/{BundleSid}/Copies"
+    ],
+    "sdkPath": "client.numbers.v2.regulatoryCompliance"
+  },
+  "create_bundle_item_assignment": {
+    "endpoints": [
+      "twilio_numbers_v2:post:/v2/RegulatoryCompliance/Bundles/{BundleSid}/ItemAssignments"
+    ],
+    "sdkPath": "client.numbers.v2.regulatoryCompliance"
+  },
+  "delete_bundle_item_assignment": {
+    "endpoints": [
+      "twilio_numbers_v2:delete:/v2/RegulatoryCompliance/Bundles/{BundleSid}/ItemAssignments/{Sid}"
+    ],
+    "sdkPath": "client.numbers.v2.regulatoryCompliance"
+  },
+  "get_supporting_document": {
+    "endpoints": [
+      "twilio_numbers_v2:get:/v2/RegulatoryCompliance/SupportingDocuments/{Sid}"
+    ],
+    "sdkPath": "client.numbers.v2.regulatoryCompliance"
+  },
+  "create_supporting_document": {
+    "endpoints": [
+      "twilio_numbers_v2:post:/v2/RegulatoryCompliance/SupportingDocuments"
+    ],
+    "sdkPath": "client.numbers.v2.regulatoryCompliance"
+  },
+  "update_supporting_document": {
+    "endpoints": [
+      "twilio_numbers_v2:post:/v2/RegulatoryCompliance/SupportingDocuments/{Sid}"
+    ],
+    "sdkPath": "client.numbers.v2.regulatoryCompliance"
+  },
+  "delete_supporting_document": {
+    "endpoints": [
+      "twilio_numbers_v2:delete:/v2/RegulatoryCompliance/SupportingDocuments/{Sid}"
+    ],
+    "sdkPath": "client.numbers.v2.regulatoryCompliance"
+  },
+  "list_regulatory_end_users": {
+    "endpoints": [
+      "twilio_numbers_v2:get:/v2/RegulatoryCompliance/Bundles"
+    ],
+    "sdkPath": "client.numbers.v2.regulatoryCompliance"
+  },
+  "create_regulatory_end_user": {
+    "endpoints": [
+      "twilio_numbers_v2:post:/v2/RegulatoryCompliance/EndUsers"
+    ],
+    "sdkPath": "client.numbers.v2.regulatoryCompliance"
+  },
+  "list_services": {
+    "endpoints": [
+      "twilio_serverless_v1:get:/v1/Services/{ServiceSid}/Assets"
+    ],
+    "sdkPath": "client.serverless.v1.services.list"
+  },
+  "list_functions": {
+    "endpoints": [
+      "twilio_serverless_v1:get:/v1/Services/{ServiceSid}/Functions"
+    ],
+    "sdkPath": "client.serverless.v1"
+  },
+  "list_environments": {
+    "endpoints": [
+      "twilio_serverless_v1:get:/v1/Services/{ServiceSid}/Environments/{EnvironmentSid}/Deployments"
+    ],
+    "sdkPath": "client.serverless.v1"
+  },
+  "get_build_status": {
+    "endpoints": [
+      "twilio_serverless_v1:get:/v1/Services/{ServiceSid}/Builds/{Sid}/Status"
+    ],
+    "sdkPath": "client.serverless.v1.services.builds.buildStatus"
+  },
+  "get_service": {
+    "endpoints": [
+      "twilio_serverless_v1:get:/v1/Services/{ServiceSid}/Assets/{Sid}"
+    ],
+    "sdkPath": "client.serverless.v1.services"
+  },
+  "list_builds": {
+    "endpoints": [
+      "twilio_serverless_v1:get:/v1/Services/{ServiceSid}/Builds"
+    ],
+    "sdkPath": "client.serverless.v1"
+  },
+  "get_function": {
+    "endpoints": [
+      "twilio_serverless_v1:get:/v1/Services/{ServiceSid}/Functions/{FunctionSid}/Versions/{Sid}"
+    ],
+    "sdkPath": "client.serverless.v1"
+  },
+  "list_function_versions": {
+    "endpoints": [
+      "twilio_serverless_v1:get:/v1/Services/{ServiceSid}/Functions/{FunctionSid}/Versions"
+    ],
+    "sdkPath": "client.serverless.v1"
+  },
+  "list_assets": {
+    "endpoints": [
+      "twilio_serverless_v1:get:/v1/Services/{ServiceSid}/Assets"
+    ],
+    "sdkPath": "client.serverless.v1"
+  },
+  "list_asset_versions": {
+    "endpoints": [
+      "twilio_serverless_v1:get:/v1/Services/{ServiceSid}/Assets/{AssetSid}/Versions"
+    ],
+    "sdkPath": "client.serverless.v1"
+  },
+  "list_variables": {
+    "endpoints": [
+      "twilio_serverless_v1:get:/v1/Services/{ServiceSid}/Environments/{EnvironmentSid}/Variables"
+    ],
+    "sdkPath": "client.serverless.v1"
+  },
+  "create_variable": {
+    "endpoints": [
+      "twilio_serverless_v1:post:/v1/Services/{ServiceSid}/Environments/{EnvironmentSid}/Variables"
+    ],
+    "sdkPath": "client.serverless.v1"
+  },
+  "update_variable": {
+    "endpoints": [
+      "twilio_serverless_v1:post:/v1/Services/{ServiceSid}/Environments/{EnvironmentSid}/Variables/{Sid}"
+    ],
+    "sdkPath": "client.serverless.v1"
+  },
+  "delete_variable": {
+    "endpoints": [
+      "twilio_serverless_v1:delete:/v1/Services/{ServiceSid}/Environments/{EnvironmentSid}/Variables/{Sid}"
+    ],
+    "sdkPath": "client.serverless.v1"
+  },
+  "list_logs": {
+    "endpoints": [
+      "twilio_serverless_v1:get:/v1/Services/{ServiceSid}/Environments/{EnvironmentSid}/Logs"
+    ],
+    "sdkPath": "client.serverless.v1"
+  },
+  "list_sip_ip_access_control_lists": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/SIP/IpAccessControlLists.json"
+    ],
+    "sdkPath": "client.sip.ipAccessControlLists.list"
+  },
+  "get_sip_ip_access_control_list": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/SIP/IpAccessControlLists/{IpAccessControlListSid}/IpAddresses/{Sid}.json"
+    ],
+    "sdkPath": "client.sip.ipAccessControlLists"
+  },
+  "create_sip_ip_access_control_list": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/SIP/IpAccessControlLists.json"
+    ],
+    "sdkPath": "client.sip.ipAccessControlLists.create"
+  },
+  "update_sip_ip_access_control_list": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/SIP/IpAccessControlLists/{IpAccessControlListSid}/IpAddresses/{Sid}.json"
+    ],
+    "sdkPath": "client.sip.ipAccessControlLists"
+  },
+  "delete_sip_ip_access_control_list": {
+    "endpoints": [
+      "twilio_api_v2010:delete:/2010-04-01/Accounts/{AccountSid}/SIP/IpAccessControlLists/{IpAccessControlListSid}/IpAddresses/{Sid}.json"
+    ],
+    "sdkPath": "client.sip.ipAccessControlLists"
+  },
+  "list_sip_ip_addresses": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/SIP/IpAccessControlLists/{IpAccessControlListSid}/IpAddresses.json"
+    ],
+    "sdkPath": "client.sip.ipAccessControlLists"
+  },
+  "get_sip_ip_address": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/SIP/IpAccessControlLists/{IpAccessControlListSid}/IpAddresses/{Sid}.json"
+    ],
+    "sdkPath": "client.sip.ipAccessControlLists"
+  },
+  "create_sip_ip_address": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/SIP/IpAccessControlLists/{IpAccessControlListSid}/IpAddresses.json"
+    ],
+    "sdkPath": "client.sip.ipAccessControlLists"
+  },
+  "update_sip_ip_address": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/SIP/IpAccessControlLists/{IpAccessControlListSid}/IpAddresses/{Sid}.json"
+    ],
+    "sdkPath": "client.sip.ipAccessControlLists"
+  },
+  "delete_sip_ip_address": {
+    "endpoints": [
+      "twilio_api_v2010:delete:/2010-04-01/Accounts/{AccountSid}/SIP/IpAccessControlLists/{IpAccessControlListSid}/IpAddresses/{Sid}.json"
+    ],
+    "sdkPath": "client.sip.ipAccessControlLists"
+  },
+  "list_sip_credential_lists": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/SIP/CredentialLists/{CredentialListSid}/Credentials.json"
+    ],
+    "sdkPath": "client.sip.credentialLists.list"
+  },
+  "get_sip_credential_list": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/SIP/CredentialLists/{CredentialListSid}/Credentials/{Sid}.json"
+    ],
+    "sdkPath": "client.sip.credentialLists"
+  },
+  "create_sip_credential_list": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/SIP/CredentialLists.json"
+    ],
+    "sdkPath": "client.sip.credentialLists.create"
+  },
+  "update_sip_credential_list": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/SIP/CredentialLists/{CredentialListSid}/Credentials/{Sid}.json"
+    ],
+    "sdkPath": "client.sip.credentialLists"
+  },
+  "delete_sip_credential_list": {
+    "endpoints": [
+      "twilio_api_v2010:delete:/2010-04-01/Accounts/{AccountSid}/SIP/CredentialLists/{CredentialListSid}/Credentials/{Sid}.json"
+    ],
+    "sdkPath": "client.sip.credentialLists"
+  },
+  "list_sip_credentials": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/SIP/CredentialLists/{CredentialListSid}/Credentials.json"
+    ],
+    "sdkPath": "client.sip.credentialLists"
+  },
+  "get_sip_credential": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/SIP/CredentialLists/{CredentialListSid}/Credentials/{Sid}.json"
+    ],
+    "sdkPath": "client.sip.credentialLists"
+  },
+  "create_sip_credential": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/SIP/CredentialLists/{CredentialListSid}/Credentials.json"
+    ],
+    "sdkPath": "client.sip.credentialLists"
+  },
+  "update_sip_credential": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/SIP/CredentialLists/{CredentialListSid}/Credentials/{Sid}.json"
+    ],
+    "sdkPath": "client.sip.credentialLists"
+  },
+  "delete_sip_credential": {
+    "endpoints": [
+      "twilio_api_v2010:delete:/2010-04-01/Accounts/{AccountSid}/SIP/CredentialLists/{CredentialListSid}/Credentials/{Sid}.json"
+    ],
+    "sdkPath": "client.sip.credentialLists"
+  },
+  "list_studio_flows": {
+    "endpoints": [
+      "twilio_studio_v2:get:/v2/Flows/{FlowSid}/Executions"
+    ],
+    "sdkPath": "client.studio.v2.flows.list"
+  },
+  "trigger_flow": {
+    "endpoints": [
+      "twilio_studio_v2:post:/v2/Flows/{FlowSid}/Executions"
+    ],
+    "sdkPath": "client.studio.v2"
+  },
+  "get_execution_status": {
+    "endpoints": [
+      "twilio_studio_v2:get:/v2/Flows/{FlowSid}/Executions/{ExecutionSid}/Steps/{Sid}"
+    ],
+    "sdkPath": "client.studio.v2"
+  },
+  "get_flow": {
+    "endpoints": [
+      "twilio_studio_v2:get:/v2/Flows/{FlowSid}/Executions/{Sid}"
+    ],
+    "sdkPath": "client.studio.v2.flows"
+  },
+  "list_executions": {
+    "endpoints": [
+      "twilio_studio_v2:get:/v2/Flows/{FlowSid}/Executions"
+    ],
+    "sdkPath": "client.studio.v2"
+  },
+  "delete_execution": {
+    "endpoints": [
+      "twilio_studio_v2:delete:/v2/Flows/{FlowSid}/Executions/{Sid}"
+    ],
+    "sdkPath": "client.studio.v2"
+  },
+  "get_execution_context": {
+    "endpoints": [
+      "twilio_studio_v2:get:/v2/Flows/{FlowSid}/Executions/{ExecutionSid}/Context"
+    ],
+    "sdkPath": "client.studio.v2.flows.executions.executionContext.fetch"
+  },
+  "list_execution_steps": {
+    "endpoints": [
+      "twilio_studio_v2:get:/v2/Flows/{FlowSid}/Executions/{ExecutionSid}/Steps"
+    ],
+    "sdkPath": "client.studio.v2"
+  },
+  "get_step_context": {
+    "endpoints": [
+      "twilio_studio_v2:get:/v2/Flows/{FlowSid}/Executions/{ExecutionSid}/Steps/{StepSid}/Context"
+    ],
+    "sdkPath": "client.studio.v2.flows.executions.steps.stepContext.fetch"
+  },
+  "create_document": {
+    "endpoints": [
+      "twilio_sync_v1:post:/v1/Services/{ServiceSid}/Documents"
+    ],
+    "sdkPath": "client.sync.v1.services"
+  },
+  "update_document": {
+    "endpoints": [
+      "twilio_sync_v1:post:/v1/Services/{ServiceSid}/Documents/{Sid}"
+    ],
+    "sdkPath": "client.sync.v1"
+  },
+  "get_document": {
+    "endpoints": [
+      "twilio_sync_v1:get:/v1/Services/{ServiceSid}/Documents/{Sid}"
+    ],
+    "sdkPath": "client.sync.v1"
+  },
+  "list_documents": {
+    "endpoints": [
+      "twilio_sync_v1:get:/v1/Services/{ServiceSid}/Documents"
+    ],
+    "sdkPath": "client.sync.v1.services"
+  },
+  "create_task": {
+    "endpoints": [
+      "twilio_taskrouter_v1:post:/v1/Workspaces/{WorkspaceSid}/Tasks"
+    ],
+    "sdkPath": "client.taskrouter.v1.workspaces"
+  },
+  "list_tasks": {
+    "endpoints": [
+      "twilio_taskrouter_v1:get:/v1/Workspaces/{WorkspaceSid}/Tasks"
+    ],
+    "sdkPath": "client.taskrouter.v1.workspaces"
+  },
+  "get_task_status": {
+    "endpoints": [
+      "twilio_taskrouter_v1:get:/v1/Workspaces/{WorkspaceSid}/Tasks/{TaskSid}/Reservations/{Sid}"
+    ],
+    "sdkPath": "client.taskrouter.v1.workspaces"
+  },
+  "list_workers": {
+    "endpoints": [
+      "twilio_taskrouter_v1:get:/v1/Workspaces/{WorkspaceSid}/Workers"
+    ],
+    "sdkPath": "client.taskrouter.v1.workspaces"
+  },
+  "list_workflows": {
+    "endpoints": [
+      "twilio_taskrouter_v1:get:/v1/Workspaces/{WorkspaceSid}/Workflows"
+    ],
+    "sdkPath": "client.taskrouter.v1.workspaces"
+  },
+  "list_sip_trunks": {
+    "endpoints": [
+      "twilio_trunking_v1:get:/v1/Trunks/{TrunkSid}/CredentialLists"
+    ],
+    "sdkPath": "client.trunking.v1.trunks.list"
+  },
+  "get_sip_trunk": {
+    "endpoints": [
+      "twilio_trunking_v1:get:/v1/Trunks/{TrunkSid}/CredentialLists/{Sid}"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "create_sip_trunk": {
+    "endpoints": [
+      "twilio_trunking_v1:post:/v1/Trunks"
+    ],
+    "sdkPath": "client.trunking.v1.trunks.create"
+  },
+  "update_sip_trunk": {
+    "endpoints": [
+      "twilio_trunking_v1:post:/v1/Trunks/{Sid}"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "delete_sip_trunk": {
+    "endpoints": [
+      "twilio_trunking_v1:delete:/v1/Trunks/{TrunkSid}/CredentialLists/{Sid}"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "list_origination_urls": {
+    "endpoints": [
+      "twilio_trunking_v1:get:/v1/Trunks/{TrunkSid}/OriginationUrls"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "create_origination_url": {
+    "endpoints": [
+      "twilio_trunking_v1:post:/v1/Trunks/{TrunkSid}/OriginationUrls"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "update_origination_url": {
+    "endpoints": [
+      "twilio_trunking_v1:post:/v1/Trunks/{TrunkSid}/OriginationUrls/{Sid}"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "delete_origination_url": {
+    "endpoints": [
+      "twilio_trunking_v1:delete:/v1/Trunks/{TrunkSid}/OriginationUrls/{Sid}"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "list_trunk_ip_access_control_lists": {
+    "endpoints": [
+      "twilio_trunking_v1:get:/v1/Trunks/{TrunkSid}/CredentialLists"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "associate_ip_access_control_list": {
+    "endpoints": [
+      "twilio_trunking_v1:post:/v1/Trunks/{TrunkSid}/IpAccessControlLists"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "remove_trunk_ip_access_control_list": {
+    "endpoints": [
+      "twilio_trunking_v1:get:/v1/Trunks/{TrunkSid}/CredentialLists/{Sid}"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "list_trunk_credential_lists": {
+    "endpoints": [
+      "twilio_trunking_v1:get:/v1/Trunks/{TrunkSid}/CredentialLists"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "associate_credential_list": {
+    "endpoints": [
+      "twilio_trunking_v1:post:/v1/Trunks/{TrunkSid}/CredentialLists"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "remove_trunk_credential_list": {
+    "endpoints": [
+      "twilio_trunking_v1:get:/v1/Trunks/{TrunkSid}/CredentialLists/{Sid}"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "list_trunk_phone_numbers": {
+    "endpoints": [
+      "twilio_trunking_v1:get:/v1/Trunks/{TrunkSid}/CredentialLists"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "associate_phone_number_to_trunk": {
+    "endpoints": [
+      "twilio_trunking_v1:post:/v1/Trunks/{TrunkSid}/PhoneNumbers"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "remove_phone_number_from_trunk": {
+    "endpoints": [
+      "twilio_trunking_v1:get:/v1/Trunks/{TrunkSid}/CredentialLists/{Sid}"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "get_trunk_recording": {
+    "endpoints": [
+      "twilio_trunking_v1:get:/v1/Trunks/{TrunkSid}/CredentialLists/{Sid}"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "update_trunk_recording": {
+    "endpoints": [
+      "twilio_trunking_v1:post:/v1/Trunks/{TrunkSid}/OriginationUrls/{Sid}"
+    ],
+    "sdkPath": "client.trunking.v1.trunks"
+  },
+  "create_customer_profile": {
+    "endpoints": [
+      "twilio_trusthub_v1:post:/v1/CustomerProfiles"
+    ],
+    "sdkPath": "client.trusthub.v1.customerProfiles.create"
+  },
+  "list_customer_profiles": {
+    "endpoints": [
+      "twilio_trusthub_v1:get:/v1/CustomerProfiles"
+    ],
+    "sdkPath": "client.trusthub.v1.customerProfiles.list"
+  },
+  "list_trust_products": {
+    "endpoints": [
+      "twilio_trusthub_v1:get:/v1/TrustProducts"
+    ],
+    "sdkPath": "client.trusthub.v1.trustProducts.list"
+  },
+  "list_policies": {
+    "endpoints": [
+      "twilio_trusthub_v1:get:/v1/Policies"
+    ],
+    "sdkPath": "client.trusthub.v1.policies.list"
+  },
+  "get_customer_profile": {
+    "endpoints": [
+      "twilio_trusthub_v1:get:/v1/CustomerProfiles/{CustomerProfileSid}/ChannelEndpointAssignments/{Sid}"
+    ],
+    "sdkPath": "client.trusthub.v1.customerProfiles"
+  },
+  "update_customer_profile": {
+    "endpoints": [
+      "twilio_trusthub_v1:post:/v1/CustomerProfiles/{Sid}"
+    ],
+    "sdkPath": "client.trusthub.v1.customerProfiles"
+  },
+  "delete_customer_profile": {
+    "endpoints": [
+      "twilio_trusthub_v1:delete:/v1/CustomerProfiles/{CustomerProfileSid}/ChannelEndpointAssignments/{Sid}"
+    ],
+    "sdkPath": "client.trusthub.v1.customerProfiles"
+  },
+  "list_customer_profile_entity_assignments": {
+    "endpoints": [
+      "twilio_trusthub_v1:get:/v1/CustomerProfiles/{CustomerProfileSid}/ChannelEndpointAssignments"
+    ],
+    "sdkPath": "client.trusthub.v1"
+  },
+  "create_customer_profile_entity_assignment": {
+    "endpoints": [
+      "twilio_trusthub_v1:post:/v1/CustomerProfiles/{CustomerProfileSid}/EntityAssignments"
+    ],
+    "sdkPath": "client.trusthub.v1"
+  },
+  "delete_customer_profile_entity_assignment": {
+    "endpoints": [
+      "twilio_trusthub_v1:delete:/v1/CustomerProfiles/{CustomerProfileSid}/ChannelEndpointAssignments/{Sid}"
+    ],
+    "sdkPath": "client.trusthub.v1"
+  },
+  "get_trust_product": {
+    "endpoints": [
+      "twilio_trusthub_v1:get:/v1/TrustProducts/{TrustProductSid}/ChannelEndpointAssignments/{Sid}"
+    ],
+    "sdkPath": "client.trusthub.v1.trustProducts"
+  },
+  "create_trust_product": {
+    "endpoints": [
+      "twilio_trusthub_v1:post:/v1/TrustProducts"
+    ],
+    "sdkPath": "client.trusthub.v1.trustProducts.create"
+  },
+  "update_trust_product": {
+    "endpoints": [
+      "twilio_trusthub_v1:post:/v1/TrustProducts/{Sid}"
+    ],
+    "sdkPath": "client.trusthub.v1.trustProducts"
+  },
+  "delete_trust_product": {
+    "endpoints": [
+      "twilio_trusthub_v1:delete:/v1/TrustProducts/{TrustProductSid}/ChannelEndpointAssignments/{Sid}"
+    ],
+    "sdkPath": "client.trusthub.v1.trustProducts"
+  },
+  "list_end_users": {
+    "endpoints": [
+      "twilio_trusthub_v1:get:/v1/EndUsers"
+    ],
+    "sdkPath": "client.trusthub.v1.endUsers.list"
+  },
+  "create_end_user": {
+    "endpoints": [
+      "twilio_trusthub_v1:post:/v1/EndUsers"
+    ],
+    "sdkPath": "client.trusthub.v1.endUsers.create"
+  },
+  "list_trusthub_supporting_documents": {
+    "endpoints": [
+      "twilio_trusthub_v1:get:/v1/SupportingDocuments"
+    ],
+    "sdkPath": "client.trusthub.v1.supportingDocuments.list"
+  },
+  "start_verification": {
+    "endpoints": [
+      "twilio_verify_v2:post:/v2/Services/{ServiceSid}/Verifications"
+    ],
+    "sdkPath": "client.verify.v2"
+  },
+  "check_verification": {
+    "endpoints": [
+      "twilio_verify_v2:post:/v2/Services/{ServiceSid}/VerificationCheck"
+    ],
+    "sdkPath": "client.verify.v2.services.verificationChecks.create"
+  },
+  "get_verification_status": {
+    "endpoints": [
+      "twilio_verify_v2:get:/v2/Services/{ServiceSid}/Verifications/{Sid}"
+    ],
+    "sdkPath": "client.verify.v2.services.verifications.fetch"
+  },
+  "create_video_room": {
+    "endpoints": [
+      "twilio_video_v1:post:/v1/Rooms"
+    ],
+    "sdkPath": "client.video.v1.rooms.create"
+  },
+  "list_video_rooms": {
+    "endpoints": [
+      "twilio_video_v1:get:/v1/Rooms"
+    ],
+    "sdkPath": "client.video.v1.rooms.list"
+  },
+  "list_room_participants": {
+    "endpoints": [
+      "twilio_video_v1:get:/v1/Rooms/{RoomSid}/Participants"
+    ],
+    "sdkPath": "client.video.v1.rooms.participants.list"
+  },
+  "get_room": {
+    "endpoints": [
+      "twilio_video_v1:get:/v1/Rooms/{RoomSid}/Participants/{Sid}"
+    ],
+    "sdkPath": "client.video.v1.rooms"
+  },
+  "update_room": {
+    "endpoints": [
+      "twilio_video_v1:post:/v1/Rooms/{RoomSid}/Participants/{Sid}"
+    ],
+    "sdkPath": "client.video.v1.rooms"
+  },
+  "get_participant": {
+    "endpoints": [
+      "twilio_video_v1:get:/v1/Rooms/{RoomSid}/Participants/{ParticipantSid}/PublishedTracks/{Sid}"
+    ],
+    "sdkPath": "client.video.v1"
+  },
+  "update_participant": {
+    "endpoints": [
+      "twilio_video_v1:post:/v1/Rooms/{RoomSid}/Participants/{Sid}"
+    ],
+    "sdkPath": "client.video.v1"
+  },
+  "list_room_recordings": {
+    "endpoints": [
+      "twilio_video_v1:get:/v1/Rooms/{RoomSid}/Recordings"
+    ],
+    "sdkPath": "client.video.v1.rooms.recordings.list"
+  },
+  "list_subscribed_tracks": {
+    "endpoints": [
+      "twilio_video_v1:get:/v1/Rooms/{RoomSid}/Participants/{ParticipantSid}/SubscribedTracks"
+    ],
+    "sdkPath": "client.video.v1.rooms.participants.subscribedTracks.list"
+  },
+  "list_published_tracks": {
+    "endpoints": [
+      "twilio_video_v1:get:/v1/Rooms/{RoomSid}/Participants/{ParticipantSid}/PublishedTracks"
+    ],
+    "sdkPath": "client.video.v1"
+  },
+  "get_dialing_permissions": {
+    "endpoints": [
+      "twilio_voice_v1:get:/v1/DialingPermissions/Countries/{IsoCode}"
+    ],
+    "sdkPath": "client.voice.v1"
+  },
+  "list_dialing_permissions_countries": {
+    "endpoints": [
+      "twilio_voice_v1:get:/v1/DialingPermissions/Countries"
+    ],
+    "sdkPath": "client.voice.v1.dialingPermissions.countries.list"
+  },
+  "list_byoc_trunks": {
+    "endpoints": [
+      "twilio_voice_v1:get:/v1/ByocTrunks"
+    ],
+    "sdkPath": "client.voice.v1.byocTrunks.list"
+  },
+  "create_byoc_trunk": {
+    "endpoints": [
+      "twilio_voice_v1:post:/v1/ByocTrunks"
+    ],
+    "sdkPath": "client.voice.v1.byocTrunks.create"
+  },
+  "get_byoc_trunk": {
+    "endpoints": [
+      "twilio_voice_v1:get:/v1/ByocTrunks/{Sid}"
+    ],
+    "sdkPath": "client.voice.v1.byocTrunks"
+  },
+  "update_byoc_trunk": {
+    "endpoints": [
+      "twilio_voice_v1:post:/v1/ByocTrunks/{Sid}"
+    ],
+    "sdkPath": "client.voice.v1.byocTrunks"
+  },
+  "delete_byoc_trunk": {
+    "endpoints": [
+      "twilio_voice_v1:delete:/v1/ByocTrunks/{Sid}"
+    ],
+    "sdkPath": "client.voice.v1.byocTrunks"
+  },
+  "list_connection_policies": {
+    "endpoints": [
+      "twilio_voice_v1:get:/v1/ConnectionPolicies"
+    ],
+    "sdkPath": "client.voice.v1.connectionPolicies.list"
+  },
+  "create_connection_policy": {
+    "endpoints": [
+      "twilio_voice_v1:post:/v1/ConnectionPolicies"
+    ],
+    "sdkPath": "client.voice.v1.connectionPolicies.create"
+  },
+  "get_connection_policy": {
+    "endpoints": [
+      "twilio_voice_v1:get:/v1/ConnectionPolicies/{Sid}"
+    ],
+    "sdkPath": "client.voice.v1.connectionPolicies"
+  },
+  "delete_connection_policy": {
+    "endpoints": [
+      "twilio_voice_v1:delete:/v1/ConnectionPolicies/{Sid}"
+    ],
+    "sdkPath": "client.voice.v1.connectionPolicies"
+  },
+  "list_connection_policy_targets": {
+    "endpoints": [
+      "twilio_voice_v1:get:/v1/ConnectionPolicies/{ConnectionPolicySid}/Targets"
+    ],
+    "sdkPath": "client.voice.v1.connectionPolicies.targets.list"
+  },
+  "create_connection_policy_target": {
+    "endpoints": [
+      "twilio_voice_v1:post:/v1/ConnectionPolicies/{ConnectionPolicySid}/Targets"
+    ],
+    "sdkPath": "client.voice.v1"
+  },
+  "delete_connection_policy_target": {
+    "endpoints": [
+      "twilio_voice_v1:delete:/v1/ConnectionPolicies/{ConnectionPolicySid}/Targets/{Sid}"
+    ],
+    "sdkPath": "client.voice.v1.connectionPolicies.targets.remove"
+  },
+  "get_call_logs": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Calls.json"
+    ],
+    "sdkPath": "client.calls.list"
+  },
+  "make_call": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/Calls.json"
+    ],
+    "sdkPath": "client.calls.create"
+  },
+  "get_recording": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Recordings/{RecordingSid}/Transcriptions/{Sid}.json"
+    ],
+    "sdkPath": "client.recordings"
+  },
+  "list_conferences": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Conferences.json"
+    ],
+    "sdkPath": "client.conferences.list"
+  },
+  "get_conference": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Conferences/{ConferenceSid}/Recordings/{Sid}.json"
+    ],
+    "sdkPath": "client.conferences"
+  },
+  "update_conference": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/Conferences/{Sid}.json"
+    ],
+    "sdkPath": "client.conferences"
+  },
+  "list_conference_participants": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Conferences/{ConferenceSid}/Participants.json"
+    ],
+    "sdkPath": "client.conferences"
+  },
+  "get_conference_participant": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Conferences/{ConferenceSid}/Participants/{CallSid}.json"
+    ],
+    "sdkPath": "client.conferences"
+  },
+  "update_conference_participant": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/Conferences/{ConferenceSid}/Participants/{CallSid}.json"
+    ],
+    "sdkPath": "client.conferences"
+  },
+  "add_participant_to_conference": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/Conferences/{ConferenceSid}/Participants.json"
+    ],
+    "sdkPath": "client.conferences"
+  },
+  "get_call": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Notifications/{Sid}.json"
+    ],
+    "sdkPath": "client.calls"
+  },
+  "update_call": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/Calls/{Sid}.json"
+    ],
+    "sdkPath": "client.calls"
+  },
+  "list_call_recordings": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Events.json"
+    ],
+    "sdkPath": "client.calls"
+  },
+  "list_recordings": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Recordings.json"
+    ],
+    "sdkPath": "client.recordings.list"
+  },
+  "delete_recording": {
+    "endpoints": [
+      "twilio_api_v2010:delete:/2010-04-01/Accounts/{AccountSid}/Recordings/{RecordingSid}/Transcriptions/{Sid}.json"
+    ],
+    "sdkPath": "client.recordings"
+  },
+  "start_call_recording": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Recordings.json"
+    ],
+    "sdkPath": "client.calls"
+  },
+  "update_call_recording": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Recordings/{Sid}.json"
+    ],
+    "sdkPath": "client.calls"
+  },
+  "delete_call_recording": {
+    "endpoints": [
+      "twilio_api_v2010:delete:/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Recordings/{Sid}.json"
+    ],
+    "sdkPath": "client.calls"
+  },
+  "get_call_summary": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Notifications/{Sid}.json"
+    ],
+    "sdkPath": "client.insights.v1.calls"
+  },
+  "list_call_events": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Events.json"
+    ],
+    "sdkPath": "client.insights.v1.calls"
+  },
+  "list_call_metrics": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Events.json"
+    ],
+    "sdkPath": "client.insights.v1.calls"
+  },
+  "get_conference_summary": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Conferences/{ConferenceSid}/Recordings/{Sid}.json"
+    ],
+    "sdkPath": "client.insights.v1.conferences"
+  },
+  "list_conference_participant_summaries": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Conferences/{ConferenceSid}/Recordings.json"
+    ],
+    "sdkPath": "client.insights.v1"
+  },
+  "get_conference_participant_summary": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Conferences/{ConferenceSid}/Recordings/{Sid}.json"
+    ],
+    "sdkPath": "client.insights.v1"
+  },
+  "list_recording_transcriptions": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Recordings/{RecordingSid}/Transcriptions.json"
+    ],
+    "sdkPath": "client.recordings"
+  },
+  "get_transcription": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Recordings/{RecordingSid}/Transcriptions/{Sid}.json"
+    ],
+    "sdkPath": "client.transcriptions"
+  },
+  "start_call_stream": {
+    "endpoints": [
+      "twilio_api_v2010:post:/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Streams.json"
+    ],
+    "sdkPath": "client.calls"
+  },
+  "stop_call_stream": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Events.json"
+    ],
+    "sdkPath": "client.calls"
+  },
+  "list_conference_recordings": {
+    "endpoints": [
+      "twilio_api_v2010:get:/2010-04-01/Accounts/{AccountSid}/Conferences.json"
+    ],
+    "sdkPath": "client.conferences"
+  }
+}

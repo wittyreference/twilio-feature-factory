@@ -9,6 +9,7 @@ This directory contains CLI scripts for project setup and maintenance.
 | `setup.js` | `npm run setup` | Interactive setup for provisioning Twilio resources |
 | `enable-autonomous.sh` | `./scripts/enable-autonomous.sh` | Launch Claude Code in autonomous mode (interactive) |
 | `run-headless.sh` | `./scripts/run-headless.sh` | Run Claude Code non-interactively via `claude -p` (CI/CD) |
+| `api-sync/` | `cd scripts/api-sync && npm run sync` | Automated Twilio API drift detection and coverage analysis |
 
 ## Setup Script
 
@@ -258,3 +259,64 @@ These were discovered across 16 headless sessions and 4 rounds of prompt iterati
 | **Parallel sessions pick same UC** | `random.choice()` with same timing produces identical results | Pass `FORCE_USE_CASE=UCN` per session for diversity |
 | **Parallel sessions share working directory** | Multiple `git checkout -b` commands in the same repo — last one wins | All code lands on one branch; acceptable for validation but unexpected |
 | **Wrong prompt file wastes sessions** | `--prompt-file .meta/random-validation.md` (interactive plan) vs `--task random-validation` (headless-optimized) | Always use `--task random-validation` for headless runs |
+
+## API Sync Script
+
+The `api-sync/` directory contains an automated pipeline for detecting drift between Twilio's OpenAPI specs and our MCP tool implementations.
+
+### What It Does
+
+1. **Snapshot**: Fetches the latest Twilio OpenAPI specs from `github.com/twilio/twilio-oai`, normalizes them into a flat endpoint inventory
+2. **Inventory**: Extracts tool metadata from 26 MCP tool files via regex (names, SDK calls, Zod params)
+3. **Diff**: Compares current vs previous OAI snapshots for new/removed/changed endpoints. Also compares against our tool inventory for coverage analysis
+4. **Report**: Generates dual-format output (JSON for subagents, Markdown for humans)
+
+### Usage
+
+```bash
+cd scripts/api-sync
+
+# Full pipeline (snapshot → diff → report)
+npm run sync
+
+# Individual stages
+npm run snapshot           # Fetch latest OAI specs
+npm run extract            # Parse MCP tool files
+npm run diff               # Compare snapshots + coverage
+npm run report             # Generate Markdown report
+
+# Force re-scan even if version unchanged
+FORCE=true npm run snapshot
+
+# Run tests
+npm test
+```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `sync-state.json` | Tracks last synced OAI/CLI/SDK versions |
+| `tool-endpoint-map.json` | Maps 272 MCP tools to OAI endpoints |
+| `snapshots/<version>.json` | Normalized OAI API surface snapshots |
+| `reports/latest.json` | Machine-readable drift report |
+| `reports/latest.md` | Human-readable Markdown report |
+| `inventory.json` | Extracted MCP tool metadata |
+| `headless-tasks/review-drift.md` | Headless prompt for acting on drift |
+
+### Automation
+
+The pipeline runs weekly via `.github/workflows/api-drift-check.yml`:
+- **Schedule**: Every Monday 9 AM UTC
+- **Manual trigger**: `workflow_dispatch` with optional force flag
+- **Outputs**: Creates GitHub Issue with `api-drift` label when drift is detected
+- **Commits**: Snapshots and reports are committed automatically
+
+### Report Contents
+
+- **Breaking changes**: From CHANGES.md annotations
+- **New/removed endpoints**: Between OAI versions
+- **Parameter changes**: Added/removed params between versions
+- **Coverage summary**: % of OAI endpoints with MCP tools
+- **Tool parameter drift**: MCP tools missing OAI params
+- **Domain coverage table**: Per-domain coverage breakdown

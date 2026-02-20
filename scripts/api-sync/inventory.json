@@ -1,0 +1,3193 @@
+[
+  {
+    "name": "get_account",
+    "file": "accounts.ts",
+    "sdkCalls": [
+      "client.api.v2010.accounts",
+      "client.api.v2010.accounts"
+    ],
+    "params": [
+      "accountSid"
+    ]
+  },
+  {
+    "name": "list_accounts",
+    "file": "accounts.ts",
+    "sdkCalls": [
+      "client.api.v2010.accounts.list"
+    ],
+    "params": [
+      "friendlyName",
+      "status",
+      "limit"
+    ]
+  },
+  {
+    "name": "create_subaccount",
+    "file": "accounts.ts",
+    "sdkCalls": [
+      "client.api.v2010.accounts.create"
+    ],
+    "params": [
+      "friendlyName"
+    ]
+  },
+  {
+    "name": "update_account",
+    "file": "accounts.ts",
+    "sdkCalls": [
+      "client.api.v2010.accounts"
+    ],
+    "params": [
+      "accountSid",
+      "friendlyName",
+      "status"
+    ]
+  },
+  {
+    "name": "list_usage_records",
+    "file": "accounts.ts",
+    "sdkCalls": [
+      "client.usage.records.list"
+    ],
+    "params": [
+      "category",
+      "startDate",
+      "endDate",
+      "includeSubaccounts",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_usage_records_daily",
+    "file": "accounts.ts",
+    "sdkCalls": [
+      "client.usage.records.daily.list"
+    ],
+    "params": [
+      "category",
+      "startDate",
+      "endDate",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_usage_records_monthly",
+    "file": "accounts.ts",
+    "sdkCalls": [
+      "client.usage.records.monthly.list"
+    ],
+    "params": [
+      "category",
+      "startDate",
+      "endDate",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_usage_triggers",
+    "file": "accounts.ts",
+    "sdkCalls": [
+      "client.usage.triggers.list"
+    ],
+    "params": [
+      "recurring",
+      "triggerBy",
+      "usageCategory",
+      "limit"
+    ]
+  },
+  {
+    "name": "create_usage_trigger",
+    "file": "accounts.ts",
+    "sdkCalls": [
+      "client.usage.triggers.create"
+    ],
+    "params": [
+      "callbackUrl",
+      "triggerValue",
+      "usageCategory",
+      "callbackMethod",
+      "friendlyName",
+      "recurring",
+      "triggerBy"
+    ]
+  },
+  {
+    "name": "get_usage_trigger",
+    "file": "accounts.ts",
+    "sdkCalls": [
+      "client.usage.triggers"
+    ],
+    "params": [
+      "triggerSid"
+    ]
+  },
+  {
+    "name": "update_usage_trigger",
+    "file": "accounts.ts",
+    "sdkCalls": [
+      "client.usage.triggers"
+    ],
+    "params": [
+      "triggerSid",
+      "callbackUrl",
+      "callbackMethod",
+      "friendlyName"
+    ]
+  },
+  {
+    "name": "delete_usage_trigger",
+    "file": "accounts.ts",
+    "sdkCalls": [
+      "client.usage.triggers"
+    ],
+    "params": [
+      "triggerSid"
+    ]
+  },
+  {
+    "name": "get_account_balance",
+    "file": "accounts.ts",
+    "sdkCalls": [
+      "client.balance.fetch"
+    ],
+    "params": []
+  },
+  {
+    "name": "list_addresses",
+    "file": "addresses.ts",
+    "sdkCalls": [
+      "client.addresses.list"
+    ],
+    "params": [
+      "customerName",
+      "friendlyName",
+      "isoCountry",
+      "limit"
+    ]
+  },
+  {
+    "name": "get_address",
+    "file": "addresses.ts",
+    "sdkCalls": [
+      "client.addresses"
+    ],
+    "params": [
+      "addressSid"
+    ]
+  },
+  {
+    "name": "create_address",
+    "file": "addresses.ts",
+    "sdkCalls": [
+      "client.addresses.create"
+    ],
+    "params": [
+      "customerName",
+      "street",
+      "city",
+      "region",
+      "postalCode",
+      "isoCountry",
+      "friendlyName",
+      "emergencyEnabled",
+      "autoCorrectAddress"
+    ]
+  },
+  {
+    "name": "update_address",
+    "file": "addresses.ts",
+    "sdkCalls": [
+      "client.addresses"
+    ],
+    "params": [
+      "addressSid",
+      "customerName",
+      "street",
+      "city",
+      "region",
+      "postalCode",
+      "friendlyName",
+      "emergencyEnabled",
+      "autoCorrectAddress"
+    ]
+  },
+  {
+    "name": "delete_address",
+    "file": "addresses.ts",
+    "sdkCalls": [
+      "client.addresses"
+    ],
+    "params": [
+      "addressSid"
+    ]
+  },
+  {
+    "name": "list_address_phone_numbers",
+    "file": "addresses.ts",
+    "sdkCalls": [
+      "client.addresses"
+    ],
+    "params": [
+      "addressSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "create_content_template",
+    "file": "content.ts",
+    "sdkCalls": [
+      "client.content.v1.contents.create"
+    ],
+    "params": [
+      "friendlyName",
+      "body",
+      "variables"
+    ]
+  },
+  {
+    "name": "list_content_templates",
+    "file": "content.ts",
+    "sdkCalls": [
+      "client.content.v1.contents.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "get_content_template",
+    "file": "content.ts",
+    "sdkCalls": [
+      "client.content.v1.contents"
+    ],
+    "params": [
+      "contentSid"
+    ]
+  },
+  {
+    "name": "delete_content_template",
+    "file": "content.ts",
+    "sdkCalls": [
+      "client.content.v1.contents"
+    ],
+    "params": [
+      "contentSid"
+    ]
+  },
+  {
+    "name": "get_debugger_logs",
+    "file": "debugger.ts",
+    "sdkCalls": [
+      "client.monitor.v1.alerts.list"
+    ],
+    "params": [
+      "limit",
+      "logLevel",
+      "startDate",
+      "endDate"
+    ]
+  },
+  {
+    "name": "analyze_errors",
+    "file": "debugger.ts",
+    "sdkCalls": [
+      "client.monitor.v1.alerts.list"
+    ],
+    "params": [
+      "hours"
+    ]
+  },
+  {
+    "name": "get_usage_records",
+    "file": "debugger.ts",
+    "sdkCalls": [
+      "client.usage.records.list"
+    ],
+    "params": [
+      "startDate",
+      "endDate"
+    ]
+  },
+  {
+    "name": "list_api_keys",
+    "file": "iam.ts",
+    "sdkCalls": [
+      "client.keys.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "get_api_key",
+    "file": "iam.ts",
+    "sdkCalls": [
+      "client.keys"
+    ],
+    "params": [
+      "keySid"
+    ]
+  },
+  {
+    "name": "create_api_key",
+    "file": "iam.ts",
+    "sdkCalls": [
+      "client.newKeys.create"
+    ],
+    "params": [
+      "friendlyName"
+    ]
+  },
+  {
+    "name": "update_api_key",
+    "file": "iam.ts",
+    "sdkCalls": [
+      "client.keys"
+    ],
+    "params": [
+      "keySid",
+      "friendlyName"
+    ]
+  },
+  {
+    "name": "delete_api_key",
+    "file": "iam.ts",
+    "sdkCalls": [
+      "client.keys"
+    ],
+    "params": [
+      "keySid"
+    ]
+  },
+  {
+    "name": "list_signing_keys",
+    "file": "iam.ts",
+    "sdkCalls": [
+      "client.signingKeys.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "create_signing_key",
+    "file": "iam.ts",
+    "sdkCalls": [
+      "client.newSigningKeys.create"
+    ],
+    "params": [
+      "friendlyName"
+    ]
+  },
+  {
+    "name": "delete_signing_key",
+    "file": "iam.ts",
+    "sdkCalls": [
+      "client.signingKeys"
+    ],
+    "params": [
+      "keySid"
+    ]
+  },
+  {
+    "name": "list_intelligence_services",
+    "file": "intelligence.ts",
+    "sdkCalls": [
+      "client.intelligence.v2.services.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "list_transcripts",
+    "file": "intelligence.ts",
+    "sdkCalls": [
+      "client.intelligence.v2.transcripts.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "get_transcript",
+    "file": "intelligence.ts",
+    "sdkCalls": [
+      "client.intelligence.v2.transcripts"
+    ],
+    "params": [
+      "transcriptSid"
+    ]
+  },
+  {
+    "name": "get_intelligence_service",
+    "file": "intelligence.ts",
+    "sdkCalls": [
+      "client.intelligence.v2.services"
+    ],
+    "params": [
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "delete_transcript",
+    "file": "intelligence.ts",
+    "sdkCalls": [
+      "client.intelligence.v2.transcripts"
+    ],
+    "params": [
+      "transcriptSid"
+    ]
+  },
+  {
+    "name": "list_sentences",
+    "file": "intelligence.ts",
+    "sdkCalls": [
+      "client.intelligence.v2"
+    ],
+    "params": [
+      "transcriptSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_operator_results",
+    "file": "intelligence.ts",
+    "sdkCalls": [
+      "client.intelligence.v2"
+    ],
+    "params": [
+      "transcriptSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "get_transcript_media",
+    "file": "intelligence.ts",
+    "sdkCalls": [
+      "client.intelligence.v2"
+    ],
+    "params": [
+      "transcriptSid"
+    ]
+  },
+  {
+    "name": "create_transcript",
+    "file": "intelligence.ts",
+    "sdkCalls": [
+      "client.intelligence.v2.transcripts.create"
+    ],
+    "params": [
+      "serviceSid",
+      "mediaUrl",
+      "customerKey"
+    ]
+  },
+  {
+    "name": "lookup_phone_number",
+    "file": "lookups.ts",
+    "sdkCalls": [
+      "client.lookups.v2"
+    ],
+    "params": [
+      "phoneNumber",
+      "fields"
+    ]
+  },
+  {
+    "name": "check_fraud_risk",
+    "file": "lookups.ts",
+    "sdkCalls": [
+      "client.lookups.v2"
+    ],
+    "params": [
+      "phoneNumber",
+      "checks"
+    ]
+  },
+  {
+    "name": "list_video_recordings",
+    "file": "media.ts",
+    "sdkCalls": [
+      "client.video.v1.recordings.list"
+    ],
+    "params": [
+      "status",
+      "sourceSid",
+      "groupingSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "get_video_recording",
+    "file": "media.ts",
+    "sdkCalls": [
+      "client.video.v1.recordings"
+    ],
+    "params": [
+      "recordingSid"
+    ]
+  },
+  {
+    "name": "list_compositions",
+    "file": "media.ts",
+    "sdkCalls": [
+      "client.video.v1.compositions.list"
+    ],
+    "params": [
+      "status",
+      "roomSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "delete_video_recording",
+    "file": "media.ts",
+    "sdkCalls": [
+      "client.video.v1.recordings"
+    ],
+    "params": [
+      "recordingSid"
+    ]
+  },
+  {
+    "name": "get_composition",
+    "file": "media.ts",
+    "sdkCalls": [
+      "client.video.v1.compositions"
+    ],
+    "params": [
+      "compositionSid"
+    ]
+  },
+  {
+    "name": "create_composition",
+    "file": "media.ts",
+    "sdkCalls": [
+      "client.video.v1.compositions.create"
+    ],
+    "params": [
+      "roomSid",
+      "audioSources",
+      "videoLayout",
+      "resolution",
+      "format",
+      "statusCallback",
+      "statusCallbackMethod",
+      "trim"
+    ]
+  },
+  {
+    "name": "delete_composition",
+    "file": "media.ts",
+    "sdkCalls": [
+      "client.video.v1.compositions"
+    ],
+    "params": [
+      "compositionSid"
+    ]
+  },
+  {
+    "name": "list_composition_hooks",
+    "file": "media.ts",
+    "sdkCalls": [
+      "client.video.v1.compositionHooks.list"
+    ],
+    "params": [
+      "enabled",
+      "friendlyName",
+      "limit"
+    ]
+  },
+  {
+    "name": "create_composition_hook",
+    "file": "media.ts",
+    "sdkCalls": [
+      "client.video.v1.compositionHooks.create"
+    ],
+    "params": [
+      "friendlyName",
+      "enabled",
+      "audioSources",
+      "videoLayout",
+      "resolution",
+      "format",
+      "statusCallback"
+    ]
+  },
+  {
+    "name": "delete_composition_hook",
+    "file": "media.ts",
+    "sdkCalls": [
+      "client.video.v1.compositionHooks"
+    ],
+    "params": [
+      "compositionHookSid"
+    ]
+  },
+  {
+    "name": "create_messaging_service",
+    "file": "messaging-services.ts",
+    "sdkCalls": [
+      "client.messaging.v1.services.create"
+    ],
+    "params": [
+      "friendlyName",
+      "inboundRequestUrl",
+      "inboundMethod",
+      "fallbackUrl",
+      "statusCallback",
+      "stickySender",
+      "useInboundWebhookOnNumber"
+    ]
+  },
+  {
+    "name": "add_number_to_service",
+    "file": "messaging-services.ts",
+    "sdkCalls": [
+      "client.messaging.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "phoneNumberSid"
+    ]
+  },
+  {
+    "name": "get_a2p_status",
+    "file": "messaging-services.ts",
+    "sdkCalls": [
+      "client.messaging.v1.services",
+      "client.messaging.v1"
+    ],
+    "params": [
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "list_messaging_services",
+    "file": "messaging-services.ts",
+    "sdkCalls": [
+      "client.messaging.v1.services.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "get_messaging_service",
+    "file": "messaging-services.ts",
+    "sdkCalls": [
+      "client.messaging.v1.services"
+    ],
+    "params": [
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "update_messaging_service",
+    "file": "messaging-services.ts",
+    "sdkCalls": [
+      "client.messaging.v1.services"
+    ],
+    "params": [
+      "serviceSid",
+      "friendlyName",
+      "inboundRequestUrl",
+      "inboundMethod",
+      "fallbackUrl",
+      "statusCallback",
+      "stickySender",
+      "smartEncoding",
+      "mmsConverter",
+      "fallbackToLongCode"
+    ]
+  },
+  {
+    "name": "delete_messaging_service",
+    "file": "messaging-services.ts",
+    "sdkCalls": [
+      "client.messaging.v1.services"
+    ],
+    "params": [
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "list_phone_numbers_in_service",
+    "file": "messaging-services.ts",
+    "sdkCalls": [
+      "client.messaging.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "remove_number_from_service",
+    "file": "messaging-services.ts",
+    "sdkCalls": [
+      "client.messaging.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "phoneNumberSid"
+    ]
+  },
+  {
+    "name": "list_alpha_senders",
+    "file": "messaging-services.ts",
+    "sdkCalls": [
+      "client.messaging.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "add_alpha_sender",
+    "file": "messaging-services.ts",
+    "sdkCalls": [
+      "client.messaging.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "alphaSender"
+    ]
+  },
+  {
+    "name": "remove_alpha_sender",
+    "file": "messaging-services.ts",
+    "sdkCalls": [
+      "client.messaging.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "alphaSenderSid"
+    ]
+  },
+  {
+    "name": "list_short_codes",
+    "file": "messaging-services.ts",
+    "sdkCalls": [
+      "client.messaging.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "add_short_code",
+    "file": "messaging-services.ts",
+    "sdkCalls": [
+      "client.messaging.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "shortCodeSid"
+    ]
+  },
+  {
+    "name": "send_sms",
+    "file": "messaging.ts",
+    "sdkCalls": [
+      "client.messages.create"
+    ],
+    "params": [
+      "to",
+      "body",
+      "from"
+    ]
+  },
+  {
+    "name": "send_mms",
+    "file": "messaging.ts",
+    "sdkCalls": [
+      "client.messages.create"
+    ],
+    "params": [
+      "to",
+      "body",
+      "mediaUrl",
+      "from"
+    ]
+  },
+  {
+    "name": "get_message_logs",
+    "file": "messaging.ts",
+    "sdkCalls": [
+      "client.messages.list"
+    ],
+    "params": [
+      "limit",
+      "to",
+      "from",
+      "dateSentAfter",
+      "dateSentBefore"
+    ]
+  },
+  {
+    "name": "get_message_status",
+    "file": "messaging.ts",
+    "sdkCalls": [
+      "client.messages"
+    ],
+    "params": [
+      "messageSid"
+    ]
+  },
+  {
+    "name": "list_notify_services",
+    "file": "notify.ts",
+    "sdkCalls": [
+      "client.notify.v1.services.list"
+    ],
+    "params": [
+      "friendlyName",
+      "limit"
+    ]
+  },
+  {
+    "name": "get_notify_service",
+    "file": "notify.ts",
+    "sdkCalls": [
+      "client.notify.v1.services"
+    ],
+    "params": [
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "create_notify_service",
+    "file": "notify.ts",
+    "sdkCalls": [
+      "client.notify.v1.services.create"
+    ],
+    "params": [
+      "friendlyName",
+      "apnCredentialSid",
+      "fcmCredentialSid",
+      "messagingServiceSid",
+      "logEnabled"
+    ]
+  },
+  {
+    "name": "update_notify_service",
+    "file": "notify.ts",
+    "sdkCalls": [
+      "client.notify.v1.services"
+    ],
+    "params": [
+      "serviceSid",
+      "friendlyName",
+      "apnCredentialSid",
+      "fcmCredentialSid",
+      "messagingServiceSid",
+      "logEnabled"
+    ]
+  },
+  {
+    "name": "delete_notify_service",
+    "file": "notify.ts",
+    "sdkCalls": [
+      "client.notify.v1.services"
+    ],
+    "params": [
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "list_notify_bindings",
+    "file": "notify.ts",
+    "sdkCalls": [
+      "client.notify.v1.services"
+    ],
+    "params": [
+      "serviceSid",
+      "identity",
+      "bindingType",
+      "limit"
+    ]
+  },
+  {
+    "name": "get_notify_binding",
+    "file": "notify.ts",
+    "sdkCalls": [
+      "client.notify.v1.services"
+    ],
+    "params": [
+      "serviceSid",
+      "bindingSid"
+    ]
+  },
+  {
+    "name": "create_notify_binding",
+    "file": "notify.ts",
+    "sdkCalls": [
+      "client.notify.v1.services"
+    ],
+    "params": [
+      "serviceSid",
+      "identity",
+      "bindingType",
+      "address",
+      "tags",
+      "credentialSid"
+    ]
+  },
+  {
+    "name": "delete_notify_binding",
+    "file": "notify.ts",
+    "sdkCalls": [
+      "client.notify.v1.services"
+    ],
+    "params": [
+      "serviceSid",
+      "bindingSid"
+    ]
+  },
+  {
+    "name": "send_notification",
+    "file": "notify.ts",
+    "sdkCalls": [
+      "client.notify.v1.services"
+    ],
+    "params": [
+      "serviceSid",
+      "identity",
+      "tag",
+      "body",
+      "title",
+      "sound",
+      "data",
+      "priority",
+      "ttl"
+    ]
+  },
+  {
+    "name": "list_phone_numbers",
+    "file": "phone-numbers.ts",
+    "sdkCalls": [
+      "client.incomingPhoneNumbers.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "configure_webhook",
+    "file": "phone-numbers.ts",
+    "sdkCalls": [
+      "client.incomingPhoneNumbers"
+    ],
+    "params": [
+      "phoneNumberSid",
+      "voiceUrl",
+      "voiceMethod",
+      "smsUrl",
+      "smsMethod",
+      "statusCallback"
+    ]
+  },
+  {
+    "name": "search_available_numbers",
+    "file": "phone-numbers.ts",
+    "sdkCalls": [
+      "client.availablePhoneNumbers"
+    ],
+    "params": [
+      "countryCode",
+      "areaCode",
+      "contains",
+      "smsEnabled",
+      "voiceEnabled",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_voice_pricing_countries",
+    "file": "pricing.ts",
+    "sdkCalls": [
+      "client.pricing.v1.voice.countries.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "get_voice_pricing_country",
+    "file": "pricing.ts",
+    "sdkCalls": [
+      "client.pricing.v1.voice.countries"
+    ],
+    "params": [
+      "isoCountry"
+    ]
+  },
+  {
+    "name": "get_voice_pricing_number",
+    "file": "pricing.ts",
+    "sdkCalls": [
+      "client.pricing.v1.voice.numbers"
+    ],
+    "params": [
+      "phoneNumber"
+    ]
+  },
+  {
+    "name": "list_messaging_pricing_countries",
+    "file": "pricing.ts",
+    "sdkCalls": [
+      "client.pricing.v1.messaging.countries.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "get_messaging_pricing_country",
+    "file": "pricing.ts",
+    "sdkCalls": [
+      "client.pricing.v1.messaging.countries"
+    ],
+    "params": [
+      "isoCountry"
+    ]
+  },
+  {
+    "name": "list_phone_number_pricing_countries",
+    "file": "pricing.ts",
+    "sdkCalls": [
+      "client.pricing.v1.phoneNumbers.countries.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "get_phone_number_pricing_country",
+    "file": "pricing.ts",
+    "sdkCalls": [
+      "client.pricing.v1.phoneNumbers.countries"
+    ],
+    "params": [
+      "isoCountry"
+    ]
+  },
+  {
+    "name": "create_proxy_service",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1.services.create"
+    ],
+    "params": [
+      "uniqueName",
+      "callbackUrl",
+      "geoMatchLevel",
+      "numberSelectionBehavior",
+      "defaultTtl"
+    ]
+  },
+  {
+    "name": "create_proxy_session",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "uniqueName",
+      "ttl",
+      "mode",
+      "status"
+    ]
+  },
+  {
+    "name": "add_proxy_participant",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "sessionSid",
+      "identifier",
+      "friendlyName",
+      "proxyIdentifier"
+    ]
+  },
+  {
+    "name": "list_proxy_sessions",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "status",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_proxy_services",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1.services.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "get_proxy_service",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1.services"
+    ],
+    "params": [
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "update_proxy_service",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1.services"
+    ],
+    "params": [
+      "serviceSid",
+      "uniqueName",
+      "defaultTtl",
+      "callbackUrl",
+      "geoMatchLevel",
+      "numberSelectionBehavior"
+    ]
+  },
+  {
+    "name": "delete_proxy_service",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1.services"
+    ],
+    "params": [
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "get_proxy_session",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "sessionSid"
+    ]
+  },
+  {
+    "name": "update_proxy_session",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "sessionSid",
+      "status",
+      "ttl"
+    ]
+  },
+  {
+    "name": "delete_proxy_session",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "sessionSid"
+    ]
+  },
+  {
+    "name": "list_proxy_participants",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "sessionSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "remove_proxy_participant",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "sessionSid",
+      "participantSid"
+    ]
+  },
+  {
+    "name": "list_proxy_interactions",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "sessionSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_proxy_phone_numbers",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "add_proxy_phone_number",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "phoneNumberSid"
+    ]
+  },
+  {
+    "name": "remove_proxy_phone_number",
+    "file": "proxy.ts",
+    "sdkCalls": [
+      "client.proxy.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "phoneNumberSid"
+    ]
+  },
+  {
+    "name": "list_regulatory_bundles",
+    "file": "regulatory.ts",
+    "sdkCalls": [
+      "client.numbers.v2.regulatoryCompliance.bundles.list"
+    ],
+    "params": [
+      "status",
+      "friendlyName",
+      "regulationSid",
+      "isoCountry",
+      "numberType",
+      "limit"
+    ]
+  },
+  {
+    "name": "get_bundle_status",
+    "file": "regulatory.ts",
+    "sdkCalls": [
+      "client.numbers.v2.regulatoryCompliance"
+    ],
+    "params": [
+      "bundleSid"
+    ]
+  },
+  {
+    "name": "list_regulatory_supporting_documents",
+    "file": "regulatory.ts",
+    "sdkCalls": [
+      "client.numbers.v2.regulatoryCompliance"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "list_regulations",
+    "file": "regulatory.ts",
+    "sdkCalls": [
+      "client.numbers.v2.regulatoryCompliance.regulations.list"
+    ],
+    "params": [
+      "isoCountry",
+      "numberType",
+      "endUserType",
+      "limit"
+    ]
+  },
+  {
+    "name": "create_regulatory_bundle",
+    "file": "regulatory.ts",
+    "sdkCalls": [
+      "client.numbers.v2.regulatoryCompliance.bundles.create"
+    ],
+    "params": [
+      "friendlyName",
+      "email",
+      "regulationSid",
+      "isoCountry",
+      "endUserType",
+      "numberType",
+      "statusCallback"
+    ]
+  },
+  {
+    "name": "update_regulatory_bundle",
+    "file": "regulatory.ts",
+    "sdkCalls": [
+      "client.numbers.v2.regulatoryCompliance"
+    ],
+    "params": [
+      "bundleSid",
+      "friendlyName",
+      "email",
+      "statusCallback",
+      "status"
+    ]
+  },
+  {
+    "name": "delete_regulatory_bundle",
+    "file": "regulatory.ts",
+    "sdkCalls": [
+      "client.numbers.v2.regulatoryCompliance.bundles"
+    ],
+    "params": [
+      "bundleSid"
+    ]
+  },
+  {
+    "name": "list_bundle_item_assignments",
+    "file": "regulatory.ts",
+    "sdkCalls": [
+      "client.numbers.v2.regulatoryCompliance"
+    ],
+    "params": [
+      "bundleSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "create_bundle_item_assignment",
+    "file": "regulatory.ts",
+    "sdkCalls": [
+      "client.numbers.v2.regulatoryCompliance"
+    ],
+    "params": [
+      "bundleSid",
+      "objectSid"
+    ]
+  },
+  {
+    "name": "delete_bundle_item_assignment",
+    "file": "regulatory.ts",
+    "sdkCalls": [
+      "client.numbers.v2.regulatoryCompliance"
+    ],
+    "params": [
+      "bundleSid",
+      "assignmentSid"
+    ]
+  },
+  {
+    "name": "get_supporting_document",
+    "file": "regulatory.ts",
+    "sdkCalls": [
+      "client.numbers.v2.regulatoryCompliance"
+    ],
+    "params": [
+      "documentSid"
+    ]
+  },
+  {
+    "name": "create_supporting_document",
+    "file": "regulatory.ts",
+    "sdkCalls": [
+      "client.numbers.v2.regulatoryCompliance"
+    ],
+    "params": [
+      "friendlyName",
+      "type",
+      "attributes"
+    ]
+  },
+  {
+    "name": "update_supporting_document",
+    "file": "regulatory.ts",
+    "sdkCalls": [
+      "client.numbers.v2.regulatoryCompliance"
+    ],
+    "params": [
+      "documentSid",
+      "friendlyName",
+      "attributes"
+    ]
+  },
+  {
+    "name": "delete_supporting_document",
+    "file": "regulatory.ts",
+    "sdkCalls": [
+      "client.numbers.v2.regulatoryCompliance"
+    ],
+    "params": [
+      "documentSid"
+    ]
+  },
+  {
+    "name": "list_regulatory_end_users",
+    "file": "regulatory.ts",
+    "sdkCalls": [
+      "client.numbers.v2.regulatoryCompliance"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "create_regulatory_end_user",
+    "file": "regulatory.ts",
+    "sdkCalls": [
+      "client.numbers.v2.regulatoryCompliance"
+    ],
+    "params": [
+      "friendlyName",
+      "type",
+      "attributes"
+    ]
+  },
+  {
+    "name": "list_services",
+    "file": "serverless.ts",
+    "sdkCalls": [
+      "client.serverless.v1.services.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "list_functions",
+    "file": "serverless.ts",
+    "sdkCalls": [
+      "client.serverless.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_environments",
+    "file": "serverless.ts",
+    "sdkCalls": [
+      "client.serverless.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "get_build_status",
+    "file": "serverless.ts",
+    "sdkCalls": [
+      "client.serverless.v1",
+      "client.serverless.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "buildSid"
+    ]
+  },
+  {
+    "name": "get_service",
+    "file": "serverless.ts",
+    "sdkCalls": [
+      "client.serverless.v1.services"
+    ],
+    "params": [
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "list_builds",
+    "file": "serverless.ts",
+    "sdkCalls": [
+      "client.serverless.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "get_function",
+    "file": "serverless.ts",
+    "sdkCalls": [
+      "client.serverless.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "functionSid"
+    ]
+  },
+  {
+    "name": "list_function_versions",
+    "file": "serverless.ts",
+    "sdkCalls": [
+      "client.serverless.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "functionSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_assets",
+    "file": "serverless.ts",
+    "sdkCalls": [
+      "client.serverless.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_asset_versions",
+    "file": "serverless.ts",
+    "sdkCalls": [
+      "client.serverless.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "assetSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_variables",
+    "file": "serverless.ts",
+    "sdkCalls": [
+      "client.serverless.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "environmentSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "create_variable",
+    "file": "serverless.ts",
+    "sdkCalls": [
+      "client.serverless.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "environmentSid",
+      "key",
+      "value"
+    ]
+  },
+  {
+    "name": "update_variable",
+    "file": "serverless.ts",
+    "sdkCalls": [
+      "client.serverless.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "environmentSid",
+      "variableSid",
+      "key",
+      "value"
+    ]
+  },
+  {
+    "name": "delete_variable",
+    "file": "serverless.ts",
+    "sdkCalls": [
+      "client.serverless.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "environmentSid",
+      "variableSid"
+    ]
+  },
+  {
+    "name": "list_logs",
+    "file": "serverless.ts",
+    "sdkCalls": [
+      "client.serverless.v1"
+    ],
+    "params": [
+      "serviceSid",
+      "environmentSid",
+      "functionSid",
+      "startDate",
+      "endDate",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_sip_ip_access_control_lists",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.ipAccessControlLists.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "get_sip_ip_access_control_list",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.ipAccessControlLists"
+    ],
+    "params": [
+      "ipAccessControlListSid"
+    ]
+  },
+  {
+    "name": "create_sip_ip_access_control_list",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.ipAccessControlLists.create"
+    ],
+    "params": [
+      "friendlyName"
+    ]
+  },
+  {
+    "name": "update_sip_ip_access_control_list",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.ipAccessControlLists"
+    ],
+    "params": [
+      "ipAccessControlListSid",
+      "friendlyName"
+    ]
+  },
+  {
+    "name": "delete_sip_ip_access_control_list",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.ipAccessControlLists"
+    ],
+    "params": [
+      "ipAccessControlListSid"
+    ]
+  },
+  {
+    "name": "list_sip_ip_addresses",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.ipAccessControlLists"
+    ],
+    "params": [
+      "ipAccessControlListSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "get_sip_ip_address",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.ipAccessControlLists"
+    ],
+    "params": [
+      "ipAccessControlListSid",
+      "ipAddressSid"
+    ]
+  },
+  {
+    "name": "create_sip_ip_address",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.ipAccessControlLists"
+    ],
+    "params": [
+      "ipAccessControlListSid",
+      "friendlyName",
+      "ipAddress",
+      "cidrPrefixLength"
+    ]
+  },
+  {
+    "name": "update_sip_ip_address",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.ipAccessControlLists"
+    ],
+    "params": [
+      "ipAccessControlListSid",
+      "ipAddressSid",
+      "friendlyName",
+      "ipAddress",
+      "cidrPrefixLength"
+    ]
+  },
+  {
+    "name": "delete_sip_ip_address",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.ipAccessControlLists"
+    ],
+    "params": [
+      "ipAccessControlListSid",
+      "ipAddressSid"
+    ]
+  },
+  {
+    "name": "list_sip_credential_lists",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.credentialLists.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "get_sip_credential_list",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.credentialLists"
+    ],
+    "params": [
+      "credentialListSid"
+    ]
+  },
+  {
+    "name": "create_sip_credential_list",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.credentialLists.create"
+    ],
+    "params": [
+      "friendlyName"
+    ]
+  },
+  {
+    "name": "update_sip_credential_list",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.credentialLists"
+    ],
+    "params": [
+      "credentialListSid",
+      "friendlyName"
+    ]
+  },
+  {
+    "name": "delete_sip_credential_list",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.credentialLists"
+    ],
+    "params": [
+      "credentialListSid"
+    ]
+  },
+  {
+    "name": "list_sip_credentials",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.credentialLists"
+    ],
+    "params": [
+      "credentialListSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "get_sip_credential",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.credentialLists"
+    ],
+    "params": [
+      "credentialListSid",
+      "credentialSid"
+    ]
+  },
+  {
+    "name": "create_sip_credential",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.credentialLists"
+    ],
+    "params": [
+      "credentialListSid",
+      "username",
+      "password"
+    ]
+  },
+  {
+    "name": "update_sip_credential",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.credentialLists"
+    ],
+    "params": [
+      "credentialListSid",
+      "credentialSid",
+      "password"
+    ]
+  },
+  {
+    "name": "delete_sip_credential",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.credentialLists"
+    ],
+    "params": [
+      "credentialListSid",
+      "credentialSid"
+    ]
+  },
+  {
+    "name": "list_studio_flows",
+    "file": "studio.ts",
+    "sdkCalls": [
+      "client.studio.v2.flows.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "trigger_flow",
+    "file": "studio.ts",
+    "sdkCalls": [
+      "client.studio.v2"
+    ],
+    "params": [
+      "flowSid",
+      "to",
+      "from",
+      "parameters"
+    ]
+  },
+  {
+    "name": "get_execution_status",
+    "file": "studio.ts",
+    "sdkCalls": [
+      "client.studio.v2",
+      "client.studio.v2"
+    ],
+    "params": [
+      "flowSid",
+      "executionSid",
+      "includeSteps"
+    ]
+  },
+  {
+    "name": "get_flow",
+    "file": "studio.ts",
+    "sdkCalls": [
+      "client.studio.v2.flows"
+    ],
+    "params": [
+      "flowSid"
+    ]
+  },
+  {
+    "name": "list_executions",
+    "file": "studio.ts",
+    "sdkCalls": [
+      "client.studio.v2"
+    ],
+    "params": [
+      "flowSid",
+      "status",
+      "dateCreatedFrom",
+      "dateCreatedTo",
+      "limit"
+    ]
+  },
+  {
+    "name": "delete_execution",
+    "file": "studio.ts",
+    "sdkCalls": [
+      "client.studio.v2"
+    ],
+    "params": [
+      "flowSid",
+      "executionSid"
+    ]
+  },
+  {
+    "name": "get_execution_context",
+    "file": "studio.ts",
+    "sdkCalls": [
+      "client.studio.v2"
+    ],
+    "params": [
+      "flowSid",
+      "executionSid"
+    ]
+  },
+  {
+    "name": "list_execution_steps",
+    "file": "studio.ts",
+    "sdkCalls": [
+      "client.studio.v2"
+    ],
+    "params": [
+      "flowSid",
+      "executionSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "get_step_context",
+    "file": "studio.ts",
+    "sdkCalls": [
+      "client.studio.v2"
+    ],
+    "params": [
+      "flowSid",
+      "executionSid",
+      "stepSid"
+    ]
+  },
+  {
+    "name": "create_document",
+    "file": "sync.ts",
+    "sdkCalls": [
+      "client.sync.v1.services"
+    ],
+    "params": [
+      "uniqueName",
+      "data",
+      "ttl",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "update_document",
+    "file": "sync.ts",
+    "sdkCalls": [
+      "client.sync.v1"
+    ],
+    "params": [
+      "documentSidOrName",
+      "data",
+      "ttl",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "get_document",
+    "file": "sync.ts",
+    "sdkCalls": [
+      "client.sync.v1"
+    ],
+    "params": [
+      "documentSidOrName",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "list_documents",
+    "file": "sync.ts",
+    "sdkCalls": [
+      "client.sync.v1.services"
+    ],
+    "params": [
+      "limit",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "create_task",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "attributes",
+      "workflowSid",
+      "timeout",
+      "priority",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "list_tasks",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "assignmentStatus",
+      "limit",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "get_task_status",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "taskSid",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "list_workers",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "available",
+      "activityName",
+      "limit",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "list_workflows",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "limit",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "list_sip_trunks",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "get_sip_trunk",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid"
+    ]
+  },
+  {
+    "name": "create_sip_trunk",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks.create"
+    ],
+    "params": [
+      "friendlyName",
+      "domainName",
+      "disasterRecoveryUrl",
+      "disasterRecoveryMethod",
+      "secure",
+      "cnamLookupEnabled"
+    ]
+  },
+  {
+    "name": "update_sip_trunk",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid",
+      "friendlyName",
+      "domainName",
+      "disasterRecoveryUrl",
+      "disasterRecoveryMethod",
+      "secure",
+      "cnamLookupEnabled"
+    ]
+  },
+  {
+    "name": "delete_sip_trunk",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid"
+    ]
+  },
+  {
+    "name": "list_origination_urls",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "create_origination_url",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid",
+      "friendlyName",
+      "sipUrl",
+      "priority",
+      "weight",
+      "enabled"
+    ]
+  },
+  {
+    "name": "update_origination_url",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid",
+      "originationUrlSid",
+      "friendlyName",
+      "sipUrl",
+      "priority",
+      "weight",
+      "enabled"
+    ]
+  },
+  {
+    "name": "delete_origination_url",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid",
+      "originationUrlSid"
+    ]
+  },
+  {
+    "name": "list_trunk_ip_access_control_lists",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "associate_ip_access_control_list",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid",
+      "ipAccessControlListSid"
+    ]
+  },
+  {
+    "name": "remove_trunk_ip_access_control_list",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid",
+      "ipAccessControlListSid"
+    ]
+  },
+  {
+    "name": "list_trunk_credential_lists",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "associate_credential_list",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid",
+      "credentialListSid"
+    ]
+  },
+  {
+    "name": "remove_trunk_credential_list",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid",
+      "credentialListSid"
+    ]
+  },
+  {
+    "name": "list_trunk_phone_numbers",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "associate_phone_number_to_trunk",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid",
+      "phoneNumberSid"
+    ]
+  },
+  {
+    "name": "remove_phone_number_from_trunk",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid",
+      "phoneNumberSid"
+    ]
+  },
+  {
+    "name": "get_trunk_recording",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid"
+    ]
+  },
+  {
+    "name": "update_trunk_recording",
+    "file": "trunking.ts",
+    "sdkCalls": [
+      "client.trunking.v1.trunks"
+    ],
+    "params": [
+      "trunkSid",
+      "trim"
+    ]
+  },
+  {
+    "name": "create_customer_profile",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1.customerProfiles.create"
+    ],
+    "params": [
+      "friendlyName",
+      "email",
+      "policySid",
+      "statusCallback"
+    ]
+  },
+  {
+    "name": "list_customer_profiles",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1.customerProfiles.list"
+    ],
+    "params": [
+      "status",
+      "friendlyName",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_trust_products",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1.trustProducts.list"
+    ],
+    "params": [
+      "status",
+      "friendlyName",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_policies",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1.policies.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "get_customer_profile",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1.customerProfiles"
+    ],
+    "params": [
+      "customerProfileSid"
+    ]
+  },
+  {
+    "name": "update_customer_profile",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1.customerProfiles"
+    ],
+    "params": [
+      "customerProfileSid",
+      "friendlyName",
+      "email",
+      "statusCallback",
+      "status"
+    ]
+  },
+  {
+    "name": "delete_customer_profile",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1.customerProfiles"
+    ],
+    "params": [
+      "customerProfileSid"
+    ]
+  },
+  {
+    "name": "list_customer_profile_entity_assignments",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1"
+    ],
+    "params": [
+      "customerProfileSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "create_customer_profile_entity_assignment",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1"
+    ],
+    "params": [
+      "customerProfileSid",
+      "objectSid"
+    ]
+  },
+  {
+    "name": "delete_customer_profile_entity_assignment",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1"
+    ],
+    "params": [
+      "customerProfileSid",
+      "assignmentSid"
+    ]
+  },
+  {
+    "name": "get_trust_product",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1.trustProducts"
+    ],
+    "params": [
+      "trustProductSid"
+    ]
+  },
+  {
+    "name": "create_trust_product",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1.trustProducts.create"
+    ],
+    "params": [
+      "friendlyName",
+      "email",
+      "policySid",
+      "statusCallback"
+    ]
+  },
+  {
+    "name": "update_trust_product",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1.trustProducts"
+    ],
+    "params": [
+      "trustProductSid",
+      "friendlyName",
+      "email",
+      "statusCallback",
+      "status"
+    ]
+  },
+  {
+    "name": "delete_trust_product",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1.trustProducts"
+    ],
+    "params": [
+      "trustProductSid"
+    ]
+  },
+  {
+    "name": "list_end_users",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1.endUsers.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "create_end_user",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1.endUsers.create"
+    ],
+    "params": [
+      "friendlyName",
+      "type",
+      "attributes"
+    ]
+  },
+  {
+    "name": "list_trusthub_supporting_documents",
+    "file": "trusthub.ts",
+    "sdkCalls": [
+      "client.trusthub.v1.supportingDocuments.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "start_verification",
+    "file": "verify.ts",
+    "sdkCalls": [
+      "client.verify.v2"
+    ],
+    "params": [
+      "to",
+      "channel",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "check_verification",
+    "file": "verify.ts",
+    "sdkCalls": [
+      "client.verify.v2"
+    ],
+    "params": [
+      "to",
+      "code",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "get_verification_status",
+    "file": "verify.ts",
+    "sdkCalls": [
+      "client.verify.v2"
+    ],
+    "params": [
+      "verificationSid",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "create_video_room",
+    "file": "video.ts",
+    "sdkCalls": [
+      "client.video.v1.rooms.create"
+    ],
+    "params": [
+      "uniqueName",
+      "type",
+      "maxParticipants",
+      "statusCallback",
+      "recordParticipantsOnConnect",
+      "maxParticipantDuration",
+      "emptyRoomTimeout"
+    ]
+  },
+  {
+    "name": "list_video_rooms",
+    "file": "video.ts",
+    "sdkCalls": [
+      "client.video.v1.rooms.list"
+    ],
+    "params": [
+      "status",
+      "uniqueName",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_room_participants",
+    "file": "video.ts",
+    "sdkCalls": [
+      "client.video.v1"
+    ],
+    "params": [
+      "roomSid",
+      "status",
+      "limit"
+    ]
+  },
+  {
+    "name": "get_room",
+    "file": "video.ts",
+    "sdkCalls": [
+      "client.video.v1.rooms"
+    ],
+    "params": [
+      "roomSid"
+    ]
+  },
+  {
+    "name": "update_room",
+    "file": "video.ts",
+    "sdkCalls": [
+      "client.video.v1.rooms"
+    ],
+    "params": [
+      "roomSid",
+      "status"
+    ]
+  },
+  {
+    "name": "get_participant",
+    "file": "video.ts",
+    "sdkCalls": [
+      "client.video.v1"
+    ],
+    "params": [
+      "roomSid",
+      "participantSid"
+    ]
+  },
+  {
+    "name": "update_participant",
+    "file": "video.ts",
+    "sdkCalls": [
+      "client.video.v1"
+    ],
+    "params": [
+      "roomSid",
+      "participantSid",
+      "status"
+    ]
+  },
+  {
+    "name": "list_room_recordings",
+    "file": "video.ts",
+    "sdkCalls": [
+      "client.video.v1"
+    ],
+    "params": [
+      "roomSid",
+      "status",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_subscribed_tracks",
+    "file": "video.ts",
+    "sdkCalls": [
+      "client.video.v1"
+    ],
+    "params": [
+      "roomSid",
+      "participantSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_published_tracks",
+    "file": "video.ts",
+    "sdkCalls": [
+      "client.video.v1"
+    ],
+    "params": [
+      "roomSid",
+      "participantSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "get_dialing_permissions",
+    "file": "voice-config.ts",
+    "sdkCalls": [
+      "client.voice.v1"
+    ],
+    "params": [
+      "isoCode"
+    ]
+  },
+  {
+    "name": "list_dialing_permissions_countries",
+    "file": "voice-config.ts",
+    "sdkCalls": [
+      "client.voice.v1.dialingPermissions.countries.list"
+    ],
+    "params": [
+      "isoCode",
+      "continent",
+      "lowRiskNumbersEnabled",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_byoc_trunks",
+    "file": "voice-config.ts",
+    "sdkCalls": [
+      "client.voice.v1.byocTrunks.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "create_byoc_trunk",
+    "file": "voice-config.ts",
+    "sdkCalls": [
+      "client.voice.v1.byocTrunks.create"
+    ],
+    "params": [
+      "friendlyName",
+      "voiceUrl",
+      "voiceMethod",
+      "voiceFallbackUrl",
+      "statusCallbackUrl",
+      "cnamLookupEnabled",
+      "connectionPolicySid"
+    ]
+  },
+  {
+    "name": "get_byoc_trunk",
+    "file": "voice-config.ts",
+    "sdkCalls": [
+      "client.voice.v1.byocTrunks"
+    ],
+    "params": [
+      "trunkSid"
+    ]
+  },
+  {
+    "name": "update_byoc_trunk",
+    "file": "voice-config.ts",
+    "sdkCalls": [
+      "client.voice.v1.byocTrunks"
+    ],
+    "params": [
+      "trunkSid",
+      "friendlyName",
+      "voiceUrl",
+      "voiceMethod",
+      "voiceFallbackUrl",
+      "statusCallbackUrl",
+      "cnamLookupEnabled",
+      "connectionPolicySid"
+    ]
+  },
+  {
+    "name": "delete_byoc_trunk",
+    "file": "voice-config.ts",
+    "sdkCalls": [
+      "client.voice.v1.byocTrunks"
+    ],
+    "params": [
+      "trunkSid"
+    ]
+  },
+  {
+    "name": "list_connection_policies",
+    "file": "voice-config.ts",
+    "sdkCalls": [
+      "client.voice.v1.connectionPolicies.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "create_connection_policy",
+    "file": "voice-config.ts",
+    "sdkCalls": [
+      "client.voice.v1.connectionPolicies.create"
+    ],
+    "params": [
+      "friendlyName"
+    ]
+  },
+  {
+    "name": "get_connection_policy",
+    "file": "voice-config.ts",
+    "sdkCalls": [
+      "client.voice.v1.connectionPolicies"
+    ],
+    "params": [
+      "policySid"
+    ]
+  },
+  {
+    "name": "delete_connection_policy",
+    "file": "voice-config.ts",
+    "sdkCalls": [
+      "client.voice.v1.connectionPolicies"
+    ],
+    "params": [
+      "policySid"
+    ]
+  },
+  {
+    "name": "list_connection_policy_targets",
+    "file": "voice-config.ts",
+    "sdkCalls": [
+      "client.voice.v1"
+    ],
+    "params": [
+      "policySid",
+      "limit"
+    ]
+  },
+  {
+    "name": "create_connection_policy_target",
+    "file": "voice-config.ts",
+    "sdkCalls": [
+      "client.voice.v1"
+    ],
+    "params": [
+      "policySid",
+      "target",
+      "friendlyName",
+      "priority",
+      "weight",
+      "enabled"
+    ]
+  },
+  {
+    "name": "delete_connection_policy_target",
+    "file": "voice-config.ts",
+    "sdkCalls": [
+      "client.voice.v1"
+    ],
+    "params": [
+      "policySid",
+      "targetSid"
+    ]
+  },
+  {
+    "name": "get_call_logs",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.calls.list"
+    ],
+    "params": [
+      "limit",
+      "status",
+      "to",
+      "from",
+      "startTimeAfter",
+      "startTimeBefore"
+    ]
+  },
+  {
+    "name": "make_call",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.calls.create"
+    ],
+    "params": [
+      "to",
+      "from",
+      "url",
+      "twiml"
+    ]
+  },
+  {
+    "name": "get_recording",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.recordings"
+    ],
+    "params": [
+      "recordingSid"
+    ]
+  },
+  {
+    "name": "list_conferences",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.conferences.list"
+    ],
+    "params": [
+      "limit",
+      "status",
+      "friendlyName",
+      "dateCreatedAfter",
+      "dateCreatedBefore"
+    ]
+  },
+  {
+    "name": "get_conference",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.conferences"
+    ],
+    "params": [
+      "conferenceSid"
+    ]
+  },
+  {
+    "name": "update_conference",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.conferences"
+    ],
+    "params": [
+      "conferenceSid",
+      "status",
+      "announceUrl",
+      "announceMethod"
+    ]
+  },
+  {
+    "name": "list_conference_participants",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.conferences"
+    ],
+    "params": [
+      "conferenceSid",
+      "limit",
+      "muted",
+      "hold"
+    ]
+  },
+  {
+    "name": "get_conference_participant",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.conferences"
+    ],
+    "params": [
+      "conferenceSid",
+      "callSid"
+    ]
+  },
+  {
+    "name": "update_conference_participant",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.conferences"
+    ],
+    "params": [
+      "conferenceSid",
+      "callSid",
+      "muted",
+      "hold",
+      "holdUrl",
+      "holdMethod",
+      "coaching",
+      "callSidToCoach",
+      "endConferenceOnExit"
+    ]
+  },
+  {
+    "name": "add_participant_to_conference",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.conferences"
+    ],
+    "params": [
+      "conferenceSid",
+      "to",
+      "from",
+      "label",
+      "earlyMedia",
+      "beep",
+      "muted",
+      "hold",
+      "startConferenceOnEnter",
+      "endConferenceOnExit",
+      "coaching",
+      "callSidToCoach",
+      "record"
+    ]
+  },
+  {
+    "name": "get_call",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.calls"
+    ],
+    "params": [
+      "callSid"
+    ]
+  },
+  {
+    "name": "update_call",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.calls"
+    ],
+    "params": [
+      "callSid",
+      "status",
+      "url",
+      "method",
+      "twiml"
+    ]
+  },
+  {
+    "name": "list_call_recordings",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.calls"
+    ],
+    "params": [
+      "callSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "list_recordings",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.recordings.list"
+    ],
+    "params": [
+      "limit",
+      "callSid",
+      "conferenceSid",
+      "dateCreatedAfter",
+      "dateCreatedBefore",
+      "includeSoftDeleted"
+    ]
+  },
+  {
+    "name": "delete_recording",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.recordings"
+    ],
+    "params": [
+      "recordingSid"
+    ]
+  },
+  {
+    "name": "start_call_recording",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.calls"
+    ],
+    "params": [
+      "callSid",
+      "recordingChannels",
+      "recordingTrack",
+      "trim",
+      "recordingStatusCallback",
+      "recordingStatusCallbackMethod",
+      "recordingStatusCallbackEvent"
+    ]
+  },
+  {
+    "name": "update_call_recording",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.calls"
+    ],
+    "params": [
+      "callSid",
+      "recordingSid",
+      "status",
+      "pauseBehavior"
+    ]
+  },
+  {
+    "name": "delete_call_recording",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.calls"
+    ],
+    "params": [
+      "callSid",
+      "recordingSid"
+    ]
+  },
+  {
+    "name": "get_call_summary",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.insights.v1.calls"
+    ],
+    "params": [
+      "callSid",
+      "processingState"
+    ]
+  },
+  {
+    "name": "list_call_events",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.insights.v1.calls"
+    ],
+    "params": [
+      "callSid",
+      "limit",
+      "edge"
+    ]
+  },
+  {
+    "name": "list_call_metrics",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.insights.v1.calls"
+    ],
+    "params": [
+      "callSid",
+      "limit",
+      "edge",
+      "direction"
+    ]
+  },
+  {
+    "name": "get_conference_summary",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.insights.v1.conferences"
+    ],
+    "params": [
+      "conferenceSid"
+    ]
+  },
+  {
+    "name": "list_conference_participant_summaries",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.insights.v1"
+    ],
+    "params": [
+      "conferenceSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "get_conference_participant_summary",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.insights.v1"
+    ],
+    "params": [
+      "conferenceSid",
+      "participantSid"
+    ]
+  },
+  {
+    "name": "list_recording_transcriptions",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.recordings"
+    ],
+    "params": [
+      "recordingSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "get_transcription",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.transcriptions"
+    ],
+    "params": [
+      "transcriptionSid"
+    ]
+  },
+  {
+    "name": "start_call_stream",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.calls"
+    ],
+    "params": [
+      "callSid",
+      "url",
+      "name",
+      "track",
+      "statusCallback",
+      "statusCallbackMethod"
+    ]
+  },
+  {
+    "name": "stop_call_stream",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.calls"
+    ],
+    "params": [
+      "callSid",
+      "streamSid"
+    ]
+  },
+  {
+    "name": "list_conference_recordings",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.conferences"
+    ],
+    "params": [
+      "conferenceSid",
+      "limit",
+      "status"
+    ]
+  }
+]

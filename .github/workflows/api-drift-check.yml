@@ -1,0 +1,92 @@
+name: Twilio API Drift Check
+
+on:
+  schedule:
+    # Every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force full scan (ignore sync state)'
+        type: boolean
+        default: false
+
+jobs:
+  drift-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install api-sync dependencies
+        working-directory: scripts/api-sync
+        run: npm ci
+
+      - name: Run snapshot
+        working-directory: scripts/api-sync
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE: ${{ inputs.force && 'true' || '' }}
+        run: npx tsx snapshot.ts ${{ inputs.force && '--force' || '' }}
+
+      - name: Extract tool inventory
+        working-directory: scripts/api-sync
+        run: npx tsx extract-inventory.ts
+
+      - name: Run diff and coverage analysis
+        working-directory: scripts/api-sync
+        run: npx tsx diff.ts
+
+      - name: Generate reports
+        working-directory: scripts/api-sync
+        run: npx tsx report.ts
+
+      - name: Check for drift
+        id: check
+        run: |
+          REPORT="scripts/api-sync/reports/latest.json"
+          if [ ! -f "$REPORT" ]; then
+            echo "drift=0" >> "$GITHUB_OUTPUT"
+            echo "has_drift=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          NEW=$(jq '.summary.newCount' "$REPORT")
+          REMOVED=$(jq '.summary.removedCount' "$REPORT")
+          PARAM=$(jq '.summary.paramChangedCount' "$REPORT")
+          BREAKING=$(jq '.summary.breakingCount' "$REPORT")
+          DRIFT=$((NEW + REMOVED + PARAM + BREAKING))
+          VERSION=$(jq -r '.oaiVersion' "$REPORT")
+          echo "drift=$DRIFT" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [ "$DRIFT" -gt 0 ]; then
+            echo "has_drift=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_drift=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create drift issue
+        if: steps.check.outputs.has_drift == 'true'
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: 'API Drift: Twilio OAI v${{ steps.check.outputs.version }}'
+          content-filepath: scripts/api-sync/reports/latest.md
+          labels: api-drift, automated
+
+      - name: Commit snapshot and reports
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add scripts/api-sync/snapshots/ scripts/api-sync/reports/ scripts/api-sync/sync-state.json scripts/api-sync/inventory.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: API drift check for OAI v$(jq -r '.oai.version' scripts/api-sync/sync-state.json)"
+            git push
+          fi

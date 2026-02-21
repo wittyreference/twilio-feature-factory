@@ -88,14 +88,25 @@ test.describe('Hybrid PSTN + SDK Calls', () => {
     const callSid = await page.locator('#call-sid').textContent();
     expect(callSid).toMatch(/^CA[a-f0-9]{32}$/);
 
+    // Wait for B-leg to ring, IVR to answer, and bridge to establish
+    await page.waitForTimeout(5000);
+
+    // Verify browser still shows connected (call didn't drop after signaling)
+    await expect(page.locator('#status')).toHaveText('connected');
+
+    // Verify call is actively bridged via REST API
+    const client = getTwilioClient();
+    const activeCall = await client.calls(callSid).fetch();
+    expect(activeCall.status).toBe('in-progress');
+
     // Hangup and verify disconnection
     await page.click('#btn-hangup');
     await expect(page.locator('#status')).toHaveText('disconnected', { timeout: 10_000 });
 
-    // Verify via REST API
-    const client = getTwilioClient();
-    const callDetails = await client.calls(callSid).fetch();
-    expect(['completed', 'canceled']).toContain(callDetails.status);
+    // Verify call completed with meaningful duration (proves real audio bridge)
+    const completedCall = await client.calls(callSid).fetch();
+    expect(completedCall.status).toBe('completed');
+    expect(parseInt(completedCall.duration)).toBeGreaterThanOrEqual(3);
   });
 
   test('event log captures full hybrid call lifecycle', async ({ page }) => {

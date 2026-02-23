@@ -102,6 +102,15 @@ if [ -n "$PATTERN_DB" ] && command -v jq &> /dev/null; then
     fi
 fi
 
+# Source 5: CLAUDE.md inventory drift
+DRIFT_SCRIPT="$PROJECT_ROOT/scripts/check-claude-doc-drift.sh"
+if [ -x "$DRIFT_SCRIPT" ]; then
+    DRIFT_OUTPUT=$("$DRIFT_SCRIPT" --quiet 2>/dev/null || true)
+    if [ -n "$DRIFT_OUTPUT" ]; then
+        ALL_FILES="$ALL_FILES"$'\n'"$DRIFT_OUTPUT"
+    fi
+fi
+
 # Deduplicate, clean up, and exclude flywheel's own output files to prevent
 # recursive re-firing (editing pending-actions.md triggers post-write, which
 # tracks it in .session-files, which the next flywheel run picks up)

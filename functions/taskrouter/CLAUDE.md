@@ -2,6 +2,13 @@
 
 This directory contains Twilio TaskRouter API functions for intelligent task routing to workers and agents.
 
+## Files
+
+| File | Access | Description |
+|------|--------|-------------|
+| `contact-center-welcome.js` | Public | Welcome TwiML for inbound contact center calls; enqueues tasks |
+| `assignment.protected.js` | Protected | Assignment callback handler; routes tasks to workers |
+
 ## What is TaskRouter?
 
 TaskRouter is a skill-based routing engine that distributes tasks to the most appropriate workers based on:

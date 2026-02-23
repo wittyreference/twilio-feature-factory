@@ -1,5 +1,7 @@
 # Sync Functions Context
 
+> **Note**: This directory contains no deployed function files. It serves as an API pattern reference for Twilio Sync operations used across other function domains.
+
 This directory contains Twilio Sync API functions for real-time state synchronization across devices and services.
 
 ## What is Twilio Sync?

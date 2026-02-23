@@ -2,6 +2,34 @@
 
 This directory contains Twilio Conversation Relay functions for building real-time voice AI applications.
 
+## Files
+
+### Public Handlers
+| File | Access | Description |
+|------|--------|-------------|
+| `ai-assistant-inbound.js` | Public | Connects incoming calls to ConversationRelay AI agent |
+| `relay-handler.js` | Public | Entry point for connecting phone calls to LLM-powered voice agents |
+| `transcript-complete.js` | Public | Handles Voice Intelligence transcript completion callback; sends SMS summary |
+
+### Demo Flow
+| File | Access | Description |
+|------|--------|-------------|
+| `start-ai-demo.protected.js` | Protected | Initiates outbound AI demo call with recording and ConversationRelay |
+| `finalize-demo.protected.js` | Protected | Processes completed demo call — stores transcript in Sync, sends SMS |
+
+### Agent-to-Agent Testing Infrastructure
+| File | Access | Description |
+|------|--------|-------------|
+| `agent-a-inbound.protected.js` | Protected | Inbound call handler for Agent A (questioner) in agent-to-agent testing |
+| `agent-b-inbound.protected.js` | Protected | Inbound call handler for Agent B (answerer) in agent-to-agent testing |
+| `start-agent-test.protected.js` | Protected | Test orchestrator that initiates agent-to-agent calls and validates results |
+| `validate-agent-test.protected.js` | Protected | Validates agent-to-agent test results by retrieving transcripts from Sync |
+
+### Callbacks
+| File | Access | Description |
+|------|--------|-------------|
+| `recording-complete.protected.js` | Protected | Handles recording completion — updates Sync, triggers Voice Intelligence transcription |
+
 ## What is Conversation Relay?
 
 Conversation Relay enables real-time, bidirectional communication between phone calls and AI/LLM backends via WebSockets. It handles:

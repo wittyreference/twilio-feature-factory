@@ -2,6 +2,13 @@
 
 This directory contains Twilio Verify API functions for phone number and email verification.
 
+## Files
+
+| File | Access | Description |
+|------|--------|-------------|
+| `start-verification.protected.js` | Protected | Sends a one-time passcode via SMS, voice, or email |
+| `check-verification.protected.js` | Protected | Validates a user-submitted verification code |
+
 ## What is Twilio Verify?
 
 Twilio Verify provides a complete solution for sending and verifying one-time passcodes (OTPs) across multiple channels:

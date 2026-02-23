@@ -2,6 +2,67 @@
 
 This directory contains Twilio Voice API functions for handling phone calls.
 
+## Files
+
+### Basic Call Handling
+| File | Access | Description |
+|------|--------|-------------|
+| `incoming-call.js` | Public | Handles incoming voice calls with a greeting and gathers user input |
+| `gather-input.protected.js` | Protected | Processes gathered DTMF or speech input from incoming calls |
+
+### IVR / Self-Service
+| File | Access | Description |
+|------|--------|-------------|
+| `ivr-welcome.js` | Public | Welcome handler for a dental office IVR self-service menu |
+| `ivr-menu.protected.js` | Protected | Routes callers to appointments, billing, or hours based on DTMF/speech |
+
+### Outbound Contact Center (UC5)
+| File | Access | Description |
+|------|--------|-------------|
+| `outbound-dialer.js` | Public | Initiates outbound calls with conference bridge and AMD |
+| `outbound-customer-leg.js` | Public | TwiML for the customer leg — starts recording, joins conference |
+| `outbound-agent-leg.js` | Public | TwiML for the agent leg — whispers context, joins conference |
+
+### Sales Dialer (UC7)
+| File | Access | Description |
+|------|--------|-------------|
+| `sales-dialer-prospect.js` | Public | TwiML for the prospect leg — starts recording, joins conference |
+| `sales-dialer-agent.js` | Public | TwiML for the agent leg — whispers prospect context, joins conference |
+
+### Call Tracking (UC8)
+| File | Access | Description |
+|------|--------|-------------|
+| `call-tracking-inbound.js` | Public | Inbound call tracking with campaign attribution, whisper, and Sync logging |
+
+### Conference Management
+| File | Access | Description |
+|------|--------|-------------|
+| `create-conference.protected.js` | Protected | Creates a conference and adds the first participant via REST API |
+| `add-conference-participant.protected.js` | Protected | Adds a participant to an existing conference |
+| `end-conference.protected.js` | Protected | Ends an active conference by updating status to completed |
+
+### Notification / Outbound
+| File | Access | Description |
+|------|--------|-------------|
+| `notification-outbound.js` | Public | Outbound appointment reminder calls with recording and confirmation |
+| `notification-confirm.protected.js` | Protected | Processes appointment confirmation/denial via DTMF or speech |
+
+### Voice AI / ConversationRelay
+| File | Access | Description |
+|------|--------|-------------|
+| `pizza-agent-connect.js` | Public | Connects incoming calls to the pizza-ordering AI agent via ConversationRelay |
+
+### Media Streams (UC6)
+| File | Access | Description |
+|------|--------|-------------|
+| `stream-connect.js` | Public | Connects call audio to a WebSocket via bidirectional Media Streams |
+
+### Voice SDK / WebRTC
+| File | Access | Description |
+|------|--------|-------------|
+| `token.js` | Public | Generates Twilio Voice SDK access tokens (JWTs) with VoiceGrant |
+| `sdk-handler.js` | Public | Routes browser-originated Voice SDK calls to PSTN or other clients |
+
 ## TwiML Voice Verbs
 
 ### Common Verbs

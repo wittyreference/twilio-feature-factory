@@ -173,6 +173,9 @@ During execution, autonomous agents have access to:
 | `/context [action]` | Context optimization (summarize, load, analyze) |
 | `/twilio-docs [topic]` | Search Twilio documentation |
 | `/twilio-logs` | Analyze Twilio debugger logs |
+| `/wrap-up [scope]` | End-of-session doc updates (learnings, CLAUDE.md, todo) |
+| `/learn [action]` | Interactive learning exercises on autonomous work |
+| `/plugin-sync` | Detect and reconcile drift between factory source and plugin |
 
 ### Agent Teams (Experimental)
 
@@ -220,8 +223,8 @@ See [agents/feature-factory/CLAUDE.md](agents/feature-factory/CLAUDE.md) for arc
 ## What's Implemented
 
 **Development Tools**
-- 20 slash commands across workflow, development, and utility categories
-- MCP Server with 248 Twilio API tools across 25 modules
+- 21 slash commands across workflow, development, and utility categories
+- MCP Server with 284 Twilio API tools across 27 modules
 - Voice AI Builder with TwiML and WebSocket generators
 - Feature Factory with autonomous mode, stall detection, and sandbox isolation
 
@@ -242,16 +245,18 @@ twilio-feature-factory/
 │   ├── messaging/           # SMS/MMS handlers
 │   ├── conversation-relay/  # Real-time voice AI
 │   ├── verify/              # Phone verification
-│   ├── sync/                # State synchronization
+│   ├── sync/                # State synchronization (pattern reference)
 │   ├── taskrouter/          # Skills-based routing
-│   └── callbacks/           # Status callback handlers
+│   ├── callbacks/           # Status callback handlers
+│   ├── helpers/             # Shared private utilities
+│   └── messaging-services/  # Messaging services (pattern reference)
 ├── agents/                  # AI development tooling
 │   ├── mcp-servers/twilio/  # MCP server for Twilio APIs
 │   ├── feature-factory/     # Autonomous workflow orchestration
 │   ├── doc-generator/       # Documentation generation
 │   └── voice-ai-builder/    # Voice AI app generator
 ├── .claude/                 # Claude Code configuration
-│   ├── commands/            # Slash command definitions (18)
+│   ├── commands/            # Slash command definitions (21)
 │   ├── hooks/               # Safety and quality hooks (16)
 │   ├── rules/               # Declarative agent rules
 │   ├── skills/              # Context engineering skills

@@ -4,7 +4,7 @@ This directory contains the Model Context Protocol (MCP) server that exposes Twi
 
 ## Purpose
 
-The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **284 tools across 26 modules** covering:
+The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **284 tools across 27 modules** covering:
 
 - **Messaging**: SMS/MMS, messaging services, content templates, notifications
 - **Voice**: Call management, conferences, recordings, media streams, Voice Insights, transcriptions, BYOC trunks, SIP trunking
@@ -47,7 +47,8 @@ src/
     ├── iam.ts            # API keys, signing keys (P3)
     ├── pricing.ts        # Voice, SMS, number pricing (P3)
     ├── notify.ts         # Push notification services (P3)
-    └── addresses.ts      # Address management (P3)
+    ├── addresses.ts      # Address management (P3)
+    └── validation.ts     # Deep validation tools (MCP validation wrappers)
 ```
 
 ## Tool Naming Convention

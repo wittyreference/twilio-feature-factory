@@ -1,5 +1,7 @@
 # Messaging Services Context
 
+> **Note**: This directory contains no deployed function files. It serves as an API pattern reference for Twilio Messaging Services operations.
+
 This directory contains Twilio Messaging Services functions for advanced SMS/MMS capabilities with sender pools, intelligent routing, and compliance features.
 
 ## What are Messaging Services?

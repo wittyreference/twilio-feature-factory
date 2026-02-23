@@ -10,6 +10,10 @@ This directory contains CLI scripts for project setup and maintenance.
 | `enable-autonomous.sh` | `./scripts/enable-autonomous.sh` | Launch Claude Code in autonomous mode (interactive) |
 | `run-headless.sh` | `./scripts/run-headless.sh` | Run Claude Code non-interactively via `claude -p` (CI/CD) |
 | `validation-reset.sh` | `./scripts/validation-reset.sh` | Reset Twilio account to clean state for validation runs |
+| `check-claude-doc-drift.sh` | `./scripts/check-claude-doc-drift.sh` | Compare actual files vs CLAUDE.md inventories; exit 1 on drift |
+| `plugin-drift-check.sh` | `./scripts/plugin-drift-check.sh` | Detect drift between factory source and plugin distribution |
+| `validate-meta-separation.sh` | `./scripts/validate-meta-separation.sh` | Verify `.meta/` files stay separated from shipped paths |
+| `verify-shipping-ready.sh` | `./scripts/verify-shipping-ready.sh` | Pre-ship checklist: no meta refs, clean exports, doc links valid |
 | `api-sync/` | `cd scripts/api-sync && npm run sync` | Automated Twilio API drift detection and coverage analysis |
 
 ## Setup Script

@@ -2,6 +2,13 @@
 
 This directory contains Twilio Messaging API functions for SMS and MMS handling.
 
+## Files
+
+| File | Access | Description |
+|------|--------|-------------|
+| `incoming-sms.js` | Public | Handles incoming SMS messages with an auto-reply via TwiML |
+| `send-sms.protected.js` | Protected | Sends outbound SMS messages using the Twilio API |
+
 ## TwiML Messaging Verbs
 
 ### Message Verb

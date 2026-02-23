@@ -994,7 +994,7 @@ Two-phase approach:
 
 ### Status
 
-**Accepted** — Implementation planned in Phase 12.1.
+**Implemented** — Sandbox mode is active in Feature Factory (`src/sandbox.ts`). Default behavior in autonomous mode.
 
 ---
 

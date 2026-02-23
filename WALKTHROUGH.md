@@ -57,7 +57,7 @@ This demonstrates how multiple Twilio products work together and shows the full 
 
 Before starting, make sure you have:
 
-- [ ] **Node.js 18-22** installed
+- [ ] **Node.js 20 or 22** installed
 - [ ] **Twilio CLI** installed (`npm install -g twilio-cli`)
 - [ ] **Twilio Serverless plugin** installed (`twilio plugins:install @twilio-labs/plugin-serverless`)
 - [ ] **Twilio account** with Account SID and Auth Token
@@ -70,7 +70,7 @@ Before starting, make sure you have:
 ### Verify Your Setup
 
 ```bash
-# Check Node.js version (need 18-22)
+# Check Node.js version (need 20 or 22)
 node --version
 
 # Check Twilio CLI

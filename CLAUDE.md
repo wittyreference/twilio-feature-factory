@@ -90,6 +90,7 @@ Agent Teams coordinate multiple Claude Code instances for parallel work. Use `/t
 | Headless runner | `scripts/run-headless.sh --help` (CI/CD, `claude -p` wrapper) |
 | Agent teams details | `.claude/skills/agent-teams-guide.md` (load on demand) |
 | Doc flywheel | `.claude/skills/doc-flywheel.md` (load on demand) |
+| Learning exercises | `.claude/commands/learn.md`, `.meta/learning/` |
 | Implementation progress | Todo file (see [Meta-Development Mode](#meta-development-mode)) |
 | Session learnings | Learnings file (see [Meta-Development Mode](#meta-development-mode)) |
 
@@ -303,4 +304,5 @@ The following slash commands are available for specialized tasks:
 | `/validate [type] [SID]` | Deep validation of individual Twilio resources |
 | `/context [action]` | Context optimization - summarize, load, or analyze context |
 | `/wrap-up [scope]` | End-of-session doc updates — learnings, CLAUDE.md, todo, pending actions |
+| `/learn [action]` | Interactive learning exercises on autonomous work |
 | `/plugin-sync` | Detect and reconcile drift between factory source and plugin distribution |

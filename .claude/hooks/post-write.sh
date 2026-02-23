@@ -77,6 +77,39 @@ if [ -n "$REL_PATH" ]; then
     fi
 fi
 
+# ============================================
+# AUTONOMOUS EVENT LOGGING (for learning exercises)
+# ============================================
+# Log file events during autonomous work for retrospective exercise generation.
+# Only fires when running headless, as a subagent, or in a team workflow.
+
+if [ -n "${CLAUDE_HEADLESS:-}" ] || [ -n "${CLAUDE_SUBAGENT:-}" ] || [ -n "${CLAUDE_TEAM_NAME:-}" ]; then
+    if [ -n "$CLAUDE_LEARNING_DIR" ] && [ -d "$CLAUDE_LEARNING_DIR" ]; then
+        # Only log files in code directories worth exercising on
+        case "$REL_PATH" in
+            functions/*|agents/*|scripts/*|__tests__/*)
+                EVENT_TS=$(date +%s)
+                EVENT_SESSION="${CLAUDE_TEAM_NAME:-${CLAUDE_SUBAGENT:-headless}}"
+                # Determine if file is new or modified
+                if git -C "$PROJECT_ROOT" ls-files --error-unmatch "$REL_PATH" &>/dev/null 2>&1; then
+                    EVENT_TYPE="file_modified"
+                else
+                    EVENT_TYPE="file_created"
+                fi
+                # Extract ABOUTME context if present
+                EVENT_CONTEXT=""
+                if [ -f "$FILE_PATH" ]; then
+                    EVENT_CONTEXT=$(head -5 "$FILE_PATH" | grep "ABOUTME:" | head -1 | sed 's/.*ABOUTME: *//' || true)
+                fi
+                # Append event as JSON line
+                printf '{"ts":%d,"type":"%s","path":"%s","session":"%s","context":"%s"}\n' \
+                    "$EVENT_TS" "$EVENT_TYPE" "$REL_PATH" "$EVENT_SESSION" "$EVENT_CONTEXT" \
+                    >> "$CLAUDE_LEARNING_DIR/session-log.jsonl"
+                ;;
+        esac
+    fi
+fi
+
 # Only process JavaScript files
 if [[ ! "$FILE_PATH" =~ \.(js|mjs|cjs|ts)$ ]]; then
     exit 0

@@ -105,6 +105,31 @@ if command -v twilio >/dev/null 2>&1; then
     fi
 fi
 
+# 4. Pending learning exercises check
+if [ "$CLAUDE_META_MODE" = "true" ] && [ -n "$CLAUDE_LEARNING_DIR" ] && [ -d "$CLAUDE_LEARNING_DIR" ]; then
+    EXERCISE_FILE="$CLAUDE_LEARNING_DIR/exercises.md"
+    STATE_FILE="$CLAUDE_LEARNING_DIR/exercise-state.json"
+    if [ -f "$EXERCISE_FILE" ]; then
+        # Count exercise headers (## lines that aren't the file title)
+        EXERCISE_COUNT=$(grep -c '^## ' "$EXERCISE_FILE" 2>/dev/null) || EXERCISE_COUNT=0
+        if [ "$EXERCISE_COUNT" -gt 0 ]; then
+            echo "LEARNING: $EXERCISE_COUNT exercise(s) pending — use /learn" >&2
+        fi
+    fi
+    # Reset per-session exercise state
+    if [ -f "$STATE_FILE" ]; then
+        cat > "$STATE_FILE" <<STATEEOF
+{
+  "exercises_offered": 0,
+  "exercises_completed": 0,
+  "exercises_declined": false,
+  "last_exercise_ts": 0,
+  "topics_covered": []
+}
+STATEEOF
+    fi
+fi
+
 echo "Run /preflight for full environment validation." >&2
 
 # --- Reset Session Tracking ---

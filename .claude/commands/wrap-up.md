@@ -64,6 +64,15 @@ If any learnings are the kind that should persist across sessions (common mistak
 
 If the session completed or progressed a tracked task, update the todo file.
 
+### 5b. Generate Learning Exercises
+
+If significant code was produced this session (especially from autonomous work via headless, `/orchestrate`, or `/team`), check for and generate learning exercises:
+
+1. Check if `.meta/learning/session-log.jsonl` has events
+2. If so, run the exercise generation: `bash .claude/hooks/generate-learning-exercises.sh`
+3. Report how many exercises were generated for the next interactive session
+4. If no events were logged, skip this step
+
 ### 6. Clear Pending Actions
 
 After addressing flywheel suggestions, clear the pending actions file:

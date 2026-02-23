@@ -73,6 +73,17 @@ if [[ -x "$DRIFT_SCRIPT" ]] && command -v jq &>/dev/null; then
     fi
 fi
 
+# --- 8. Pending learning exercises ---
+if [ "$CLAUDE_META_MODE" = "true" ] && [ -n "${CLAUDE_LEARNING_DIR:-}" ] && [ -d "${CLAUDE_LEARNING_DIR:-}" ]; then
+    EXERCISE_FILE="$CLAUDE_LEARNING_DIR/exercises.md"
+    if [ -f "$EXERCISE_FILE" ]; then
+        EXERCISE_COUNT=$(grep -c '^## ' "$EXERCISE_FILE" 2>/dev/null) || EXERCISE_COUNT=0
+        if [[ "$EXERCISE_COUNT" -gt 0 ]]; then
+            ITEMS+=("LEARNING: $EXERCISE_COUNT exercise(s) pending — use /learn to build comprehension of autonomous work")
+        fi
+    fi
+fi
+
 # ============================================
 # Output checklist (only if there are items)
 # ============================================

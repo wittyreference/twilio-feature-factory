@@ -15,4 +15,10 @@ if [ -x "$FLYWHEEL_HOOK" ]; then
     "$FLYWHEEL_HOOK"
 fi
 
+# Trigger learning exercise generation after autonomous work completes
+LEARNING_HOOK="$SCRIPT_DIR/generate-learning-exercises.sh"
+if [ -x "$LEARNING_HOOK" ]; then
+    "$LEARNING_HOOK" 2>/dev/null || true
+fi
+
 exit 0

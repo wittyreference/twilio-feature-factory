@@ -13,6 +13,7 @@ if [[ -d "$PROJECT_ROOT/.meta" ]]; then
     export CLAUDE_LEARNINGS="$PROJECT_ROOT/.meta/learnings.md"
     export CLAUDE_LOGS_DIR="$PROJECT_ROOT/.meta/logs"
     export CLAUDE_PLANS_DIR="$PROJECT_ROOT/.meta/plans"
+    export CLAUDE_LEARNING_DIR="$PROJECT_ROOT/.meta/learning"
 else
     export CLAUDE_META_MODE="false"
     export CLAUDE_META_DIR=""
@@ -20,6 +21,7 @@ else
     export CLAUDE_LEARNINGS="$PROJECT_ROOT/.claude/learnings.md"
     export CLAUDE_LOGS_DIR="$PROJECT_ROOT/.claude/logs"
     export CLAUDE_PLANS_DIR="$PROJECT_ROOT/.claude/archive/plans"
+    export CLAUDE_LEARNING_DIR=""
 fi
 
 # Helper function for conditional meta-mode execution

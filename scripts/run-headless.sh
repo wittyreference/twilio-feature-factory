@@ -381,4 +381,12 @@ else
 fi
 echo -e "${DIM}Audit log: ${SESSION_LOG}${NC}"
 
+# --- Generate learning exercises from autonomous work ---
+PROJECT_ROOT="$(pwd)"
+if [ -d "$PROJECT_ROOT/.meta" ] && [ -f "$PROJECT_ROOT/.meta/learning/session-log.jsonl" ]; then
+    if [ -s "$PROJECT_ROOT/.meta/learning/session-log.jsonl" ]; then
+        "$PROJECT_ROOT/.claude/hooks/generate-learning-exercises.sh" 2>&1 || true
+    fi
+fi
+
 exit $EXIT_CODE

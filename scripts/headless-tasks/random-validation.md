@@ -12,6 +12,39 @@ You are running headless via `claude -p`. You have NO interactive terminal.
 
 **Your job**: select a use case, build it end-to-end INLINE (no slash commands), deploy, deep validate with MCP tools, and capture learnings.
 
+## Step 0: Clean Slate (conditional)
+
+Check if the `--clean` flag was used to launch this session:
+```bash
+python3 -c "import os; print(os.environ.get('VALIDATION_CLEAN', 'not set'))"
+```
+
+**If `VALIDATION_CLEAN=true`**: The account was just reset by `validation-reset.sh`. Services were recreated with new SIDs, the serverless deployment was removed, and webhooks were blanked. You need to:
+
+1. Verify `.env` has valid (non-placeholder) SIDs:
+```bash
+python3 -c "
+import os
+required = ['TWILIO_SYNC_SERVICE_SID', 'TWILIO_VERIFY_SERVICE_SID',
+            'TWILIO_MESSAGING_SERVICE_SID', 'TWILIO_TASKROUTER_WORKSPACE_SID',
+            'TWILIO_TASKROUTER_WORKFLOW_SID']
+missing = [k for k in required if not os.environ.get(k) or os.environ.get(k,'').startswith('XXX')]
+if missing:
+    print('FAIL: Missing SIDs: ' + ', '.join(missing))
+else:
+    print('PASS: All service SIDs present')
+"
+```
+
+2. Deploy immediately (no serverless service exists):
+```bash
+npm run deploy:dev
+```
+
+3. Verify deployment succeeded before continuing.
+
+**If not set**: Skip this step (backward-compatible — the account is in whatever state the previous run left it).
+
 ## Step 1: Select Use Case
 
 Check for a forced use case first:
@@ -184,6 +217,7 @@ Print a summary table as your final output:
 ## Pacing
 
 You have up to 120 turns. Budget roughly:
+- Step 0: 5 turns (clean slate, only if VALIDATION_CLEAN=true)
 - Steps 1-3: 5 turns (setup)
 - Step 4: 5 turns (architecture)
 - Step 5: 30 turns (code + tests)

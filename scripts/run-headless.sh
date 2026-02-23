@@ -21,6 +21,7 @@ OUTPUT_FORMAT="stream-json"
 PROMPT=""
 PROMPT_FILE=""
 TASK_NAME=""
+CLEAN_SLATE=false
 
 # Resolve a pre-defined task name to its prompt
 resolve_task_prompt() {
@@ -63,6 +64,7 @@ Options:
   --output-format F  Output format: stream-json, json, text (default: stream-json)
   --prompt-file PATH Read prompt from a file instead of command line
   --task NAME        Use a pre-defined task prompt
+  --clean            Run validation-reset.sh before starting (clean slate)
   --list-tasks       List available pre-defined tasks
   --help             Show this help message
 
@@ -76,6 +78,7 @@ Examples:
   CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --task test-fix
   CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --task validate --max-turns 50
   CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --prompt-file .meta/plans/validation-plan.md --max-turns 80
+  CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --task random-validation --clean --max-turns 120
 USAGE
 }
 
@@ -89,6 +92,9 @@ list_tasks() {
     echo "  deploy-dev    Run /preflight, then deploy to dev environment"
     echo "  e2e-validate  Full E2E: deploy, live calls, callback verification, auto-fix (use --max-turns 80)"
     echo "  random-validation  Random use case build + deploy + deep validation (use --max-turns 120)"
+    echo ""
+    echo "Flags:"
+    echo "  --clean            Run validation-reset.sh first (deletes deployment, recreates services)"
 }
 
 # Parse arguments
@@ -109,6 +115,10 @@ while [[ $# -gt 0 ]]; do
         --task)
             TASK_NAME="$2"
             shift 2
+            ;;
+        --clean)
+            CLEAN_SLATE=true
+            shift
             ;;
         --list-tasks)
             list_tasks
@@ -164,6 +174,22 @@ if [ -f ".env" ]; then
     set +a
 fi
 
+# --- Clean slate (optional) ---
+if [ "$CLEAN_SLATE" = true ]; then
+    echo -e "${CYAN}Running validation reset (clean slate)...${NC}"
+    if ./scripts/validation-reset.sh; then
+        echo -e "${GREEN}Reset complete. Re-sourcing .env...${NC}"
+        set -a
+        source .env
+        set +a
+        export VALIDATION_CLEAN=true
+    else
+        echo -e "${RED}Error: validation-reset.sh failed (exit code $?).${NC}" >&2
+        exit 1
+    fi
+    echo ""
+fi
+
 # Resolve prompt from --task, --prompt-file, or positional argument
 if [ -n "$TASK_NAME" ]; then
     PROMPT=$(resolve_task_prompt "$TASK_NAME")
@@ -204,6 +230,9 @@ SESSION_LOG=".claude/autonomous-sessions/${SESSION_ID}.log"
     fi
     if [ -n "$PROMPT_FILE" ]; then
         echo "Prompt file: ${PROMPT_FILE}"
+    fi
+    if [ "$CLEAN_SLATE" = true ]; then
+        echo "Clean slate: yes"
     fi
     echo "Prompt: ${PROMPT}"
     echo "================================================================================"

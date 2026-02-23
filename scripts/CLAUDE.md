@@ -9,6 +9,7 @@ This directory contains CLI scripts for project setup and maintenance.
 | `setup.js` | `npm run setup` | Interactive setup for provisioning Twilio resources |
 | `enable-autonomous.sh` | `./scripts/enable-autonomous.sh` | Launch Claude Code in autonomous mode (interactive) |
 | `run-headless.sh` | `./scripts/run-headless.sh` | Run Claude Code non-interactively via `claude -p` (CI/CD) |
+| `validation-reset.sh` | `./scripts/validation-reset.sh` | Reset Twilio account to clean state for validation runs |
 | `api-sync/` | `cd scripts/api-sync && npm run sync` | Automated Twilio API drift detection and coverage analysis |
 
 ## Setup Script
@@ -259,6 +260,43 @@ These were discovered across 16 headless sessions and 4 rounds of prompt iterati
 | **Parallel sessions pick same UC** | `random.choice()` with same timing produces identical results | Pass `FORCE_USE_CASE=UCN` per session for diversity |
 | **Parallel sessions share working directory** | Multiple `git checkout -b` commands in the same repo — last one wins | All code lands on one branch; acceptable for validation but unexpected |
 | **Wrong prompt file wastes sessions** | `--prompt-file .meta/random-validation.md` (interactive plan) vs `--task random-validation` (headless-optimized) | Always use `--task random-validation` for headless runs |
+
+## Validation Reset Script
+
+The `validation-reset.sh` script resets the Twilio account to a clean state before validation runs.
+
+### What It Does (7 Phases)
+
+1. **Remove serverless deployment** — finds the `prototype` service and deletes it, clears `TWILIO_CALLBACK_BASE_URL`
+2. **Reset phone number webhooks** — blanks voice URL, SMS URL, fallback URLs, status callbacks on all numbers (numbers are kept)
+3. **Delete & recreate services** — Sync, Verify, Messaging, TaskRouter (workspace + default queue + default workflow). Updates `.env` with new SIDs
+4. **Delete recordings** — removes up to 200 recordings from the account
+5. **Delete transcripts** — removes up to 200 Voice Intelligence transcripts
+6. **Clear validation state** — removes `.meta/sequential-validation-state.json` and local `validation-*` branches
+7. **Summary** — prints what was cleaned and new SIDs
+
+### Usage
+
+```bash
+# Standalone
+./scripts/validation-reset.sh
+
+# Via headless runner (recommended)
+CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --task random-validation --clean --max-turns 120
+```
+
+### Prerequisites
+
+- Must run from project root
+- `.env` with `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN`
+- Twilio CLI installed (for serverless service listing)
+- `curl` and `python3` available
+
+### After Running
+
+1. Re-source `.env` if in a shell session
+2. Run `npm run deploy:dev` to create a fresh serverless deployment
+3. Configure webhooks on phone numbers as needed
 
 ## API Sync Script
 

@@ -1,6 +1,8 @@
 // ABOUTME: Playwright configuration for Voice SDK browser E2E tests.
 // ABOUTME: Configures headless Chrome with fake WebRTC media and auto-starts the test server.
 
+require('dotenv').config();
+
 const { defineConfig, devices } = require('@playwright/test');
 const path = require('path');
 

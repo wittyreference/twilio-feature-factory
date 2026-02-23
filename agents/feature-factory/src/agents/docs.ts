@@ -105,7 +105,7 @@ AFTER work:
 - Include \`docsConsulted\` listing docs reviewed`,
 
   tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep'],
-  maxTurns: 25,
+  maxTurns: 40,
 
   inputSchema: {
     filesCreated: 'string[] - New files from dev phase',

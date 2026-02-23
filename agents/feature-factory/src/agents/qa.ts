@@ -214,7 +214,7 @@ Additional QA-specific rules:
 - Summarize coverage gaps as a list, don't include the full coverage table`,
 
   tools: ['Read', 'Glob', 'Grep', 'Bash'],
-  maxTurns: 50,
+  maxTurns: 80,
 
   inputSchema: {
     testScope: 'string - "unit" | "integration" | "e2e" | "all" (default: "all")',

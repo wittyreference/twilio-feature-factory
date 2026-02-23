@@ -88,7 +88,7 @@ AFTER work:
 - Include \`learningsToCapture\` for any API quirks discovered`,
 
   tools: ['Read', 'Glob', 'Grep'],
-  maxTurns: 30,
+  maxTurns: 60,
 
   inputSchema: {
     feature: 'string - Feature description',

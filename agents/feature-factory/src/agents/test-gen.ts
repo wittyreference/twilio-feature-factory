@@ -123,7 +123,7 @@ Additional test-gen-specific rules:
 - If a test has a syntax error, fix it and re-run only the affected file, not all tests.`,
 
   tools: ['Read', 'Glob', 'Grep', 'Write', 'Bash'],
-  maxTurns: 60,
+  maxTurns: 120,
 
   inputSchema: {
     specification: 'object - Spec from spec phase',

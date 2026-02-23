@@ -183,7 +183,7 @@ describe('FeatureFactoryOrchestrator', () => {
 
       const config = orchestrator.getConfig();
       expect(config.maxBudgetUsd).toBe(5.0);
-      expect(config.maxTurnsPerAgent).toBe(50);
+      expect(config.maxTurnsPerAgent).toBe(200);
       expect(config.defaultModel).toBe('sonnet');
       expect(config.approvalMode).toBe('after-each-phase');
     });

@@ -22,7 +22,7 @@ describe('Feature Factory Integration', () => {
       const config = createConfig();
       expect(() => validateConfig(config)).not.toThrow();
       expect(config.maxBudgetUsd).toBe(5.0);
-      expect(config.maxTurnsPerAgent).toBe(50);
+      expect(config.maxTurnsPerAgent).toBe(200);
       expect(config.defaultModel).toBe('sonnet');
     });
 

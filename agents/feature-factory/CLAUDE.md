@@ -133,7 +133,7 @@ Key differences from new-feature:
 ```typescript
 interface FeatureFactoryConfig {
   maxBudgetUsd: number;        // Default: $5.00 (autonomous: $50)
-  maxTurnsPerAgent: number;    // Default: 50 (autonomous: 200)
+  maxTurnsPerAgent: number;    // Default: 200 (autonomous: 500)
   maxRetriesPerPhase: number;       // Default: 1 (autonomous: 2)
   maxDurationMsPerAgent: number;    // Default: 5min (autonomous: 10min)
   maxDurationMsPerWorkflow: number; // Default: 30min (autonomous: 60min)
@@ -184,7 +184,7 @@ Autonomous mode enables unattended operation for CI/CD pipelines or when you wan
 |--------|-------------|-----------------|
 | Phase approval prompts | Required after architect, spec, review | Auto-approved |
 | Budget limit | $5.00 default | $50.00 (`--budget unlimited` for Infinity) |
-| Max turns/agent | 50 default | 200 |
+| Max turns/agent | 200 default | 500 |
 | Time limit/agent | 5 min | 10 min |
 | Time limit/workflow | 30 min | 60 min |
 | Sandbox isolation | Off (opt-in with `--sandbox`) | **On by default** (opt-out with `--no-sandbox`) |
@@ -466,7 +466,7 @@ Validation is **skipped** for:
 | Control | Default | Autonomous | Purpose |
 |---------|---------|------------|---------|
 | `maxBudgetUsd` | $5.00 | $50.00 | Total budget per feature |
-| `maxTurnsPerAgent` | 50 | 200 | Prevent infinite loops |
+| `maxTurnsPerAgent` | 200 | 500 | Fallback ceiling (stall detection is primary) |
 | `maxDurationMsPerAgent` | 5 min | 10 min | Per-agent time limit |
 | `maxRetriesPerPhase` | 1 | 2 | Retry failed phases with feedback |
 | `maxDurationMsPerWorkflow` | 30 min | 60 min | Per-workflow time limit |

@@ -142,7 +142,7 @@ Additional review-specific rules:
 - If the file list is long, prioritize: security-relevant files first, then logic, then docs`,
 
   tools: ['Read', 'Glob', 'Grep'],
-  maxTurns: 30,
+  maxTurns: 50,
 
   inputSchema: {
     filesCreated: 'string[] - New files from dev phase',

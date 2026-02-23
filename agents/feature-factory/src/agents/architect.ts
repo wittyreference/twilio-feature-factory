@@ -77,7 +77,7 @@ AFTER work:
 - Include \`docsToUpdate\` if patterns need updating`,
 
   tools: ['Read', 'Glob', 'Grep'],
-  maxTurns: 20,
+  maxTurns: 40,
 
   inputSchema: {
     feature: 'string - Feature description from user',

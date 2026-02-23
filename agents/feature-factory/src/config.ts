@@ -18,8 +18,8 @@ export interface FeatureFactoryConfig {
 
   /**
    * Maximum turns per agent before stopping.
-   * Prevents infinite loops.
-   * @default 50
+   * Fallback ceiling — stall detection (StallDetector) is the primary guardrail.
+   * @default 200
    */
   maxTurnsPerAgent: number;
 
@@ -133,7 +133,7 @@ export interface FeatureFactoryConfig {
  */
 export const DEFAULT_CONFIG: FeatureFactoryConfig = {
   maxBudgetUsd: 5.0,
-  maxTurnsPerAgent: 50,
+  maxTurnsPerAgent: 200,
   defaultModel: 'sonnet',
   approvalMode: 'after-each-phase',
   twilioMcpEnabled: true,
@@ -177,7 +177,7 @@ export function createConfig(
       config.maxBudgetUsd = 50.0;
     }
     if (!options.maxTurnsPerAgent) {
-      config.maxTurnsPerAgent = 200;
+      config.maxTurnsPerAgent = 500;
     }
     if (!options.maxDurationMsPerAgent) {
       config.maxDurationMsPerAgent = 10 * 60 * 1000;   // 10 min (elevated from 5)

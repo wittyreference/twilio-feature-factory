@@ -907,7 +907,7 @@ Fixed turn limits remain as a backstop (elevated to 200 in autonomous mode) but 
 
 ### Status
 
-**Implemented** — Validated via 3 smoke test runs (Session 24). Two bugs found and fixed: (1) Bash calls not counted as file activity (`fileChangeTools` missing `'Bash'`), (2) `hadFileActivity` always false due to `hasOwnProperty('is_error')` checking property existence instead of value (property is always present). Post-fix: zero false idle stalls across a full pipeline run. `idleTurnThreshold` set to 15.
+**Implemented** — Validated across 5 smoke test runs (Sessions 24-25). Two bugs found and fixed in runs 1-2: (1) Bash calls not counted as file activity (`fileChangeTools` missing `'Bash'`), (2) `hadFileActivity` always false due to `hasOwnProperty('is_error')` checking property existence instead of value (property is always present). Runs 3-5: zero false stall detections, including under 529 API overload (run 4) and 10min time limits (run 5). `idleTurnThreshold` set to 15.
 
 ---
 
@@ -924,7 +924,7 @@ Autonomous mode set `maxBudgetUsd` and `maxTurnsPerAgent` to `Infinity`. A runaw
 | Limit | Normal | Autonomous | `--budget unlimited` |
 |-------|--------|------------|---------------------|
 | `maxBudgetUsd` | $5.00 | $50.00 | Infinity |
-| `maxTurnsPerAgent` | 50 | 200 | 200 |
+| `maxTurnsPerAgent` | 200 | 500 | 500 |
 | `maxDurationMsPerAgent` | 5 min | 10 min | 10 min |
 | `maxDurationMsPerWorkflow` | 30 min | 60 min | 60 min |
 
@@ -948,6 +948,7 @@ Key design choice: `createConfig()` checks whether the user explicitly passed va
 - Users who truly need Infinity must explicitly request it
 - `validateConfig()` no longer skips validation for autonomous mode (Infinity > 0 passes)
 - Time enforcement in all three workflow paths (run, continue, resume)
+- Stall detection (D19) is now the primary guardrail; turn limits serve as a fallback ceiling rather than the primary control
 
 ### Status
 
@@ -1418,3 +1419,4 @@ The orchestrator stores completed workflow data as `PersistedReplayScenario` obj
 | 2026-02-18 | D27 | File-based worker status over HTTP API (dev tool pattern, consistent with session.ts) |
 | 2026-02-18 | D28 | Tier-based approval policy (source > priority > tier defaults, budget enforcement) |
 | 2026-02-20 | D29 | ReplayVerifier integration via persisted scenarios (file-based, --verify-learnings CLI flag) |
+| 2026-02-23 | D19, D21 | Stall detection validated across 5 smoke runs; turn limits raised (D21: 50→200 normal, 200→500 autonomous) since behavioral detection is now the primary guardrail |

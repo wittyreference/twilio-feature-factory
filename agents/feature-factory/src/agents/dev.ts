@@ -125,7 +125,7 @@ Additional dev-specific rules:
 - After each test passes, don't re-read the test file — move to the next failing test`,
 
   tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash'],
-  maxTurns: 60,
+  maxTurns: 120,
 
   inputSchema: {
     specification: 'object - Spec from spec phase',

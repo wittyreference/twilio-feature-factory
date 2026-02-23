@@ -40,7 +40,7 @@ describe('Autonomous Mode', () => {
 
       expect(config.approvalMode).toBe('none');
       expect(config.maxBudgetUsd).toBe(50.0);
-      expect(config.maxTurnsPerAgent).toBe(200);
+      expect(config.maxTurnsPerAgent).toBe(500);
       expect(config.maxDurationMsPerAgent).toBe(600000);      // 10 min
       expect(config.maxDurationMsPerWorkflow).toBe(3600000);   // 60 min
     });

@@ -260,6 +260,8 @@ These were discovered across 16 headless sessions and 4 rounds of prompt iterati
 | **Parallel sessions pick same UC** | `random.choice()` with same timing produces identical results | Pass `FORCE_USE_CASE=UCN` per session for diversity |
 | **Parallel sessions share working directory** | Multiple `git checkout -b` commands in the same repo — last one wins | All code lands on one branch; acceptable for validation but unexpected |
 | **Wrong prompt file wastes sessions** | `--prompt-file .meta/random-validation.md` (interactive plan) vs `--task random-validation` (headless-optimized) | Always use `--task random-validation` for headless runs |
+| **MCP server needs `.env` sourced** | MCP tools fail with auth errors if env vars aren't exported | `run-headless.sh` must export env vars for MCP tools to work |
+| **Headless validation burns turns on infrastructure** | Setup, deploy, and webhook config consume 30-40% of turn budget before validation starts | Use `--task random-validation` with `--max-turns 120` to leave room |
 
 ## Validation Reset Script
 

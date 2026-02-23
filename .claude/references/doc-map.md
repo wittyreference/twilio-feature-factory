@@ -16,6 +16,7 @@ Quick lookup for which documentation to check BEFORE taking action.
 | Twilio CLI | [twilio-cli.md](/.claude/references/twilio-cli.md) | - |
 | API changes/drift | [twilio-api-changes.md](/.claude/references/twilio-api-changes.md) | [twilio-cli.md](/.claude/references/twilio-cli.md) |
 | Tool boundaries | [tool-boundaries.md](/.claude/references/tool-boundaries.md) | - |
+| Operational gotchas | [operational-gotchas.md](/.claude/references/operational-gotchas.md) | Domain CLAUDE.md files |
 | Getting started | [WALKTHROUGH.md](/WALKTHROUGH.md) | - |
 
 ### By Directory
@@ -31,7 +32,7 @@ Quick lookup for which documentation to check BEFORE taking action.
 **Functions** (`functions/`): Each domain has its own CLAUDE.md
 - voice, messaging, conversation-relay, verify, sync, taskrouter, callbacks, messaging-services
 
-**References** (`.claude/references/`): twilio-cli.md, twilio-api-changes.md, tool-boundaries.md, doc-map.md
+**References** (`.claude/references/`): twilio-cli.md, twilio-api-changes.md, tool-boundaries.md, operational-gotchas.md, doc-map.md
 
 ---
 

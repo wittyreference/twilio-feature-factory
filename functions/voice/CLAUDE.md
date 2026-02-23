@@ -309,6 +309,14 @@ When using `Record=true` on the Conference Participants API, recording starts fr
 
 Don't combine `--record` CLI flag (or `Record=true` API param) with `<Start><Recording>` TwiML — this creates two recordings (one OutboundAPI 1-channel, one TwiML 2-channel). Pick one method.
 
+### Participants API to Twilio Numbers Invokes the Voice URL
+
+The Participants API does NOT auto-generate conference TwiML. When you add a Twilio number as a participant, that number's voice URL fires and must return conference-joining TwiML. Conference name is NOT passed in the webhook params — use `make_call` with `?ConferenceName=X` query param instead so the handler knows which conference to join.
+
+### Pre-E2E: Verify ALL Phone Numbers Have Voice URLs
+
+Before running E2E tests, verify every phone number in the call flow has a voice URL — not just the inbound/tracking numbers, but Dial destinations, agent numbers, and business lines. A number with `voiceUrl: null` causes `<Dial>` to fail immediately with no useful error.
+
 ## File Naming Conventions
 
 - `*.js` - Public endpoints (no signature validation)

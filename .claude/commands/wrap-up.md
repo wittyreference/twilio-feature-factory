@@ -56,9 +56,21 @@ For each changed file, determine if documentation needs updating:
 
 Only update docs where the session's changes actually warrant it. Don't touch docs for unrelated areas.
 
-### 4. Update Auto-Memory
+### 4. Sync Auto-Memory ↔ Shipped Docs
 
-If any learnings are the kind that should persist across sessions (common mistakes, project conventions, deployment gotchas), update `~/.claude/projects/-Users-mcarpenter-workspaces-twilio-feature-factory/memory/MEMORY.md`.
+**Promote outward**: Check auto-memory for entries that should be in shipped docs:
+
+| Entry Type | Promote To |
+|------------|------------|
+| API/SDK gotcha (clear domain) | Domain CLAUDE.md Gotchas section |
+| Cross-cutting gotcha | `.claude/references/operational-gotchas.md` |
+| CLI quirk | `.claude/references/twilio-cli.md` |
+| High-impact rule | Root CLAUDE.md "Architectural Invariants" |
+| Per-developer convention | Keep in auto-memory |
+
+After promoting, replace the detailed item with a pointer (e.g., "See functions/voice/CLAUDE.md#gotchas"). Don't delete — pointers prevent re-discovery of the same gotcha.
+
+**Capture inward**: Add session learnings that should persist across sessions to auto-memory at `~/.claude/projects/-Users-mcarpenter-workspaces-twilio-feature-factory/memory/MEMORY.md`.
 
 ### 5. Update Todo
 

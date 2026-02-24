@@ -506,11 +506,14 @@ const room = await connect(token, {
       mode: 'collaboration',
       dominantSpeakerPriority: 'high',
       trackSwitchOffMode: 'predicted',
-      contentPreferencesMode: 'auto'
+      clientTrackSwitchOffControl: 'auto',  // Auto-manage track visibility
+      contentPreferencesMode: 'auto'         // Allocate bandwidth by render size
     }
   }
 });
 ```
+
+**Note:** The Track Priority API is deprecated. Use `clientTrackSwitchOffControl` and `contentPreferencesMode` (both default to `'auto'`) to manage bandwidth allocation based on rendered video tile sizes.
 
 **Track Switch Off Modes:**
 
@@ -891,7 +894,7 @@ Available regions: `us1`, `us2`, `ie1`, `de1`, `au1`, `br1`, `jp1`, `sg1`, `in1`
 
 - 16 video tracks max visible simultaneously
 - Additional participants can publish, but not all visible
-- Use dominant speaker + track priority for best UX
+- Use Bandwidth Profile with `clientTrackSwitchOffControl: 'auto'` and `contentPreferencesMode: 'auto'` to automatically manage which tracks receive bandwidth based on render dimensions
 
 ### Reconnection Handling
 

@@ -42,7 +42,7 @@ PSTN Integration can be added at any level for phone dial-in/dial-out.
 | `peer-to-peer` | ❌ NEVER | Not HIPAA-eligible, limited features |
 | `go` | ❌ NEVER | Not HIPAA-eligible, legacy WebRTC |
 
-**Why this matters:** Peer-to-peer and Go rooms are legacy room types that lack HIPAA eligibility, recording, transcription, and other features. Always default to `group` regardless of participant count.
+**Why this matters:** Peer-to-peer and WebRTC Go rooms are legacy room types that lack HIPAA eligibility, recording, transcription, and other features. Always default to `group` regardless of participant count.
 
 ---
 
@@ -66,22 +66,21 @@ PSTN Integration can be added at any level for phone dial-in/dial-out.
 ### Recording: ON vs OFF
 
 **Turn Recording ON when:**
-- Compliance requirements (healthcare, legal, financial)
+- Compliance requirements (legal, financial)
 - Training/playback needed later
 - Quality assurance review
 - Proctoring/monitoring use case
 
 **Keep Recording OFF when:**
 - Privacy-sensitive (therapy, legal consultation where recording prohibited)
-- Bandwidth/cost constraints
 - No retention requirements
-- HIPAA without BAA in place
+
 
 ### Composition vs Raw Track Recordings
 
 **Use Compositions when:**
 - Need single MP4/WebM file for playback
-- Sharing recording with end users
+- Sharing a recording of the Video Room with end users
 - Archival/compliance with standard format
 - Grid/speaker layout needed
 
@@ -110,7 +109,6 @@ PSTN Integration can be added at any level for phone dial-in/dial-out.
 - Participants may not have video-capable devices
 - Backup access method needed
 - Dial-out to experts/consultants
-- Enterprise environments with phone-centric users
 
 **Skip PSTN when:**
 - All participants guaranteed to have app/browser
@@ -419,7 +417,7 @@ ALWAYS CHECK (every room):
 
 WHEN USING TRANSCRIPTION (add these):
 □ Transcription resource exists
-□ Transcription status = 'in-progress'
+□ Transcription status = 'started'
 □ Sentences appearing (not stuck)
 □ Speaker attribution working
 
@@ -743,7 +741,7 @@ room.on('disconnected', (room, error) => {
   - Recordings: `list_video_recordings`, `get_video_recording`, `delete_video_recording`
   - Compositions: `list_compositions`, `get_composition`, `create_composition`, `delete_composition`
   - Hooks: `list_composition_hooks`, `create_composition_hook`, `delete_composition_hook`
-- [DeepValidator](/agents/mcp-servers/twilio/src/validation/deep-validator.ts) - `validateVideoRoom()` method
+- [Validation Tools](/agents/mcp-servers/twilio/src/tools/validation.ts) - `validate_video_room` MCP tool
 - [Deep Validation Skill](/.claude/skills/deep-validation.md) - Video validation patterns
 - [Twilio Video Docs](https://www.twilio.com/docs/video) - Official reference
 - [Video JavaScript SDK](https://www.twilio.com/docs/video/javascript) - Browser integration

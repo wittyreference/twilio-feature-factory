@@ -259,12 +259,16 @@ Respond with instructions for what action to take:
 // functions/taskrouter/assignment.protected.js
 exports.handler = async (context, event, callback) => {
   const taskAttributes = JSON.parse(event.TaskAttributes);
+  const workerAttributes = JSON.parse(event.WorkerAttributes || '{}');
 
-  // For voice calls - dequeue to worker
+  // For voice calls - bridge via conference so both legs get independent TwiML
   if (taskAttributes.type === 'call') {
     return callback(null, {
-      instruction: 'dequeue',
-      post_work_activity_sid: context.AFTER_CALL_ACTIVITY_SID
+      instruction: 'conference',
+      from: context.TWILIO_PHONE_NUMBER,
+      to: workerAttributes.contact_uri || workerAttributes.phone,
+      conference_record: 'record-from-start',
+      end_conference_on_exit: true,
     });
   }
 
@@ -281,7 +285,8 @@ exports.handler = async (context, event, callback) => {
 |-------------|-------------|------------|
 | `accept` | Accept the reservation | - |
 | `reject` | Reject the reservation | `activity_sid` (optional) |
-| `dequeue` | Connect voice call to worker | `from`, `post_work_activity_sid` |
+| `dequeue` | Connect voice call to worker (simple bridge) | `from`, `post_work_activity_sid` |
+| `conference` | Bridge caller and worker via conference room | `from`, `to`, `conference_record`, `end_conference_on_exit` |
 | `call` | Initiate outbound call to worker | `url`, `from`, `to` |
 | `redirect` | Redirect call to TwiML | `url` |
 

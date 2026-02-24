@@ -44,6 +44,18 @@ Read-only operations agents can perform freely via MCP tools.
 | List Sync documents | `list_documents` | State enumeration |
 | List TaskRouter workers | `list_workers` | Availability check |
 | List TaskRouter workflows | `list_workflows` | Routing config review |
+| List TaskRouter task queues | `list_task_queues` | Queue topology discovery |
+| Get TaskRouter task queue | `get_task_queue` | Queue config inspection |
+| Get TaskRouter queue stats | `get_queue_statistics` | Real-time operational metrics |
+| List TaskRouter activities | `list_activities` | Worker state discovery |
+| List TaskRouter reservations | `list_reservations` | Task-to-worker match visibility |
+| List Sync Lists | `list_sync_lists` | List enumeration |
+| List Sync List items | `list_sync_list_items` | Collection read |
+| List Sync Maps | `list_sync_maps` | Map enumeration |
+| Get Sync Map item | `get_sync_map_item` | Key-value lookup |
+| List call queues | `list_queues` | Queue inventory |
+| Get call queue | `get_queue` | Queue details |
+| Get payment status | `get_payment` | Payment status check |
 | Get verification status | `get_verification_status` | Status check |
 
 ### Tier 2: Controlled (Agent with Guardrails)
@@ -59,6 +71,20 @@ Write operations agents can perform with rate limits or validation.
 | Create Sync document | `create_document` | Namespace isolation for agent state |
 | Update Sync document | `update_document` | Agent-owned documents only |
 | Create TaskRouter task | `create_task` | Priority caps, timeout limits |
+| Update TaskRouter task | `update_task` | Changes task state |
+| Update TaskRouter worker | `update_worker` | Changes worker availability |
+| Update TaskRouter reservation | `update_reservation` | Completes assignment flow |
+| Create Sync List | `create_sync_list` | Resource creation |
+| Add Sync List item | `add_sync_list_item` | Data write |
+| Update Sync List item | `update_sync_list_item` | Data mutation |
+| Remove Sync List item | `remove_sync_list_item` | Data deletion |
+| Create Sync Map | `create_sync_map` | Resource creation |
+| Add Sync Map item | `add_sync_map_item` | Data write |
+| Update Sync Map item | `update_sync_map_item` | Data mutation |
+| Remove Sync Map item | `remove_sync_map_item` | Data deletion |
+| Create payment | `create_payment` | PCI Mode required (irreversible) |
+| Update payment | `update_payment` | Completes/cancels payment |
+| Dequeue member | `dequeue_member` | Redirects queued caller |
 
 ### Tier 3: Supervised (Human Confirmation Required)
 

@@ -4,15 +4,17 @@ This directory contains the Model Context Protocol (MCP) server that exposes Twi
 
 ## Purpose
 
-The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **284 tools across 27 modules** covering:
+The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **310 tools across 28 modules** covering:
 
 - **Messaging**: SMS/MMS, messaging services, content templates, notifications
-- **Voice**: Call management, conferences, recordings, media streams, Voice Insights, transcriptions, BYOC trunks, SIP trunking
+- **Voice**: Call management, conferences, recordings, media streams, Voice Insights, transcriptions, call queues, BYOC trunks, SIP trunking
 - **Phone Numbers**: Management, regulatory bundles, lookups, addresses
 - **Identity**: Verification, TrustHub profiles, trust products, IAM (API keys)
-- **Routing**: TaskRouter, Studio flows, Proxy number masking
+- **Routing**: TaskRouter (tasks, queues, workers, activities, reservations), Studio flows, Proxy number masking
+- **Payments**: PCI-compliant payment capture on active calls
 - **Media**: Video rooms, recordings, compositions
 - **Serverless**: Functions, builds, environments, variables
+- **State**: Sync Documents, Lists, Maps for real-time state synchronization
 - **Monitoring**: Debugger logs, usage records, Voice Intelligence
 - **Billing**: Account management, usage triggers, pricing lookups
 
@@ -26,8 +28,9 @@ src/
     ├── voice.ts          # Calls, conferences, media streams, insights, transcription (P0)
     ├── phone-numbers.ts  # Phone number management (P0)
     ├── verify.ts         # Verification API (P0)
-    ├── sync.ts           # Real-time state sync (P0)
-    ├── taskrouter.ts     # Task routing (P0)
+    ├── payments.ts       # PCI-compliant payments (P0)
+    ├── sync.ts           # Real-time state sync: Documents, Lists, Maps (P0)
+    ├── taskrouter.ts     # Task routing: tasks, queues, workers, activities, reservations (P0)
     ├── debugger.ts       # Error logs and analysis (P0)
     ├── lookups.ts        # Phone intelligence (P1)
     ├── studio.ts         # Flow builder (P1)
@@ -107,7 +110,7 @@ for await (const message of query({
 | `get_message_logs` | Retrieve message history |
 | `get_message_status` | Check delivery status |
 
-### Voice Tools - 29 tools
+### Voice Tools — 32 tools
 
 | Tool | Description |
 |------|-------------|
@@ -140,6 +143,9 @@ for await (const message of query({
 | `get_conference_participant_summary` | Single participant summary |
 | `list_recording_transcriptions` | List transcriptions for recording |
 | `get_transcription` | Get transcription text |
+| `list_queues` | List call queues |
+| `get_queue` | Get queue details (size, wait time) |
+| `dequeue_member` | Dequeue caller by SID or "Front" |
 
 **Recording Methods (by source):**
 | Source | How Created | Control API |
@@ -177,7 +183,17 @@ for await (const message of query({
 | `check_verification` | Verify user-provided code |
 | `get_verification_status` | Check verification status |
 
-### Sync Tools
+### Payments Tools — 3 tools
+
+**WARNING**: PCI Mode is IRREVERSIBLE and account-wide. Always use a subaccount for payments testing.
+
+| Tool | Description |
+|------|-------------|
+| `create_payment` | Initiate PCI-compliant DTMF payment capture on active call |
+| `update_payment` | Complete, cancel, or capture next field of in-progress payment |
+| `get_payment` | Get payment status and tokenization result |
+
+### Sync Tools — 16 tools
 
 | Tool | Description |
 |------|-------------|
@@ -185,15 +201,36 @@ for await (const message of query({
 | `update_document` | Update document data |
 | `get_document` | Retrieve document |
 | `list_documents` | List all documents |
+| `create_sync_list` | Create ordered list for event logs, history |
+| `list_sync_lists` | List all Sync Lists |
+| `add_sync_list_item` | Append entry to a list |
+| `list_sync_list_items` | Read list entries with ordering |
+| `update_sync_list_item` | Update entry by index |
+| `remove_sync_list_item` | Delete entry by index |
+| `create_sync_map` | Create key-value map for state, config |
+| `list_sync_maps` | List all Sync Maps |
+| `add_sync_map_item` | Set key-value pair |
+| `get_sync_map_item` | Lookup by key |
+| `update_sync_map_item` | Update key-value pair |
+| `remove_sync_map_item` | Delete by key |
 
-### TaskRouter Tools
+### TaskRouter Tools — 13 tools
 
 | Tool | Description |
 |------|-------------|
 | `create_task` | Create a new task |
-| `list_tasks` | List tasks in queue |
+| `list_tasks` | List tasks with status filter |
 | `get_task_status` | Check task status |
+| `update_task` | Change priority, attributes, assignment status |
 | `list_workers` | List available workers |
+| `update_worker` | Change worker activity or attributes (Tier 2) |
+| `list_workflows` | List routing workflows |
+| `list_task_queues` | List all task queues |
+| `get_task_queue` | Get queue details and target worker expression |
+| `get_queue_statistics` | Real-time stats: available workers, pending tasks, wait times |
+| `list_activities` | List worker activity states (Available, Offline, etc.) |
+| `list_reservations` | List reservations for a task |
+| `update_reservation` | Accept, reject, conference, dequeue, redirect (Tier 2) |
 
 ### Debugger Tools
 

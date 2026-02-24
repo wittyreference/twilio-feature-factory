@@ -23,7 +23,7 @@ Production-ready Twilio serverless functions for voice, messaging, verification,
 
 Autonomous agent infrastructure built on Claude Agent SDK and MCP. These are AI-assisted development tools, not production Twilio serverless code.
 
-- `agents/mcp-servers/twilio/` — MCP server wrapping Twilio APIs as 261+ tools
+- `agents/mcp-servers/twilio/` — MCP server wrapping Twilio APIs as 310 tools
 - `agents/feature-factory/` — Orchestrated development workflows
 - `agents/voice-ai-builder/` — Voice AI application generator
 

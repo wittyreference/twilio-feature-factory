@@ -1283,6 +1283,101 @@ export function voiceTools(context: TwilioContext) {
     }
   );
 
+  // ============================================
+  // Call Queue Tools
+  // ============================================
+
+  const listQueues = createTool(
+    'list_queues',
+    'List call queues in the account.',
+    z.object({
+      limit: z.number().min(1).max(100).optional().default(20).describe('Max results (1-100, default 20)'),
+    }),
+    async ({ limit }) => {
+      const queues = await client.queues.list({ limit: limit || 20 });
+
+      const formatted = queues.map((q) => ({
+        sid: q.sid,
+        friendlyName: q.friendlyName,
+        currentSize: q.currentSize,
+        maxSize: q.maxSize,
+        averageWaitTime: q.averageWaitTime,
+        dateCreated: q.dateCreated,
+        dateUpdated: q.dateUpdated,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ success: true, count: formatted.length, queues: formatted }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const getQueue = createTool(
+    'get_queue',
+    'Get detailed information about a specific call queue.',
+    z.object({
+      queueSid: z.string().startsWith('QU').describe('Queue SID (starts with QU)'),
+    }),
+    async ({ queueSid }) => {
+      const queue = await client.queues(queueSid).fetch();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: queue.sid,
+            friendlyName: queue.friendlyName,
+            currentSize: queue.currentSize,
+            maxSize: queue.maxSize,
+            averageWaitTime: queue.averageWaitTime,
+            dateCreated: queue.dateCreated,
+            dateUpdated: queue.dateUpdated,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const dequeueMember = createTool(
+    'dequeue_member',
+    'Dequeue a specific caller from a call queue by redirecting them to a TwiML URL. ' +
+      'Use a Call SID to dequeue a specific member, or "Front" to dequeue the first member in line.',
+    z.object({
+      queueSid: z.string().startsWith('QU').describe('Queue SID (starts with QU)'),
+      callSid: z.string().describe('Call SID of the member (starts with CA), or "Front" to dequeue the first member'),
+      url: z.string().url().describe('TwiML URL to execute for the dequeued call'),
+      method: z.enum(['GET', 'POST']).optional().describe('HTTP method for the TwiML URL'),
+    }),
+    async ({ queueSid, callSid, url, method }) => {
+      const updateParams: {
+        url: string;
+        method?: 'GET' | 'POST';
+      } = { url };
+
+      if (method) {updateParams.method = method;}
+
+      const member = await client.queues(queueSid).members(callSid).update(updateParams);
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            callSid: member.callSid,
+            queueSid: member.queueSid,
+            dateEnqueued: member.dateEnqueued,
+            waitTime: member.waitTime,
+            position: member.position,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
   return [
     // Core call tools
     getCallLogs,
@@ -1322,5 +1417,9 @@ export function voiceTools(context: TwilioContext) {
     // Transcription
     listRecordingTranscriptions,
     getTranscription,
+    // Call Queues
+    listQueues,
+    getQueue,
+    dequeueMember,
   ];
 }

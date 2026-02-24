@@ -6,6 +6,7 @@ import { messagingTools } from './tools/messaging.js';
 import { voiceTools } from './tools/voice.js';
 import { phoneNumberTools } from './tools/phone-numbers.js';
 import { verifyTools } from './tools/verify.js';
+import { paymentsTools } from './tools/payments.js';
 import { syncTools } from './tools/sync.js';
 import { taskrouterTools } from './tools/taskrouter.js';
 import { debuggerTools } from './tools/debugger.js';
@@ -89,6 +90,7 @@ export function createTwilioMcpServer(config: TwilioMcpServerConfig = {}) {
       ...voiceTools(context),
       ...phoneNumberTools(context),
       ...verifyTools(context),
+      ...paymentsTools(context),
       ...syncTools(context),
       ...taskrouterTools(context),
       ...debuggerTools(context),
@@ -125,6 +127,7 @@ export { messagingTools } from './tools/messaging.js';
 export { voiceTools } from './tools/voice.js';
 export { phoneNumberTools } from './tools/phone-numbers.js';
 export { verifyTools } from './tools/verify.js';
+export { paymentsTools } from './tools/payments.js';
 export { syncTools } from './tools/sync.js';
 export { taskrouterTools } from './tools/taskrouter.js';
 export { debuggerTools } from './tools/debugger.js';

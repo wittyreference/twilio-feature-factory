@@ -34,6 +34,14 @@ exports.handler = async function (context, event, callback) {
   console.log(`Agent A inbound call from ${event.From} to ${event.To}`);
   console.log(`Connecting to relay: ${relayUrl}`);
 
+  // Start background recording before ConversationRelay takes over
+  const domainName = context.DOMAIN_NAME || 'localhost';
+  const start = twiml.start();
+  start.recording({
+    recordingStatusCallback: `https://${domainName}/callbacks/call-status`,
+    recordingStatusCallbackEvent: 'completed',
+  });
+
   // Connect to ConversationRelay
   const connect = twiml.connect();
   connect.conversationRelay({

@@ -39,6 +39,8 @@ Conversation Relay enables real-time, bidirectional communication between phone 
 - DTMF detection
 - Interruption handling
 
+**Not to be confused with Media Streams** (`<Connect><Stream>`): Media Streams sends raw audio (mulaw 8kHz base64 frames) and requires a completely different WebSocket protocol. A ConversationRelay WebSocket handler cannot be used with `<Stream>` — they will disconnect immediately. ConversationRelay sends structured JSON messages (`type: "prompt"`, `type: "text"`), while Media Streams sends binary audio frames.
+
 ## TwiML Setup
 
 ### Basic Connection
@@ -476,6 +478,8 @@ const transcript = await client.intelligence.v2.transcripts.create({
   customerKey: callSid,  // For correlation
 });
 ```
+
+**Language Operators run automatically**: When operators (e.g., Conversation Summary, Sentiment Analysis) are configured on the Intelligence service in the Twilio Console, they automatically run on every transcript created via that service. No per-transcript operator invocation is needed.
 
 ## Testing Conversation Relay
 

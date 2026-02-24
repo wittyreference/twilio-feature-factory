@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // ABOUTME: MCP stdio server entry point for Claude Code integration.
 // ABOUTME: Bridges createTwilioMcpServer() tool format to MCP JSON-RPC protocol over stdin/stdout.
 

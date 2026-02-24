@@ -78,7 +78,8 @@
     "infrastructure": [
       "agents/mcp-servers/",
       "agents/feature-factory/",
-      "agents/voice-ai-builder/"
+      "agents/voice-ai-builder/",
+      ".mcp.json"
     ]
   },
   "adaptation_types": {

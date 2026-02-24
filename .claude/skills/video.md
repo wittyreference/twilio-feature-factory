@@ -213,6 +213,129 @@ Proctors can join a student's room in two modes:
 
 ---
 
+## Supervised Communication
+
+Supervised communication is a category of video applications where an observer or supervisor can join a room **without the other participants being aware**. This goes beyond simply not publishing tracks—the observer is truly invisible to other participants.
+
+**Use Cases:**
+- **Exam proctoring** - Proctor monitors student without student knowing when they're being watched
+- **Prison/correctional visitation** - Guard monitors inmate-visitor conversation invisibly
+- **Call center supervision** - Manager listens to agent-customer video calls
+- **Training observation** - Trainer watches trainee sessions without affecting behavior
+
+### Track Subscriptions API
+
+The Track Subscriptions API enables true observer patterns by controlling which tracks each participant subscribes to. By default, rooms use "subscribe-to-all" where every participant receives every published track. This API allows custom communication topologies.
+
+**API Endpoint:**
+```
+POST /v1/Rooms/{RoomSid}/Participants/{ParticipantSid}/SubscribeRules
+```
+
+**Rule Structure:**
+```json
+{
+  "type": "include|exclude",
+  "all": true,
+  "publisher": "participant_identity",
+  "kind": "audio|video|data"
+}
+```
+
+### True Observer Pattern (Invisible to Others)
+
+To make an observer truly invisible, configure **other participants'** subscribe rules to exclude the observer's tracks:
+
+```javascript
+// When observer joins, update each existing participant's subscribe rules
+async function makeObserverInvisible(roomSid, observerIdentity, participantSids) {
+  for (const participantSid of participantSids) {
+    await client.video.v1
+      .rooms(roomSid)
+      .participants(participantSid)
+      .subscribeRules
+      .update({
+        rules: [
+          { type: 'include', all: true },
+          { type: 'exclude', publisher: observerIdentity }
+        ]
+      });
+  }
+}
+
+// Observer subscribes to all tracks (sees everyone)
+async function observerSubscribesToAll(roomSid, observerSid) {
+  await client.video.v1
+    .rooms(roomSid)
+    .participants(observerSid)
+    .subscribeRules
+    .update({
+      rules: [{ type: 'include', all: true }]
+    });
+}
+```
+
+**Result:**
+- Observer sees and hears all participants
+- Participants do NOT receive observer's tracks (even if observer publishes)
+- Participant count still increments (unavoidable)
+
+### Observer Visibility Levels
+
+| Level | Implementation | Participant Sees |
+|-------|----------------|------------------|
+| **Visible** | Default subscribe-to-all | Observer's identity, audio, video |
+| **Silent** | Observer publishes no tracks | Participant count increases, no media |
+| **Invisible** | Track Subscriptions API exclusion | Participant count increases, no media, no track events |
+
+**Key difference between Silent and Invisible:**
+- **Silent**: Participants receive `participantConnected` and `trackSubscribed` events for observer (even if no tracks)
+- **Invisible**: Participants receive `participantConnected` but observer's tracks are filtered out at the SFU level
+
+### Prison Visitation Example
+
+```javascript
+// Room setup: inmate + visitor + guard (invisible)
+const room = await client.video.v1.rooms.create({
+  uniqueName: `visitation-${inmateId}-${Date.now()}`,
+  type: 'group',
+  maxParticipants: 3,
+  recordParticipantsOnConnect: true  // Compliance recording
+});
+
+// When guard joins, make them invisible to inmate and visitor
+async function onGuardJoined(roomSid, guardIdentity) {
+  const participants = await client.video.v1.rooms(roomSid).participants.list();
+
+  for (const p of participants) {
+    if (p.identity !== guardIdentity) {
+      await client.video.v1
+        .rooms(roomSid)
+        .participants(p.sid)
+        .subscribeRules
+        .update({
+          rules: [
+            { type: 'include', all: true },
+            { type: 'exclude', publisher: guardIdentity }
+          ]
+        });
+    }
+  }
+}
+```
+
+### Gotchas for Supervised Communication
+
+**Participant count is visible:** The Track Subscriptions API hides media tracks, not participant presence. If your UI shows "2 participants" and it suddenly shows "3", users may notice. Options:
+- Use server-side participant list filtering in your app
+- Accept that count reveals observation (may be acceptable for compliance)
+
+**New participants need rules updated:** When a new participant joins after the observer, you must update their subscribe rules too. Use `participantConnected` webhook to trigger rule updates.
+
+**Observer can still publish (if they want to intervene):** The exclusion rules don't prevent observer from publishing—they just prevent others from receiving. Observer can "decloak" by removing the exclusion rules when intervention is needed.
+
+---
+
 ## SDK Integration (Client-Side)
 
 Video is heavily client-side. Each platform has an SDK for room connections.
@@ -332,17 +455,52 @@ return token.toJwt();
 
 ## Network Quality & Bandwidth
 
+### Simulcast (Enable First)
+
+**CRITICAL:** Enable VP8 Simulcast for any room with 3+ participants. Simulcast creates multiple encoded versions of each video stream at different resolutions/bitrates, allowing subscribers to receive the version matching their display needs and bandwidth.
+
+```javascript
+const room = await connect(token, {
+  preferredVideoCodecs: [{ codec: 'VP8', simulcast: true }]
+});
+```
+
+**When to use Simulcast:**
+
+| Room Type | Simulcast | Why |
+|-----------|-----------|-----|
+| 1-to-1 | ❌ Disable | Unnecessary overhead |
+| 3+ participants | ✅ Enable | Essential for quality at scale |
+| 5+ participants | ✅ Required | Quality degrades significantly without it |
+
+**How Simulcast Works:**
+- Publisher sends 3 quality layers simultaneously (high, medium, low)
+- SFU (Selective Forwarding Unit) selects appropriate layer per subscriber
+- Subscribers automatically receive best layer for their bandwidth and render dimensions
+- Reduces need for manual quality adaptation
+
+**Codec limitation:** H.264 does NOT support simulcast. Use VP8 for multiparty rooms. Only use H.264 for 1-to-1 calls or when Safari compatibility requires it.
+
 ### Bandwidth Profiles
 
-| Profile | Best For | Behavior |
-|---------|----------|----------|
-| `grid` | Equal-size tiles | Balanced quality across participants |
-| `collaboration` | Active speaker focus | Higher quality for dominant speaker |
-| `presentation` | Screen share focus | Prioritize screen share quality |
+Bandwidth profiles optimize video delivery based on your UI layout. **Simulcast must be enabled for collaboration and presentation modes to work effectively.**
+
+**Mode Selection Decision:**
+1. Is it multiparty (3+ participants)? → If no, bandwidth profiles less critical
+2. Is there a main video track (one emphasized)? → If no, use `grid`
+3. Can VP8 Simulcast be used? → If no, use `grid`
+4. Is main track quality critical? → If yes, use `presentation`; if no, use `collaboration`
+
+| Mode | Best For | Simulcast Required? | Behavior |
+|------|----------|---------------------|----------|
+| `grid` | Equal-size tiles, or when simulcast unavailable | No (but recommended for 5+) | Balanced quality across all participants |
+| `collaboration` | Dominant speaker layouts | Yes | Higher quality for active speaker, others reduced |
+| `presentation` | Screen share / presenter focus | Yes | Maximizes primary track; may disable secondary tracks |
 
 **Configuration:**
 ```javascript
 const room = await connect(token, {
+  preferredVideoCodecs: [{ codec: 'VP8', simulcast: true }],
   bandwidthProfile: {
     video: {
       mode: 'collaboration',
@@ -353,6 +511,18 @@ const room = await connect(token, {
   }
 });
 ```
+
+**Track Switch Off Modes:**
+
+| Mode | Behavior | Use When |
+|------|----------|----------|
+| `predicted` (default) | Proactively disables tracks predicted to consume unnecessary bandwidth | Most cases |
+| `detected` | Disables tracks only after bandwidth constraints detected | Need all tracks until problems occur |
+| `disabled` | All subscribed tracks remain active regardless | Debugging, or must show all tracks |
+
+**Max Subscription Bandwidth:**
+- Desktop: Unlimited (default)
+- Mobile: 2,500,000 bps (default)
 
 ### Network Quality API
 
@@ -376,42 +546,53 @@ room.on('participantConnected', participant => {
 | 1 | Very poor | May need to disable video |
 | 0 | Unknown | Network quality not available |
 
-### Simulcast
+### Video Capture Constraints
 
-VP8 simulcast sends multiple quality layers; recipients select based on bandwidth:
+**Key principle:** Match capture resolution to display size. Capturing HD for a thumbnail wastes CPU and bandwidth.
+
+**Platform Recommendations (from Twilio docs):**
+
+| Platform | Webcam Capture | Screen Capture |
+|----------|----------------|----------------|
+| Desktop | 1280x720 @ 24fps | 1920x1080 @ 15fps |
+| Mobile Browser | 640x480 @ 24fps | 1280x720 @ 15fps |
+| Mobile SDK | 640x480 @ 24fps | 1280x720 @ 15fps |
+
+**Configuration Example:**
 ```javascript
-const room = await connect(token, {
-  preferredVideoCodecs: [{ codec: 'VP8', simulcast: true }]
-});
-```
-
-**How Simulcast Works:**
-- Publisher sends 3 quality layers simultaneously
-- Subscribers automatically receive best layer for their bandwidth
-- SFU (Selective Forwarding Unit) handles layer selection
-- Reduces need for manual quality adaptation
-
-### Video Constraints
-
-Limit bandwidth by constraining video:
-```javascript
+// Desktop webcam
 const localTracks = await createLocalTracks({
   video: {
-    width: { min: 640, ideal: 1280, max: 1920 },
-    height: { min: 480, ideal: 720, max: 1080 },
-    frameRate: { ideal: 24, max: 30 }
+    width: { ideal: 1280 },
+    height: { ideal: 720 },
+    frameRate: { ideal: 24 }
+  }
+});
+
+// Mobile webcam
+const mobileTracks = await createLocalTracks({
+  video: {
+    width: { ideal: 640 },
+    height: { ideal: 480 },
+    frameRate: { ideal: 24 }
   }
 });
 ```
 
-**Recommended Constraints by Use Case:**
+**Minimum Bitrates (at 30fps):**
 
-| Use Case | Resolution | Frame Rate | Bandwidth |
-|----------|------------|------------|-----------|
-| Healthcare | 1280x720 | 24 fps | ~1.5 Mbps |
-| Professional | 1280x720 | 30 fps | ~2 Mbps |
-| Proctoring | 640x480 | 15 fps | ~500 Kbps |
-| Screen share | 1920x1080 | 5 fps | ~1 Mbps |
+| Codec | Resolution | Min Bitrate |
+|-------|------------|-------------|
+| VP8 | 1280x720 | 650 kbps |
+| VP8 Simulcast | 1280x720 | 1,400 kbps |
+| H.264 | 1280x720 | 600 kbps |
+| Opus (audio) | — | 32 kbps |
+
+**Best Practices:**
+- Display only necessary video tracks (don't render all 20 participants)
+- Provide mute controls to reduce traffic
+- Trust adaptive bitrate algorithms; avoid manually setting `maxVideoBitrate` unless severe CPU/battery constraints
+- Use render dimensions hints so SFU can select appropriate simulcast layer
 
 ---
 

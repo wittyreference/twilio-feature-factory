@@ -10,17 +10,17 @@ Video development follows a progression pattern. Customers typically start simpl
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    Compliance & Monitoring                          │
-│  Proctoring, compliance recording, audit trails                    │
+│                    Supervised Communication                         │
+│  Proctoring, compliance recording, audit trails                     │
 ├─────────────────────────────────────────────────────────────────────┤
 │                    Professional Consultation                        │
-│  Recorded sessions, compositions, PSTN integration                 │
+│  Recorded sessions, compositions, PSTN integration                  │
 ├─────────────────────────────────────────────────────────────────────┤
 │                    Healthcare Consultation                          │
-│  HIPAA-eligible, real-time transcription, accessibility            │
+│  HIPAA-eligible, real-time transcription, accessibility             │
 ├─────────────────────────────────────────────────────────────────────┤
 │                    Basic Video Calling                              │
-│  Simple group video - the starting point                           │
+│  Simple 1:1 video calling - the starting point                      │
 └─────────────────────────────────────────────────────────────────────┘
               ↑ Most common starting point
 
@@ -175,19 +175,41 @@ PSTN Integration can be added at any level for phone dial-in/dial-out.
 | Setting | Value | Why |
 |---------|-------|-----|
 | Room type | `group` | One student per room |
-| Max participants | 1 | Isolated exam environment |
+| Max participants | 2 | Student + optional proctor |
 | Recording | ON | Audit trail |
 | Composition | OFF | Need raw per-student video |
 | Transcription | OFF | Not relevant |
 | PSTN | OFF | Video required for identity |
 | Screen share | Required | Monitor exam application |
 
+**Proctor Participation Modes:**
+
+Proctors can join a student's room in two modes:
+
+| Mode | Audio/Video | Use Case |
+|------|-------------|----------|
+| **Observer** | None published | Silent monitoring - student unaware of live observation |
+| **Active** | Published | Intervention - proctor can speak to student (e.g., warnings, instructions) |
+
+**Observer Pattern:**
+- Proctor connects with `audio: false, video: false`
+- Subscribes to student's tracks (camera, screen share)
+- Student sees participant count but proctor publishes nothing
+- Useful for scalable monitoring (one proctor cycling through many rooms)
+
+**Active Intervention Pattern:**
+- Proctor connects with audio enabled
+- Can unmute to speak to student
+- Student sees and hears proctor
+- Use for warnings, clarifications, or ending exam early
+
 **Proctoring Pattern:**
 1. Create room per student with unique name (exam-{studentId}-{timestamp})
 2. Enable recording at room creation
 3. Require screen share track publication
 4. Monitor for track unpublish events (cheating indicator)
-5. Download raw track recordings after room ends
+5. Proctor joins as observer or active participant as needed
+6. Download raw track recordings after room ends
 
 ---
 

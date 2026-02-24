@@ -561,6 +561,34 @@ for await (const message of query({
 | `delete_address` | Delete address |
 | `list_address_phone_numbers` | List phone numbers using address |
 
+### Validation Tools - 13 tools
+
+Deep validation tools that go beyond HTTP 200 OK to verify actual operation success. See [Deep Validation Skill](/.claude/skills/deep-validation.md) for patterns.
+
+| Tool | Description |
+|------|-------------|
+| `validate_call` | Deep call validation with Voice Insights, events, content quality |
+| `validate_message` | Message delivery validation with debugger check |
+| `validate_recording` | Recording completion validation |
+| `validate_transcript` | Voice Intelligence transcript completion + sentence validation |
+| `validate_debugger` | Account-wide debugger error check |
+| `validate_voice_ai_flow` | Full Voice AI flow (call + recording + transcript + SMS) |
+| `validate_two_way` | Two-way conversation validation |
+| `validate_language_operator` | Language Operator results validation |
+| `validate_sync_document` | Sync Document data structure validation |
+| `validate_sync_list` | Sync List item count and structure validation |
+| `validate_sync_map` | Sync Map keys and values validation |
+| `validate_task` | TaskRouter task status, attributes, events validation |
+| `validate_video_room` | Video room validation with participants, tracks, transcription, recording, composition |
+
+**Video Room Validation** checks:
+- Room status and type (must be 'group' for HIPAA eligibility)
+- Participant count and connection status
+- Published/subscribed tracks
+- Transcription status (Healthcare use case)
+- Recording status per participant (Professional/Proctoring use case)
+- Composition status and media accessibility (Professional use case)
+
 ## Testing
 
 **No magic numbers.** Tests use real Twilio numbers for authentic API behavior:

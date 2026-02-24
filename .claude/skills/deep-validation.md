@@ -129,6 +129,88 @@ interface VerificationValidation {
 }
 ```
 
+### Video Room Validation
+
+A 200 OK from Video Room API doesn't guarantee success. Participants may fail to connect, tracks may not publish, or recordings may fail silently.
+
+```typescript
+interface VideoRoomValidation {
+  // Primary: Room status and type
+  roomStatus: {
+    passed: boolean;
+    status: 'in-progress' | 'completed' | 'failed';
+    type: string;  // Should be 'group' (not legacy peer-to-peer/go)
+  };
+
+  // Participant checks
+  participants: {
+    passed: boolean;
+    count: number;
+    connected: number;
+    withTracks: number;  // Participants publishing audio/video
+  };
+
+  // Optional: Transcription (Healthcare use case)
+  transcription?: {
+    passed: boolean;
+    status: 'started' | 'stopped' | 'failed';
+    sentenceCount: number;
+    speakers: string[];
+  };
+
+  // Optional: Recording (Professional/Proctoring use case)
+  recordings?: {
+    passed: boolean;
+    count: number;
+    byParticipant: Record<string, { audio: number; video: number }>;
+    allCompleted: boolean;
+  };
+
+  // Optional: Composition (Professional use case)
+  composition?: {
+    passed: boolean;
+    status: 'enqueued' | 'processing' | 'completed' | 'failed';
+    mediaAccessible: boolean;
+  };
+}
+```
+
+**Video Validation Checklist:**
+
+```
+ALWAYS CHECK (every room):
+□ Room Resource - status, type = 'group', duration
+□ Participant count - matches expected
+□ Published tracks - participants publishing audio/video
+□ Subscribed tracks - participants receiving each other
+
+WHEN USING TRANSCRIPTION (add these):
+□ Transcription resource exists and status = 'started' or 'stopped'
+□ Sentences appearing (query sentences endpoint)
+□ Speaker attribution working (ParticipantSid in results)
+
+WHEN USING RECORDING (add these):
+□ Recording resources exist for each participant
+□ Track recordings for audio + video (+ screen if applicable)
+□ After room ends: all recordings status = 'completed'
+
+WHEN USING COMPOSITION (add these):
+□ Composition created AFTER room ends (not during)
+□ Composition status progresses to 'completed'
+□ Media URL accessible (HTTP 200)
+```
+
+**Common Video Failure Patterns:**
+
+| Symptom | Cause | Solution |
+|---------|-------|----------|
+| Room status = 'completed', duration = 0 | Empty room timeout | Set longer `emptyRoomTimeout` |
+| Participant connected but no tracks | SDK didn't publish | Check client-side `publishTrack()` |
+| Transcription exists but no sentences | Speech not detected | Check audio track is publishing |
+| Composition status = 'failed' | Room still in-progress | Wait for room to complete first |
+| Media URL returns 404 | External storage misconfigured | Check S3 credentials and bucket |
+| Room type is 'peer-to-peer' or 'go' | Legacy room created | Always use type = 'group' |
+
 ## Timing Considerations
 
 ### Voice/Conference Insights Timing
@@ -149,6 +231,23 @@ if (summary.processingState === 'complete') {
   // Data may change, consider polling or waiting
 }
 ```
+
+### Video Room Timing
+
+| Resource | When Available |
+|----------|----------------|
+| Room participants | Immediately |
+| Published tracks | After participant publishes |
+| Transcription sentences | ~2-5 seconds after speech |
+| Recordings | After room ends + processing |
+| Composition | After room ends + encoding time |
+
+**Composition encoding time** depends on duration:
+- Short rooms (< 5 min): ~30 seconds
+- Medium rooms (5-30 min): 2-5 minutes
+- Long rooms (> 30 min): 10+ minutes
+
+**CRITICAL:** Compositions can only be created AFTER the room ends (status = 'completed').
 
 ### Debugger Alert Timing
 
@@ -177,6 +276,7 @@ const alerts = await client.monitor.alerts.list({
 | `validate_voice_ai_flow` | Full Voice AI flow (call + recording + transcript + SMS) |
 | `validate_two_way` | Two-way conversation validation |
 | `validate_language_operator` | Language Operator results validation |
+| `validate_video_room` | Video room validation with participants, tracks, transcription, recording, composition |
 
 ### Using MCP Tools (Claude Code)
 
@@ -195,6 +295,33 @@ validate_voice_ai_flow(
 
 # Check debugger for recent errors
 validate_debugger(lookbackSeconds: 300, logLevel: "error")
+
+# Basic video room validation
+validate_video_room(roomSid: "RM123...")
+
+# Healthcare use case (with transcription)
+validate_video_room(
+  roomSid: "RM123...",
+  expectedParticipants: 3,
+  checkTranscription: true
+)
+
+# Professional use case (with recording + composition)
+validate_video_room(
+  roomSid: "RM123...",
+  checkRecording: true,
+  checkComposition: true,
+  waitForCompositionComplete: true,
+  timeout: 300000  # 5 min for composition
+)
+
+# Proctoring use case (recording only, no composition)
+validate_video_room(
+  roomSid: "RM123...",
+  expectedParticipants: 1,
+  checkPublishedTracks: true,  # Verify screen share
+  checkRecording: true
+)
 ```
 
 ### Why MCP Tools Over CLI
@@ -304,6 +431,16 @@ All callbacks write to Sync documents with 24hr TTL for test retrieval.
 - [ ] Check for carrier rejection codes
 - [ ] Verify callback data if configured
 
+### For Video Rooms
+
+- [ ] Verify room type is 'group' (not legacy peer-to-peer/go)
+- [ ] Check participant count matches expected
+- [ ] Verify participants are publishing tracks
+- [ ] If using transcription: check status and sentences
+- [ ] If using recording: verify recordings exist per participant
+- [ ] If using composition: wait for room end, then check composition status
+- [ ] Verify composition media is accessible
+
 ## Anti-Patterns
 
 ### Don't Do This
@@ -346,3 +483,4 @@ if (validation.success) {
 - [Validation CLAUDE.md](/agents/mcp-servers/twilio/src/validation/CLAUDE.md) - Validation patterns
 - [Callback functions](/functions/callbacks/CLAUDE.md) - Callback infrastructure
 - [Voice skill](/.claude/skills/voice.md) - Voice-specific validation
+- [Video skill](/.claude/skills/video.md) - Video-specific validation and use cases

@@ -374,6 +374,17 @@ Don't combine `--record` CLI flag (or `Record=true` API param) with `<Start><Rec
 
 The Participants API does NOT auto-generate conference TwiML. When you add a Twilio number as a participant, that number's voice URL fires and must return conference-joining TwiML. Conference name is NOT passed in the webhook params — use `make_call` with `?ConferenceName=X` query param instead so the handler knows which conference to join.
 
+### `make_call(To=TwilioNumber)` Creates Two Independent TwiML Legs
+
+When `make_call` targets a Twilio number, two separate call legs are created with independent TwiML execution:
+
+- **Parent leg** (outbound-api): Runs the `Url` parameter's TwiML
+- **Child leg** (inbound): Runs the number's configured voice webhook TwiML
+
+Both execute simultaneously and are bridged together. A single `make_call` produces TWO TwiML documents on TWO call SIDs. This means the `Url` handler and the number's webhook both fire — they don't replace each other.
+
+For conference-based patterns (contact center, sales dialer), call each participant separately with their own `Url` TwiML rather than relying on the bridge from a single call.
+
 ### Pre-E2E: Verify ALL Phone Numbers Have Voice URLs
 
 Before running E2E tests, verify every phone number in the call flow has a voice URL — not just the inbound/tracking numbers, but Dial destinations, agent numbers, and business lines. A number with `voiceUrl: null` causes `<Dial>` to fail immediately with no useful error.

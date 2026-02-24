@@ -925,6 +925,12 @@ twilio serverless:list
 # Verify .twilioserverlessrc exists and is valid
 cat .twilioserverlessrc
 
+# Check .twiliodeployinfo for cached service SID
+# This file caches {accountSid:region -> serviceSid} after first deploy.
+# If the service was deleted but the cache wasn't cleared, deploy fails with 20404.
+cat .twiliodeployinfo
+# Fix: echo '{}' > .twiliodeployinfo
+
 # Check for syntax errors
 npm run lint
 

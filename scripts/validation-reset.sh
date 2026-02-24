@@ -87,6 +87,12 @@ fi
 update_env "TWILIO_CALLBACK_BASE_URL" ""
 echo -e "${DIM}  Cleared TWILIO_CALLBACK_BASE_URL in .env${NC}"
 
+# Clear the serverless toolkit's cached service SID
+if [ -f ".twiliodeployinfo" ]; then
+    echo '{}' > .twiliodeployinfo
+    echo -e "${DIM}  Cleared .twiliodeployinfo cache${NC}"
+fi
+
 # ─────────────────────────────────────────────────────────────
 # Phase 2: Reset phone number webhooks
 # ─────────────────────────────────────────────────────────────

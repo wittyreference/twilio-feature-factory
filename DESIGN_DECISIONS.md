@@ -1348,6 +1348,81 @@ The orchestrator stores completed workflow data as `PersistedReplayScenario` obj
 
 ---
 
+## Decision 30: Multi-Product Validation Coverage
+
+### Context
+
+Existing validation plans (sequential-validation.md, random-validation.md, real-world-validation.md) only covered voice use cases — 8 of 10 Twilio voice products exercised across 4 paradigms. Non-voice products (Messaging, Verify, TaskRouter, Sync, Video, Proxy, Lookups, Content Templates, Studio) had MCP tools and domain CLAUDE.md files but no structured validation proving they work end-to-end through the toolchain.
+
+### Decision
+
+**Create a companion non-voice validation plan (nonvoice-validation.md) covering 9 product domains and 22 use cases with the same lifecycle pattern as the voice plan.**
+
+Key differences from voice: API-level validation only (no phone calls, no ngrok, no ConversationRelay agents). Most use cases exercise MCP tools directly rather than deploying functions. Two use cases (MC1, TR1) exercise the full slash command pipeline; the rest streamline to `/validate` + `/commit`.
+
+### Rationale
+
+1. **Coverage gap was real** — 310 MCP tools but only voice tools validated end-to-end. Non-voice tools could have schema issues, auth problems, or broken Zod validation undetected.
+2. **Same structure reduces cognitive load** — mirroring the voice plan's Phase 0 → per-UC tables → coverage matrix → Phase Final means operators familiar with one plan can run the other.
+3. **API-level is sufficient** — non-voice products don't need agent-to-agent infrastructure. Direct MCP tool invocation validates the full path from tool input → Zod schema → SDK call → API response → validation.
+
+### Alternatives Considered
+
+- **Fold into the voice plan**: Would make one massive document. Non-voice has fundamentally simpler infrastructure (no ngrok, no agents), so separation is cleaner.
+- **Random-validation expansion**: Random plan is already complex (4 paradigms × 8 UCs). Adding 22 non-voice UCs to the random selection pool would dilute voice coverage and complicate the catalog.
+
+### Consequences
+
+- ~65 distinct MCP tools get end-to-end validation across 22 use cases
+- MC4 (Messaging Service Sender Pool) builds a new serverless function, exercising TDD through the non-voice plan
+- VC1 (SMS OTP) uses a novel pattern: `get_message_logs` to extract the OTP code, then `check_verification` with the real code
+
+### Status
+
+**Accepted** - 2026-02-25
+
+---
+
+## Decision 31: Generative Chaos Validation
+
+### Context
+
+All 4 existing validation plans use perfectly-crafted, product-aware prompts that exercise known-good happy paths. This is not reflective of a real developer experience — real users describe things vaguely, use wrong terminology, ask for inappropriate products, omit critical details, and provide conflicting requirements. Initial design used a fixed catalog of 20 chaos scenarios, but this creates its own happy path — we'd eventually optimize for the predefined scenarios.
+
+### Decision
+
+**Use LLM-generated chaos scenarios instead of a fixed catalog. A "chaos agent" (Task subagent) generates 5-8 novel scenarios fresh each run, informed by developer archetypes, a chaos category palette, and an anti-repetition mechanism that reads prior run logs.**
+
+The chaos agent receives a rich persona prompt describing 7 developer archetypes (Vague Requester, Platform Migrator, Copy-Paste Dev, Enterprise Architect, Weekend Hacker, Compliance Officer, Non-Technical Founder) and 7 failure categories (vague, wrong product, missing requirements, conflicting requirements, scope mismatch, beginner misconceptions, toolchain edge cases). A configurable difficulty dial (mild → moderate → extreme) controls scenario complexity.
+
+Each scenario is scored on 5 dimensions: Detection, Response Quality, Cascade Depth, Recovery, and Learning Capture — producing a 0-5 resilience score.
+
+### Rationale
+
+1. **Novelty over repeatability** — predefined scenarios become their own happy path; generative scenarios discover genuinely new rough edges every run
+2. **Anti-repetition mechanism** — the chaos agent reads prior run logs and avoids generating similar scenarios, ensuring progressive coverage
+3. **Difficulty dial** — allows starting with obvious problems (mild) and progressing to realistic compound confusion (extreme) as the toolchain hardens
+4. **Measurable hypotheses** — 6 predicted weaknesses (e.g., "spec agent resolves ambiguity instead of surfacing it") provide concrete targets to validate or disprove across runs
+
+### Alternatives Considered
+
+- **Fixed catalog of 20 chaos scenarios**: Simpler to implement and score, but creates a known test suite the toolchain could be optimized against. Rejected because the goal is discovering unknown rough edges, not passing known tests.
+- **Purely random input (fuzzing)**: Too noisy — random strings don't reflect real developer behavior. The archetypes and categories constrain generation to realistic bad input while preserving novelty.
+- **Manual human testing**: Doesn't scale and is hard to score consistently. The scoring rubric enables cross-run comparison.
+
+### Consequences
+
+- No two chaos runs are identical — harder to track regressions on specific scenarios, but better at finding new issues
+- Run logs accumulate in `.meta/logs/chaos-validation/`, feeding the anti-repetition mechanism
+- Aggregate metrics (average resilience, cascade containment, clarification rate) enable trend tracking across runs even without fixed scenarios
+- Seed scenarios bootstrap the first run; subsequent runs rely on anti-repetition from prior logs
+
+### Status
+
+**Accepted** - 2026-02-25
+
+---
+
 ## Decision N: [Title]
 
 ### Context
@@ -1420,3 +1495,5 @@ The orchestrator stores completed workflow data as `PersistedReplayScenario` obj
 | 2026-02-18 | D28 | Tier-based approval policy (source > priority > tier defaults, budget enforcement) |
 | 2026-02-20 | D29 | ReplayVerifier integration via persisted scenarios (file-based, --verify-learnings CLI flag) |
 | 2026-02-23 | D19, D21 | Stall detection validated across 5 smoke runs; turn limits raised (D21: 50→200 normal, 200→500 autonomous) since behavioral detection is now the primary guardrail |
+| 2026-02-25 | D30 | Multi-product validation coverage (nonvoice-validation.md: 9 domains, 22 UCs, ~65 MCP tools) |
+| 2026-02-25 | D31 | Generative chaos validation (LLM-generated scenarios, 7 archetypes, 7 categories, anti-repetition, difficulty dial) |

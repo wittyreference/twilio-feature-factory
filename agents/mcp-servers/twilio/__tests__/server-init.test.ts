@@ -32,7 +32,7 @@ describe('MCP Server Initialization', () => {
     it('should register exactly 284 tools', () => {
       const server = createTwilioMcpServer(MOCK_CONFIG);
 
-      expect(server.tools).toHaveLength(284);
+      expect(server.tools).toHaveLength(310);
     });
 
     it('should throw error when missing TWILIO_ACCOUNT_SID', () => {

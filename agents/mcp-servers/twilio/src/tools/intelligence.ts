@@ -273,15 +273,28 @@ export function intelligenceTools(context: TwilioContext) {
     'Create a transcript from a recording URL. Submits audio to Voice Intelligence for transcription and language operator processing.',
     z.object({
       serviceSid: z.string().startsWith('GA').describe('Intelligence Service SID (starts with GA)'),
-      mediaUrl: z.string().url().describe('URL of the audio recording (e.g., from Twilio Recording)'),
+      sourceSid: z.string().startsWith('RE').optional().describe('Recording SID (preferred over mediaUrl for Twilio recordings)'),
+      mediaUrl: z.string().url().optional().describe('URL of the audio recording (use sourceSid instead for Twilio recordings)'),
       customerKey: z.string().optional().describe('Optional customer identifier for metadata (max 64 chars)'),
     }),
-    async ({ serviceSid, mediaUrl, customerKey }) => {
+    async ({ serviceSid, sourceSid, mediaUrl, customerKey }) => {
+      if (!sourceSid && !mediaUrl) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: 'Either sourceSid or mediaUrl must be provided' }) }],
+        };
+      }
+
       // Channel format for Voice Intelligence API
+      // Prefer source_sid for Twilio recordings (Intelligence API cannot authenticate to api.twilio.com for media_url)
+      const mediaProperties: Record<string, string> = {};
+      if (sourceSid) {
+        mediaProperties.source_sid = sourceSid;
+      } else if (mediaUrl) {
+        mediaProperties.media_url = mediaUrl;
+      }
+
       const channel = {
-        media_properties: {
-          media_url: mediaUrl,
-        },
+        media_properties: mediaProperties,
         participants: [
           { channel_participant: 1, user_id: 'caller' },
           { channel_participant: 2, user_id: 'agent' },

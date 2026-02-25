@@ -63,7 +63,7 @@ describe('voiceTools', () => {
 
   describe('tool structure', () => {
     it('should return an array of 29 tools', () => {
-      expect(tools).toHaveLength(29);
+      expect(tools).toHaveLength(32);
     });
 
     // Core call tools
@@ -352,7 +352,7 @@ describe('voiceTools', () => {
         expect(withoutTo.success).toBe(false);
       });
 
-      it('should require either url or twiml', () => {
+      it('should accept input with url or twiml (handler validates at least one)', () => {
         const withUrl = schema.safeParse({
           to: '+15551234567',
           url: 'https://example.com/twiml',
@@ -365,10 +365,11 @@ describe('voiceTools', () => {
         });
         expect(withTwiml.success).toBe(true);
 
+        // Schema accepts this — handler validates that at least one of url/twiml is provided
         const withNeither = schema.safeParse({
           to: '+15551234567',
         });
-        expect(withNeither.success).toBe(false);
+        expect(withNeither.success).toBe(true);
       });
 
       it('should validate url format', () => {
@@ -449,17 +450,18 @@ describe('voiceTools', () => {
         expect(missing.success).toBe(false);
       });
 
-      it('should require at least one update field', () => {
+      it('should accept input with callSid (handler validates at least one update field)', () => {
         const valid = schema.safeParse({
           callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
           twiml: '<Response><Say>Hello</Say></Response>',
         });
         expect(valid.success).toBe(true);
 
+        // Schema accepts this — handler validates that at least one of status/url/twiml is provided
         const noUpdate = schema.safeParse({
           callSid: 'CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
         });
-        expect(noUpdate.success).toBe(false);
+        expect(noUpdate.success).toBe(true);
       });
 
       it('should validate status enum', () => {

@@ -18,16 +18,14 @@ async function main() {
   );
 
   // Register each tool with the MCP server.
-  // Our tools use { name, description, inputSchema: z.ZodObject, handler }.
-  // McpServer.registerTool accepts inputSchema as AnySchema (which z.ZodObject satisfies).
+  // Our tools use { name, description, inputSchema: z.ZodType, handler }.
+  // McpServer.registerTool accepts inputSchema as AnySchema (which z.ZodType satisfies).
   for (const tool of twilioServer.tools) {
-    const zodSchema = tool.inputSchema as z.ZodObject<z.ZodRawShape>;
-
     mcp.registerTool(
       tool.name,
       {
         description: tool.description,
-        inputSchema: zodSchema,
+        inputSchema: tool.inputSchema as z.ZodType,
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       async (args: any) => {

@@ -83,10 +83,14 @@ export function voiceTools(context: TwilioContext) {
       from: phoneNumberSchema.optional().describe('Caller ID (defaults to configured number)'),
       url: z.string().url().optional().describe('TwiML URL for call handling'),
       twiml: z.string().optional().describe('Raw TwiML to execute'),
-    }).refine((data) => data.url || data.twiml, {
-      message: 'Either url or twiml must be provided',
     }),
     async ({ to, from, url, twiml }) => {
+      if (!url && !twiml) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: 'Either url or twiml must be provided' }) }],
+        };
+      }
+
       const callParams: { to: string; from: string; url?: string; twiml?: string } = {
         to,
         from: from || defaultFromNumber,
@@ -494,10 +498,14 @@ export function voiceTools(context: TwilioContext) {
       url: z.string().url().optional().describe('URL for new TwiML to execute'),
       method: z.enum(['GET', 'POST']).optional().describe('HTTP method for URL'),
       twiml: z.string().optional().describe('Raw TwiML to execute'),
-    }).refine((data) => data.status || data.url || data.twiml, {
-      message: 'At least one of status, url, or twiml must be provided',
     }),
     async ({ callSid, status, url, method, twiml }) => {
+      if (!status && !url && !twiml) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: 'At least one of status, url, or twiml must be provided' }) }],
+        };
+      }
+
       const updateParams: {
         status?: 'completed' | 'canceled';
         url?: string;

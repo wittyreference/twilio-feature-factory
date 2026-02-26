@@ -14,6 +14,8 @@ This directory contains CLI scripts for project setup and maintenance.
 | `plugin-drift-check.sh` | `./scripts/plugin-drift-check.sh` | Detect drift between factory source and plugin distribution |
 | `validate-meta-separation.sh` | `./scripts/validate-meta-separation.sh` | Verify `.meta/` files stay separated from shipped paths |
 | `verify-shipping-ready.sh` | `./scripts/verify-shipping-ready.sh` | Pre-ship checklist: no meta refs, clean exports, doc links valid |
+| `demo.sh` | `npm run demo` | One-command demo launcher with ngrok, env verification, URL banner |
+| `check-demo-health.sh` | `./scripts/check-demo-health.sh` | Pre-demo health check (ngrok, server, API keys, credentials) |
 | `api-sync/` | `cd scripts/api-sync && npm run sync` | Automated Twilio API drift detection and coverage analysis |
 
 ## Setup Script

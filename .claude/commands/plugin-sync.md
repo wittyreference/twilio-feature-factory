@@ -61,7 +61,24 @@ After all files are processed:
 2. Create a commit with message: `sync: Update from upstream factory (<count> files)`
 3. Show the commit for review
 
-### 6. Update sync state
+### 6. Republish MCP server if stale
+
+Check whether `agents/mcp-servers/twilio/src` has source changes since the last npm publish:
+
+```bash
+scripts/plugin-drift-check.sh --report  # Look for "MCP SERVER STALE" section
+```
+
+If the MCP server source is stale (source commits exist after the last `package.json` change):
+
+1. Bump the patch version in `agents/mcp-servers/twilio/package.json` (e.g., 1.1.0 → 1.1.1)
+2. Build: `cd agents/mcp-servers/twilio && npm run build`
+3. Publish: `cd agents/mcp-servers/twilio && npm publish`
+4. Commit the version bump in the factory repo: `fix: Bump MCP server to <version> for npm publish`
+
+This is automatic — do not ask the user whether to republish. If source changed, republish. The plugin's `.mcp.json` uses `@latest` so consumers pick up the new version on next `npx` invocation.
+
+### 7. Update sync state
 
 After successful sync, update `.claude/plugin-sync-state.json` with:
 - `last_sync_commit`: current HEAD of the factory repo

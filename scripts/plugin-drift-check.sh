@@ -82,6 +82,23 @@ DRIFT_COUNT=${#DRIFTED_FILES[@]}
 # Output mode: --count for just the number, --files for file list, default for full report
 MODE="${1:---report}"
 
+# Check MCP server source drift vs last npm publish
+MCP_PKG="$PROJECT_ROOT/agents/mcp-servers/twilio/package.json"
+MCP_SRC_DIR="agents/mcp-servers/twilio/src"
+MCP_STALE=false
+MCP_STALE_COUNT=0
+
+if [[ -f "$MCP_PKG" ]]; then
+    # Find the commit that last touched package.json (the publish commit)
+    LAST_PUBLISH_COMMIT=$(git -C "$PROJECT_ROOT" log -1 --format="%H" -- "$MCP_PKG" 2>/dev/null)
+    if [[ -n "$LAST_PUBLISH_COMMIT" ]]; then
+        MCP_STALE_COUNT=$(git -C "$PROJECT_ROOT" log --oneline "${LAST_PUBLISH_COMMIT}..HEAD" -- "$MCP_SRC_DIR" 2>/dev/null | wc -l | tr -d ' ')
+        if [[ "$MCP_STALE_COUNT" -gt 0 ]]; then
+            MCP_STALE=true
+        fi
+    fi
+fi
+
 case "$MODE" in
     --count)
         echo "$DRIFT_COUNT"
@@ -104,27 +121,40 @@ case "$MODE" in
         echo "$SYNCABLE_COUNT"
         ;;
     --report|*)
-        if [[ "$DRIFT_COUNT" -eq 0 ]]; then
+        if [[ "$DRIFT_COUNT" -eq 0 ]] && [[ "$MCP_STALE" == "false" ]]; then
             echo "Plugin sync: No drift detected. Factory and plugin are in sync."
         else
             echo ""
             echo "PLUGIN DRIFT REPORT"
             echo "==================="
             echo ""
-            echo "$DRIFT_COUNT factory file(s) changed since last sync"
-            if [[ -n "$LAST_SYNC_COMMIT" ]]; then
-                LAST_SYNC_DATE=$(jq -r '.last_sync // "unknown"' "$SYNC_STATE" 2>/dev/null)
-                echo "Last sync: $LAST_SYNC_DATE (${LAST_SYNC_COMMIT:0:7})"
-            else
-                echo "Last sync: never (no sync state found)"
+            if [[ "$DRIFT_COUNT" -gt 0 ]]; then
+                echo "$DRIFT_COUNT factory file(s) changed since last sync"
+                if [[ -n "$LAST_SYNC_COMMIT" ]]; then
+                    LAST_SYNC_DATE=$(jq -r '.last_sync // "unknown"' "$SYNC_STATE" 2>/dev/null)
+                    echo "Last sync: $LAST_SYNC_DATE (${LAST_SYNC_COMMIT:0:7})"
+                else
+                    echo "Last sync: never (no sync state found)"
+                fi
+                echo ""
+                echo "Drifted files:"
+                for detail in "${DRIFTED_DETAILS[@]}"; do
+                    echo "  - $detail"
+                done
+                echo ""
+                echo "Run /plugin-sync to review and apply changes."
             fi
-            echo ""
-            echo "Drifted files:"
-            for detail in "${DRIFTED_DETAILS[@]}"; do
-                echo "  - $detail"
-            done
-            echo ""
-            echo "Run /plugin-sync to review and apply changes."
+            if [[ "$MCP_STALE" == "true" ]]; then
+                MCP_VERSION=$(jq -r '.version' "$MCP_PKG" 2>/dev/null)
+                echo ""
+                echo "MCP SERVER STALE"
+                echo "================"
+                echo ""
+                echo "Published: @twilio-feature-factory/mcp-twilio@${MCP_VERSION}"
+                echo "Source changes since publish: $MCP_STALE_COUNT commit(s) in $MCP_SRC_DIR"
+                echo ""
+                echo "To republish: bump version in agents/mcp-servers/twilio/package.json, then npm publish from that dir."
+            fi
         fi
         ;;
 esac

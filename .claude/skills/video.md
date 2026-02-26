@@ -966,6 +966,7 @@ Location: `__tests__/e2e/video-sdk/`
 | Two participants connect | Both see remote tracks, identities correct |
 | Video stream verification | `videoWidth > 0`, `videoHeight > 0`, `readyState >= 2` |
 | Audio stream verification | Web Audio API analyser detects level > -60 dB |
+| **WebRTC stats verification** | `packetsSent > 0`, `packetsReceived > 0` for both participants |
 | Room API verification | Twilio API confirms `type: group`, participant count |
 | Disconnect handling | Remote track counts go to 0, remaining participant stays connected |
 
@@ -993,6 +994,75 @@ const audioLevel = await page.evaluate(() => window.getAudioLevel());
 expect(audioLevel).toBeGreaterThan(-60); // dB threshold
 ```
 
+### WebRTC Stats Verification
+
+The SDK provides `room.getStats()` for definitive proof of packet flow:
+
+```javascript
+// In harness - expose stats for Playwright
+window.getTrackStats = async function() {
+  if (!room) return null;
+  const reports = await room.getStats();
+
+  const stats = { local: { video: [], audio: [] }, remote: { video: [], audio: [] } };
+
+  reports.forEach(report => {
+    // Publisher (local) stats
+    report.localVideoTrackStats.forEach(s => {
+      stats.local.video.push({
+        packetsSent: s.packetsSent,
+        bytesSent: s.bytesSent,
+        frameRate: s.frameRate,
+        dimensions: s.dimensions,           // Encoding resolution
+        captureDimensions: s.captureDimensions, // Camera resolution
+        roundTripTime: s.roundTripTime
+      });
+    });
+
+    // Subscriber (remote) stats
+    report.remoteVideoTrackStats.forEach(s => {
+      stats.remote.video.push({
+        packetsReceived: s.packetsReceived,
+        bytesReceived: s.bytesReceived,
+        frameRate: s.frameRate,
+        dimensions: s.dimensions
+      });
+    });
+  });
+  return stats;
+};
+```
+
+**Available Stats:**
+
+| Direction | Stat | Description |
+|-----------|------|-------------|
+| Local (publishing) | `packetsSent` | Total packets transmitted |
+| Local | `bytesSent` | Total bytes transmitted |
+| Local | `frameRate` | Encoding frame rate |
+| Local | `dimensions` | Encoding resolution (may be downscaled) |
+| Local | `captureDimensions` | Camera capture resolution |
+| Local | `roundTripTime` | RTT in milliseconds |
+| Local audio | `audioLevel` | Microphone input level |
+| Local audio | `jitter` | Audio jitter in ms |
+| Remote (subscribing) | `packetsReceived` | Total packets received |
+| Remote | `bytesReceived` | Total bytes received |
+| Remote | `frameRate` | Received frame rate |
+| Remote | `dimensions` | Received resolution |
+
+**Test Pattern:**
+```javascript
+const stats = await page.evaluate(() => window.getTrackStats());
+
+// Verify publisher is sending
+expect(stats.local.video[0].packetsSent).toBeGreaterThan(0);
+expect(stats.local.audio[0].packetsSent).toBeGreaterThan(0);
+
+// Verify subscriber is receiving
+expect(stats.remote.video[0].packetsReceived).toBeGreaterThan(0);
+expect(stats.remote.audio[0].packetsReceived).toBeGreaterThan(0);
+```
+
 ### Playwright Configuration
 
 The video-sdk project in `playwright.config.js` uses:
@@ -1007,6 +1077,10 @@ The video-sdk project in `playwright.config.js` uses:
 3. **Video dimensions verify rendering** - `videoWidth/videoHeight > 0` confirms video is actually displaying, not just connected
 4. **Room auto-creation** - Rooms are created automatically when first participant joins with a token scoped to that room name
 5. **Track subscription is automatic** - No need to manually subscribe; tracks appear via `trackSubscribed` event
+6. **Capture vs encoding resolution** - `captureDimensions` shows camera resolution (e.g., 1280x720), while `dimensions` shows actual encoding resolution (may be lower due to adaptive bitrate)
+7. **Adaptive bitrate downscales automatically** - SDK may encode at lower resolution than capture based on network conditions. This is expected behavior, not a bug.
+8. **WebRTC stats prove packet flow** - `packetsSent > 0` and `packetsReceived > 0` definitively prove media is flowing, unlike DOM checks which only show track attachment
+9. **1:1 calls don't need simulcast** - For two-party calls, skip `preferredVideoCodecs: [{ codec: 'VP8', simulcast: true }]` - simulcast is for 3+ participants
 
 ---
 

@@ -291,7 +291,6 @@ callback(null, response);
 ```
 
 Note: The `setBody(JSON.stringify())` pattern IS correct for non-TaskRouter JSON responses (e.g., API endpoints). The assignment callback is special because TaskRouter expects a raw JSON object, and `callback(null, obj)` handles the serialization automatically.
-```
 
 ### Available Instructions
 
@@ -371,7 +370,6 @@ twiml.enqueue({ workflowSid }).task(JSON.stringify({ ... }));
 
 // Option B: workspace.tasks.create() for non-voice tasks (chat, email, etc.)
 await workspace.tasks.create({ workflowSid, attributes: JSON.stringify({ ... }) });
-```
 ```
 
 ### Skills-Based Routing

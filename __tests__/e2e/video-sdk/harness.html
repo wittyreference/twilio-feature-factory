@@ -156,6 +156,71 @@
       return avg > 0 ? 20 * Math.log10(avg / 255) : -Infinity;
     };
 
+    // Expose WebRTC stats for Playwright tests
+    window.getTrackStats = async function() {
+      if (!room) return null;
+
+      try {
+        const reports = await room.getStats();
+
+        const stats = {
+          local: { video: [], audio: [] },
+          remote: { video: [], audio: [] }
+        };
+
+        reports.forEach(report => {
+          // Publisher (local) stats
+          report.localVideoTrackStats.forEach(s => {
+            stats.local.video.push({
+              trackSid: s.trackSid,
+              packetsSent: s.packetsSent,
+              bytesSent: s.bytesSent,
+              frameRate: s.frameRate,
+              captureFrameRate: s.captureFrameRate,
+              dimensions: s.dimensions,
+              captureDimensions: s.captureDimensions,
+              roundTripTime: s.roundTripTime
+            });
+          });
+
+          report.localAudioTrackStats.forEach(s => {
+            stats.local.audio.push({
+              trackSid: s.trackSid,
+              packetsSent: s.packetsSent,
+              bytesSent: s.bytesSent,
+              audioLevel: s.audioLevel,
+              jitter: s.jitter,
+              roundTripTime: s.roundTripTime
+            });
+          });
+
+          // Subscriber (remote) stats
+          report.remoteVideoTrackStats.forEach(s => {
+            stats.remote.video.push({
+              trackSid: s.trackSid,
+              packetsReceived: s.packetsReceived,
+              bytesReceived: s.bytesReceived,
+              frameRate: s.frameRate,
+              dimensions: s.dimensions
+            });
+          });
+
+          report.remoteAudioTrackStats.forEach(s => {
+            stats.remote.audio.push({
+              trackSid: s.trackSid,
+              packetsReceived: s.packetsReceived,
+              bytesReceived: s.bytesReceived
+            });
+          });
+        });
+
+        return stats;
+      } catch (err) {
+        log('getTrackStats error: ' + err.message);
+        return null;
+      }
+    };
+
     function startAudioLevelUpdates() {
       audioLevelInterval = setInterval(() => {
         const level = window.getAudioLevel();
@@ -278,10 +343,15 @@
         identityEl.textContent = data.identity;
         log('Token received for identity: ' + data.identity);
 
-        // Create local tracks
+        // Create local tracks - request 720p but allow fallback for fake devices
+        const videoConstraints = window.VIDEO_CONSTRAINTS || {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 }
+        };
         localTracks = await Twilio.Video.createLocalTracks({
           audio: true,
-          video: { width: 640, height: 480 }
+          video: videoConstraints
         });
 
         // Count and attach local tracks
@@ -296,7 +366,7 @@
         updateTrackCounts();
         log('Local tracks created: ' + localAudioCount + ' audio, ' + localVideoCount + ' video');
 
-        // Connect to room
+        // Connect to room (simple 1:1 config - no simulcast or bandwidth profile)
         room = await Twilio.Video.connect(data.token, {
           name: roomName,
           tracks: localTracks,

@@ -1,6 +1,6 @@
 {
   "name": "@twilio-feature-factory/mcp-twilio",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "MCP server exposing Twilio API operations as custom tools for Claude agents",
   "bin": {
     "twilio-mcp-server": "./dist/serve.js"

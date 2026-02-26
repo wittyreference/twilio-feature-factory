@@ -69,6 +69,10 @@ if [ "$CLAUDE_META_MODE" = "true" ] && [ "$CLAUDE_ALLOW_PRODUCTION_WRITE" != "tr
             agents/*)
                 ALLOWED=true
                 ;;
+            .env|.env.*)
+                # .env files are gitignored local config, not production code
+                ALLOWED=true
+                ;;
             */CLAUDE.md)
                 # Domain CLAUDE.md files are development documentation, not production code
                 ALLOWED=true

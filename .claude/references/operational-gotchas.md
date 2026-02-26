@@ -42,6 +42,16 @@ Cross-cutting gotchas discovered through real debugging sessions. Domain-specifi
 
 - **Never report Twilio E2E test results without checking timing** — Green tests with suspiciously fast durations are likely testing signaling only, not actual media/audio bridging. Verify call duration via REST API or add explicit post-bridge waits + duration assertions.
 
+## Regional API & Authentication
+
+- **Regional URL requires edge location** — `api.{edge}.{region}.twilio.com` (e.g. `api.sydney.au1.twilio.com`). Omitting the edge (e.g. `api.au1.twilio.com`) resolves to US infrastructure where regional API keys return 401.
+
+- **API key auth cannot fetch `/Accounts/{SID}.json`** — The account fetch endpoint requires auth token auth specifically. API keys work for all other endpoints. Use `IncomingPhoneNumbers.json?PageSize=1` as a lightweight auth validation endpoint when using API keys.
+
+- **Auth token rotation invalidates ALL API keys** — When the auth token is rotated/expired, every API key created under it dies. Regional and US keys all fail simultaneously. Only recovery: fresh auth token from Console → create new keys.
+
+- **Twilio Node SDK regional constructor** — `Twilio(apiKeySid, apiKeySecret, { accountSid, region: 'au1', edge: 'sydney' })` for API key auth. `Twilio(accountSid, authToken, { region, edge })` for auth token auth. The MCP server's `createTwilioMcpServer()` supports both via `TWILIO_API_KEY`/`TWILIO_API_SECRET`/`TWILIO_REGION`/`TWILIO_EDGE` env vars.
+
 ## Hooks & Documentation Flywheel
 
 - **Hooks receive tool input on stdin as JSON, not env vars** — `CLAUDE_TOOL_INPUT_FILE_PATH`, `CLAUDE_TOOL_INPUT_COMMAND`, `CLAUDE_TOOL_INPUT_CONTENT` don't exist. Parse stdin with `jq`: `FILE_PATH="$(cat | jq -r '.tool_input.file_path // empty')"`. All 4 hooks (pre-bash-validate, pre-write-validate, post-write, post-bash) were silently broken until fixed.

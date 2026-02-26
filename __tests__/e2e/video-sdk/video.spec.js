@@ -233,6 +233,91 @@ test.describe('Video SDK - Stream Verification', () => {
       await contextBob.close();
     }
   });
+
+  test('WebRTC stats verify packets sent and received', async ({ browser }) => {
+    const roomName = generateRoomName();
+
+    const contextAlice = await browser.newContext({
+      permissions: ['camera', 'microphone'],
+    });
+    const contextBob = await browser.newContext({
+      permissions: ['camera', 'microphone'],
+    });
+
+    const pageAlice = await contextAlice.newPage();
+    const pageBob = await contextBob.newPage();
+
+    try {
+      // Alice joins
+      await pageAlice.goto('/');
+      await pageAlice.fill('#room-input', roomName);
+      await pageAlice.click('#btn-join');
+      await expect(pageAlice.locator('#status')).toHaveText('connected', { timeout: 30000 });
+
+      // Bob joins
+      await pageBob.goto('/');
+      await pageBob.fill('#room-input', roomName);
+      await pageBob.click('#btn-join');
+      await expect(pageBob.locator('#status')).toHaveText('connected', { timeout: 30000 });
+
+      // Wait for tracks to be subscribed
+      await expect(pageAlice.locator('#remote-video-tracks')).toHaveText('1', { timeout: 15000 });
+      await expect(pageBob.locator('#remote-video-tracks')).toHaveText('1', { timeout: 15000 });
+
+      // Allow some time for packets to flow
+      await pageAlice.waitForTimeout(3000);
+
+      // Get WebRTC stats from both participants
+      const aliceStats = await pageAlice.evaluate(() => window.getTrackStats());
+      const bobStats = await pageBob.evaluate(() => window.getTrackStats());
+
+      console.log('Alice stats:', JSON.stringify(aliceStats, null, 2));
+      console.log('Bob stats:', JSON.stringify(bobStats, null, 2));
+
+      // Verify Alice is publishing (sending packets)
+      expect(aliceStats.local.video.length).toBeGreaterThan(0);
+      expect(aliceStats.local.video[0].packetsSent).toBeGreaterThan(0);
+      expect(aliceStats.local.video[0].bytesSent).toBeGreaterThan(0);
+      expect(aliceStats.local.audio.length).toBeGreaterThan(0);
+      expect(aliceStats.local.audio[0].packetsSent).toBeGreaterThan(0);
+      expect(aliceStats.local.audio[0].bytesSent).toBeGreaterThan(0);
+
+      // Verify Alice is receiving Bob (receiving packets)
+      expect(aliceStats.remote.video.length).toBeGreaterThan(0);
+      expect(aliceStats.remote.video[0].packetsReceived).toBeGreaterThan(0);
+      expect(aliceStats.remote.video[0].bytesReceived).toBeGreaterThan(0);
+      expect(aliceStats.remote.audio.length).toBeGreaterThan(0);
+      expect(aliceStats.remote.audio[0].packetsReceived).toBeGreaterThan(0);
+      expect(aliceStats.remote.audio[0].bytesReceived).toBeGreaterThan(0);
+
+      // Verify Bob is publishing (sending packets)
+      expect(bobStats.local.video.length).toBeGreaterThan(0);
+      expect(bobStats.local.video[0].packetsSent).toBeGreaterThan(0);
+      expect(bobStats.local.video[0].bytesSent).toBeGreaterThan(0);
+      expect(bobStats.local.audio.length).toBeGreaterThan(0);
+      expect(bobStats.local.audio[0].packetsSent).toBeGreaterThan(0);
+
+      // Verify Bob is receiving Alice (receiving packets)
+      expect(bobStats.remote.video.length).toBeGreaterThan(0);
+      expect(bobStats.remote.video[0].packetsReceived).toBeGreaterThan(0);
+      expect(bobStats.remote.video[0].bytesReceived).toBeGreaterThan(0);
+      expect(bobStats.remote.audio.length).toBeGreaterThan(0);
+      expect(bobStats.remote.audio[0].packetsReceived).toBeGreaterThan(0);
+
+      // Log additional metrics for debugging
+      console.log('Alice video frameRate:', aliceStats.local.video[0].frameRate);
+      console.log('Alice RTT:', aliceStats.local.video[0].roundTripTime);
+      console.log('Bob received video frameRate:', bobStats.remote.video[0].frameRate);
+
+      // Clean up
+      await pageAlice.click('#btn-leave');
+      await pageBob.click('#btn-leave');
+
+    } finally {
+      await contextAlice.close();
+      await contextBob.close();
+    }
+  });
 });
 
 test.describe('Video SDK - Room API Verification', () => {

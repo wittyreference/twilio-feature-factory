@@ -814,10 +814,61 @@ Rooms transition: `in-progress` → `completed` → (never back)
 
 **Gotcha:** Starting a composition while room is `in-progress` will fail.
 
-Pattern:
-1. Wait for room status = `completed`
-2. Then create composition
-3. Poll composition status until `completed`
+**Gotcha:** The composition service is batch-based. While most compositions complete in 3-5 minutes, the service can take up to 10 minutes or occasionally longer during periods of high load.
+
+#### Best Practice: Use Status Callbacks (Recommended)
+
+Configure `statusCallback` URLs when creating rooms and compositions. Twilio will POST status updates to your endpoints, eliminating the need for polling.
+
+```javascript
+// 1. Create room with status callbacks
+const room = await twilioClient.video.v1.rooms.create({
+  uniqueName: roomName,
+  type: 'group',
+  recordParticipantsOnConnect: true,
+  statusCallback: 'https://your-domain.com/video/callbacks/room-status',
+  recordingStatusCallback: 'https://your-domain.com/video/callbacks/recording-status',
+});
+
+// 2. Room status callback receives 'room-ended' event
+// Your callback handler triggers composition creation
+
+// 3. Create composition with status callback
+const composition = await twilioClient.video.v1.compositions.create({
+  roomSid,
+  audioSources: ['*'],
+  videoLayout: { grid: { video_sources: ['*'] } },
+  statusCallback: 'https://your-domain.com/video/callbacks/composition-status',
+});
+
+// 4. Composition status callback receives 'composition-available' event
+// Your callback handler processes the completed composition
+```
+
+**Callback events:**
+- Room: `room-created`, `participant-connected`, `participant-disconnected`, `room-ended`
+- Recording: `recording-started`, `recording-completed`
+- Composition: `composition-enqueued`, `composition-started`, `composition-available`, `composition-failed`
+
+#### Fallback: Polling (For Tests)
+
+Polling is acceptable for E2E tests where callback infrastructure may not be available:
+
+```javascript
+// Poll with generous timeout - service is batch-based
+const completed = await pollUntil(
+  () => twilioClient.video.v1.compositions(composition.sid).fetch(),
+  (c) => c.status === 'completed' || c.status === 'failed',
+  600000, // 10 minutes
+  10000   // check every 10 seconds
+);
+```
+
+**Why callbacks are better:**
+- No wasted API calls
+- Immediate notification when status changes
+- Handles variable processing times gracefully
+- More scalable for production workloads
 
 ### Transcription Partial vs Final
 
@@ -969,6 +1020,8 @@ Location: `__tests__/e2e/video-sdk/`
 | **WebRTC stats verification** | `packetsSent > 0`, `packetsReceived > 0` for both participants |
 | Room API verification | Twilio API confirms `type: group`, participant count |
 | Disconnect handling | Remote track counts go to 0, remaining participant stays connected |
+| Webhook callbacks | Sync document contains room-created, track-added, participant-disconnected, room-ended |
+| **3 participants + recording + composition** | 6 recordings created, composition completes with MP4, duration > 0 |
 
 ### Stream Verification Patterns
 
@@ -1081,6 +1134,136 @@ The video-sdk project in `playwright.config.js` uses:
 7. **Adaptive bitrate downscales automatically** - SDK may encode at lower resolution than capture based on network conditions. This is expected behavior, not a bug.
 8. **WebRTC stats prove packet flow** - `packetsSent > 0` and `packetsReceived > 0` definitively prove media is flowing, unlike DOM checks which only show track attachment
 9. **1:1 calls don't need simulcast** - For two-party calls, skip `preferredVideoCodecs: [{ codec: 'VP8', simulcast: true }]` - simulcast is for 3+ participants
+10. **3+ participants need simulcast** - Enable VP8 simulcast and bandwidth profiles for rooms with 3 or more participants
+11. **Recording math: N participants = 2N recordings** - Each participant produces 1 audio + 1 video track recording. For 3 participants, expect 6 track recordings.
+12. **Composition requires room completion first** - Compositions can only be created AFTER the room ends. Poll recordings until all complete, then create composition.
+13. **Composition can take up to 10 minutes** - The composition service is batch-based. While most compositions complete in 3-5 minutes, the service can take up to 10 minutes or occasionally longer during high load.
+14. **Simulcast creates multiple resolutions** - With simulcast enabled, WebRTC stats show 3 video entries per local track (e.g., 320x180, 640x360, 1280x720).
+
+### Testing 3+ Participant Calls
+
+Use multiple browser contexts to simulate multi-party calls:
+
+```javascript
+const contextAlice = await browser.newContext({ permissions: ['camera', 'microphone'] });
+const contextBob = await browser.newContext({ permissions: ['camera', 'microphone'] });
+const contextCharlie = await browser.newContext({ permissions: ['camera', 'microphone'] });
+```
+
+**Enable simulcast for 3+ participants:**
+```javascript
+// Set flag before joining
+await page.evaluate(() => { window.SIMULCAST_ENABLED = true; });
+```
+
+**Expected track counts for N participants:**
+- Local: 1 audio + 1 video (2 total)
+- Remote per participant: (N-1) audio + (N-1) video
+- Total recordings after room ends: N audio + N video (2N total)
+
+**Recording and Composition Test Pattern:**
+```javascript
+// 1. Create room with recording enabled
+const room = await twilioClient.video.v1.rooms.create({
+  uniqueName: roomName,
+  type: 'group',
+  recordParticipantsOnConnect: true,
+  statusCallback: `${CALLBACK_URL}/video/callbacks/room-status`,
+  recordingStatusCallback: `${CALLBACK_URL}/video/callbacks/recording-status`,
+});
+
+// 2. All participants join and interact...
+
+// 3. All participants disconnect
+
+// 4. End room
+await twilioClient.video.v1.rooms(roomSid).update({ status: 'completed' });
+
+// 5. Wait for all recordings to complete
+const recordings = await pollUntil(
+  () => twilioClient.video.v1.rooms(roomSid).recordings.list(),
+  (recs) => recs.length === 6 && recs.every(r => r.status === 'completed'),
+  60000
+);
+
+// 6. Create composition
+const composition = await twilioClient.video.v1.compositions.create({
+  roomSid,
+  audioSources: ['*'],
+  videoLayout: { grid: { video_sources: ['*'] } },
+  resolution: '1280x720',
+  format: 'mp4',
+  trim: true,
+});
+
+// 7. Wait for composition to complete
+// Best practice: Use statusCallback webhooks instead of polling in production.
+// Polling shown here for test simplicity - composition service is batch-based.
+const completed = await pollUntil(
+  () => twilioClient.video.v1.compositions(composition.sid).fetch(),
+  (c) => c.status === 'completed' || c.status === 'failed',
+  600000, // 10 minutes - batch-based service
+  10000   // check every 10 seconds
+);
+
+expect(completed.status).toBe('completed');
+expect(completed.duration).toBeGreaterThan(0);
+
+// 8. Download and validate MP4 file
+const { execSync } = require('child_process');
+const mediaUrl = `https://video.twilio.com/v1/Compositions/${completed.sid}/Media`;
+execSync(`curl -s -L -u "${apiKey}:${apiSecret}" "${mediaUrl}" -o "${outputPath}"`);
+
+// Verify with ffprobe
+const metadata = JSON.parse(execSync(`ffprobe -v quiet -print_format json -show_streams "${outputPath}"`));
+const videoStream = metadata.streams.find(s => s.codec_type === 'video');
+expect(videoStream.codec_name).toBe('h264');
+expect(videoStream.width).toBe(1280);
+expect(videoStream.height).toBe(720);
+```
+
+### Composition File Validation
+
+After composition completes, download and validate the actual MP4:
+
+```javascript
+const fs = require('fs');
+const { execSync } = require('child_process');
+
+// Download using authenticated curl
+const apiKey = process.env.TWILIO_API_KEY;
+const apiSecret = process.env.TWILIO_API_SECRET;
+const mediaUrl = `https://video.twilio.com/v1/Compositions/${composition.sid}/Media`;
+execSync(`curl -s -L -u "${apiKey}:${apiSecret}" "${mediaUrl}" -o "${outputPath}"`);
+
+// Verify file size matches API response
+const stats = fs.statSync(outputPath);
+expect(stats.size).toBe(composition.size);
+
+// Validate with ffprobe (if available)
+const ffprobeOutput = execSync(
+  `ffprobe -v quiet -print_format json -show_format -show_streams "${outputPath}"`,
+  { encoding: 'utf-8' }
+);
+const metadata = JSON.parse(ffprobeOutput);
+
+// Video: H.264 at expected resolution
+const videoStream = metadata.streams.find(s => s.codec_type === 'video');
+expect(videoStream.codec_name).toBe('h264');
+expect(videoStream.width).toBe(1280);
+expect(videoStream.height).toBe(720);
+
+// Audio: AAC
+const audioStream = metadata.streams.find(s => s.codec_type === 'audio');
+expect(audioStream.codec_name).toBe('aac');
+
+// Duration within tolerance
+const fileDuration = parseFloat(metadata.format.duration);
+expect(fileDuration).toBeCloseTo(composition.duration, 0);
+
+// Clean up
+fs.unlinkSync(outputPath);
+```
 
 ---
 

@@ -12,6 +12,12 @@ Cross-cutting gotchas discovered through real debugging sessions. Domain-specifi
 
 - **Newman E2E needs local server** — `npm run test:e2e` hits `localhost:3000`. Start `npx twilio-run start` first. Use `--timeout-request 5000` to avoid relay-handler hang.
 
+## Serverless Runtime
+
+- **Twilio Functions have no built-in scheduler** — Functions are stateless HTTP handlers triggered by webhooks or direct HTTP calls. They cannot run on a cron/timer. For scheduled execution, use an external cron service (GitHub Actions, EasyCron, AWS EventBridge) that calls the Function's HTTP endpoint. Studio Flows with scheduled triggers are an alternative within the Twilio ecosystem. Do not use `setInterval()` or cron libraries inside a Function — they won't persist between invocations.
+
+- **`.protected.js` doesn't work with external cron callers** — Protected functions validate Twilio request signatures, which external cron services cannot provide. For cron-triggered functions, use a public `.js` endpoint with a shared-secret query parameter checked in the handler.
+
 ## Deployment
 
 - **CLI `--value` flag double-escapes JSON strings** — `twilio api:...:variables:create --value '{"k":"v"}'` stores escaped JSON. Use `.env` file + redeploy instead for JSON env vars.

@@ -38,6 +38,10 @@ import { validationTools } from './tools/validation.js';
 export interface TwilioMcpServerConfig {
   accountSid?: string;
   authToken?: string;
+  apiKey?: string;
+  apiSecret?: string;
+  region?: string;
+  edge?: string;
   defaultFromNumber?: string;
   verifyServiceSid?: string;
   syncServiceSid?: string;
@@ -60,18 +64,31 @@ export interface TwilioContext {
  */
 export function createTwilioMcpServer(config: TwilioMcpServerConfig = {}) {
   const accountSid = config.accountSid || process.env.TWILIO_ACCOUNT_SID;
+  const apiKey = config.apiKey || process.env.TWILIO_API_KEY;
+  const apiSecret = config.apiSecret || process.env.TWILIO_API_SECRET;
   const authToken = config.authToken || process.env.TWILIO_AUTH_TOKEN;
+  const region = config.region || process.env.TWILIO_REGION;
+  const edge = config.edge || process.env.TWILIO_EDGE;
   const defaultFromNumber = config.defaultFromNumber || process.env.TWILIO_PHONE_NUMBER;
 
-  if (!accountSid || !authToken) {
-    throw new Error('TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN are required');
+  if (!accountSid) {
+    throw new Error('TWILIO_ACCOUNT_SID is required');
   }
 
   if (!defaultFromNumber) {
     throw new Error('TWILIO_PHONE_NUMBER is required');
   }
 
-  const client = Twilio(accountSid, authToken);
+  let client: Twilio.Twilio;
+  if (apiKey && apiSecret) {
+    client = Twilio(apiKey, apiSecret, { accountSid, region, edge });
+  } else if (authToken) {
+    client = Twilio(accountSid, authToken, { region, edge });
+  } else {
+    throw new Error(
+      'Authentication required: set TWILIO_API_KEY + TWILIO_API_SECRET, or TWILIO_AUTH_TOKEN'
+    );
+  }
 
   const context: TwilioContext = {
     client,

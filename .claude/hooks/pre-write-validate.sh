@@ -66,6 +66,9 @@ if [ "$CLAUDE_META_MODE" = "true" ] && [ "$CLAUDE_ALLOW_PRODUCTION_WRITE" != "tr
             __tests__/*)
                 ALLOWED=true
                 ;;
+            agents/*)
+                ALLOWED=true
+                ;;
             */CLAUDE.md)
                 # Domain CLAUDE.md files are development documentation, not production code
                 ALLOWED=true

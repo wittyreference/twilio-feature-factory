@@ -70,7 +70,11 @@ The MCP server requires the following environment variables:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `TWILIO_ACCOUNT_SID` | Yes | Twilio Account SID |
-| `TWILIO_AUTH_TOKEN` | Yes | Twilio Auth Token |
+| `TWILIO_AUTH_TOKEN` | One of auth | Twilio Auth Token (US1 default) |
+| `TWILIO_API_KEY` | One of auth | API Key SID (SK...) — preferred over auth token |
+| `TWILIO_API_SECRET` | One of auth | API Key Secret (pair with API_KEY) |
+| `TWILIO_REGION` | Optional | Regional endpoint (e.g. `au1`, `ie1`) |
+| `TWILIO_EDGE` | Optional | Edge location (e.g. `sydney`, `dublin`) |
 | `TWILIO_PHONE_NUMBER` | Yes | Default "from" number (E.164) |
 | `TWILIO_VERIFY_SERVICE_SID` | For verify tools | Verify Service SID |
 | `TWILIO_SYNC_SERVICE_SID` | For sync tools | Sync Service SID |

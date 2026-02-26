@@ -45,7 +45,7 @@ describe('MCP Server Initialization', () => {
             authToken: 'test_token',
             defaultFromNumber: '+15551234567',
           });
-        }).toThrow('TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN are required');
+        }).toThrow('TWILIO_ACCOUNT_SID is required');
       } finally {
         if (originalSid) {
           process.env.TWILIO_ACCOUNT_SID = originalSid;
@@ -53,9 +53,13 @@ describe('MCP Server Initialization', () => {
       }
     });
 
-    it('should throw error when missing TWILIO_AUTH_TOKEN', () => {
+    it('should throw error when missing all auth credentials', () => {
       const originalToken = process.env.TWILIO_AUTH_TOKEN;
+      const originalApiKey = process.env.TWILIO_API_KEY;
+      const originalApiSecret = process.env.TWILIO_API_SECRET;
       delete process.env.TWILIO_AUTH_TOKEN;
+      delete process.env.TWILIO_API_KEY;
+      delete process.env.TWILIO_API_SECRET;
 
       try {
         expect(() => {
@@ -63,11 +67,11 @@ describe('MCP Server Initialization', () => {
             accountSid: 'ACtest12345678901234567890123456',
             defaultFromNumber: '+15551234567',
           });
-        }).toThrow('TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN are required');
+        }).toThrow('Authentication required: set TWILIO_API_KEY + TWILIO_API_SECRET, or TWILIO_AUTH_TOKEN');
       } finally {
-        if (originalToken) {
-          process.env.TWILIO_AUTH_TOKEN = originalToken;
-        }
+        if (originalToken) process.env.TWILIO_AUTH_TOKEN = originalToken;
+        if (originalApiKey) process.env.TWILIO_API_KEY = originalApiKey;
+        if (originalApiSecret) process.env.TWILIO_API_SECRET = originalApiSecret;
       }
     });
 
@@ -87,6 +91,46 @@ describe('MCP Server Initialization', () => {
           process.env.TWILIO_PHONE_NUMBER = originalPhone;
         }
       }
+    });
+
+    it('should create server with API key config', () => {
+      const server = createTwilioMcpServer({
+        accountSid: 'ACtest12345678901234567890123456',
+        apiKey: 'SKtest12345678901234567890123456',
+        apiSecret: 'test_api_secret_32_chars_long__',
+        defaultFromNumber: '+15551234567',
+      });
+
+      expect(server).toBeDefined();
+      expect(server.name).toBe('twilio-tools');
+      expect(server.tools.length).toBeGreaterThan(0);
+    });
+
+    it('should create server with API key + region config', () => {
+      const server = createTwilioMcpServer({
+        accountSid: 'ACtest12345678901234567890123456',
+        apiKey: 'SKtest12345678901234567890123456',
+        apiSecret: 'test_api_secret_32_chars_long__',
+        region: 'au1',
+        edge: 'sydney',
+        defaultFromNumber: '+15551234567',
+      });
+
+      expect(server).toBeDefined();
+      expect(server.tools.length).toBeGreaterThan(0);
+    });
+
+    it('should prefer API key over auth token when both present', () => {
+      const server = createTwilioMcpServer({
+        accountSid: 'ACtest12345678901234567890123456',
+        authToken: 'test_auth_token_32_chars_long__',
+        apiKey: 'SKtest12345678901234567890123456',
+        apiSecret: 'test_api_secret_32_chars_long__',
+        defaultFromNumber: '+15551234567',
+      });
+
+      expect(server).toBeDefined();
+      expect(server.tools.length).toBeGreaterThan(0);
     });
   });
 

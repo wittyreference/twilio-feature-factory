@@ -253,7 +253,7 @@ When a task is assigned to a worker, TaskRouter calls your assignment webhook.
 
 ### Assignment Instructions
 
-Respond with instructions for what action to take:
+Respond with instructions for what action to take. **Return the object directly via `callback(null, obj)`.** Do NOT use `Twilio.Response` with `setBody(JSON.stringify())` — this double-encodes the JSON (the Functions runtime serializes the callback argument, so pre-stringifying wraps it in quotes) and produces error 40001 "Could not parse Assignment Instruction."
 
 ```javascript
 // functions/taskrouter/assignment.protected.js
@@ -263,6 +263,7 @@ exports.handler = async (context, event, callback) => {
 
   // For voice calls - bridge via conference so both legs get independent TwiML
   if (taskAttributes.type === 'call') {
+    // Return object DIRECTLY — callback serializes it as JSON
     return callback(null, {
       instruction: 'conference',
       from: context.TWILIO_PHONE_NUMBER,
@@ -279,6 +280,19 @@ exports.handler = async (context, event, callback) => {
 };
 ```
 
+**WRONG — double-encodes JSON, causes error 40001:**
+```javascript
+// DON'T do this for assignment callbacks
+const response = new Twilio.Response();
+response.appendHeader('Content-Type', 'application/json');
+response.setBody(JSON.stringify({ instruction: 'conference', ... }));
+callback(null, response);
+// Produces: "{\"instruction\":\"conference\",...}" instead of {"instruction":"conference",...}
+```
+
+Note: The `setBody(JSON.stringify())` pattern IS correct for non-TaskRouter JSON responses (e.g., API endpoints). The assignment callback is special because TaskRouter expects a raw JSON object, and `callback(null, obj)` handles the serialization automatically.
+```
+
 ### Available Instructions
 
 | Instruction | Description | Parameters |
@@ -286,9 +300,11 @@ exports.handler = async (context, event, callback) => {
 | `accept` | Accept the reservation | - |
 | `reject` | Reject the reservation | `activity_sid` (optional) |
 | `dequeue` | Connect voice call to worker (simple bridge) | `from`, `post_work_activity_sid` |
-| `conference` | Bridge caller and worker via conference room | `from`, `to`, `conference_record`, `end_conference_on_exit` |
+| `conference` | Bridge caller and worker via conference room | `from`, `to`, `record`, `end_conference_on_exit`, `status_callback`, `status_callback_events` |
 | `call` | Initiate outbound call to worker | `url`, `from`, `to` |
 | `redirect` | Redirect call to TwiML | `url` |
+
+**Conference instruction `record` parameter**: Use the string value `'record-from-start'`, NOT the boolean `true`. Boolean values are silently ignored and no recording is created.
 
 ## Event Callbacks
 
@@ -316,17 +332,18 @@ Configure event webhooks to receive task and worker state changes.
 
 ### Voice Call Routing
 
-Route inbound calls to available agents:
+Route inbound calls to available agents using `<Enqueue>`:
 
 ```javascript
 // functions/taskrouter/enqueue-call.js
 exports.handler = async (context, event, callback) => {
   const twiml = new Twilio.twiml.VoiceResponse();
 
-  // Create task and enqueue caller
-  twiml.enqueue({
+  // Enqueue creates a task AND places the caller in a hold queue
+  const enqueue = twiml.enqueue({
     workflowSid: context.TWILIO_TASKROUTER_WORKFLOW_SID
-  }).task({}, JSON.stringify({
+  });
+  enqueue.task(JSON.stringify({
     type: 'call',
     language: detectLanguage(event),
     callSid: event.CallSid,
@@ -334,11 +351,27 @@ exports.handler = async (context, event, callback) => {
     priority: 1
   }));
 
-  // Optional: Play hold music while waiting
-  twiml.say('Please wait while we connect you.');
-
   return callback(null, twiml);
 };
+```
+
+**CRITICAL: `<Enqueue>` auto-creates a TaskRouter task.** Do NOT also call `workspace.tasks.create()` — this creates duplicate tasks and the second one will never get a reservation because the worker is already busy with the first.
+
+```javascript
+// WRONG — creates TWO tasks (one from Enqueue, one from API)
+await workspace.tasks.create({
+  workflowSid,
+  attributes: JSON.stringify({ ... })
+});
+twiml.enqueue({ workflowSid }).task(JSON.stringify({ ... }));
+
+// RIGHT — use ONE approach:
+// Option A: <Enqueue> for voice calls (handles hold music + task creation)
+twiml.enqueue({ workflowSid }).task(JSON.stringify({ ... }));
+
+// Option B: workspace.tasks.create() for non-voice tasks (chat, email, etc.)
+await workspace.tasks.create({ workflowSid, attributes: JSON.stringify({ ... }) });
+```
 ```
 
 ### Skills-Based Routing

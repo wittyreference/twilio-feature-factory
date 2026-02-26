@@ -322,6 +322,52 @@ response.setBody(JSON.stringify({ success: true }));
 
 ## Gotchas
 
+### `<Record>` Without `action` Creates an Infinite Loop
+
+`<Record>` without an `action` attribute POSTs back to the current URL when recording finishes, re-executing the same TwiML and starting another recording. This creates a loop that generates multiple recordings per call and wastes storage.
+
+```javascript
+// WRONG — loops: Record finishes → redirects to self → records again
+twiml.say('Leave a message.');
+twiml.record({ maxLength: 30 });
+
+// RIGHT — action sends to a different handler
+twiml.say('Leave a message.');
+twiml.record({
+  maxLength: 30,
+  action: '/voice/recording-complete'
+});
+
+// ALSO RIGHT — use <Start><Recording> for background recording (no loop risk)
+twiml.start().recording({
+  recordingStatusCallback: `https://${context.DOMAIN_NAME}/callbacks/recording-status`
+});
+twiml.say('This call is being recorded.');
+```
+
+### Conference Recording via Participants API
+
+When creating conferences via the Participants API (`client.conferences(name).participants.create()`), do NOT use `client.conferences(name).recordings.create()` to start recording — this fails when accessing conferences by friendly name.
+
+Instead, use `conferenceRecord` on the participant create call:
+
+```javascript
+// WRONG — fails with "recordings.create is not a function" for friendly names
+const recording = await client.conferences('my-conf')
+  .recordings.create({ ... });
+
+// RIGHT — set on participant (typically the first one added)
+await client.conferences('my-conf')
+  .participants.create({
+    from: context.TWILIO_PHONE_NUMBER,
+    to: agentNumber,
+    conferenceRecord: 'record-from-start',
+    conferenceRecordingStatusCallback: `https://${context.DOMAIN_NAME}/callbacks/recording-status`,
+    conferenceRecordingStatusCallbackMethod: 'POST',
+    endConferenceOnExit: true
+  });
+```
+
 ### Conference Participants API vs TwiML `<Conference>`
 
 The Participants API and TwiML `<Conference>` verb have different parameter formats:

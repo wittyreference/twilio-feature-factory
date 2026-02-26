@@ -173,3 +173,25 @@ response.setBody({ success: true });
 response.appendHeader('Content-Type', 'application/json');
 response.setBody(JSON.stringify({ success: true }));
 ```
+
+## E2E Testing
+
+A complete E2E test suite exists at `__tests__/e2e/video-sdk/`:
+
+```bash
+# Run video SDK tests
+npm run test:video-sdk
+
+# Run with visible browser
+npm run test:video-sdk:headed
+```
+
+Tests verify:
+- Token generation and room connection
+- Two-party video calls
+- Video stream rendering (dimensions > 0)
+- Audio stream detection (Web Audio API)
+- Room API state (type, participants)
+- Disconnect handling
+
+See `.claude/skills/video.md` for detailed testing patterns.

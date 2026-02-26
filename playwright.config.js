@@ -1,26 +1,27 @@
-// ABOUTME: Playwright configuration for Voice SDK browser E2E tests.
-// ABOUTME: Configures headless Chrome with fake WebRTC media and auto-starts the test server.
+// ABOUTME: Playwright configuration for Voice SDK and Video SDK browser E2E tests.
+// ABOUTME: Configures headless Chrome with fake WebRTC media and auto-starts test servers.
 
 require('dotenv').config();
 
 const { defineConfig, devices } = require('@playwright/test');
 const path = require('path');
 
-const testAudioPath = path.resolve(__dirname, '__tests__/e2e/voice-sdk/fixtures/test-audio.wav');
-const PORT = process.env.VOICE_SDK_TEST_PORT || 3333;
+const voiceTestAudioPath = path.resolve(__dirname, '__tests__/e2e/voice-sdk/fixtures/test-audio.wav');
+const VOICE_PORT = process.env.VOICE_SDK_TEST_PORT || 3333;
+const VIDEO_PORT = process.env.VIDEO_SDK_TEST_PORT || 3334;
+
+// Shared Chrome args for fake media
+const fakeMediaArgs = [
+  '--use-fake-device-for-media-stream',
+  '--use-fake-ui-for-media-stream',
+  '--autoplay-policy=no-user-gesture-required',
+];
 
 module.exports = defineConfig({
-  testDir: '__tests__/e2e/voice-sdk',
-  testMatch: '**/*.spec.js',
-
-  // Calls have real-world latency — 60s per test, 5 min total
+  // Global defaults
   timeout: 60_000,
   expect: { timeout: 30_000 },
-
-  // No retries for voice tests — each call costs money
   retries: 0,
-
-  // Sequential execution — avoid concurrent call resource contention
   fullyParallel: false,
   workers: 1,
 
@@ -30,33 +31,60 @@ module.exports = defineConfig({
   ],
 
   use: {
-    baseURL: `http://localhost:${PORT}`,
     trace: 'on-first-retry',
     video: 'retain-on-failure',
   },
 
   projects: [
+    // Voice SDK tests
     {
-      name: 'chromium',
+      name: 'voice-sdk',
+      testDir: '__tests__/e2e/voice-sdk',
+      testMatch: '**/*.spec.js',
       use: {
         ...devices['Desktop Chrome'],
+        baseURL: `http://localhost:${VOICE_PORT}`,
         launchOptions: {
           args: [
-            '--use-fake-device-for-media-stream',
-            '--use-fake-ui-for-media-stream',
-            `--use-file-for-fake-audio-capture=${testAudioPath}`,
-            '--autoplay-policy=no-user-gesture-required',
+            ...fakeMediaArgs,
+            `--use-file-for-fake-audio-capture=${voiceTestAudioPath}`,
           ],
         },
         permissions: ['microphone'],
       },
     },
+    // Video SDK tests
+    {
+      name: 'video-sdk',
+      testDir: '__tests__/e2e/video-sdk',
+      testMatch: '**/*.spec.js',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: `http://localhost:${VIDEO_PORT}`,
+        launchOptions: {
+          args: [
+            ...fakeMediaArgs,
+          ],
+        },
+        permissions: ['camera', 'microphone'],
+      },
+    },
   ],
 
-  webServer: {
-    command: `node ${path.resolve(__dirname, '__tests__/e2e/voice-sdk/server.js')}`,
-    port: Number(PORT),
-    reuseExistingServer: !process.env.CI,
-    timeout: 10_000,
-  },
+  webServer: [
+    // Voice SDK test server
+    {
+      command: `node ${path.resolve(__dirname, '__tests__/e2e/voice-sdk/server.js')}`,
+      port: Number(VOICE_PORT),
+      reuseExistingServer: !process.env.CI,
+      timeout: 10_000,
+    },
+    // Video SDK test server
+    {
+      command: `node ${path.resolve(__dirname, '__tests__/e2e/video-sdk/server.js')}`,
+      port: Number(VIDEO_PORT),
+      reuseExistingServer: !process.env.CI,
+      timeout: 10_000,
+    },
+  ],
 });

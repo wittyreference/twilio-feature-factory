@@ -51,6 +51,7 @@ playwright-report/
 # Local/private files
 .claude/settings.local.json
 /concept.md
+/video-plan.md
 
 # Development meta-tooling (doesn't ship with product)
 .meta/

@@ -245,7 +245,7 @@ These operations "fork off" and run concurrently with whatever TwiML executes ne
 // Recording starts and continues through subsequent TwiML
 const start = twiml.start();
 start.recording({
-  recordingStatusCallback: '/recording-complete',
+  recordingStatusCallback: `https://${context.DOMAIN_NAME}/recording-complete`,
   recordingStatusCallbackEvent: 'completed',
 });
 twiml.say('This is being recorded...');
@@ -430,6 +430,10 @@ When `make_call` targets a Twilio number, two separate call legs are created wit
 Both execute simultaneously and are bridged together. A single `make_call` produces TWO TwiML documents on TWO call SIDs. This means the `Url` handler and the number's webhook both fire — they don't replace each other.
 
 For conference-based patterns (contact center, sales dialer), call each participant separately with their own `Url` TwiML rather than relying on the bridge from a single call.
+
+### Testing Outbound Calls to Twilio Numbers
+
+When calling TO a Twilio number for testing, that number's voice webhook fires for the child leg. If the destination number has no voice URL configured (or it's empty), the call fails silently. Deploy a "stay-on-line" TwiML function (`<Pause length="120"/>`) and configure it as the voice URL on your test destination numbers.
 
 ### Pre-E2E: Verify ALL Phone Numbers Have Voice URLs
 

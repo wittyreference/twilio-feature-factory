@@ -936,6 +936,80 @@ room.on('disconnected', (room, error) => {
 
 ---
 
+## E2E Testing with Playwright
+
+The repository includes a complete E2E test suite for Video SDK integration.
+
+### Running Video SDK Tests
+
+```bash
+# Headless (CI-friendly)
+npm run test:video-sdk
+
+# Headed (visible browser for debugging)
+npm run test:video-sdk:headed
+```
+
+### Test Harness
+
+Location: `__tests__/e2e/video-sdk/`
+
+- `harness.html` - Browser video app with test-friendly DOM IDs
+- `server.js` - Express server serving harness + token endpoint
+- `video.spec.js` - Playwright test suite
+
+### What the Tests Verify
+
+| Test | Verification |
+|------|-------------|
+| Single participant connects | Room join, local tracks published, room SID populated |
+| Two participants connect | Both see remote tracks, identities correct |
+| Video stream verification | `videoWidth > 0`, `videoHeight > 0`, `readyState >= 2` |
+| Audio stream verification | Web Audio API analyser detects level > -60 dB |
+| Room API verification | Twilio API confirms `type: group`, participant count |
+| Disconnect handling | Remote track counts go to 0, remaining participant stays connected |
+
+### Stream Verification Patterns
+
+**Video rendering check:**
+```javascript
+await page.waitForFunction(() => {
+  const video = document.querySelector('#remote-video video');
+  return video && video.videoWidth > 0 && video.videoHeight > 0;
+}, { timeout: 15000 });
+```
+
+**Audio level detection (Web Audio API):**
+```javascript
+// In harness - expose getAudioLevel() for tests
+window.getAudioLevel = function() {
+  audioAnalyser.getByteFrequencyData(audioDataArray);
+  const avg = audioDataArray.reduce((a, b) => a + b, 0) / audioDataArray.length;
+  return avg > 0 ? 20 * Math.log10(avg / 255) : -Infinity;
+};
+
+// In test - verify audio is flowing
+const audioLevel = await page.evaluate(() => window.getAudioLevel());
+expect(audioLevel).toBeGreaterThan(-60); // dB threshold
+```
+
+### Playwright Configuration
+
+The video-sdk project in `playwright.config.js` uses:
+- `--use-fake-device-for-media-stream` - Chrome generates synthetic video/audio
+- `--use-fake-ui-for-media-stream` - Auto-accept permission prompts
+- `permissions: ['camera', 'microphone']` - Grant media permissions
+
+### Key Learnings
+
+1. **Chrome fake audio produces ~440Hz tone** - Detectable at around -21 dB with Web Audio API analyser
+2. **Two browser contexts for two-party tests** - Use `browser.newContext()` to simulate separate participants
+3. **Video dimensions verify rendering** - `videoWidth/videoHeight > 0` confirms video is actually displaying, not just connected
+4. **Room auto-creation** - Rooms are created automatically when first participant joins with a token scoped to that room name
+5. **Track subscription is automatic** - No need to manually subscribe; tracks appear via `trackSubscribed` event
+
+---
+
 ## Related Resources
 
 - [Video MCP Tools](/agents/mcp-servers/twilio/src/tools/video.ts) - 10 tools:

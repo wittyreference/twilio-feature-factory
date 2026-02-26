@@ -38,6 +38,7 @@
     <div><strong>Room Name:</strong> <span id="room-name">-</span></div>
     <div><strong>Identity:</strong> <span id="identity">-</span></div>
     <div><strong>Local Tracks:</strong> <span id="local-audio-tracks">0</span> audio, <span id="local-video-tracks">0</span> video</div>
+    <div><strong>Remote Participants:</strong> <span id="remote-participant-count">0</span></div>
     <div><strong>Remote Tracks:</strong> <span id="remote-audio-tracks">0</span> audio, <span id="remote-video-tracks">0</span> video</div>
     <div><strong>Remote Audio Level:</strong> <span id="audio-level">-inf</span> dB</div>
   </div>
@@ -76,6 +77,7 @@
     const localVideoTracksEl = document.getElementById('local-video-tracks');
     const remoteAudioTracksEl = document.getElementById('remote-audio-tracks');
     const remoteVideoTracksEl = document.getElementById('remote-video-tracks');
+    const remoteParticipantCountEl = document.getElementById('remote-participant-count');
     const audioLevelEl = document.getElementById('audio-level');
     const localVideoEl = document.getElementById('local-video');
     const remoteVideoEl = document.getElementById('remote-video');
@@ -98,6 +100,7 @@
     let localVideoCount = 0;
     let remoteAudioCount = 0;
     let remoteVideoCount = 0;
+    let remoteParticipantCount = 0;
 
     function setStatus(status) {
       statusEl.textContent = status;
@@ -125,6 +128,7 @@
       localVideoTracksEl.textContent = localVideoCount;
       remoteAudioTracksEl.textContent = remoteAudioCount;
       remoteVideoTracksEl.textContent = remoteVideoCount;
+      remoteParticipantCountEl.textContent = remoteParticipantCount;
     }
 
     // Audio level metering via Web Audio API
@@ -258,6 +262,8 @@
     // Handle remote participant
     function handleParticipantConnected(participant) {
       log('Participant connected: ' + participant.identity);
+      remoteParticipantCount++;
+      updateTrackCounts();
 
       // Handle existing tracks
       participant.tracks.forEach(publication => {
@@ -306,6 +312,7 @@
 
     function handleParticipantDisconnected(participant) {
       log('Participant disconnected: ' + participant.identity);
+      remoteParticipantCount = Math.max(0, remoteParticipantCount - 1);
       // Tracks are automatically unsubscribed, but let's clean up counts
       participant.tracks.forEach(publication => {
         if (publication.track) {
@@ -366,13 +373,31 @@
         updateTrackCounts();
         log('Local tracks created: ' + localAudioCount + ' audio, ' + localVideoCount + ' video');
 
-        // Connect to room (simple 1:1 config - no simulcast or bandwidth profile)
-        room = await Twilio.Video.connect(data.token, {
+        // Build connect options - base config for 1:1 calls
+        const connectOptions = {
           name: roomName,
           tracks: localTracks,
           dominantSpeaker: true,
           networkQuality: { local: 1, remote: 1 }
-        });
+        };
+
+        // OPTIONAL: Add simulcast for 3+ participants (only when flag is set)
+        // Existing tests do NOT set this flag, so they use base config unchanged
+        if (window.SIMULCAST_ENABLED) {
+          connectOptions.preferredVideoCodecs = [{ codec: 'VP8', simulcast: true }];
+          connectOptions.bandwidthProfile = {
+            video: {
+              mode: 'grid',
+              trackSwitchOffMode: 'predicted',
+              clientTrackSwitchOffControl: 'auto',
+              contentPreferencesMode: 'auto'
+            }
+          };
+          log('Simulcast enabled for 3+ participants');
+        }
+
+        // Connect to room
+        room = await Twilio.Video.connect(data.token, connectOptions);
 
         roomSidEl.textContent = room.sid;
         roomNameEl.textContent = room.name;
@@ -418,6 +443,7 @@
       localVideoCount = 0;
       remoteAudioCount = 0;
       remoteVideoCount = 0;
+      remoteParticipantCount = 0;
       updateTrackCounts();
 
       // Clear video containers

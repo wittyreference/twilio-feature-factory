@@ -17,7 +17,8 @@
     "deploy:dev": "twilio serverless:deploy --environment dev",
     "deploy:prod": "twilio serverless:deploy --environment production",
     "lint": "eslint functions/ __tests__/",
-    "lint:fix": "eslint functions/ __tests__/ --fix"
+    "lint:fix": "eslint functions/ __tests__/ --fix",
+    "demo": "./scripts/demo.sh"
   },
   "keywords": [
     "twilio",

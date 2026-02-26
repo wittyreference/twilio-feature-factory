@@ -60,6 +60,10 @@ describe('send-sms handler', () => {
       console.log('Skipping real SMS test - credentials not configured');
       return;
     }
+    if (process.env.TWILIO_REGION && process.env.TWILIO_REGION !== 'us1') {
+      console.log(`Skipping real SMS test - Messages API not supported in ${process.env.TWILIO_REGION} region`);
+      return;
+    }
 
     const event = global.createTestEvent({
       to: process.env.TEST_PHONE_NUMBER,

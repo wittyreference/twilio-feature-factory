@@ -204,6 +204,7 @@ Rules that have each caused real debugging time loss. These exist in domain-spec
 - **Voice Intelligence: `source_sid`, not `media_url`** — Use Recording SID for transcript creation. `media_url` requires auth the Intelligence API can't provide.
 - **Google Neural voices for ConversationRelay** — Polly voices may be blocked (error 64101). Use `Google.en-US-Neural2-F` as default.
 - **`<Start><Recording>` syntax is `.recording()`, not `.record()`** — `twiml.start().recording({...})` is correct.
+- **SDK auto-reads `TWILIO_REGION`/`TWILIO_EDGE` from env** — Setting these in `.env` silently routes all API calls to regional endpoints even when not passed to the constructor. US1 auth tokens fail with 401 on regional endpoints. Comment out when not actively testing regions.
 
 # Session discipline
 

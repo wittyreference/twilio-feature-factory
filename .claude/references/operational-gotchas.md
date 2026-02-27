@@ -58,6 +58,8 @@ Cross-cutting gotchas discovered through real debugging sessions. Domain-specifi
 
 - **Twilio Node SDK regional constructor** — `Twilio(apiKeySid, apiKeySecret, { accountSid, region: 'au1', edge: 'sydney' })` for API key auth. `Twilio(accountSid, authToken, { region, edge })` for auth token auth. The MCP server's `createTwilioMcpServer()` supports both via `TWILIO_API_KEY`/`TWILIO_API_SECRET`/`TWILIO_REGION`/`TWILIO_EDGE` env vars.
 
+- **Twilio Node SDK auto-reads `TWILIO_REGION` and `TWILIO_EDGE` from env** — The SDK reads these env vars automatically even when not passed in the constructor options. Setting them in `.env` silently routes ALL API calls to regional infrastructure (`api.{edge}.{region}.twilio.com`). If those calls use a US1 auth token, every request returns 401. Symptoms: cascading auth failures across unrelated tests with no obvious cause. Fix: comment out or unset `TWILIO_REGION`/`TWILIO_EDGE` when not actively testing regional endpoints.
+
 ## Hooks & Documentation Flywheel
 
 - **Hooks receive tool input on stdin as JSON, not env vars** — `CLAUDE_TOOL_INPUT_FILE_PATH`, `CLAUDE_TOOL_INPUT_COMMAND`, `CLAUDE_TOOL_INPUT_CONTENT` don't exist. Parse stdin with `jq`: `FILE_PATH="$(cat | jq -r '.tool_input.file_path // empty')"`. All 4 hooks (pre-bash-validate, pre-write-validate, post-write, post-bash) were silently broken until fixed.

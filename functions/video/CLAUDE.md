@@ -10,6 +10,7 @@ This directory contains Twilio Video API functions for video rooms, token genera
 | `callbacks/room-status.protected.js` | Protected | Room and participant status callbacks |
 | `callbacks/recording-status.protected.js` | Protected | Track recording callbacks |
 | `callbacks/composition-status.protected.js` | Protected | Composition callbacks |
+| `callbacks/transcription-status.protected.js` | Protected | Real-time transcription callbacks |
 
 ## Room Types
 

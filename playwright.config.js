@@ -7,6 +7,7 @@ const { defineConfig, devices } = require('@playwright/test');
 const path = require('path');
 
 const voiceTestAudioPath = path.resolve(__dirname, '__tests__/e2e/voice-sdk/fixtures/test-audio.wav');
+const videoTestAudioPath = path.resolve(__dirname, '__tests__/e2e/video-sdk/fixtures/speech.wav');
 const VOICE_PORT = process.env.VOICE_SDK_TEST_PORT || 3333;
 const VIDEO_PORT = process.env.VIDEO_SDK_TEST_PORT || 3334;
 
@@ -64,6 +65,7 @@ module.exports = defineConfig({
         launchOptions: {
           args: [
             ...fakeMediaArgs,
+            `--use-file-for-fake-audio-capture=${videoTestAudioPath}`,
           ],
         },
         permissions: ['camera', 'microphone'],

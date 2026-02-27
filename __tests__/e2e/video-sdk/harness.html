@@ -99,6 +99,8 @@
     let audioAnalyser = null;
     let audioDataArray = null;
     let audioLevelInterval = null;
+    let customAudioContext = null;
+    let customAudioSource = null;
 
     // Track counts
     let localAudioCount = 0;
@@ -106,6 +108,46 @@
     let remoteAudioCount = 0;
     let remoteVideoCount = 0;
     let remoteParticipantCount = 0;
+
+    // Create audio track from a WAV file URL
+    // Used for transcription testing with specific speech per participant
+    async function createAudioTrackFromFile(fileUrl) {
+      try {
+        log('Loading audio file: ' + fileUrl);
+        const response = await fetch(fileUrl);
+        const arrayBuffer = await response.arrayBuffer();
+
+        customAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const audioBuffer = await customAudioContext.decodeAudioData(arrayBuffer);
+
+        // Create a MediaStreamDestination to convert audio to a stream
+        const destination = customAudioContext.createMediaStreamDestination();
+
+        // Create a buffer source and connect it
+        customAudioSource = customAudioContext.createBufferSource();
+        customAudioSource.buffer = audioBuffer;
+        customAudioSource.loop = true; // Loop the audio for continuous speech
+        customAudioSource.connect(destination);
+        customAudioSource.start();
+
+        // Create a LocalAudioTrack from the stream
+        const audioTrack = new Twilio.Video.LocalAudioTrack(destination.stream.getAudioTracks()[0]);
+        log('Created audio track from file');
+        return audioTrack;
+      } catch (err) {
+        log('Failed to create audio from file: ' + err.message);
+        return null;
+      }
+    }
+
+    // Get the audio file URL based on identity
+    function getAudioFileUrl(identity) {
+      const audioFiles = {
+        'alice': '/fixtures/alice-speech.wav',
+        'bob': '/fixtures/bob-speech.wav',
+      };
+      return audioFiles[identity] || null;
+    }
 
     function setStatus(status) {
       statusEl.textContent = status;
@@ -361,10 +403,30 @@
           height: { ideal: 720 },
           frameRate: { ideal: 30 }
         };
-        localTracks = await Twilio.Video.createLocalTracks({
-          audio: true,
-          video: videoConstraints
-        });
+
+        // Check if we should use custom audio from file (for transcription tests)
+        const audioFileUrl = window.USE_CUSTOM_AUDIO ? getAudioFileUrl(identity) : null;
+        let customAudioTrack = null;
+
+        if (audioFileUrl) {
+          customAudioTrack = await createAudioTrackFromFile(audioFileUrl);
+        }
+
+        if (customAudioTrack) {
+          // Create only video track from camera, use custom audio
+          const videoTracks = await Twilio.Video.createLocalTracks({
+            audio: false,
+            video: videoConstraints
+          });
+          localTracks = [...videoTracks, customAudioTrack];
+          log('Using custom audio file for identity: ' + identity);
+        } else {
+          // Use default microphone audio
+          localTracks = await Twilio.Video.createLocalTracks({
+            audio: true,
+            video: videoConstraints
+          });
+        }
 
         // Count and attach local tracks
         localTracks.forEach(track => {
@@ -443,6 +505,16 @@
       if (screenShareTrack) {
         screenShareTrack.stop();
         screenShareTrack = null;
+      }
+
+      // Stop custom audio source and context
+      if (customAudioSource) {
+        try { customAudioSource.stop(); } catch (e) {}
+        customAudioSource = null;
+      }
+      if (customAudioContext) {
+        try { customAudioContext.close(); } catch (e) {}
+        customAudioContext = null;
       }
 
       // Stop local tracks

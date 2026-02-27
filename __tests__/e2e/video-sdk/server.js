@@ -25,6 +25,9 @@ app.get('/sdk/twilio-video.min.js', (req, res) => {
   res.sendFile(path.resolve(__dirname, '../../../node_modules/twilio-video/dist/twilio-video.min.js'));
 });
 
+// Serve audio fixture files for transcription tests
+app.use('/fixtures', express.static(path.join(__dirname, 'fixtures')));
+
 // Generate access tokens for the browser client
 app.get('/api/token', (req, res) => {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;

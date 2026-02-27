@@ -1044,6 +1044,7 @@ Location: `__tests__/e2e/video-sdk/`
 | Webhook callbacks | Sync document contains room-created, track-added, participant-disconnected, room-ended |
 | **3 participants + recording + composition** | 6 recordings created, composition completes with MP4, duration > 0 |
 | **Screen sharing** | Screen track published with `name: 'screen'`, remote sees 2 video tracks |
+| **Real-time transcription** | Room created with `transcribeParticipantsOnConnect: true`, callbacks logged |
 
 ### Stream Verification Patterns
 
@@ -1161,6 +1162,8 @@ The video-sdk project in `playwright.config.js` uses:
 12. **Composition requires room completion first** - Compositions can only be created AFTER the room ends. Poll recordings until all complete, then create composition.
 13. **Composition can take up to 10 minutes** - The composition service is batch-based. While most compositions complete in 3-5 minutes, the service can take up to 10 minutes or occasionally longer during high load.
 14. **Simulcast creates multiple resolutions** - With simulcast enabled, WebRTC stats show 3 video entries per local track (e.g., 320x180, 640x360, 1280x720).
+15. **Transcription with synthetic audio** - Chrome's fake audio capture (even with a speech WAV file) may not produce transcription output. The transcription service may not recognize synthetic audio as speech. Test verifies API integration, not transcription accuracy.
+16. **Screen share canvas capture** - Canvas-based screen simulation for tests doesn't report exact dimensions in WebRTC stats (shows null), but track is published and received correctly.
 
 ### Testing 3+ Participant Calls
 

@@ -1433,18 +1433,20 @@ The generative chaos validation plan (D31) was executed across 3 difficulty leve
 
 **The architect phase is the toolchain's primary defense against bad input, and it is strong. No structural changes are needed to the architect's core behavior. Two targeted improvements are warranted based on confirmed weaknesses.**
 
-Results across 21 scenarios at 3 difficulty levels:
+Results across 42 scenarios (6 runs, all 3 difficulty levels, full 7×7 archetype×category matrix):
 
-| Metric | Mild (6) | Moderate (7) | Extreme (8) | Combined (21) |
-|--------|----------|--------------|-------------|----------------|
-| Avg Resilience (0-5) | 4.0 | 4.71 | 4.75 | 4.52 |
-| Critical Failures | 0% | 0% | 0% | 0% |
-| Clarification Rate | 50% | 86% | 100% | 81% |
-| Cascade Containment | 100% | 100% | 100% | 100% |
+| Metric | Initial (21 scenarios) | Gap-Fill (21 scenarios) | Combined (42 scenarios) |
+|--------|----------------------|------------------------|------------------------|
+| Avg Resilience (0-5) | 4.52 | 4.90 | 4.71 |
+| Critical Failures | 0% | 0% | 0% |
+| Clarification Rate | 81% | 95% | 88% |
+| Cascade Containment | 100% | 100% | 100% |
 
-100% cascade containment means no bad input ever escaped the architect phase across any difficulty level. The architect either requested clarification, pushed back with alternatives, or flagged contradictions before any spec was written.
+100% cascade containment means no bad input ever escaped the architect phase across any difficulty level in 42 scenarios. The architect either requested clarification, pushed back with alternatives, or flagged contradictions before any spec was written.
 
-Counterintuitive finding: resilience *increased* with difficulty (4.0 → 4.71 → 4.75). Compound problems give the architect more surface area to detect issues. Single subtle problems (mild) are harder to catch than multi-layered confusion (extreme).
+Full 7×7 coverage achieved: all 49 archetype×category pairs tested at least once, all 7 categories tested at all 3 difficulty levels.
+
+Counterintuitive finding confirmed across 6 runs: resilience *increases* with difficulty. Mild averages 4.4, moderate 4.71, extreme 4.88. Compound problems give the architect more surface area to detect issues. Single subtle problems are harder to catch than multi-layered confusion.
 
 ### Rationale
 
@@ -1469,8 +1471,10 @@ Three hypotheses remain untested because the architect catches everything:
 
 - The architect prompt should be updated with: (a) explicit scope check for requests with 3+ capability areas, (b) excluded API list cross-reference before recommending services
 - Future chaos runs should test spec-level resilience by deliberately approving flawed architect output
-- The 4.52 average resilience score is the baseline — future runs should maintain or improve it
+- The 4.71 average resilience across 42 scenarios is the baseline — future runs should maintain or improve it
+- Full 7×7 archetype×category matrix achieved (49/49 pairs) — future runs focus on novel combinations and deeper cascading, not coverage gaps
 - Run logs at `.meta/logs/chaos-validation/` feed the anti-repetition mechanism for future runs
+- Key rough edges documented: VI timing misconception, Studio+CR paradigm conflict, Messaging Services capability overestimation, cross-workspace TaskRouter, serverless scheduling gap
 
 ### Status
 
@@ -1552,4 +1556,4 @@ Three hypotheses remain untested because the architect catches everything:
 | 2026-02-23 | D19, D21 | Stall detection validated across 5 smoke runs; turn limits raised (D21: 50→200 normal, 200→500 autonomous) since behavioral detection is now the primary guardrail |
 | 2026-02-25 | D30 | Multi-product validation coverage (nonvoice-validation.md: 9 domains, 22 UCs, ~65 MCP tools) |
 | 2026-02-25 | D31 | Generative chaos validation (LLM-generated scenarios, 7 archetypes, 7 categories, anti-repetition, difficulty dial) |
-| 2026-02-26 | D32 | Chaos validation baseline results: 4.52/5.0 resilience, 0% critical failures, 100% cascade containment across 21 scenarios |
+| 2026-02-26 | D32 | Chaos validation baseline: 4.52/5.0 across 21 scenarios. Updated 2026-02-27: full matrix 4.71/5.0 across 42 scenarios, 49/49 archetype×category pairs |

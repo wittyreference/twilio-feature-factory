@@ -380,15 +380,36 @@ room.on('participantDisconnected', handleDisconnect);
 - `remoteParticipant.on('trackSubscribed', handleTrack)` - Receive tracks
 
 **Screen Share:**
+
+Best practice: Cap resolution at 1920x1080 and use low frame rate (5fps) for static content. Higher resolutions cause excessive lag on subscribers with low downstream bandwidth.
+
 ```javascript
-const screenTrack = await navigator.mediaDevices.getDisplayMedia({
-  video: true
+// Production screen share with recommended constraints
+const stream = await navigator.mediaDevices.getDisplayMedia({
+  video: {
+    width: { max: 1920 },
+    height: { max: 1080 },
+    frameRate: { max: 5 }  // Use 15-30 for video content only
+  }
 });
-const track = new LocalVideoTrack(screenTrack.getVideoTracks()[0], {
-  name: 'screen'
+
+const screenTrack = new Twilio.Video.LocalVideoTrack(stream.getVideoTracks()[0], {
+  name: 'screen'  // Name convention for identifying screen share
 });
-await room.localParticipant.publishTrack(track);
+
+await room.localParticipant.publishTrack(screenTrack);
+
+// Stop screen share
+await room.localParticipant.unpublishTrack(screenTrack);
+screenTrack.stop();
 ```
+
+**Screen Share Guidelines:**
+- Use `name: 'screen'` to identify screen share tracks on remote side
+- 5 fps sufficient for documents, slides, code
+- 15-30 fps only for video playback content
+- Consider `contentHint: 'detail'` for text, `'motion'` for video
+- Handle `ended` event when user stops via browser UI
 
 ### iOS SDK
 
@@ -1022,6 +1043,7 @@ Location: `__tests__/e2e/video-sdk/`
 | Disconnect handling | Remote track counts go to 0, remaining participant stays connected |
 | Webhook callbacks | Sync document contains room-created, track-added, participant-disconnected, room-ended |
 | **3 participants + recording + composition** | 6 recordings created, composition completes with MP4, duration > 0 |
+| **Screen sharing** | Screen track published with `name: 'screen'`, remote sees 2 video tracks |
 
 ### Stream Verification Patterns
 

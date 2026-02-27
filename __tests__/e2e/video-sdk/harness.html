@@ -47,6 +47,8 @@
     <input id="room-input" type="text" placeholder="Room name" />
     <button id="btn-join" disabled>Join</button>
     <button id="btn-leave" disabled>Leave</button>
+    <button id="btn-screen-share" disabled>Share Screen</button>
+    <span id="screen-share-status">off</span>
   </div>
 
   <div class="video-container">
@@ -85,11 +87,14 @@
     const roomInput = document.getElementById('room-input');
     const btnJoin = document.getElementById('btn-join');
     const btnLeave = document.getElementById('btn-leave');
+    const btnScreenShare = document.getElementById('btn-screen-share');
+    const screenShareStatusEl = document.getElementById('screen-share-status');
     const logEl = document.getElementById('log');
 
     // State
     let room = null;
     let localTracks = [];
+    let screenShareTrack = null;
     let audioContext = null;
     let audioAnalyser = null;
     let audioDataArray = null;
@@ -423,6 +428,7 @@
 
         btnJoin.disabled = true;
         btnLeave.disabled = false;
+        btnScreenShare.disabled = false;
 
       } catch (err) {
         setStatus('error');
@@ -433,6 +439,12 @@
     }
 
     function cleanup() {
+      // Stop screen share track if active
+      if (screenShareTrack) {
+        screenShareTrack.stop();
+        screenShareTrack = null;
+      }
+
       // Stop local tracks
       localTracks.forEach(track => {
         track.stop();
@@ -459,6 +471,9 @@
       setStatus('disconnected');
       btnJoin.disabled = false;
       btnLeave.disabled = true;
+      btnScreenShare.disabled = true;
+      btnScreenShare.textContent = 'Share Screen';
+      screenShareStatusEl.textContent = 'off';
 
       room = null;
     }
@@ -470,6 +485,88 @@
       }
     }
 
+    // Screen share using canvas simulation (for E2E tests)
+    // Best practice: Cap at 1920x1080 - higher resolutions cause lag on low bandwidth subscribers
+    async function startScreenShare() {
+      if (!room) {
+        log('Cannot share screen: not connected to room');
+        return;
+      }
+      if (screenShareTrack) {
+        log('Screen share already active');
+        return;
+      }
+
+      try {
+        // For E2E tests: create a video track from canvas (simulated screen)
+        // In production: use navigator.mediaDevices.getDisplayMedia()
+        const canvas = document.createElement('canvas');
+        canvas.width = 1920;
+        canvas.height = 1080;
+        const ctx = canvas.getContext('2d');
+
+        // Draw simulated screen content
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#eee';
+        ctx.font = '64px monospace';
+        ctx.fillText('Screen Share Test', 100, 120);
+        ctx.font = '32px monospace';
+        ctx.fillText('1920x1080 @ 5fps', 100, 180);
+        ctx.fillText('Room: ' + room.name, 100, 240);
+        ctx.fillText('Identity: ' + room.localParticipant.identity, 100, 300);
+
+        // 5 fps is sufficient for screen content (not video playback)
+        const stream = canvas.captureStream(5);
+        screenShareTrack = new Twilio.Video.LocalVideoTrack(stream.getVideoTracks()[0], {
+          name: 'screen'
+        });
+
+        await room.localParticipant.publishTrack(screenShareTrack);
+        localVideoCount++;
+        updateTrackCounts();
+        screenShareStatusEl.textContent = 'sharing';
+        btnScreenShare.textContent = 'Stop Share';
+        log('Screen share started (1920x1080 @ 5fps)');
+      } catch (err) {
+        log('Screen share error: ' + err.message);
+        setError('Screen share failed: ' + err.message);
+      }
+    }
+
+    async function stopScreenShare() {
+      if (!screenShareTrack) {
+        log('No screen share active');
+        return;
+      }
+
+      try {
+        await room.localParticipant.unpublishTrack(screenShareTrack);
+        screenShareTrack.stop();
+        screenShareTrack = null;
+        localVideoCount = Math.max(0, localVideoCount - 1);
+        updateTrackCounts();
+        screenShareStatusEl.textContent = 'off';
+        btnScreenShare.textContent = 'Share Screen';
+        log('Screen share stopped');
+      } catch (err) {
+        log('Stop screen share error: ' + err.message);
+      }
+    }
+
+    function toggleScreenShare() {
+      if (screenShareTrack) {
+        stopScreenShare();
+      } else {
+        startScreenShare();
+      }
+    }
+
+    // Expose screen share functions for Playwright tests
+    window.startScreenShare = startScreenShare;
+    window.stopScreenShare = stopScreenShare;
+    window.isScreenSharing = () => !!screenShareTrack;
+
     // Event handlers
     btnJoin.addEventListener('click', () => {
       const roomName = roomInput.value.trim();
@@ -479,6 +576,8 @@
     });
 
     btnLeave.addEventListener('click', leaveRoom);
+
+    btnScreenShare.addEventListener('click', toggleScreenShare);
 
     roomInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter' && !btnJoin.disabled) {

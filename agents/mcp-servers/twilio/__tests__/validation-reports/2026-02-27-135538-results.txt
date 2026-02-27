@@ -1,0 +1,20 @@
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+FAIL __tests__/e2e-deep-validation.test.ts
+  ● Test suite failed to run
+
+    [96m__tests__/e2e-deep-validation.test.ts[0m:[93m939[0m:[93m65[0m - [91merror[0m[90m TS2339: [0mProperty 'substring' does not exist on type '{}'.
+
+    [7m939[0m             console.log(`    Result: ${op.textGenerationResults.substring(0, 100)}...`);
+    [7m   [0m [91m                                                                ~~~~~~~~~[0m
+
+Test Suites: 1 failed, 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        3.963 s
+Ran all test suites matching /e2e-deep-validation/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?
+npm notice
+npm notice New minor version of npm available! 11.4.2 -> 11.11.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.11.0
+npm notice To update run: npm install -g npm@11.11.0
+npm notice

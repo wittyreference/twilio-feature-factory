@@ -408,3 +408,545 @@ describe('E2E Deep Validation Tests', () => {
     );
   });
 });
+
+// ─── Additional Validator Tests (Items 8-13 architect review) ──────
+
+describe('Standalone Debugger Validation', () => {
+  const itDeepValidation =
+    shouldRunDeepValidation && hasRealCredentials ? it : it.skip;
+
+  let validator: DeepValidator;
+
+  beforeAll(() => {
+    if (shouldRunDeepValidation && hasRealCredentials) {
+      validator = createValidator();
+    }
+  });
+
+  itDeepValidation(
+    'should check debugger for recent alerts',
+    async () => {
+      console.log('\n=== Debugger Validation Test ===');
+
+      const result = await validator.validateDebugger({
+        lookbackSeconds: 300,
+      });
+
+      console.log(`Total alerts: ${result.totalAlerts}`);
+      console.log(`Error alerts: ${result.errorAlerts}`);
+      console.log(`Warning alerts: ${result.warningAlerts}`);
+      console.log(`Success: ${result.success}`);
+
+      if (result.alerts.length > 0) {
+        console.log('\nRecent alerts:');
+        result.alerts.slice(0, 5).forEach((a) => {
+          console.log(`  [${a.logLevel}] ${a.errorCode}: ${a.alertText?.substring(0, 80)}`);
+        });
+      }
+
+      // Debugger validation should run without error
+      expect(result.totalAlerts).toBeGreaterThanOrEqual(0);
+      expect(result.timeRange).toBeDefined();
+      expect(result.timeRange.start).toBeDefined();
+      expect(result.timeRange.end).toBeDefined();
+      console.log('\nDebugger Validation PASSED ✓');
+    },
+    30000
+  );
+});
+
+describe('Sync Document Validation', () => {
+  const itSync =
+    shouldRunDeepValidation &&
+    hasRealCredentials &&
+    TEST_CREDENTIALS.syncServiceSid
+      ? it
+      : it.skip;
+
+  let validator: DeepValidator;
+  let client: ReturnType<typeof Twilio>;
+  const TEST_DOC_NAME = `e2e-test-doc-${Date.now()}`;
+
+  beforeAll(() => {
+    if (shouldRunDeepValidation && hasRealCredentials) {
+      validator = createValidator();
+      client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+    }
+  });
+
+  afterAll(async () => {
+    // Cleanup: delete test document
+    if (shouldRunDeepValidation && hasRealCredentials && TEST_CREDENTIALS.syncServiceSid) {
+      try {
+        await client.sync.v1
+          .services(TEST_CREDENTIALS.syncServiceSid)
+          .documents(TEST_DOC_NAME)
+          .remove();
+        console.log(`Cleaned up test doc: ${TEST_DOC_NAME}`);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+  });
+
+  itSync(
+    'should create and validate a Sync Document',
+    async () => {
+      console.log('\n=== Sync Document Validation Test ===');
+      console.log(`Service: ${TEST_CREDENTIALS.syncServiceSid}`);
+
+      // Create test document
+      const doc = await client.sync.v1
+        .services(TEST_CREDENTIALS.syncServiceSid)
+        .documents.create({
+          uniqueName: TEST_DOC_NAME,
+          data: { status: 'active', count: 42, tags: ['test', 'e2e'] },
+          ttl: 300, // 5 min TTL for cleanup
+        });
+      console.log(`Created doc: ${doc.sid} (${TEST_DOC_NAME})`);
+
+      // Validate
+      const result = await validator.validateSyncDocument(
+        TEST_CREDENTIALS.syncServiceSid,
+        TEST_DOC_NAME,
+        {
+          expectedKeys: ['status', 'count'],
+          expectedTypes: { status: 'string', count: 'number' },
+        }
+      );
+
+      console.log(`Success: ${result.success}`);
+      console.log(`Document SID: ${result.documentSid}`);
+      console.log(`Data keys: ${result.dataKeys.join(', ')}`);
+
+      expect(result.success).toBe(true);
+      expect(result.documentSid).toMatch(/^ET/);
+      expect(result.data).toEqual({ status: 'active', count: 42, tags: ['test', 'e2e'] });
+      expect(result.dataKeys).toContain('status');
+      expect(result.dataKeys).toContain('count');
+      console.log('\nSync Document Validation PASSED ✓');
+    },
+    30000
+  );
+});
+
+describe('Sync List Validation', () => {
+  const itSync =
+    shouldRunDeepValidation &&
+    hasRealCredentials &&
+    TEST_CREDENTIALS.syncServiceSid
+      ? it
+      : it.skip;
+
+  let validator: DeepValidator;
+  let client: ReturnType<typeof Twilio>;
+  const TEST_LIST_NAME = `e2e-test-list-${Date.now()}`;
+
+  beforeAll(() => {
+    if (shouldRunDeepValidation && hasRealCredentials) {
+      validator = createValidator();
+      client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+    }
+  });
+
+  afterAll(async () => {
+    if (shouldRunDeepValidation && hasRealCredentials && TEST_CREDENTIALS.syncServiceSid) {
+      try {
+        await client.sync.v1
+          .services(TEST_CREDENTIALS.syncServiceSid)
+          .syncLists(TEST_LIST_NAME)
+          .remove();
+        console.log(`Cleaned up test list: ${TEST_LIST_NAME}`);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+  });
+
+  itSync(
+    'should create and validate a Sync List',
+    async () => {
+      console.log('\n=== Sync List Validation Test ===');
+
+      // Create test list with items
+      const list = await client.sync.v1
+        .services(TEST_CREDENTIALS.syncServiceSid)
+        .syncLists.create({ uniqueName: TEST_LIST_NAME, ttl: 300 });
+      console.log(`Created list: ${list.sid} (${TEST_LIST_NAME})`);
+
+      // Add items
+      for (let i = 0; i < 3; i++) {
+        await client.sync.v1
+          .services(TEST_CREDENTIALS.syncServiceSid)
+          .syncLists(TEST_LIST_NAME)
+          .syncListItems.create({ data: { name: `item-${i}`, value: i * 10 } });
+      }
+      console.log('Added 3 items');
+
+      // Validate
+      const result = await validator.validateSyncList(
+        TEST_CREDENTIALS.syncServiceSid,
+        TEST_LIST_NAME,
+        {
+          minItems: 3,
+          maxItems: 10,
+          expectedItemKeys: ['name', 'value'],
+        }
+      );
+
+      console.log(`Success: ${result.success}`);
+      console.log(`List SID: ${result.listSid}`);
+      console.log(`Item count: ${result.itemCount}`);
+
+      expect(result.success).toBe(true);
+      expect(result.itemCount).toBe(3);
+      expect(result.items.length).toBe(3);
+      console.log('\nSync List Validation PASSED ✓');
+    },
+    30000
+  );
+});
+
+describe('Sync Map Validation', () => {
+  const itSync =
+    shouldRunDeepValidation &&
+    hasRealCredentials &&
+    TEST_CREDENTIALS.syncServiceSid
+      ? it
+      : it.skip;
+
+  let validator: DeepValidator;
+  let client: ReturnType<typeof Twilio>;
+  const TEST_MAP_NAME = `e2e-test-map-${Date.now()}`;
+
+  beforeAll(() => {
+    if (shouldRunDeepValidation && hasRealCredentials) {
+      validator = createValidator();
+      client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+    }
+  });
+
+  afterAll(async () => {
+    if (shouldRunDeepValidation && hasRealCredentials && TEST_CREDENTIALS.syncServiceSid) {
+      try {
+        await client.sync.v1
+          .services(TEST_CREDENTIALS.syncServiceSid)
+          .syncMaps(TEST_MAP_NAME)
+          .remove();
+        console.log(`Cleaned up test map: ${TEST_MAP_NAME}`);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+  });
+
+  itSync(
+    'should create and validate a Sync Map',
+    async () => {
+      console.log('\n=== Sync Map Validation Test ===');
+
+      // Create test map with items
+      const map = await client.sync.v1
+        .services(TEST_CREDENTIALS.syncServiceSid)
+        .syncMaps.create({ uniqueName: TEST_MAP_NAME, ttl: 300 });
+      console.log(`Created map: ${map.sid} (${TEST_MAP_NAME})`);
+
+      // Add keyed items
+      const entries = [
+        { key: 'config', data: { theme: 'dark', lang: 'en' } },
+        { key: 'settings', data: { notifications: true, volume: 80 } },
+      ];
+      for (const entry of entries) {
+        await client.sync.v1
+          .services(TEST_CREDENTIALS.syncServiceSid)
+          .syncMaps(TEST_MAP_NAME)
+          .syncMapItems.create(entry);
+      }
+      console.log('Added 2 map items');
+
+      // Validate
+      const result = await validator.validateSyncMap(
+        TEST_CREDENTIALS.syncServiceSid,
+        TEST_MAP_NAME,
+        {
+          expectedKeys: ['config', 'settings'],
+        }
+      );
+
+      console.log(`Success: ${result.success}`);
+      console.log(`Map SID: ${result.mapSid}`);
+      console.log(`Item count: ${result.itemCount}`);
+      console.log(`Keys: ${result.keys.join(', ')}`);
+
+      expect(result.success).toBe(true);
+      expect(result.itemCount).toBe(2);
+      expect(result.keys).toContain('config');
+      expect(result.keys).toContain('settings');
+      expect(result.expectedKeysFound).toContain('config');
+      expect(result.expectedKeysFound).toContain('settings');
+      expect(result.expectedKeysMissing).toHaveLength(0);
+      console.log('\nSync Map Validation PASSED ✓');
+    },
+    30000
+  );
+});
+
+describe('TaskRouter Validation', () => {
+  const itTaskRouter =
+    shouldRunDeepValidation &&
+    hasRealCredentials &&
+    process.env.TWILIO_TASKROUTER_WORKSPACE_SID
+      ? it
+      : it.skip;
+
+  let validator: DeepValidator;
+  let client: ReturnType<typeof Twilio>;
+  let testTaskSid: string;
+  const workspaceSid = process.env.TWILIO_TASKROUTER_WORKSPACE_SID || '';
+
+  beforeAll(() => {
+    if (shouldRunDeepValidation && hasRealCredentials) {
+      validator = createValidator();
+      client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+    }
+  });
+
+  afterAll(async () => {
+    // Cleanup: cancel the task
+    if (testTaskSid && workspaceSid) {
+      try {
+        await client.taskrouter.v1
+          .workspaces(workspaceSid)
+          .tasks(testTaskSid)
+          .update({ assignmentStatus: 'canceled' });
+        console.log(`Cleaned up test task: ${testTaskSid}`);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+  });
+
+  itTaskRouter(
+    'should create and validate a TaskRouter task',
+    async () => {
+      console.log('\n=== TaskRouter Validation Test ===');
+      console.log(`Workspace: ${workspaceSid}`);
+
+      // Get default workflow
+      const workflows = await client.taskrouter.v1
+        .workspaces(workspaceSid)
+        .workflows.list({ limit: 1 });
+
+      if (workflows.length === 0) {
+        console.log('No workflows found — skipping');
+        return;
+      }
+
+      const workflowSid = workflows[0].sid;
+      console.log(`Using workflow: ${workflowSid}`);
+
+      // Create test task
+      const task = await client.taskrouter.v1
+        .workspaces(workspaceSid)
+        .tasks.create({
+          workflowSid,
+          attributes: JSON.stringify({
+            type: 'e2e-test',
+            language: 'en',
+            skill: 'general',
+            timestamp: Date.now(),
+          }),
+          timeout: 60,
+        });
+      testTaskSid = task.sid;
+      console.log(`Created task: ${task.sid}`);
+
+      // Wait a moment for task to be queued
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Validate
+      const result = await validator.validateTaskRouter(workspaceSid, testTaskSid, {
+        expectedAttributeKeys: ['type', 'language', 'skill'],
+        includeReservations: true,
+        includeEvents: true,
+        checkDebugger: true,
+      });
+
+      console.log(`Success: ${result.success}`);
+      console.log(`Task SID: ${result.taskSid}`);
+      console.log(`Assignment status: ${result.assignmentStatus}`);
+      console.log(`Priority: ${result.priority}`);
+      console.log(`Reservations: ${result.reservations?.length ?? 0}`);
+      console.log(`Events: ${result.events?.length ?? 0}`);
+
+      expect(result.success).toBe(true);
+      expect(result.taskSid).toBe(testTaskSid);
+      expect(result.workspaceSid).toBe(workspaceSid);
+      expect(result.attributes).toBeDefined();
+      expect(result.attributes?.type).toBe('e2e-test');
+      console.log('\nTaskRouter Validation PASSED ✓');
+    },
+    60000
+  );
+});
+
+describe('Recording Validation', () => {
+  const itDeepValidation =
+    shouldRunDeepValidation && hasRealCredentials ? it : it.skip;
+
+  let validator: DeepValidator;
+  let client: ReturnType<typeof Twilio>;
+
+  beforeAll(() => {
+    if (shouldRunDeepValidation && hasRealCredentials) {
+      validator = createValidator();
+      client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+    }
+  });
+
+  itDeepValidation(
+    'should validate a recent recording from the account',
+    async () => {
+      console.log('\n=== Recording Validation Test ===');
+
+      // Find a recent recording
+      const recordings = await client.recordings.list({ limit: 1 });
+      if (recordings.length === 0) {
+        console.log('No recordings found — skipping');
+        return;
+      }
+
+      const recordingSid = recordings[0].sid;
+      console.log(`Validating recording: ${recordingSid}`);
+      console.log(`  Call SID: ${recordings[0].callSid}`);
+      console.log(`  Duration: ${recordings[0].duration}s`);
+      console.log(`  Status: ${recordings[0].status}`);
+
+      const result = await validator.validateRecording(recordingSid, {
+        waitForCompleted: false, // Already completed
+        timeout: 15000,
+      });
+
+      console.log(`\nSuccess: ${result.success}`);
+      console.log(`Recording SID: ${result.recordingSid}`);
+      console.log(`Status: ${result.status}`);
+      console.log(`Duration: ${result.duration}s`);
+
+      expect(result.recordingSid).toBe(recordingSid);
+      expect(result.status).toBe('completed');
+      expect(result.duration).toBeGreaterThan(0);
+      console.log('\nRecording Validation PASSED ✓');
+    },
+    30000
+  );
+});
+
+describe('Transcript Validation', () => {
+  const itDeepValidation =
+    shouldRunDeepValidation && hasRealCredentials ? it : it.skip;
+
+  let validator: DeepValidator;
+  let client: ReturnType<typeof Twilio>;
+
+  beforeAll(() => {
+    if (shouldRunDeepValidation && hasRealCredentials) {
+      validator = createValidator();
+      client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+    }
+  });
+
+  itDeepValidation(
+    'should validate a recent transcript from the account',
+    async () => {
+      console.log('\n=== Transcript Validation Test ===');
+
+      // Find a recent completed transcript
+      const transcripts = await client.intelligence.v2.transcripts.list({ limit: 5 });
+      const completed = transcripts.find((t) => t.status === 'completed');
+
+      if (!completed) {
+        console.log('No completed transcripts found — skipping');
+        return;
+      }
+
+      console.log(`Validating transcript: ${completed.sid}`);
+      console.log(`  Status: ${completed.status}`);
+      console.log(`  Duration: ${completed.duration}s`);
+
+      const result = await validator.validateTranscript(completed.sid, {
+        waitForCompleted: false, // Already completed
+        checkSentences: true,
+      });
+
+      console.log(`\nSuccess: ${result.success}`);
+      console.log(`Transcript SID: ${result.transcriptSid}`);
+      console.log(`Status: ${result.status}`);
+      console.log(`Sentence count: ${result.sentenceCount}`);
+      console.log(`Language: ${result.languageCode}`);
+
+      expect(result.transcriptSid).toBe(completed.sid);
+      expect(result.status).toBe('completed');
+      expect(result.sentenceCount).toBeGreaterThan(0);
+      console.log('\nTranscript Validation PASSED ✓');
+    },
+    60000
+  );
+});
+
+describe('Language Operator Validation', () => {
+  const itDeepValidation =
+    shouldRunDeepValidation && hasRealCredentials ? it : it.skip;
+
+  let validator: DeepValidator;
+  let client: ReturnType<typeof Twilio>;
+
+  beforeAll(() => {
+    if (shouldRunDeepValidation && hasRealCredentials) {
+      validator = createValidator();
+      client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+    }
+  });
+
+  itDeepValidation(
+    'should validate language operator results on a transcript',
+    async () => {
+      console.log('\n=== Language Operator Validation Test ===');
+
+      // Find a transcript with operator results
+      const transcripts = await client.intelligence.v2.transcripts.list({ limit: 5 });
+      const completed = transcripts.find((t) => t.status === 'completed');
+
+      if (!completed) {
+        console.log('No completed transcripts found — skipping');
+        return;
+      }
+
+      console.log(`Checking transcript: ${completed.sid}`);
+
+      const result = await validator.validateLanguageOperator(completed.sid, {
+        requireResults: false, // Don't fail if no operators configured
+      });
+
+      console.log(`\nSuccess: ${result.success}`);
+      console.log(`Transcript SID: ${result.transcriptSid}`);
+      console.log(`Operator results: ${result.operatorResults.length}`);
+
+      if (result.operatorResults.length > 0) {
+        console.log('\nOperators found:');
+        result.operatorResults.forEach((op) => {
+          console.log(`  - ${op.name} (${op.operatorType})`);
+          if (op.textGenerationResults) {
+            console.log(`    Result: ${String(op.textGenerationResults).substring(0, 100)}...`);
+          }
+        });
+      } else {
+        console.log('No operator results (operators may not be configured on this service)');
+      }
+
+      // Should at least run without error
+      expect(result.transcriptSid).toBe(completed.sid);
+      console.log('\nLanguage Operator Validation PASSED ✓');
+    },
+    60000
+  );
+});

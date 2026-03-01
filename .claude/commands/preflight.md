@@ -61,6 +61,24 @@ grep '^TWILIO_CALLBACK_BASE_URL' .env
 - **WARN**: TWILIO_CALLBACK_BASE_URL contains `.au1.` or `.ie1.` — callbacks point to regional deployment
 - **WARN**: Uncommented `TWILIO_AU1_API_KEY` or `TWILIO_IE1_API_KEY` in .env — SDK may pick up regional credentials
 
+### Check 2.6: MCP Server Health
+
+Verify the MCP server is running and routing to the correct region:
+
+```bash
+# Test MCP connectivity — use validate_debugger as a lightweight health check
+# If it returns "Endpoint is not supported in realm 'au1'" or similar,
+# the MCP server is routing to the wrong region and needs a restart.
+```
+
+Use MCP tool `validate_debugger` with `lookbackSeconds: 10`. Interpret:
+
+- **PASS**: Returns successfully with `success: true` — MCP server is live and routing correctly
+- **FAIL**: Returns regional endpoint error — MCP server inherited stale TWILIO_REGION/TWILIO_EDGE from a previous env state. Fix: restart Claude Code to relaunch MCP server with clean environment.
+- **FAIL**: Connection refused or timeout — MCP server is not running. Fix: check `.mcp.json` config and restart Claude Code.
+
+**Why this matters**: The MCP server is a separate process that inherits env vars at launch. Changing `.env` or unsetting shell vars does NOT affect the running MCP server. A restart is required after any regional configuration change.
+
 ### Check 3: Auth Validity
 
 ```bash

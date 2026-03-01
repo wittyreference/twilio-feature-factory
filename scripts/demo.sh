@@ -141,7 +141,7 @@ fi
 
 # ─── Print banner ────────────────────────────────────────────────────
 
-DEPLOYED_URL="${TWILIO_CALLBACK_BASE_URL:-https://prototype-2617-dev.sydney.au1.twil.io}"
+DEPLOYED_URL="${TWILIO_CALLBACK_BASE_URL:-https://prototype-8922-dev.twil.io}"
 
 echo ""
 echo -e "${BOLD}${CYAN}═══════════════════════════════════════════════════════════${NC}"

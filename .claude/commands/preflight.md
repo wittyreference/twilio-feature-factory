@@ -43,6 +43,24 @@ Load from `.env` file if present. Check each variable:
 
 For variables with a known prefix, **WARN** if the value is set but doesn't match the expected prefix.
 
+### Check 2.5: Regional Configuration
+
+Check for regional env vars that silently redirect all API traffic:
+
+```bash
+# Check shell environment
+echo "TWILIO_REGION=${TWILIO_REGION:-}" "TWILIO_EDGE=${TWILIO_EDGE:-}"
+# Check .env file for uncommented regional vars
+grep -E '^TWILIO_(REGION|EDGE|AU1_API|IE1_API)' .env
+# Check callback URL
+grep '^TWILIO_CALLBACK_BASE_URL' .env
+```
+
+- **PASS**: TWILIO_REGION and TWILIO_EDGE are not set in env, no uncommented regional API keys in .env, callback URL points to `.twil.io` (US1)
+- **WARN**: TWILIO_REGION or TWILIO_EDGE is set — all API calls route to regional endpoints
+- **WARN**: TWILIO_CALLBACK_BASE_URL contains `.au1.` or `.ie1.` — callbacks point to regional deployment
+- **WARN**: Uncommented `TWILIO_AU1_API_KEY` or `TWILIO_IE1_API_KEY` in .env — SDK may pick up regional credentials
+
 ### Check 3: Auth Validity
 
 ```bash

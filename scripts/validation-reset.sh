@@ -30,6 +30,9 @@ set -a
 source .env
 set +a
 
+# Force US1 — regional env vars from .env could silently redirect API calls
+unset TWILIO_REGION TWILIO_EDGE
+
 if [ -z "$TWILIO_ACCOUNT_SID" ] || [ -z "$TWILIO_AUTH_TOKEN" ]; then
     echo -e "${RED}Error: TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN must be set in .env${NC}" >&2
     exit 1

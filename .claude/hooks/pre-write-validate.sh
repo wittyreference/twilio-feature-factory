@@ -180,6 +180,53 @@ if [[ "$FILE_PATH" =~ functions/.*\.js$ ]] && [[ ! "$FILE_PATH" =~ \.test\.js$ ]
 fi
 
 # ============================================
+# PIPELINE GATE — New functions require tests
+# ============================================
+
+# Only check new function files (not tests, not helpers/private utilities)
+if [[ "$FILE_PATH" =~ functions/.*\.js$ ]] && \
+   [[ ! "$FILE_PATH" =~ \.test\.js$ ]] && \
+   [[ ! "$FILE_PATH" =~ /helpers/ ]]; then
+
+    if [ ! -f "$FILE_PATH" ]; then
+        # Skip if override is set
+        if [ "${SKIP_PIPELINE_GATE:-}" = "true" ]; then
+            echo "Pipeline gate bypassed (SKIP_PIPELINE_GATE=true)" >&2
+        else
+            # Derive expected test path
+            # functions/voice/ivr-welcome.js → __tests__/unit/voice/ivr-welcome.test.js
+            # functions/voice/ivr-welcome.protected.js → __tests__/unit/voice/ivr-welcome.test.js
+            REL_FUNC="${FILE_PATH#*/functions/}"
+            DOMAIN=$(dirname "$REL_FUNC")
+            BASENAME=$(basename "$REL_FUNC" .js)
+            BASENAME="${BASENAME%.protected}"
+            BASENAME="${BASENAME%.private}"
+            TEST_PATH="__tests__/unit/${DOMAIN}/${BASENAME}.test.js"
+
+            if [ ! -f "$PROJECT_ROOT/$TEST_PATH" ]; then
+                echo "" >&2
+                echo "BLOCKED: New function file has no corresponding tests!" >&2
+                echo "" >&2
+                echo "  Function:  functions/${REL_FUNC}" >&2
+                echo "  Expected:  ${TEST_PATH}" >&2
+                echo "" >&2
+                echo "This project enforces pipeline-driven development." >&2
+                echo "For new features, use the development pipeline:" >&2
+                echo "" >&2
+                echo "  /orchestrate new-feature \"[description]\"" >&2
+                echo "" >&2
+                echo "Or run phases manually:" >&2
+                echo "  /test-gen [feature]    # Write failing tests first" >&2
+                echo "  /dev [task]            # Then implement" >&2
+                echo "" >&2
+                echo "Override: SKIP_PIPELINE_GATE=true (for emergency fixes)" >&2
+                exit 2
+            fi
+        fi
+    fi
+fi
+
+# ============================================
 # TEST FILE ABOUTME WARNING (not blocking)
 # ============================================
 

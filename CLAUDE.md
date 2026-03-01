@@ -101,6 +101,30 @@ Agent Teams coordinate multiple Claude Code instances for parallel work. Use `/t
 - **Code Review**: Final validation of complex logic and architectural decisions
 - **Documentation**: Maintain and update technical documentation
 
+## Development Pipeline
+
+For any task that creates new serverless functions or implements significant new features, you MUST use the development pipeline — either via `/orchestrate` or by running the phases sequentially:
+
+1. `/architect` — Design review and service selection
+2. `/spec` — Detailed technical specification
+3. `/test-gen` — Write failing tests (TDD Red Phase)
+4. `/dev` — Implement to pass tests (TDD Green Phase)
+5. `/review` — Code review and security audit
+6. `/docs` — Documentation updates
+
+**When to use the pipeline:**
+- Creating new files in `functions/`
+- Adding a new Twilio feature or use case
+- Implementing anything that touches voice, messaging, verification, or other Twilio products
+
+**When the pipeline is NOT needed:**
+- Bug fixes to existing files
+- Documentation updates
+- Configuration changes
+- Single-line tweaks or refactors within an existing file
+
+The pre-write hook enforces this — new function files without corresponding tests will be blocked.
+
 ## Documentation Protocol
 
 This project uses a **doc-first approach**: Check → Act → Record.
@@ -208,7 +232,7 @@ Rules that have each caused real debugging time loss. These exist in domain-spec
 
 # Session discipline
 
-- Prioritize implementation over planning. If a session has a concrete task, produce working code — not just plans, outlines, or analysis documents. Keep planning to a short preamble before coding.
+- Prioritize the pipeline over ad-hoc implementation. For tasks that create new functions, always invoke `/orchestrate` or run pipeline phases sequentially. Ad-hoc coding (skipping architect/spec) is only appropriate for bug fixes and small edits to existing files.
 - Do not convert lazy/conditional `require()` calls to static `import` statements without verifying the conditional logic still works. Node.js conditional requires exist for a reason (optional dependencies, environment-specific loading).
 - Run the full relevant test suite before presenting work as complete. A passing subset is not sufficient — regressions in unrelated tests still need to be caught.
 - After modifying TypeScript files, run `tsc --noEmit` in the relevant package to verify compilation before committing.

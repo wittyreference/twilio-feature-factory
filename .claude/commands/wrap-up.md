@@ -66,9 +66,15 @@ Only update docs where the session's changes actually warrant it. Don't touch do
 | Cross-cutting gotcha | `.claude/references/operational-gotchas.md` |
 | CLI quirk | `.claude/references/twilio-cli.md` |
 | High-impact rule | Root CLAUDE.md "Architectural Invariants" |
+| Architectural decision (why X over Y) | `DESIGN_DECISIONS.md` (new D## entry) |
 | Per-developer convention | Keep in auto-memory |
 
 After promoting, replace the detailed item with a pointer (e.g., "See functions/voice/CLAUDE.md#gotchas"). Don't delete — pointers prevent re-discovery of the same gotcha.
+
+**Cross-check learnings ↔ auto-memory**: Ensure nothing fell through the cracks:
+- Read the session learnings file — are there entries that should also be in auto-memory (for cross-session persistence)?
+- Read auto-memory — are there entries from this session that should also be in the learnings file (for the promote/clear flywheel)?
+- Are there auto-memory entries that represent an architectural choice worth recording in `DESIGN_DECISIONS.md`? Signs: "we chose X over Y", "US1 is default because...", "regional requires explicit opt-in".
 
 **Capture inward**: Add session learnings that should persist across sessions to auto-memory at `~/.claude/projects/-Users-mcarpenter-workspaces-twilio-feature-factory/memory/MEMORY.md`.
 

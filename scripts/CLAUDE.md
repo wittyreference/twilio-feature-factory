@@ -16,6 +16,7 @@ This directory contains CLI scripts for project setup and maintenance.
 | `verify-shipping-ready.sh` | `./scripts/verify-shipping-ready.sh` | Pre-ship checklist: no meta refs, clean exports, doc links valid |
 | `demo.sh` | `npm run demo` | One-command demo launcher with ngrok, env verification, URL banner |
 | `check-demo-health.sh` | `./scripts/check-demo-health.sh` | Pre-demo health check (ngrok, server, API keys, credentials) |
+| `run-validation-suite.sh` | `./scripts/run-validation-suite.sh` | Run E2E deep validation suite against live US1 Twilio APIs |
 | `api-sync/` | `cd scripts/api-sync && npm run sync` | Automated Twilio API drift detection and coverage analysis |
 
 ## Setup Script

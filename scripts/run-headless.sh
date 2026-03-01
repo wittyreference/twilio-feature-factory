@@ -47,6 +47,9 @@ resolve_task_prompt() {
         random-validation)
             cat "$(dirname "$0")/headless-tasks/random-validation.md"
             ;;
+        uber-validation)
+            cat "$(dirname "$0")/headless-tasks/uber-validation.md"
+            ;;
         *)
             echo ""
             ;;
@@ -68,7 +71,7 @@ Options:
   --list-tasks       List available pre-defined tasks
   --help             Show this help message
 
-Pre-defined tasks: validate, test-fix, lint-fix, typecheck, deploy-dev, e2e-validate, random-validation
+Pre-defined tasks: validate, test-fix, lint-fix, typecheck, deploy-dev, e2e-validate, random-validation, uber-validation
 
 Environment:
   CLAUDE_HEADLESS_ACKNOWLEDGED=true  Required. Confirms you accept autonomous risks.

@@ -332,3 +332,4 @@ The following slash commands are available for specialized tasks:
 | `/wrap-up [scope]` | End-of-session doc updates — learnings, CLAUDE.md, todo, pending actions |
 | `/learn [action]` | Interactive learning exercises on autonomous work |
 | `/plugin-sync` | Detect and reconcile drift between factory source and plugin distribution |
+| `/uber-validation` | Unified cross-repo validation — plugin dogfooding, sequential, chaos, FF cross-repo |

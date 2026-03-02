@@ -98,7 +98,17 @@ If significant code was produced this session (especially from autonomous work v
 3. Report how many exercises were generated for the next interactive session
 4. If no events were logged, skip this step
 
-### 6. Clear Pending Actions
+### 6. Context Budget Check
+
+Quick health check on auto-loaded context size:
+
+```bash
+wc -l CLAUDE.md .meta/CLAUDE.md ~/.claude/projects/-Users-mcarpenter-workspaces-twilio-feature-factory/memory/MEMORY.md 2>/dev/null
+```
+
+Report the MEMORY.md line count in the summary. If over 150 lines, flag it — entries beyond 200 are truncated and never seen. Prune by replacing promoted entries with pointers (e.g., "See operational-gotchas.md → Voice Call Routing").
+
+### 7. Clear Pending Actions
 
 After addressing flywheel suggestions, clear the pending actions file:
 ```markdown
@@ -111,7 +121,7 @@ Actions detected by the documentation flywheel. Review before committing.
 <!-- Doc suggestions will be appended below this line by flywheel-doc-check.sh -->
 ```
 
-### 7. Summary
+### 8. Summary
 
 Output what was updated:
 

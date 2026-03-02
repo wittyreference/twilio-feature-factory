@@ -1,12 +1,29 @@
 # Voice Use Case Product Map
 
-Definitive per-use-case product mapping for Twilio Voice. Load this skill when a user describes what they want to build and you need to recommend which Twilio products, services, and features to include.
+Definitive per-use-case product mapping for Twilio Voice. Load this skill when recommending Twilio products for a voice use case.
 
-**Provenance:** Derived from the Twilio Voice Use Case Domain Expert reference (10 use case slides + summary ladder), enriched with Twilio documentation research for prerequisites, operational gotchas, and cross-cutting constraints.
+## Quick Reference (scan this first)
 
-**Complements:** `.claude/skills/voice.md` — that file covers decision frameworks and architectural patterns. This file covers *which products to recommend* for each use case. For ConversationRelay protocol details, streaming patterns, and LLM integration, see `functions/conversation-relay/CLAUDE.md`.
+| UC | Name | Core Products | Key Feature |
+|----|------|--------------|-------------|
+| 1 | Voice Notifications | Voice API, Say, Gather, AMD, Recording | Outbound reminder + speech confirm |
+| 2 | Self-Service (IVR) | Voice API, Say, Gather, Recording | Multi-level menu, DTMF + speech |
+| 3 | Inbound Contact Center | TaskRouter, Conference, Recording, Sync | Skills-based routing to agents |
+| 4 | Outbound Contact Center | Conference, Participants API, AMD, Recording | Agent-first then connect customer |
+| 5 | AI Agents (ConversationRelay) | ConversationRelay, Recording, Sync, SMS | WebSocket LLM integration |
+| 6 | AI Agents (Media Streams) | `<Connect><Stream>`, Recording | Raw audio WebSocket, bring-your-own STT/TTS |
+| 7 | Sales Dialer | Conference, AMD, Recording, Participants API | Parallel/power dialing |
+| 8 | Call Tracking | Voice API, Say (whisper), Dial, Recording, Sync | Campaign attribution + forwarding |
+| 9 | PSTN Connectivity | SIP Trunking, BYOC | Carrier interconnect (not prototyped) |
+| 10 | AI/ML Transcription | Voice Intelligence, Language Operators | Post-call analysis of recordings |
+
+**Complements:** `.claude/skills/voice.md` (decision frameworks), `functions/conversation-relay/CLAUDE.md` (ConversationRelay protocol details).
 
 ---
+
+## Detailed Product Entries
+
+The sections below provide per-product Why/When/Prereqs/Gotchas for each use case.
 
 ## How to Read This Document
 

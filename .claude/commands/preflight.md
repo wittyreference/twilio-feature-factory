@@ -79,6 +79,20 @@ Use MCP tool `validate_debugger` with `lookbackSeconds: 10`. Interpret:
 
 **Why this matters**: The MCP server is a separate process that inherits env vars at launch. Changing `.env` or unsetting shell vars does NOT affect the running MCP server. A restart is required after any regional configuration change.
 
+### Check 2.7: Context Budget
+
+Quick check that auto-loaded context files haven't bloated:
+
+```bash
+wc -l CLAUDE.md
+wc -l .meta/CLAUDE.md 2>/dev/null
+wc -l ~/.claude/projects/-Users-mcarpenter-workspaces-twilio-feature-factory/memory/MEMORY.md
+```
+
+- **PASS**: MEMORY.md under 150 lines
+- **WARN**: MEMORY.md between 150-200 lines — consider pruning promoted entries
+- **FAIL**: MEMORY.md over 200 lines — content beyond line 200 is truncated by Claude Code and never seen
+
 ### Check 3: Auth Validity
 
 ```bash

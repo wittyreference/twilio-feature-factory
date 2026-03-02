@@ -1,8 +1,26 @@
 # Messaging Services Context
 
-> **Note**: This directory contains no deployed function files. It serves as an API pattern reference for Twilio Messaging Services operations.
-
 This directory contains Twilio Messaging Services functions for advanced SMS/MMS capabilities with sender pools, intelligent routing, and compliance features.
+
+## Files
+
+| File | Access | Description |
+|------|--------|-------------|
+| `send-message.protected.js` | Protected | Send SMS/MMS via Messaging Service with optional scheduling and status callbacks |
+| `sender-pool.protected.js` | Protected | Manage sender pool: list/add/remove phone numbers via `action` param |
+| `incoming-handler.js` | Public | Inbound webhook with keyword routing (HELP, INFO) and default acknowledgment |
+
+### Key Difference from Basic Messaging
+
+These functions use `messagingServiceSid` instead of `from`, letting Twilio select the optimal sender from the pool:
+
+```javascript
+// Basic messaging (functions/messaging/)
+await client.messages.create({ to, from: context.TWILIO_PHONE_NUMBER, body });
+
+// Messaging Services (this directory)
+await client.messages.create({ to, messagingServiceSid: context.TWILIO_MESSAGING_SERVICE_SID, body });
+```
 
 ## What are Messaging Services?
 

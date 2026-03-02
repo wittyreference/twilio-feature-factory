@@ -17,7 +17,13 @@
       { "factory": "functions/conversation-relay/CLAUDE.md", "plugin": "skills/conversation-relay/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": "functions/messaging-services/CLAUDE.md", "plugin": "skills/messaging-services/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": ".claude/references/twilio-cli.md", "plugin": "skills/twilio-cli/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
-      { "factory": "CLAUDE.md", "plugin": "skills/twilio-invariants/SKILL.md", "adaptation": "frontmatter,extract-invariants" }
+      { "factory": "CLAUDE.md", "plugin": "skills/twilio-invariants/SKILL.md", "adaptation": "frontmatter,extract-invariants" },
+      { "factory": ".claude/skills/sip-byoc.md", "plugin": "skills/sip-byoc/SKILL.md", "adaptation": "frontmatter" },
+      { "factory": ".claude/skills/compliance-regulatory.md", "plugin": "skills/compliance-regulatory/SKILL.md", "adaptation": "frontmatter" },
+      { "factory": ".claude/skills/payments.md", "plugin": "skills/payments/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/pay/CLAUDE.md", "plugin": "skills/pay/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/proxy/CLAUDE.md", "plugin": "skills/proxy/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/phone-numbers/CLAUDE.md", "plugin": "skills/phone-numbers/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" }
     ],
     "commands": [
       { "factory": ".claude/commands/commit.md", "plugin": "commands/commit.md", "adaptation": "strip-factory-paths" },

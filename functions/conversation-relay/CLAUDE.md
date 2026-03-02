@@ -448,6 +448,19 @@ To use transcript storage and analysis features, you must create a Conversationa
 
 Without this, transcript creation via the Intelligence API will fail with 404 errors.
 
+#### Dual Service Pattern
+
+This project uses two Intelligence Services for different workflows:
+
+| Service | Env Var | Operators | Use Case |
+|---------|---------|-----------|----------|
+| `twilio-agent-factory` | `TWILIO_INTELLIGENCE_SERVICE_SID` | Summary + Sentiment (auto-run) | Sequential validation, demo calls — operators automatically analyze every transcript |
+| `no-auto-transcribe` | `TWILIO_INTELLIGENCE_SERVICE_MANUAL_SID` | None configured | Manual transcript creation — the more common production flow where you control which recordings get transcribed |
+
+**Why two services?** Voice Intelligence operators are configured per-service and run automatically on all transcripts created under that service. There is no per-transcript bypass flag. To support both "analyze everything" and "analyze selectively" workflows, use separate services.
+
+**PII Redaction**: Similarly, PII redaction operators are per-service. To support both redacted (standard) and unredacted (fraud/compliance) transcript access, create separate Intelligence Services — one with PII redaction operators, one without — and route transcripts to the appropriate service based on the use case.
+
 ### Creating Transcripts from Recordings
 
 When creating transcripts from Twilio recordings, use `source_sid` instead of `media_url`:

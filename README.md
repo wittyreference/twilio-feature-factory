@@ -223,8 +223,8 @@ See [agents/feature-factory/CLAUDE.md](agents/feature-factory/CLAUDE.md) for arc
 ## What's Implemented
 
 **Development Tools**
-- 21 slash commands across workflow, development, and utility categories
-- MCP Server with 284 Twilio API tools across 27 modules
+- 22 slash commands across workflow, development, and utility categories
+- MCP Server with 310 Twilio API tools across 27 modules + 8 deep validation tools
 - Voice AI Builder with TwiML and WebSocket generators
 - Feature Factory with autonomous mode, stall detection, and sandbox isolation
 
@@ -256,7 +256,7 @@ twilio-feature-factory/
 │   ├── doc-generator/       # Documentation generation
 │   └── voice-ai-builder/    # Voice AI app generator
 ├── .claude/                 # Claude Code configuration
-│   ├── commands/            # Slash command definitions (21)
+│   ├── commands/            # Slash command definitions (22)
 │   ├── hooks/               # Safety and quality hooks (16)
 │   ├── rules/               # Declarative agent rules
 │   ├── skills/              # Context engineering skills
@@ -274,7 +274,8 @@ twilio-feature-factory/
 | `npm test` | Run unit and integration tests |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run test:coverage` | Run tests with coverage report |
-| `npm run test:e2e` | Run Newman E2E tests |
+| `npm run test:e2e` | Run Newman E2E tests (44 requests, requires local server) |
+| `npm run test:e2e:deployed` | Run E2E tests against deployed serverless |
 | `npm run test:all` | Run all tests (unit + integration + E2E) |
 | `npm run lint` | Check for linting errors |
 | `npm run lint:fix` | Auto-fix linting errors |
@@ -291,43 +292,39 @@ npm run test:watch       # Run tests in watch mode
 npm run test:coverage    # Run tests with coverage report
 ```
 
-### E2E Testing (ConversationRelay)
+### E2E Tests (Newman/Postman)
 
-End-to-end testing for ConversationRelay requires a real phone call and ngrok tunnel.
+The Newman E2E suite validates all HTTP-accessible serverless endpoints — TwiML structure, JSON responses, error handling, callback processing, and health checks. 44 requests across 14 domains.
+
+```bash
+# Start local server first
+npm start
+
+# Run E2E tests (in another terminal)
+npm run test:e2e
+
+# Or against deployed serverless (no local server needed)
+npm run test:e2e:deployed
+```
+
+The collection is generated from `scripts/generate-postman-collection.js` for maintainability. To add tests, edit the generator and regenerate:
+
+```bash
+node scripts/generate-postman-collection.js > postman/collection.json
+```
+
+**Note:** Endpoints using `<Start><Recording>` hang on the local twilio-run server. These are excluded from local E2E tests and covered by `test:e2e:deployed`.
+
+### Agent-to-Agent Testing (ConversationRelay)
+
+For live voice AI validation, the project uses agent-to-agent testing with ConversationRelay-powered AI agents that call each other through real Twilio infrastructure.
 
 **Prerequisites:**
-- ngrok installed and configured
-- Real phone to answer test calls
-- Twilio phone number configured
+- ngrok tunnels configured (two domains for Agent A/B)
+- Twilio phone numbers with ConversationRelay webhooks
+- `ANTHROPIC_API_KEY` for LLM responses
 
-**Manual E2E Process:**
-
-1. Start WebSocket server locally:
-   ```bash
-   node __tests__/e2e/conversation-relay-server.js
-   ```
-
-2. Expose via ngrok:
-   ```bash
-   ngrok http 8080
-   ```
-
-3. Update `.env` with ngrok URL:
-   ```bash
-   CONVERSATION_RELAY_URL=wss://abc123.ngrok.io/relay
-   ```
-
-4. Start serverless with ngrok:
-   ```bash
-   npm run start:ngrok
-   ```
-
-5. Run E2E test:
-   ```bash
-   node __tests__/e2e/conversation-relay-e2e.js
-   ```
-
-6. Answer the incoming call and test the conversation
+See `.meta/sequential-validation.md` for the full validation procedure.
 
 ## Safety Features
 

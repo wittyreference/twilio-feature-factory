@@ -37,12 +37,12 @@
     "twilio": "^5.0.0"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.71.2",
+    "@anthropic-ai/sdk": "^0.78.0",
     "@eslint/js": "^9.39.0",
     "@playwright/test": "^1.58.2",
     "@twilio-labs/serverless-runtime-types": "^4.0.0",
     "@twilio/voice-sdk": "^2.18.0",
-    "dotenv": "^17.2.3",
+    "dotenv": "^17.3.1",
     "eslint": "^9.39.0",
     "express": "^5.2.1",
     "globals": "^16.0.0",
@@ -50,7 +50,7 @@
     "newman": "^6.1.0",
     "twilio-run": "^5.0.0",
     "typescript": "^5.4.0",
-    "typescript-eslint": "^8.54.0",
+    "typescript-eslint": "^8.56.1",
     "ws": "^8.19.0"
   },
   "engines": {

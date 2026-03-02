@@ -490,6 +490,50 @@ const transcript = await client.intelligence.v2.transcripts.create({
 5. Test interruption scenarios
 6. Test DTMF handling if enabled
 
+## ConversationRelay in Conference Calls
+
+ConversationRelay agents can participate in conferences. The key: each agent's ConversationRelay runs on their individual call leg (child), while the conference membership is on the parent leg. The bridge between legs routes conference audio through the WebSocket.
+
+### Pattern: Participants API + ConversationRelay Webhooks
+
+```javascript
+// 1. Configure each agent's phone with ConversationRelay webhook
+//    Agent A: agent-a-inbound → ConversationRelay to wss://agent-a-server
+//    Agent B: agent-b-inbound → ConversationRelay to wss://agent-b-server
+
+// 2. Create conference and add customer
+const customerCall = await client.calls.create({
+  to: customerPhone,        // Phone with ConversationRelay webhook
+  from: servicePhone,
+  url: customerLegUrl,       // TwiML: <Dial><Conference>name</Conference></Dial>
+});
+
+// 3. Add agent via Participants API
+await client.conferences(conferenceSid)
+  .participants.create({
+    from: servicePhone,
+    to: agentPhone,          // Phone with ConversationRelay webhook
+  });
+// Agent's phone webhook fires → ConversationRelay on child leg
+// Parent leg auto-joins conference → audio bridges through
+```
+
+### Why `make_call(url=conference-TwiML)` Fails for ConversationRelay
+
+When `make_call(to=TwilioNumber, url=conference-joining-TwiML)`:
+- Parent leg: runs the `url` TwiML → joins conference
+- Child leg: runs the phone's webhook
+
+If the phone's webhook is NOT ConversationRelay, the agent's WebSocket never connects. The `url` parameter only controls the parent leg — it cannot set up ConversationRelay.
+
+### Not Compatible: Media Streams (`<Connect><Stream>`)
+
+ConversationRelay and Media Streams use incompatible WebSocket protocols:
+- **ConversationRelay**: JSON messages with transcribed text. Twilio handles STT/TTS.
+- **Media Streams**: Raw base64 mulaw 8kHz audio frames. Handler must implement its own STT/TTS.
+
+A ConversationRelay WebSocket handler cannot be used with `<Stream>` and vice versa.
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |

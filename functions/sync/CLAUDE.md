@@ -1,8 +1,35 @@
 # Sync Functions Context
 
-> **Note**: This directory contains no deployed function files. It serves as an API pattern reference for Twilio Sync operations used across other function domains.
-
 This directory contains Twilio Sync API functions for real-time state synchronization across devices and services.
+
+## Files
+
+| File | Access | Description |
+|------|--------|-------------|
+| `document-crud.protected.js` | Protected | Create/read/update/delete Sync Documents via `action` param |
+| `list-crud.protected.js` | Protected | Create Lists, add/list/update/remove List Items via `action` param |
+| `map-crud.protected.js` | Protected | Create Maps, set/get/update/remove/list Map Items via `action` param |
+
+### Action-Routed Pattern
+
+All three functions use an `action` parameter to determine the operation:
+
+```javascript
+// POST with action=create, documentName=app-config, data={"theme":"dark"}
+// POST with action=read, documentName=app-config
+// POST with action=update, documentName=app-config, data={"theme":"light"}
+// POST with action=delete, documentName=app-config
+```
+
+The `data` parameter must be a JSON string (form-encoded bodies arrive as strings). Each handler parses it with `JSON.parse()` and returns clear errors for invalid JSON.
+
+### Available Actions
+
+| Function | Actions |
+|----------|---------|
+| `document-crud` | `create`, `read`, `update`, `delete` |
+| `list-crud` | `create`, `addItem`, `listItems`, `updateItem`, `removeItem` |
+| `map-crud` | `create`, `setItem`, `getItem`, `updateItem`, `removeItem`, `listItems` |
 
 ## What is Twilio Sync?
 

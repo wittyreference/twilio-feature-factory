@@ -1482,6 +1482,60 @@ Three hypotheses remain untested because the architect catches everything:
 
 ---
 
+## Decision 33: Archived Context as Active Agent Memory
+
+### Context
+
+The project stores two categories of historical context for debugging purposes:
+
+1. **Archived plans** (804 files in `.meta/plans/`) — implementation plans from every session, containing file paths, design reasoning, verification approaches, and alternatives considered. ~139K total lines.
+2. **Compaction summaries** (51 files in `.meta/logs/compaction-summary-*.md`) — snapshots of what Claude was working on when context pressure triggered history eviction. Each captures session ID, phase progress, errors encountered, costs, and key decisions.
+
+Both were created to diagnose context drift and debug session failures. Neither is ever read by agents in subsequent sessions. They are write-only archives.
+
+Meanwhile, agents start every session cold — the only historical context they receive is MEMORY.md (auto-memory), CLAUDE.md (loaded per-directory), and whatever the user manually provides. Agents routinely re-discover patterns, re-encounter known pitfalls, and re-plan approaches that were already designed in previous sessions.
+
+### Decision
+
+**Archived plans and compaction summaries are agent memory, not just debugging artifacts. The session context loader should surface relevant entries from both archives at session start.**
+
+Implementation approach:
+- Scan recent git activity (`git log --since="7 days ago" --name-only`) for active file paths
+- Match file path keywords against archived plan titles (last 20 by date) and compaction summary content (last 10-15)
+- Also match against learnings-archive.md and DESIGN_DECISIONS.md
+- Surface top 5-8 relevant lines at session start (filenames + plan/summary titles)
+- Cap scan scope to avoid startup latency (recent archives only, keyword matching not full-text)
+
+### Rationale
+
+1. **The data already exists.** 804 plans and 51 compaction summaries represent ~55 sessions of institutional knowledge. The marginal cost of reading them is near zero vs. the value of avoiding rediscovery.
+2. **Plans contain "what we intended," summaries contain "what actually happened."** Together they give incoming agents both the design reasoning and the execution reality — the combination is more valuable than either alone.
+3. **No new infrastructure required.** This is grep/awk in an existing hook (`session-start-log.sh`), not a vector DB or external service. Zero dependencies added.
+4. **Keyword matching is sufficient at this scale.** 804 plan titles are descriptive (e.g., "plan-fix-fundamental-validation-autonomous-testing.md"). Simple keyword overlap with recent file paths catches relevant history. Semantic search would add precision but the cost/benefit doesn't justify it until the archive grows 10x.
+5. **Compaction summaries are uniquely valuable.** They capture what the agent was *actually doing* at context boundaries — not what was planned, but what was in-flight. This is the closest thing to "what was I thinking?" for a stateless system.
+
+### Alternatives Considered
+
+- **Vector DB (Chroma, LanceDB, Mem0) for semantic retrieval**: Rejected for now. Adds an external dependency for a problem that keyword matching solves at current scale (~800 plans, ~50 summaries). Revisit when archive exceeds ~5,000 entries or keyword precision drops below useful thresholds.
+- **Full-text indexing of all archives at session start**: Rejected — startup latency matters. Scanning 139K lines of plans at every session start is excessive. Limiting to recent (last 20 plans, last 15 summaries) keeps scan time under 1 second.
+- **Manual loading via `/recall` command only**: Rejected as insufficient — agents don't know what they don't know. Proactive surfacing at session start catches relevant context that an agent wouldn't think to query.
+- **Load full plan content into context**: Rejected — plans average 15KB each. Loading even 3 would consume ~12K tokens of context budget. Surfacing titles and 1-line summaries is sufficient to prompt the agent to `Read` a relevant plan if needed.
+
+### Consequences
+
+- `session-start-log.sh` gains a new section that scans recent archives and displays relevant matches
+- Agents will see 5-8 lines of historical context at session start (plan titles, summary excerpts, learnings)
+- The `/recall` command (planned in Phase 3) will also search these archives for on-demand retrieval
+- Archive file naming convention becomes important — descriptive plan titles enable better keyword matching
+- Compaction summaries should continue capturing session context, phase status, and key file paths (the format is already good for this)
+- This reframes archived data from "debugging artifacts" to "institutional memory" — a philosophical shift in how we treat historical context
+
+### Status
+
+**Accepted** - 2026-03-01
+
+---
+
 ## Decision N: [Title]
 
 ### Context
@@ -1557,3 +1611,4 @@ Three hypotheses remain untested because the architect catches everything:
 | 2026-02-25 | D30 | Multi-product validation coverage (nonvoice-validation.md: 9 domains, 22 UCs, ~65 MCP tools) |
 | 2026-02-25 | D31 | Generative chaos validation (LLM-generated scenarios, 7 archetypes, 7 categories, anti-repetition, difficulty dial) |
 | 2026-02-26 | D32 | Chaos validation baseline: 4.52/5.0 across 21 scenarios. Updated 2026-02-27: full matrix 4.71/5.0 across 42 scenarios, 49/49 archetype×category pairs |
+| 2026-03-01 | D33 | Archived context as active agent memory (804 plans + 51 compaction summaries → session context loader) |

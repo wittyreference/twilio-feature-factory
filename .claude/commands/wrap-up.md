@@ -78,6 +78,13 @@ After promoting, replace the detailed item with a pointer (e.g., "See functions/
 
 **Capture inward**: Add session learnings that should persist across sessions to auto-memory at `~/.claude/projects/-Users-mcarpenter-workspaces-twilio-feature-factory/memory/MEMORY.md`.
 
+### 4b. Refresh meta-for-dummies.md (meta mode only)
+
+If in meta-development mode and this session produced debugging gotchas or operational discoveries:
+- Check if `.meta/meta-for-dummies.md` covers the gotcha
+- If not, add it to the relevant section (Environment & MCP Gotchas, The 5 Things You'll Get Wrong, or Validation Gotchas)
+- This is a quick check, not a rewrite — skip if nothing was discovered
+
 ### 5. Update Todo
 
 If the session completed or progressed a tracked task, update the todo file.

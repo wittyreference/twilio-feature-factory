@@ -1,15 +1,15 @@
 {
   "info": {
-    "name": "Twilio Prototype API Tests",
-    "description": "End-to-end API tests for Twilio serverless functions",
+    "name": "Twilio Feature Factory E2E Tests",
+    "description": "Comprehensive E2E tests for all serverless function endpoints. Run against localhost:3000 (twilio-run) or deployed serverless.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Voice",
+      "name": "Voice - Inbound & Gather",
       "item": [
         {
-          "name": "Incoming Call Handler",
+          "name": "Incoming Call - Happy Path",
           "request": {
             "method": "POST",
             "header": [
@@ -23,7 +23,7 @@
               "urlencoded": [
                 {
                   "key": "CallSid",
-                  "value": "CA1234567890abcdef1234567890abcdef"
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
                 },
                 {
                   "key": "From",
@@ -41,8 +41,13 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/voice/incoming-call",
-              "host": ["{{BASE_URL}}"],
-              "path": ["voice", "incoming-call"]
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "incoming-call"
+              ]
             }
           },
           "event": [
@@ -50,21 +55,1692 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status code is 200', function () {",
-                  "    pm.response.to.have.status(200);",
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
                   "});",
-                  "",
-                  "pm.test('Response is TwiML', function () {",
-                  "    pm.expect(pm.response.text()).to.include('<?xml');",
-                  "    pm.expect(pm.response.text()).to.include('<Response>');",
+                  "pm.test('Contains Say with voice attribute', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Say');\n  pm.expect(t).to.include('voice=');\n  pm.expect(t).to.include('Polly.Amy');",
                   "});",
-                  "",
-                  "pm.test('Contains Say verb', function () {",
-                  "    pm.expect(pm.response.text()).to.include('<Say');",
+                  "pm.test('Contains Gather with DTMF and speech', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Gather');\n  pm.expect(t).to.include('input=\"dtmf speech\"');\n  pm.expect(t).to.include('action=\"/voice/gather-input\"');",
                   "});",
-                  "",
-                  "pm.test('Contains Gather verb', function () {",
-                  "    pm.expect(pm.response.text()).to.include('<Gather');",
+                  "pm.test('Contains no-input fallback', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('We did not receive any input');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Incoming Call - GET Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/voice/incoming-call",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "incoming-call"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Gather Input - DTMF Digit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                },
+                {
+                  "key": "Digits",
+                  "value": "5"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/gather-input",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "gather-input"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Echoes digit pressed', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('You pressed 5');",
+                  "});",
+                  "pm.test('Contains Hangup', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Hangup');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Gather Input - Speech Result",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                },
+                {
+                  "key": "SpeechResult",
+                  "value": "I need help with billing"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/gather-input",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "gather-input"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Echoes speech result', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('You said');\n  pm.expect(t).to.include('I need help with billing');",
+                  "});",
+                  "pm.test('Contains Hangup', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Hangup');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Gather Input - No Input",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/gather-input",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "gather-input"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Shows no-input message', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('No input was detected');",
+                  "});",
+                  "pm.test('Contains Hangup', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Hangup');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Voice - IVR Flow",
+      "item": [
+        {
+          "name": "IVR Welcome",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/ivr-welcome",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "ivr-welcome"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Contains background recording', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Start');\n  pm.expect(t).to.include('<Recording');",
+                  "});",
+                  "pm.test('Contains dental clinic greeting', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('Valley Dental');",
+                  "});",
+                  "pm.test('Contains Gather with IVR action', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Gather');\n  pm.expect(t).to.include('action=\"/voice/ivr-menu\"');",
+                  "});",
+                  "pm.test('Contains menu options', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('appointments');\n  pm.expect(t).to.include('billing');\n  pm.expect(t).to.include('hours');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "IVR Menu - Appointments (DTMF 1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                },
+                {
+                  "key": "Digits",
+                  "value": "1"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/ivr-menu",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "ivr-menu"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Routes to appointments', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('appointments department');\n  pm.expect(t).to.include('Doctor Smith');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "IVR Menu - Billing (DTMF 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                },
+                {
+                  "key": "Digits",
+                  "value": "2"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/ivr-menu",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "ivr-menu"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Routes to billing', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('billing department');\n  pm.expect(t).to.include('Delta Dental');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "IVR Menu - Hours (DTMF 3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                },
+                {
+                  "key": "Digits",
+                  "value": "3"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/ivr-menu",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "ivr-menu"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Shows office hours', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('Monday through Friday');\n  pm.expect(t).to.include('123 Main Street');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "IVR Menu - Operator (DTMF 0)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                },
+                {
+                  "key": "Digits",
+                  "value": "0"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/ivr-menu",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "ivr-menu"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Transfers to operator', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('connect you to an operator');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "IVR Menu - Speech \"book appointment\"",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                },
+                {
+                  "key": "SpeechResult",
+                  "value": "I want to book an appointment"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/ivr-menu",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "ivr-menu"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Speech routes to appointments', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('appointments department');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "IVR Menu - Unknown (DTMF 9)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                },
+                {
+                  "key": "Digits",
+                  "value": "9"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/ivr-menu",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "ivr-menu"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Shows unrecognized message', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('did not understand');",
+                  "});",
+                  "pm.test('Redirects to welcome', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Redirect>/voice/ivr-welcome</Redirect>');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Voice - Notification Flow",
+      "item": [
+        {
+          "name": "Notification Outbound",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/notification-outbound",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "notification-outbound"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Contains background recording', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Start');\n  pm.expect(t).to.include('<Recording');",
+                  "});",
+                  "pm.test('Contains appointment details', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('Valley Health Clinic');\n  pm.expect(t).to.include('appointment scheduled');",
+                  "});",
+                  "pm.test('Contains confirmation gather', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Gather');\n  pm.expect(t).to.include('action=\"/voice/notification-confirm\"');",
+                  "});",
+                  "pm.test('Contains instructions', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('press 1 or say yes');\n  pm.expect(t).to.include('press 2 or say no');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Notification Confirm - Confirmed (DTMF 1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                },
+                {
+                  "key": "Digits",
+                  "value": "1"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/notification-confirm",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "notification-confirm"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Confirms appointment', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('confirmed');\n  pm.expect(t).to.include('2:30 PM');",
+                  "});",
+                  "pm.test('Contains Hangup', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Hangup');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Notification Confirm - Reschedule (DTMF 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                },
+                {
+                  "key": "Digits",
+                  "value": "2"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/notification-confirm",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "notification-confirm"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Offers reschedule', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('reschedule');",
+                  "});",
+                  "pm.test('Contains Hangup', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Hangup');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Notification Confirm - Speech \"yes\"",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                },
+                {
+                  "key": "SpeechResult",
+                  "value": "yes I confirm"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/notification-confirm",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "notification-confirm"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Speech confirms appointment', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('confirmed');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Notification Confirm - Unknown (DTMF 7)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                },
+                {
+                  "key": "Digits",
+                  "value": "7"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/notification-confirm",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "notification-confirm"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Shows unrecognized response', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('unable to understand');",
+                  "});",
+                  "pm.test('Contains Hangup', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Hangup');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Voice - Outbound Contact Center TwiML",
+      "item": [
+        {
+          "name": "Customer Leg with ConferenceName",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/outbound-customer-leg?ConferenceName=test-conf-123",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "outbound-customer-leg?ConferenceName=test-conf-123"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Contains Conference verb', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Conference');\n  pm.expect(t).to.include('test-conf-123');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agent Leg with ConferenceName",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/outbound-agent-leg?ConferenceName=test-conf-123",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "outbound-agent-leg?ConferenceName=test-conf-123"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Contains whisper and Conference', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Say');\n  pm.expect(t).to.include('<Conference');\n  pm.expect(t).to.include('test-conf-123');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Voice - Sales Dialer TwiML",
+      "item": [
+        {
+          "name": "Prospect Leg",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/sales-dialer-prospect?ConferenceName=sales-test-456",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "sales-dialer-prospect?ConferenceName=sales-test-456"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Contains Conference', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Conference');\n  pm.expect(t).to.include('sales-test-456');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agent Leg",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/sales-dialer-agent?ConferenceName=sales-test-456",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "sales-dialer-agent?ConferenceName=sales-test-456"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Contains whisper and Conference', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Say');\n  pm.expect(t).to.include('<Conference');\n  pm.expect(t).to.include('sales-test-456');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Voice - Call Tracking",
+      "item": [
+        {
+          "name": "Inbound with Campaign",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/call-tracking-inbound",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "call-tracking-inbound"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Contains tracking elements', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Start');\n  pm.expect(t).to.include('<Recording');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Voice - SDK",
+      "item": [
+        {
+          "name": "SDK Handler - PSTN Number",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "To",
+                  "value": "+15559876543"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/sdk-handler",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "sdk-handler"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Dials PSTN number', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Dial');\n  pm.expect(t).to.include('<Number');\n  pm.expect(t).to.include('+15559876543');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "SDK Handler - Client",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "To",
+                  "value": "client:alice"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/sdk-handler",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "sdk-handler"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Dials client', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Dial');\n  pm.expect(t).to.include('<Client');\n  pm.expect(t).to.include('alice');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "SDK Handler - No Destination",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": []
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/sdk-handler",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "sdk-handler"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Shows error message', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('No destination');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "SDK Handler - Invalid Format",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "To",
+                  "value": "invalid-format"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/voice/sdk-handler",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "sdk-handler"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Shows invalid format message', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('Invalid destination');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Voice - ConversationRelay TwiML",
+      "item": [
+        {
+          "name": "Relay Handler",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/conversation-relay/relay-handler",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "conversation-relay",
+                "relay-handler"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Contains Connect>ConversationRelay or not-configured', () => {",
+                  "  const t = pm.response.text();",
+                  "  const hasRelay = t.includes('<ConversationRelay');",
+                  "  const notConfigured = t.includes('not configured') || t.includes('<Hangup');",
+                  "  pm.expect(hasRelay || notConfigured).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "AI Assistant Inbound",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/conversation-relay/ai-assistant-inbound",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "conversation-relay",
+                "ai-assistant-inbound"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Returns ConversationRelay or not-configured message', () => {",
+                  "  const t = pm.response.text();",
+                  "  const hasRelay = t.includes('<ConversationRelay');",
+                  "  const notConfigured = t.includes('not configured') || t.includes('unavailable');",
+                  "  pm.expect(hasRelay || notConfigured).to.be.true;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -78,7 +1754,7 @@
       "name": "Messaging",
       "item": [
         {
-          "name": "Incoming SMS Handler",
+          "name": "Incoming SMS - Happy Path",
           "request": {
             "method": "POST",
             "header": [
@@ -92,7 +1768,7 @@
               "urlencoded": [
                 {
                   "key": "MessageSid",
-                  "value": "SM1234567890abcdef1234567890abcdef"
+                  "value": "SMbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
                 },
                 {
                   "key": "From",
@@ -110,8 +1786,13 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/messaging/incoming-sms",
-              "host": ["{{BASE_URL}}"],
-              "path": ["messaging", "incoming-sms"]
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "messaging",
+                "incoming-sms"
+              ]
             }
           },
           "event": [
@@ -119,22 +1800,107 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status code is 200', function () {",
-                  "    pm.response.to.have.status(200);",
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
                   "});",
-                  "",
-                  "pm.test('Response is TwiML', function () {",
-                  "    pm.expect(pm.response.text()).to.include('<?xml');",
-                  "    pm.expect(pm.response.text()).to.include('<Response>');",
+                  "pm.test('Contains Message element', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Message');",
                   "});",
-                  "",
-                  "pm.test('Contains Message element', function () {",
-                  "    pm.expect(pm.response.text()).to.include('<Message>');",
-                  "});",
-                  "",
-                  "pm.test('Echoes incoming message', function () {",
-                  "    pm.expect(pm.response.text()).to.include('Hello from E2E test');",
+                  "pm.test('Echoes incoming message', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('Hello from E2E test');",
                   "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Incoming SMS - Empty Body",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "MessageSid",
+                  "value": "SMbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "{{TWILIO_PHONE_NUMBER}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/messaging/incoming-sms",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "messaging",
+                "incoming-sms"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
+                  "});",
+                  "pm.test('Still returns Message', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Message');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Incoming SMS - GET Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/messaging/incoming-sms",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "messaging",
+                "incoming-sms"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));"
                 ],
                 "type": "text/javascript"
               }
@@ -144,10 +1910,10 @@
       ]
     },
     {
-      "name": "Conversation Relay",
+      "name": "TaskRouter",
       "item": [
         {
-          "name": "Relay Handler",
+          "name": "Contact Center Welcome",
           "request": {
             "method": "POST",
             "header": [
@@ -161,7 +1927,7 @@
               "urlencoded": [
                 {
                   "key": "CallSid",
-                  "value": "CA1234567890abcdef1234567890abcdef"
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
                 },
                 {
                   "key": "From",
@@ -174,9 +1940,14 @@
               ]
             },
             "url": {
-              "raw": "{{BASE_URL}}/conversation-relay/relay-handler",
-              "host": ["{{BASE_URL}}"],
-              "path": ["conversation-relay", "relay-handler"]
+              "raw": "{{BASE_URL}}/taskrouter/contact-center-welcome",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "taskrouter",
+                "contact-center-welcome"
+              ]
             }
           },
           "event": [
@@ -184,21 +1955,145 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status code is 200', function () {",
-                  "    pm.response.to.have.status(200);",
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<?xml');",
+                  "  pm.expect(t).to.include('<Response>');",
                   "});",
-                  "",
-                  "pm.test('Response is TwiML', function () {",
-                  "    pm.expect(pm.response.text()).to.include('<?xml');",
-                  "    pm.expect(pm.response.text()).to.include('<Response>');",
+                  "pm.test('Contains Enqueue', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Enqueue');",
                   "});",
-                  "",
-                  "pm.test('Contains Connect element', function () {",
-                  "    pm.expect(pm.response.text()).to.include('<Connect>');",
-                  "});",
-                  "",
-                  "pm.test('Contains ConversationRelay element', function () {",
-                  "    pm.expect(pm.response.text()).to.include('<ConversationRelay');",
+                  "pm.test('Contains Task element', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Task');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Assignment Callback - Call Type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "TaskSid",
+                  "value": "WTeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+                },
+                {
+                  "key": "TaskAttributes",
+                  "value": "{\"type\":\"call\",\"callSid\":\"CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}"
+                },
+                {
+                  "key": "WorkerAttributes",
+                  "value": "{\"contact_uri\":\"+15551234567\"}"
+                },
+                {
+                  "key": "WorkerName",
+                  "value": "TestAgent"
+                },
+                {
+                  "key": "ReservationSid",
+                  "value": "WRffffffffffffffffffffffffffffffff"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/taskrouter/assignment",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "taskrouter",
+                "assignment"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns conference instruction', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.instruction).to.eql('conference');",
+                  "  pm.expect(j).to.have.property('from');",
+                  "  pm.expect(j).to.have.property('to');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Assignment Callback - Non-Call Type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "TaskSid",
+                  "value": "WTeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+                },
+                {
+                  "key": "TaskAttributes",
+                  "value": "{\"type\":\"email\"}"
+                },
+                {
+                  "key": "WorkerAttributes",
+                  "value": "{}"
+                },
+                {
+                  "key": "WorkerName",
+                  "value": "TestAgent"
+                },
+                {
+                  "key": "ReservationSid",
+                  "value": "WRffffffffffffffffffffffffffffffff"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/taskrouter/assignment",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "taskrouter",
+                "assignment"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns accept instruction', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.instruction).to.eql('accept');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -209,17 +2104,56 @@
       ]
     },
     {
-      "name": "Health Check",
+      "name": "Callbacks",
       "item": [
         {
-          "name": "Voice Endpoint Available",
+          "name": "Call Status - Completed",
           "request": {
-            "method": "GET",
-            "header": [],
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "CallStatus",
+                  "value": "completed"
+                },
+                {
+                  "key": "To",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "From",
+                  "value": "+15559876543"
+                },
+                {
+                  "key": "Direction",
+                  "value": "inbound"
+                },
+                {
+                  "key": "CallDuration",
+                  "value": "120"
+                }
+              ]
+            },
             "url": {
-              "raw": "{{BASE_URL}}/voice/incoming-call",
-              "host": ["{{BASE_URL}}"],
-              "path": ["voice", "incoming-call"]
+              "raw": "{{BASE_URL}}/callbacks/call-status",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "callbacks",
+                "call-status"
+              ]
             }
           },
           "event": [
@@ -227,8 +2161,10 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Endpoint is accessible', function () {",
-                  "    pm.response.to.have.status(200);",
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response indicates success', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.success).to.eql(true);",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -237,14 +2173,53 @@
           ]
         },
         {
-          "name": "Messaging Endpoint Available",
+          "name": "Call Status - Failed",
           "request": {
-            "method": "GET",
-            "header": [],
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "CallStatus",
+                  "value": "failed"
+                },
+                {
+                  "key": "ErrorCode",
+                  "value": "31205"
+                },
+                {
+                  "key": "ErrorMessage",
+                  "value": "HTTP connection failure"
+                },
+                {
+                  "key": "To",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "From",
+                  "value": "+15559876543"
+                }
+              ]
+            },
             "url": {
-              "raw": "{{BASE_URL}}/messaging/incoming-sms",
-              "host": ["{{BASE_URL}}"],
-              "path": ["messaging", "incoming-sms"]
+              "raw": "{{BASE_URL}}/callbacks/call-status",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "callbacks",
+                "call-status"
+              ]
             }
           },
           "event": [
@@ -252,8 +2227,525 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Endpoint is accessible', function () {",
-                  "    pm.response.to.have.status(200);",
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response indicates success', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.success).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Call Status - Missing CallSid",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallStatus",
+                  "value": "completed"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/callbacks/call-status",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "callbacks",
+                "call-status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response indicates failure', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.success).to.eql(false);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Message Status - Delivered",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "MessageSid",
+                  "value": "SMbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                },
+                {
+                  "key": "MessageStatus",
+                  "value": "delivered"
+                },
+                {
+                  "key": "To",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "From",
+                  "value": "+15559876543"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/callbacks/message-status",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "callbacks",
+                "message-status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response indicates success', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.success).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Message Status - Failed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "MessageSid",
+                  "value": "SMbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                },
+                {
+                  "key": "MessageStatus",
+                  "value": "failed"
+                },
+                {
+                  "key": "ErrorCode",
+                  "value": "30003"
+                },
+                {
+                  "key": "ErrorMessage",
+                  "value": "Unreachable"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/callbacks/message-status",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "callbacks",
+                "message-status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response indicates success', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.success).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Message Status - Missing MessageSid",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "MessageStatus",
+                  "value": "sent"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/callbacks/message-status",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "callbacks",
+                "message-status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response indicates failure', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.success).to.eql(false);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Task Status - task.created",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "EventType",
+                  "value": "task.created"
+                },
+                {
+                  "key": "TaskSid",
+                  "value": "WTeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+                },
+                {
+                  "key": "TaskAttributes",
+                  "value": "{\"type\":\"call\"}"
+                },
+                {
+                  "key": "WorkspaceSid",
+                  "value": "WS00000000000000000000000000000000"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/callbacks/task-status",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "callbacks",
+                "task-status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response indicates success', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.success).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Task Status - reservation.accepted",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "EventType",
+                  "value": "reservation.accepted"
+                },
+                {
+                  "key": "TaskSid",
+                  "value": "WTeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+                },
+                {
+                  "key": "ReservationSid",
+                  "value": "WRffffffffffffffffffffffffffffffff"
+                },
+                {
+                  "key": "WorkerSid",
+                  "value": "WK00000000000000000000000000000000"
+                },
+                {
+                  "key": "WorkerName",
+                  "value": "TestWorker"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/callbacks/task-status",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "callbacks",
+                "task-status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response indicates success', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.success).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verification Status - Approved",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "VerificationSid",
+                  "value": "VEdddddddddddddddddddddddddddddddd"
+                },
+                {
+                  "key": "Status",
+                  "value": "approved"
+                },
+                {
+                  "key": "To",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "Channel",
+                  "value": "sms"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/callbacks/verification-status",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "callbacks",
+                "verification-status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response indicates success', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.success).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fallback - Voice Call",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "CallSid",
+                  "value": "CAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                {
+                  "key": "ErrorCode",
+                  "value": "11200"
+                },
+                {
+                  "key": "ErrorUrl",
+                  "value": "https://example.com/broken"
+                },
+                {
+                  "key": "ErrorMessage",
+                  "value": "HTTP retrieval failure"
+                },
+                {
+                  "key": "From",
+                  "value": "+15551234567"
+                },
+                {
+                  "key": "To",
+                  "value": "+15559876543"
+                },
+                {
+                  "key": "Direction",
+                  "value": "inbound"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/callbacks/fallback",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "callbacks",
+                "fallback"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns safe TwiML', () => {",
+                  "  const t = pm.response.text();",
+                  "  pm.expect(t).to.include('<Say');\n  pm.expect(t).to.include('technical difficulties');\n  pm.expect(t).to.include('<Hangup');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fallback - Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "MessageSid",
+                  "value": "SMbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                },
+                {
+                  "key": "ErrorCode",
+                  "value": "11200"
+                },
+                {
+                  "key": "ErrorUrl",
+                  "value": "https://example.com/broken"
+                },
+                {
+                  "key": "ErrorMessage",
+                  "value": "HTTP retrieval failure"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/callbacks/fallback",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "callbacks",
+                "fallback"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns fallback JSON', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.fallback).to.eql(true);",
+                  "  pm.expect(j.resourceType).to.eql('message');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -262,6 +2754,650 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Conversation Relay - Callbacks",
+      "item": [
+        {
+          "name": "Transcript Complete - Non-matching Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "transcript_sid",
+                  "value": "GT1234567890abcdef"
+                },
+                {
+                  "key": "event_type",
+                  "value": "voice_intelligence_transcript_processing"
+                },
+                {
+                  "key": "account_sid",
+                  "value": "AC11111111111111111111111111111111"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/conversation-relay/transcript-complete",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "conversation-relay",
+                "transcript-complete"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Error Cases - API Functions",
+      "item": [
+        {
+          "name": "Send SMS - Missing Params",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": []
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/messaging/send-sms",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "messaging",
+                "send-sms"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns error for missing params', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.success).to.eql(false);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Start Verification - Missing To",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": []
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/verify/start-verification",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "verify",
+                "start-verification"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns error for missing to', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.success).to.eql(false);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Check Verification - Missing Params",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": []
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/verify/check-verification",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "verify",
+                "check-verification"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns error for missing params', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.success).to.eql(false);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Health Checks",
+      "item": [
+        {
+          "name": "GET voice/incoming-call",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/voice/incoming-call",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "incoming-call"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('voice/incoming-call is accessible', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET voice/ivr-welcome",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/voice/ivr-welcome",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "ivr-welcome"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('voice/ivr-welcome is accessible', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET voice/outbound-customer-leg",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/voice/outbound-customer-leg",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "outbound-customer-leg"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('voice/outbound-customer-leg is accessible', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET voice/outbound-agent-leg",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/voice/outbound-agent-leg",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "outbound-agent-leg"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('voice/outbound-agent-leg is accessible', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET voice/sales-dialer-prospect",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/voice/sales-dialer-prospect",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "sales-dialer-prospect"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('voice/sales-dialer-prospect is accessible', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET voice/sales-dialer-agent",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/voice/sales-dialer-agent",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "sales-dialer-agent"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('voice/sales-dialer-agent is accessible', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET voice/call-tracking-inbound",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/voice/call-tracking-inbound",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "call-tracking-inbound"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('voice/call-tracking-inbound is accessible', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET voice/notification-outbound",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/voice/notification-outbound",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "notification-outbound"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('voice/notification-outbound is accessible', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET voice/pizza-agent-connect",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/voice/pizza-agent-connect",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "pizza-agent-connect"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('voice/pizza-agent-connect is accessible', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET voice/stream-connect",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/voice/stream-connect",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "stream-connect"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('voice/stream-connect is accessible', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET voice/sdk-handler",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/voice/sdk-handler",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "voice",
+                "sdk-handler"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('voice/sdk-handler is accessible', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET messaging/incoming-sms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/messaging/incoming-sms",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "messaging",
+                "incoming-sms"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('messaging/incoming-sms is accessible', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET taskrouter/contact-center-welcome",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/taskrouter/contact-center-welcome",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "taskrouter",
+                "contact-center-welcome"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('taskrouter/contact-center-welcome is accessible', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET conversation-relay/ai-assistant-inbound",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/conversation-relay/ai-assistant-inbound",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "conversation-relay",
+                "ai-assistant-inbound"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('conversation-relay/ai-assistant-inbound is accessible', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET conversation-relay/relay-handler",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/conversation-relay/relay-handler",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "conversation-relay",
+                "relay-handler"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('conversation-relay/relay-handler is accessible', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET conversation-relay/transcript-complete",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/conversation-relay/transcript-complete",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "conversation-relay",
+                "transcript-complete"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('conversation-relay/transcript-complete is accessible', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "exec": [
+          "pm.test('Response time under 5s', () => pm.expect(pm.response.responseTime).to.be.below(5000));"
+        ],
+        "type": "text/javascript"
+      }
     }
   ],
   "variable": [

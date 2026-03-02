@@ -24,6 +24,10 @@ Cross-cutting gotchas discovered through real debugging sessions. Domain-specifi
 
 - **Inbound leg CallSid differs from outbound API call SID** — When initiating outbound to a tracking number, the function sees a different CallSid (inbound child). Sync docs keyed by inbound SID, recordings on outbound SID.
 
+## Voice Call Routing
+
+- **Empty `voiceUrl` on a Twilio number causes silent instant call failure** — When `make_call` targets a Twilio number that has no voice webhook configured (`voiceUrl: ""`), the call fails instantly with `duration: 0`. Twilio produces ZERO diagnostics: no debugger alerts, no call notifications, no error codes, no Voice Insights errors. The only symptom is `status: failed` with start_time === end_time. This wastes enormous debugging time because it looks identical to auth failures, regional routing issues, or account-level blocks. **Always verify destination number webhooks before troubleshooting call failures.** Use `list_phone_numbers` and check that every number involved in testing has a non-empty `voiceUrl`.
+
 ## ConversationRelay & Voice Intelligence
 
 - **`record: true` on make_call is ignored with ConversationRelay** — REST API recording param silently produces no recording when TwiML handler uses `<Connect><ConversationRelay>`. Always use `<Start><Recording>` in TwiML before ConversationRelay.
@@ -59,6 +63,12 @@ Cross-cutting gotchas discovered through real debugging sessions. Domain-specifi
 - **Twilio Node SDK regional constructor** — `Twilio(apiKeySid, apiKeySecret, { accountSid, region: 'au1', edge: 'sydney' })` for API key auth. `Twilio(accountSid, authToken, { region, edge })` for auth token auth. The MCP server's `createTwilioMcpServer()` supports both via `TWILIO_API_KEY`/`TWILIO_API_SECRET`/`TWILIO_REGION`/`TWILIO_EDGE` env vars.
 
 - **Twilio Node SDK auto-reads `TWILIO_REGION` and `TWILIO_EDGE` from env** — The SDK reads these env vars automatically even when not passed in the constructor options. Setting them in `.env` silently routes ALL API calls to regional infrastructure (`api.{edge}.{region}.twilio.com`). If those calls use a US1 auth token, every request returns 401. Symptoms: cascading auth failures across unrelated tests with no obvious cause. Fix: comment out or unset `TWILIO_REGION`/`TWILIO_EDGE` when not actively testing regional endpoints.
+
+## Claude Code & MCP
+
+- **MCP server requires Claude Code restart after env changes** — The MCP server is a separate process that inherits the shell environment at launch. Mid-session changes to `.env` or exported variables do NOT propagate. Must quit and restart Claude Code entirely.
+
+- **`source .env` does not undo commented-out vars** — Shell variables persist in memory after commenting out lines in `.env`. Must explicitly `unset TWILIO_REGION TWILIO_EDGE` etc. before re-sourcing. This interacts badly with MCP (which also needs a restart to pick up the unset).
 
 ## Hooks & Documentation Flywheel
 

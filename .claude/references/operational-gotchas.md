@@ -10,7 +10,9 @@ Cross-cutting gotchas discovered through real debugging sessions. Domain-specifi
 
 - **`toContainEqual` for asymmetric matchers in arrays** — `toContain(expect.stringContaining())` uses `===` reference equality. Use `toContainEqual()` for deep equality with asymmetric matchers.
 
-- **Newman E2E needs local server** — `npm run test:e2e` hits `localhost:3000`. Start `npx twilio-run start` first. Use `--timeout-request 5000` to avoid relay-handler hang.
+- **Newman E2E needs local server** — `npm run test:e2e` hits `localhost:3000`. Start `npm start` (twilio-run) first. Use `--timeout-request 5000` to avoid hangs.
+
+- **`<Start><Recording>` hangs twilio-run locally** — Functions using `twiml.start().recording()` hang indefinitely on the local dev server and never return a response. Affected: ivr-welcome, notification-outbound, outbound-customer-leg, sales-dialer-prospect, call-tracking-inbound, contact-center-welcome. Works fine deployed. E2E tests exclude these for local runs; use `npm run test:e2e:deployed` for full coverage.
 
 ## Serverless Runtime
 
@@ -67,6 +69,8 @@ Cross-cutting gotchas discovered through real debugging sessions. Domain-specifi
 ## Claude Code & MCP
 
 - **MCP server requires Claude Code restart after env changes** — The MCP server is a separate process that inherits the shell environment at launch. Mid-session changes to `.env` or exported variables do NOT propagate. Must quit and restart Claude Code entirely.
+
+- **`.mcp.json` env block augments, doesn't replace parent env** — The MCP server subprocess inherits ALL env vars from the parent Claude Code process. The `env` block in `.mcp.json` adds or overrides individual vars but does not isolate the process. To prevent inherited `TWILIO_REGION`/`TWILIO_EDGE` from contaminating the MCP server, explicitly set them to empty strings in `.mcp.json`.
 
 - **`source .env` does not undo commented-out vars** — Shell variables persist in memory after commenting out lines in `.env`. Must explicitly `unset TWILIO_REGION TWILIO_EDGE` etc. before re-sourcing. This interacts badly with MCP (which also needs a restart to pick up the unset).
 

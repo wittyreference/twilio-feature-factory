@@ -17,6 +17,7 @@ This directory contains CLI scripts for project setup and maintenance.
 | `demo.sh` | `npm run demo` | One-command demo launcher with ngrok, env verification, URL banner |
 | `check-demo-health.sh` | `./scripts/check-demo-health.sh` | Pre-demo health check (ngrok, server, API keys, credentials) |
 | `run-validation-suite.sh` | `./scripts/run-validation-suite.sh` | Run E2E deep validation suite against live US1 Twilio APIs |
+| `generate-postman-collection.js` | `node scripts/generate-postman-collection.js > postman/collection.json` | Generate Newman E2E collection from compact spec (44 requests, 14 folders) |
 | `api-sync/` | `cd scripts/api-sync && npm run sync` | Automated Twilio API drift detection and coverage analysis |
 
 ## Setup Script

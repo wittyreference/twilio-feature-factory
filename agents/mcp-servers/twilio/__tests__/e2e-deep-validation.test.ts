@@ -950,3 +950,315 @@ describe('Language Operator Validation', () => {
     60000
   );
 });
+
+// ─── Composite Flow Validators (Phase 1 expansion) ──────────────────
+
+describe('Sync CRUD Lifecycle', () => {
+  const itSync =
+    shouldRunDeepValidation &&
+    hasRealCredentials &&
+    TEST_CREDENTIALS.syncServiceSid
+      ? it
+      : it.skip;
+
+  let client: ReturnType<typeof Twilio>;
+  let validator: DeepValidator;
+  const DOC_NAME = `e2e-lifecycle-${Date.now()}`;
+
+  beforeAll(() => {
+    if (shouldRunDeepValidation && hasRealCredentials) {
+      client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+      validator = createValidator();
+    }
+  });
+
+  afterAll(async () => {
+    if (shouldRunDeepValidation && hasRealCredentials && TEST_CREDENTIALS.syncServiceSid) {
+      try {
+        await client.sync.v1
+          .services(TEST_CREDENTIALS.syncServiceSid)
+          .documents(DOC_NAME)
+          .remove();
+      } catch {
+        // Already cleaned up or never created
+      }
+    }
+  });
+
+  itSync(
+    'should create, update, read, validate, and delete a Sync Document',
+    async () => {
+      console.log('\n=== Sync CRUD Lifecycle Test ===');
+      const syncService = client.sync.v1.services(TEST_CREDENTIALS.syncServiceSid);
+      const steps: { step: string; success: boolean; details: string }[] = [];
+
+      // Step 1: Create
+      console.log('1. Creating document...');
+      const doc = await syncService.documents.create({
+        uniqueName: DOC_NAME,
+        data: { version: 1, status: 'created' },
+        ttl: 300,
+      });
+      steps.push({ step: 'Create', success: !!doc.sid, details: `SID: ${doc.sid}` });
+      expect(doc.sid).toMatch(/^ET/);
+
+      // Step 2: Update
+      console.log('2. Updating document...');
+      const updated = await syncService.documents(DOC_NAME).update({
+        data: { version: 2, status: 'updated', updatedAt: new Date().toISOString() },
+      });
+      steps.push({ step: 'Update', success: updated.data.version === 2, details: `version=${updated.data.version}` });
+      expect(updated.data.version).toBe(2);
+
+      // Step 3: Read back
+      console.log('3. Reading document...');
+      const fetched = await syncService.documents(DOC_NAME).fetch();
+      steps.push({ step: 'Read', success: fetched.data.status === 'updated', details: `status=${fetched.data.status}` });
+      expect(fetched.data.status).toBe('updated');
+
+      // Step 4: Deep validate
+      console.log('4. Running deep validation...');
+      const validation = await validator.validateSyncDocument(
+        TEST_CREDENTIALS.syncServiceSid,
+        DOC_NAME,
+        { expectedKeys: ['version', 'status', 'updatedAt'] }
+      );
+      steps.push({ step: 'Validate', success: validation.success, details: `keys=${validation.dataKeys.join(',')}` });
+      expect(validation.success).toBe(true);
+
+      // Step 5: Delete
+      console.log('5. Deleting document...');
+      await syncService.documents(DOC_NAME).remove();
+      let deletedOk = false;
+      try {
+        await syncService.documents(DOC_NAME).fetch();
+      } catch (error: unknown) {
+        if ((error as { code?: number }).code === 20404) deletedOk = true;
+      }
+      steps.push({ step: 'Delete', success: deletedOk, details: deletedOk ? 'Confirmed gone' : 'Still exists!' });
+      expect(deletedOk).toBe(true);
+
+      // Summary
+      console.log('\n=== Lifecycle Summary ===');
+      steps.forEach((s) => console.log(`${s.success ? '✓' : '✗'} ${s.step}: ${s.details}`));
+      expect(steps.every((s) => s.success)).toBe(true);
+      console.log('\nSync CRUD Lifecycle PASSED ✓');
+    },
+    45000
+  );
+});
+
+describe('Phone Number Search + Configure Flow', () => {
+  const itDeepValidation =
+    shouldRunDeepValidation && hasRealCredentials ? it : it.skip;
+
+  let client: ReturnType<typeof Twilio>;
+  let originalVoiceUrl: string | undefined;
+  let testNumberSid: string | undefined;
+
+  beforeAll(() => {
+    if (shouldRunDeepValidation && hasRealCredentials) {
+      client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+    }
+  });
+
+  afterAll(async () => {
+    // Restore original voiceUrl if we changed it
+    if (testNumberSid && originalVoiceUrl !== undefined) {
+      try {
+        await client.incomingPhoneNumbers(testNumberSid).update({
+          voiceUrl: originalVoiceUrl,
+        });
+        console.log(`Restored voiceUrl on ${testNumberSid}`);
+      } catch {
+        // Best effort
+      }
+    }
+  });
+
+  itDeepValidation(
+    'should search available numbers, list owned numbers, and configure a webhook',
+    async () => {
+      console.log('\n=== Phone Number Search + Configure Flow ===');
+      const steps: { step: string; success: boolean; details: string }[] = [];
+
+      // Step 1: Search available numbers
+      console.log('1. Searching available numbers (US, area 415)...');
+      const available = await client.availablePhoneNumbers('US').local.list({
+        areaCode: 415,
+        limit: 3,
+      });
+      steps.push({
+        step: 'Search',
+        success: available.length > 0,
+        details: `Found ${available.length} numbers`,
+      });
+      if (available.length > 0) {
+        console.log(`   First: ${available[0].phoneNumber} (${available[0].locality})`);
+      }
+
+      // Step 2: List owned numbers
+      console.log('2. Listing owned numbers...');
+      const owned = await client.incomingPhoneNumbers.list({ limit: 5 });
+      steps.push({
+        step: 'List Owned',
+        success: owned.length > 0,
+        details: `${owned.length} number(s) owned`,
+      });
+
+      if (owned.length === 0) {
+        console.log('   No owned numbers — skipping configure step');
+        steps.push({ step: 'Configure', success: true, details: 'Skipped (no numbers)' });
+        steps.push({ step: 'Verify', success: true, details: 'Skipped (no numbers)' });
+      } else {
+        // Step 3: Configure webhook on first number
+        const targetNumber = owned[0];
+        testNumberSid = targetNumber.sid;
+        originalVoiceUrl = targetNumber.voiceUrl || '';
+        const testUrl = `https://e2e-test-${Date.now()}.example.com/voice`;
+
+        console.log(`3. Configuring voiceUrl on ${targetNumber.phoneNumber}...`);
+        const updated = await client.incomingPhoneNumbers(targetNumber.sid).update({
+          voiceUrl: testUrl,
+        });
+        steps.push({
+          step: 'Configure',
+          success: updated.voiceUrl === testUrl,
+          details: `voiceUrl set to ${testUrl.substring(0, 40)}...`,
+        });
+
+        // Step 4: Verify the configuration
+        console.log('4. Verifying configuration...');
+        const verified = await client.incomingPhoneNumbers(targetNumber.sid).fetch();
+        steps.push({
+          step: 'Verify',
+          success: verified.voiceUrl === testUrl,
+          details: `voiceUrl confirmed: ${verified.voiceUrl === testUrl}`,
+        });
+      }
+
+      // Summary
+      console.log('\n=== Flow Summary ===');
+      steps.forEach((s) => console.log(`${s.success ? '✓' : '✗'} ${s.step}: ${s.details}`));
+      expect(steps.every((s) => s.success)).toBe(true);
+      console.log('\nPhone Number Flow PASSED ✓');
+    },
+    45000
+  );
+});
+
+describe('Proxy Session Lifecycle', () => {
+  const itProxy =
+    shouldRunDeepValidation &&
+    hasRealCredentials &&
+    process.env.TWILIO_PROXY_SERVICE_SID
+      ? it
+      : it.skip;
+
+  let client: ReturnType<typeof Twilio>;
+  let testSessionSid: string | undefined;
+  const proxyServiceSid = process.env.TWILIO_PROXY_SERVICE_SID || '';
+
+  beforeAll(() => {
+    if (shouldRunDeepValidation && hasRealCredentials) {
+      client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+    }
+  });
+
+  afterAll(async () => {
+    // Cleanup: close session if still open
+    if (testSessionSid && proxyServiceSid) {
+      try {
+        await client.proxy.v1
+          .services(proxyServiceSid)
+          .sessions(testSessionSid)
+          .update({ status: 'closed' });
+      } catch {
+        // Already closed or cleaned up
+      }
+    }
+  });
+
+  itProxy(
+    'should create, inspect, and close a Proxy session',
+    async () => {
+      console.log('\n=== Proxy Session Lifecycle Test ===');
+      console.log(`Service: ${proxyServiceSid}`);
+      const steps: { step: string; success: boolean; details: string }[] = [];
+
+      // Step 1: Create session
+      console.log('1. Creating proxy session...');
+      const session = await client.proxy.v1
+        .services(proxyServiceSid)
+        .sessions.create({
+          uniqueName: `e2e-test-${Date.now()}`,
+          mode: 'voice-and-message',
+          ttl: 300,
+        });
+      testSessionSid = session.sid;
+      steps.push({
+        step: 'Create Session',
+        success: session.sid.startsWith('KC'),
+        details: `SID: ${session.sid}, status: ${session.status}`,
+      });
+      expect(session.sid).toMatch(/^KC/);
+
+      // Step 2: Fetch session
+      console.log('2. Fetching session details...');
+      const fetched = await client.proxy.v1
+        .services(proxyServiceSid)
+        .sessions(session.sid)
+        .fetch();
+      steps.push({
+        step: 'Fetch Session',
+        success: fetched.status === 'open',
+        details: `mode=${fetched.mode}, ttl=${fetched.ttl}`,
+      });
+      expect(fetched.mode).toBe('voice-and-message');
+
+      // Step 3: List sessions (verify ours appears)
+      console.log('3. Listing sessions...');
+      const sessions = await client.proxy.v1
+        .services(proxyServiceSid)
+        .sessions.list({ limit: 10 });
+      const found = sessions.some((s) => s.sid === session.sid);
+      steps.push({
+        step: 'List Sessions',
+        success: found,
+        details: `Found in list: ${found} (${sessions.length} total)`,
+      });
+
+      // Step 4: Close session
+      console.log('4. Closing session...');
+      const closed = await client.proxy.v1
+        .services(proxyServiceSid)
+        .sessions(session.sid)
+        .update({ status: 'closed' });
+      steps.push({
+        step: 'Close Session',
+        success: closed.status === 'closed',
+        details: `status=${closed.status}`,
+      });
+      expect(closed.status).toBe('closed');
+
+      // Step 5: Verify closed
+      console.log('5. Verifying closed state...');
+      const verified = await client.proxy.v1
+        .services(proxyServiceSid)
+        .sessions(session.sid)
+        .fetch();
+      steps.push({
+        step: 'Verify Closed',
+        success: verified.status === 'closed',
+        details: `status=${verified.status}`,
+      });
+
+      // Summary
+      console.log('\n=== Lifecycle Summary ===');
+      steps.forEach((s) => console.log(`${s.success ? '✓' : '✗'} ${s.step}: ${s.details}`));
+      expect(steps.every((s) => s.success)).toBe(true);
+      console.log('\nProxy Session Lifecycle PASSED ✓');
+    },
+    45000
+  );
+});

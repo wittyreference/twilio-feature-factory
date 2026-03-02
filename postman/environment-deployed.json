@@ -1,0 +1,25 @@
+{
+  "id": "twilio-prototype-deployed",
+  "name": "Twilio Prototype - Deployed",
+  "values": [
+    {
+      "key": "BASE_URL",
+      "value": "https://prototype-8922-dev.twil.io",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "TWILIO_PHONE_NUMBER",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "TEST_PHONE_NUMBER",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

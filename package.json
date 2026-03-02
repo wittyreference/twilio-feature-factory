@@ -8,7 +8,7 @@
     "test": "jest --testPathPattern='__tests__/(unit|integration)/'",
     "test:watch": "jest --watch --testPathPattern='__tests__/(unit|integration)/'",
     "test:coverage": "jest --coverage --testPathPattern='__tests__/(unit|integration)/'",
-    "test:e2e": "newman run postman/collection.json -e postman/environment.json",
+    "test:e2e": "newman run postman/collection.json -e postman/environment.json --timeout-request 5000",
     "test:voice-sdk": "npx playwright test",
     "test:voice-sdk:headed": "npx playwright test --headed",
     "test:all": "npm test && npm run test:e2e",
@@ -18,7 +18,8 @@
     "deploy:prod": "twilio serverless:deploy --environment production",
     "lint": "eslint functions/ __tests__/",
     "lint:fix": "eslint functions/ __tests__/ --fix",
-    "demo": "./scripts/demo.sh"
+    "demo": "./scripts/demo.sh",
+    "test:e2e:deployed": "newman run postman/collection.json -e postman/environment-deployed.json --timeout-request 10000"
   },
   "keywords": [
     "twilio",

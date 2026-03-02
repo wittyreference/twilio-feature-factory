@@ -481,6 +481,7 @@
     ],
     "params": [
       "serviceSid",
+      "sourceSid",
       "mediaUrl",
       "customerKey"
     ]
@@ -966,6 +967,50 @@
       "data",
       "priority",
       "ttl"
+    ]
+  },
+  {
+    "name": "create_payment",
+    "file": "payments.ts",
+    "sdkCalls": [
+      "client.calls"
+    ],
+    "params": [
+      "callSid",
+      "idempotencyKey",
+      "statusCallback",
+      "paymentConnector",
+      "tokenType",
+      "chargeAmount",
+      "currency",
+      "description",
+      "input",
+      "paymentMethod",
+      "validCardTypes"
+    ]
+  },
+  {
+    "name": "update_payment",
+    "file": "payments.ts",
+    "sdkCalls": [
+      "client.calls"
+    ],
+    "params": [
+      "callSid",
+      "paymentSid",
+      "idempotencyKey",
+      "status"
+    ]
+  },
+  {
+    "name": "get_payment",
+    "file": "payments.ts",
+    "sdkCalls": [
+      "client.request"
+    ],
+    "params": [
+      "callSid",
+      "paymentSid"
     ]
   },
   {
@@ -2019,6 +2064,157 @@
     ]
   },
   {
+    "name": "create_sync_list",
+    "file": "sync.ts",
+    "sdkCalls": [
+      "client.sync.v1.services"
+    ],
+    "params": [
+      "uniqueName",
+      "ttl",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "list_sync_lists",
+    "file": "sync.ts",
+    "sdkCalls": [
+      "client.sync.v1.services"
+    ],
+    "params": [
+      "limit",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "add_sync_list_item",
+    "file": "sync.ts",
+    "sdkCalls": [
+      "client.sync.v1"
+    ],
+    "params": [
+      "listSidOrName",
+      "data",
+      "ttl",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "list_sync_list_items",
+    "file": "sync.ts",
+    "sdkCalls": [
+      "client.sync.v1"
+    ],
+    "params": [
+      "listSidOrName",
+      "limit",
+      "order",
+      "from",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "update_sync_list_item",
+    "file": "sync.ts",
+    "sdkCalls": [
+      "client.sync.v1"
+    ],
+    "params": [
+      "listSidOrName",
+      "index",
+      "data",
+      "ttl",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "remove_sync_list_item",
+    "file": "sync.ts",
+    "sdkCalls": [
+      "client.sync.v1"
+    ],
+    "params": [
+      "listSidOrName",
+      "index",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "create_sync_map",
+    "file": "sync.ts",
+    "sdkCalls": [
+      "client.sync.v1.services"
+    ],
+    "params": [
+      "uniqueName",
+      "ttl",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "list_sync_maps",
+    "file": "sync.ts",
+    "sdkCalls": [
+      "client.sync.v1.services"
+    ],
+    "params": [
+      "limit",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "add_sync_map_item",
+    "file": "sync.ts",
+    "sdkCalls": [
+      "client.sync.v1"
+    ],
+    "params": [
+      "mapSidOrName",
+      "key",
+      "data",
+      "ttl",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "get_sync_map_item",
+    "file": "sync.ts",
+    "sdkCalls": [
+      "client.sync.v1"
+    ],
+    "params": [
+      "mapSidOrName",
+      "key",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "update_sync_map_item",
+    "file": "sync.ts",
+    "sdkCalls": [
+      "client.sync.v1"
+    ],
+    "params": [
+      "mapSidOrName",
+      "key",
+      "data",
+      "ttl",
+      "serviceSid"
+    ]
+  },
+  {
+    "name": "remove_sync_map_item",
+    "file": "sync.ts",
+    "sdkCalls": [
+      "client.sync.v1"
+    ],
+    "params": [
+      "mapSidOrName",
+      "key",
+      "serviceSid"
+    ]
+  },
+  {
     "name": "create_task",
     "file": "taskrouter.ts",
     "sdkCalls": [
@@ -2077,6 +2273,108 @@
     "params": [
       "limit",
       "workspaceSid"
+    ]
+  },
+  {
+    "name": "update_task",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "taskSid",
+      "workspaceSid",
+      "assignmentStatus",
+      "priority",
+      "reason",
+      "attributes"
+    ]
+  },
+  {
+    "name": "list_task_queues",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "limit",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "get_task_queue",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "taskQueueSid",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "get_queue_statistics",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "taskQueueSid",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "list_activities",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "limit",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "update_worker",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "workerSid",
+      "workspaceSid",
+      "activitySid",
+      "attributes"
+    ]
+  },
+  {
+    "name": "list_reservations",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "taskSid",
+      "workspaceSid",
+      "reservationStatus",
+      "limit"
+    ]
+  },
+  {
+    "name": "update_reservation",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "taskSid",
+      "reservationSid",
+      "workspaceSid",
+      "reservationStatus",
+      "instruction",
+      "dequeueFrom",
+      "dequeueTo",
+      "conferenceStatusCallback"
     ]
   },
   {
@@ -3188,6 +3486,39 @@
       "conferenceSid",
       "limit",
       "status"
+    ]
+  },
+  {
+    "name": "list_queues",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.queues.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "get_queue",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.queues"
+    ],
+    "params": [
+      "queueSid"
+    ]
+  },
+  {
+    "name": "dequeue_member",
+    "file": "voice.ts",
+    "sdkCalls": [
+      "client.queues"
+    ],
+    "params": [
+      "queueSid",
+      "callSid",
+      "url",
+      "method"
     ]
   }
 ]

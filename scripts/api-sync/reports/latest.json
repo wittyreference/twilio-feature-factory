@@ -1,7 +1,7 @@
 {
   "oaiVersion": "2.6.4",
   "previousVersion": "none",
-  "generatedAt": "2026-02-23T09:15:04.351Z",
+  "generatedAt": "2026-03-02T09:12:49.964Z",
   "cliVersion": "6.2.4",
   "sdkVersion": "5.12.2",
   "sdkPinned": "^5.0.0",
@@ -25617,6 +25617,13 @@
           }
         ],
         "removedParams": [
+          {
+            "name": "sourceSid",
+            "in": "body",
+            "required": false,
+            "type": "unknown",
+            "description": ""
+          },
           {
             "name": "mediaUrl",
             "in": "body",

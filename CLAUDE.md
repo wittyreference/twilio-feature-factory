@@ -79,7 +79,13 @@ Agent Teams coordinate multiple Claude Code instances for parallel work. Use `/t
 | State synchronization | [functions/sync/CLAUDE.md](/functions/sync/CLAUDE.md) |
 | Task routing | [functions/taskrouter/CLAUDE.md](/functions/taskrouter/CLAUDE.md) |
 | Messaging services | [functions/messaging-services/CLAUDE.md](/functions/messaging-services/CLAUDE.md) |
+| PCI-compliant payments | [functions/pay/CLAUDE.md](/functions/pay/CLAUDE.md) |
+| Proxy / number masking | [functions/proxy/CLAUDE.md](/functions/proxy/CLAUDE.md) |
+| Phone number management | [functions/phone-numbers/CLAUDE.md](/functions/phone-numbers/CLAUDE.md) |
 | Callback handlers | [functions/callbacks/CLAUDE.md](/functions/callbacks/CLAUDE.md) |
+| SIP & BYOC connectivity | `.claude/skills/sip-byoc.md` (load on demand) |
+| Compliance & regulatory | `.claude/skills/compliance-regulatory.md` (load on demand) |
+| Payments guide | `.claude/skills/payments.md` (load on demand) |
 | Deep validation | [agents/mcp-servers/twilio/src/validation/CLAUDE.md](/agents/mcp-servers/twilio/src/validation/CLAUDE.md) |
 | Autonomous worker | [agents/feature-factory/CLAUDE.md](/agents/feature-factory/CLAUDE.md#autonomous-worker) |
 | Setup scripts | [scripts/CLAUDE.md](/scripts/CLAUDE.md) |

@@ -38,8 +38,23 @@ Parse arguments for flags:
    - **Plane B UCs**: Pick 2-3 UCs not used in the last 2 Plane B runs
    - **Plane C archetypes**: Exclude top-3 most-used from generation prompt
    - **Plane D repo**: Pick from pool (fastify, flask, gin, glow, httpie, ripgrep) — least-used, ties broken by oldest lastUsed
-6. **Create temp directory structure**: `mkdir -p /tmp/uber-val-RUNID/{plane-a,plane-b,plane-c,plane-d}`
-7. **Initialize state file**: `.meta/uber-validation-state.json` with run config, plane statuses all `pending`
+6. **Persona rewrite** (Planes A and B only):
+   - Pick a random chaos persona for each selected UC (from the 7 archetypes below)
+   - Avoid the persona used for the same plane in the last run
+   - For Plane B with multiple UCs, use a different persona for each
+   - Read the full UC description from `.claude/skills/voice-use-case-map.md`
+   - Rewrite the UC description as that persona would describe it:
+     - **Weekend Hacker**: casual, skips details, wants it to "just work"
+     - **Enterprise Architect**: over-specifies, adds unnecessary HA/DR requirements
+     - **Vague Requester**: omits key technical details, describes outcomes not inputs
+     - **Platform Migrator**: uses competitor terminology (Vonage, AWS Connect)
+     - **Copy-Paste Dev**: references deprecated APIs or outdated patterns
+     - **Compliance Officer**: frames everything in regulatory terms
+     - **Non-Technical Founder**: business language only, no technical vocabulary
+   - The rewrite MUST preserve the core product requirements (so the UC is still buildable) but the description should be messy, incomplete, or oddly framed
+   - Record the persona and rewritten description in the state file
+7. **Create temp directory structure**: `mkdir -p /tmp/uber-val-RUNID/{plane-a,plane-b,plane-c,plane-d}`
+8. **Initialize state file**: `.meta/uber-validation-state.json` with run config, plane statuses all `pending`, persona rewrites
 
 **Repo pool for Plane D**:
 
@@ -64,9 +79,9 @@ Parse arguments for flags:
    cp ~/workspaces/twilio-feature-factory/.env .
    ```
 3. Install the plugin (if `claude plugin add` is available, use it; otherwise copy `.mcp.json` from `~/workspaces/twilio-claude-plugin`)
-4. Select the rotation UC (from Phase 0)
+4. Use the persona-rewritten UC description from Phase 0 step 6. Do NOT look up the original UC — work from the rewritten description only. The description may be vague, use wrong terminology, or miss details. This is intentional — handle it the way the toolchain would for a real user.
 5. Build the UC end-to-end using only plugin-provided tools:
-   - Read the relevant skill for the UC (voice, messaging, verify, etc.)
+   - Read the relevant skill(s) based on what the description implies (not the UC ID)
    - Create the function files following plugin patterns
    - Write tests
    - Deploy and validate with MCP tools (if time permits)
@@ -91,7 +106,7 @@ Parse arguments for flags:
    cp ~/workspaces/twilio-feature-factory/.env /tmp/uber-val-RUNID/plane-b/
    cd /tmp/uber-val-RUNID/plane-b/ && npm install
    ```
-3. Select 2-3 UCs from rotation
+3. Select 2-3 UCs from rotation, using their persona-rewritten descriptions from Phase 0 step 6. Do NOT look up the original UCs — work from the rewritten descriptions only.
 4. For each UC, follow the sequential validation lifecycle:
    - `/architect` — design review
    - `/spec` — technical specification
@@ -201,8 +216,8 @@ Parse arguments for flags:
 
 6. If `--create-issues`: for each BLOCKING finding, `gh issue create --title "[UV-NNN] title" --body "description" --label uber-validation,blocking`
 7. Update `.meta/uber-validation-history.json`:
-   - Add run to `runs` array
-   - Update `ffRepoUsage`, `chaosArchetypesUsed`
+   - Add run to `runs` array (include `persona` and `rewrite` for each Plane A/B UC in `selections`)
+   - Update `ffRepoUsage`, `chaosArchetypesUsed`, `personaUsage` (increment persona count per use)
    - Add new finding fingerprints to `knownFindingFingerprints`
 8. Update `.meta/uber-validation-state.json` with `completedAt` and final status
 9. Cleanup: `rm -rf /tmp/uber-val-RUNID/` unless `--keep-artifacts`

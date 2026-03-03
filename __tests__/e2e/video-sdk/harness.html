@@ -404,24 +404,35 @@
           frameRate: { ideal: 30 }
         };
 
-        // Check if we should use custom audio from file (for transcription tests)
-        const audioFileUrl = window.USE_CUSTOM_AUDIO ? getAudioFileUrl(identity) : null;
-        let customAudioTrack = null;
-
-        if (audioFileUrl) {
-          customAudioTrack = await createAudioTrackFromFile(audioFileUrl);
+        // OBSERVER_MODE: Connect without publishing any tracks (for invisible observer pattern)
+        // Observer can see/hear others but publishes nothing and won't be recorded
+        if (window.OBSERVER_MODE) {
+          localTracks = [];
+          log('Observer mode: connecting without tracks');
         }
-
-        if (customAudioTrack) {
-          // Create only video track from camera, use custom audio
-          const videoTracks = await Twilio.Video.createLocalTracks({
-            audio: false,
-            video: videoConstraints
-          });
-          localTracks = [...videoTracks, customAudioTrack];
-          log('Using custom audio file for identity: ' + identity);
+        // Check if we should use custom audio from file (for transcription tests)
+        else if (window.USE_CUSTOM_AUDIO) {
+          const audioFileUrl = getAudioFileUrl(identity);
+          let customAudioTrack = null;
+          if (audioFileUrl) {
+            customAudioTrack = await createAudioTrackFromFile(audioFileUrl);
+          }
+          if (customAudioTrack) {
+            // Create only video track from camera, use custom audio
+            const videoTracks = await Twilio.Video.createLocalTracks({
+              audio: false,
+              video: videoConstraints
+            });
+            localTracks = [...videoTracks, customAudioTrack];
+            log('Using custom audio file for identity: ' + identity);
+          } else {
+            localTracks = await Twilio.Video.createLocalTracks({
+              audio: true,
+              video: videoConstraints
+            });
+          }
         } else {
-          // Use default microphone audio
+          // Default: Use microphone audio and camera video
           localTracks = await Twilio.Video.createLocalTracks({
             audio: true,
             video: videoConstraints

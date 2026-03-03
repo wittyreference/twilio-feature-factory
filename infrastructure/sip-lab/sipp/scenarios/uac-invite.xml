@@ -1,0 +1,77 @@
+<!--
+  ABOUTME: SIPp scenario that sends a SIP INVITE to Asterisk, waits for answer, then hangs up.
+  ABOUTME: Used to verify the Asterisk PBX answers inbound calls correctly.
+-->
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<scenario name="Basic UAC Call">
+
+  <!-- Send INVITE -->
+  <send retrans="500">
+    <![CDATA[
+      INVITE sip:[service]@[remote_ip]:[remote_port] SIP/2.0
+      Via: SIP/2.0/[transport] [local_ip]:[local_port];branch=[branch]
+      From: "SIPp Test" <sip:sipp@[local_ip]:[local_port]>;tag=[call_number]
+      To: <sip:[service]@[remote_ip]:[remote_port]>
+      Call-ID: [call_id]
+      CSeq: 1 INVITE
+      Contact: <sip:sipp@[local_ip]:[local_port]>
+      Max-Forwards: 70
+      Content-Type: application/sdp
+      Content-Length: [len]
+
+      v=0
+      o=sipp 1 1 IN IP[local_ip_type] [local_ip]
+      s=SIPp Test Call
+      c=IN IP[local_ip_type] [local_ip]
+      t=0 0
+      m=audio [auto_media_port] RTP/AVP 0
+      a=rtpmap:0 PCMU/8000
+    ]]>
+  </send>
+
+  <!-- Expect 100 Trying -->
+  <recv response="100" optional="true" />
+
+  <!-- Expect 180 Ringing -->
+  <recv response="180" optional="true" />
+
+  <!-- Expect 200 OK -->
+  <recv response="200" rtd="true" />
+
+  <!-- Send ACK -->
+  <send>
+    <![CDATA[
+      ACK sip:[service]@[remote_ip]:[remote_port] SIP/2.0
+      Via: SIP/2.0/[transport] [local_ip]:[local_port];branch=[branch]
+      From: "SIPp Test" <sip:sipp@[local_ip]:[local_port]>;tag=[call_number]
+      To: <sip:[service]@[remote_ip]:[remote_port]>[peer_tag_param]
+      Call-ID: [call_id]
+      CSeq: 1 ACK
+      Contact: <sip:sipp@[local_ip]:[local_port]>
+      Max-Forwards: 70
+      Content-Length: 0
+    ]]>
+  </send>
+
+  <!-- Wait for audio playback -->
+  <pause milliseconds="5000" />
+
+  <!-- Send BYE -->
+  <send retrans="500">
+    <![CDATA[
+      BYE sip:[service]@[remote_ip]:[remote_port] SIP/2.0
+      Via: SIP/2.0/[transport] [local_ip]:[local_port];branch=[branch]
+      From: "SIPp Test" <sip:sipp@[local_ip]:[local_port]>;tag=[call_number]
+      To: <sip:[service]@[remote_ip]:[remote_port]>[peer_tag_param]
+      Call-ID: [call_id]
+      CSeq: 2 BYE
+      Contact: <sip:sipp@[local_ip]:[local_port]>
+      Max-Forwards: 70
+      Content-Length: 0
+    ]]>
+  </send>
+
+  <!-- Expect 200 OK to BYE -->
+  <recv response="200" />
+
+</scenario>

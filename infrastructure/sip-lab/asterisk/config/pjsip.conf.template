@@ -1,0 +1,146 @@
+; ABOUTME: PJSIP configuration for Twilio Elastic SIP Trunk testing.
+; ABOUTME: Template file — envsubst replaces ${VARS} at container startup.
+
+; === Transports ===
+
+[transport-udp]
+type=transport
+protocol=udp
+bind=0.0.0.0:5060
+local_net=${LOCAL_NET}
+external_media_address=${EXTERNAL_IP}
+external_signaling_address=${EXTERNAL_IP}
+
+[transport-tls]
+type=transport
+protocol=tls
+bind=0.0.0.0:5061
+local_net=${LOCAL_NET}
+external_media_address=${EXTERNAL_IP}
+external_signaling_address=${EXTERNAL_IP}
+cert_file=${TLS_CERT}
+priv_key_file=${TLS_KEY}
+ca_list_file=${TLS_CA}
+method=tlsv1_2
+verify_server=yes
+verify_client=no
+
+; === Twilio Elastic SIP Trunk (plain UDP) ===
+; Default trunk — uses SIP over UDP port 5060.
+; Twilio does NOT support SIP REGISTER for Elastic SIP Trunking.
+; Authentication is via IP ACL + Credential digest on the INVITE itself.
+
+[twilio-trunk]
+type=endpoint
+transport=transport-udp
+context=from-twilio
+disallow=all
+allow=ulaw
+allow=alaw
+direct_media=no
+rtp_symmetric=yes
+force_rport=yes
+rewrite_contact=yes
+ice_support=no
+aors=twilio-trunk
+outbound_auth=twilio-trunk-auth
+from_domain=${TWILIO_TRUNK_DOMAIN}
+
+[twilio-trunk]
+type=aor
+contact=sip:${TWILIO_TRUNK_DOMAIN}
+qualify_frequency=60
+
+[twilio-trunk-auth]
+type=auth
+auth_type=userpass
+username=${SIP_CREDENTIAL_USERNAME}
+password=${SIP_CREDENTIAL_PASSWORD}
+
+; Identify inbound from Twilio by their SIP signaling IPs
+; Source: https://www.twilio.com/docs/sip-trunking/ip-addresses
+[twilio-trunk-identify]
+type=identify
+endpoint=twilio-trunk
+match=54.172.60.0/30
+match=54.172.60.4/30
+match=54.244.51.0/30
+match=34.203.250.0/30
+match=54.171.127.192/30
+match=35.156.191.128/30
+match=3.112.80.0/30
+match=54.65.63.192/30
+match=54.252.254.64/30
+match=108.141.162.0/30
+match=54.246.7.128/30
+match=20.125.63.48/30
+
+; === Twilio Elastic SIP Trunk (secure TLS + SRTP) ===
+; Activated by setting secure=true on the Twilio trunk via MCP/Console.
+; Uses SIP/TLS on port 5061 + SRTP for encrypted media.
+; Self-signed cert is accepted by Twilio; we verify Twilio's DigiCert cert.
+;
+; To route outbound calls over the secure trunk, use the
+; [outbound-via-twilio-secure] dialplan context in extensions.conf.
+
+[twilio-trunk-secure]
+type=endpoint
+transport=transport-tls
+context=from-twilio
+disallow=all
+allow=ulaw
+allow=alaw
+direct_media=no
+rtp_symmetric=yes
+force_rport=yes
+rewrite_contact=yes
+ice_support=no
+media_encryption=sdes
+aors=twilio-trunk-secure
+outbound_auth=twilio-trunk-auth
+from_domain=${TWILIO_TRUNK_DOMAIN}
+
+[twilio-trunk-secure]
+type=aor
+contact=sips:${TWILIO_TRUNK_DOMAIN}
+qualify_frequency=60
+
+; Identify inbound secure calls from Twilio (same IPs, different endpoint)
+[twilio-trunk-secure-identify]
+type=identify
+endpoint=twilio-trunk-secure
+match=54.172.60.0/30
+match=54.172.60.4/30
+match=54.244.51.0/30
+match=34.203.250.0/30
+match=54.171.127.192/30
+match=35.156.191.128/30
+match=3.112.80.0/30
+match=54.65.63.192/30
+match=54.252.254.64/30
+match=108.141.162.0/30
+match=54.246.7.128/30
+match=20.125.63.48/30
+
+; === Local Test Extension (for SIP Domain testing in Phase C) ===
+
+[test-extension]
+type=endpoint
+transport=transport-udp
+context=internal
+disallow=all
+allow=ulaw
+allow=alaw
+auth=test-extension-auth
+aors=test-extension
+direct_media=no
+
+[test-extension-auth]
+type=auth
+auth_type=userpass
+username=test-ext
+password=SipLabTest2024!
+
+[test-extension]
+type=aor
+max_contacts=1

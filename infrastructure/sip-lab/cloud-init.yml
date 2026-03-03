@@ -1,0 +1,84 @@
+#cloud-config
+# ABOUTME: Cloud-init template for DigitalOcean SIP Lab droplet provisioning.
+# ABOUTME: Installs Docker, fail2ban, UFW and hardens SSH — template vars filled by droplet-setup.sh.
+
+users:
+  - name: siplab
+    groups: docker, sudo
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - SSH_PUBLIC_KEY_PLACEHOLDER
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - docker.io
+  - docker-compose-v2
+  - fail2ban
+  - ufw
+  - unattended-upgrades
+  - apt-listchanges
+  - sngrep
+
+write_files:
+  - path: /etc/ssh/sshd_config.d/hardening.conf
+    content: |
+      PasswordAuthentication no
+      PubkeyAuthentication yes
+      PermitRootLogin no
+      ClientAliveInterval 300
+      ClientAliveCountMax 2
+      MaxAuthTries 3
+      LoginGraceTime 30
+
+  - path: /etc/fail2ban/jail.local
+    content: |
+      [sshd]
+      enabled = true
+      maxretry = 3
+      bantime = 3600
+      findtime = 600
+
+      [asterisk]
+      enabled = true
+      filter = asterisk
+      logpath = /var/log/asterisk/messages
+      maxretry = 3
+      bantime = 86400
+      findtime = 600
+
+  - path: /etc/fail2ban/filter.d/asterisk.conf
+    content: |
+      [Definition]
+      failregex = NOTICE.* .*: Registration from '.*' failed for '<HOST>:.*' - Wrong password
+                  NOTICE.* .*: Registration from '.*' failed for '<HOST>:.*' - No matching peer found
+                  NOTICE.* .*: Registration from '.*' failed for '<HOST>:.*' - Username/auth name mismatch
+                  SECURITY.* SecurityEvent="FailedACL".*RemoteAddress="IPV4/UDP/<HOST>/.*"
+                  SECURITY.* SecurityEvent="InvalidAccountID".*RemoteAddress="IPV4/UDP/<HOST>/.*"
+                  SECURITY.* SecurityEvent="ChallengeResponseFailed".*RemoteAddress="IPV4/UDP/<HOST>/.*"
+                  SECURITY.* SecurityEvent="InvalidPassword".*RemoteAddress="IPV4/UDP/<HOST>/.*"
+      ignoreregex =
+
+  - path: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";
+
+runcmd:
+  - systemctl enable docker
+  - systemctl start docker
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow 22/tcp
+  - ufw allow 5060/udp
+  - ufw allow 5061/tcp
+  - ufw allow 10000:10100/udp proto udp
+  - ufw --force enable
+  - systemctl restart ssh
+  - systemctl enable fail2ban
+  - systemctl start fail2ban
+  - mkdir -p /home/siplab/sip-lab
+  - chown siplab:siplab /home/siplab/sip-lab

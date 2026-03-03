@@ -1,0 +1,55 @@
+# ABOUTME: Docker Compose for SIP Lab — Asterisk PBX with optional SIPp and sngrep.
+# ABOUTME: Uses host networking for SIP/RTP. Run on a DigitalOcean droplet for Twilio connectivity.
+
+services:
+  asterisk:
+    build:
+      context: ./asterisk
+      dockerfile: Dockerfile
+    container_name: sip-lab-asterisk
+    network_mode: host
+    env_file:
+      - .env.sip-lab
+    cap_add:
+      - SYS_PTRACE
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - asterisk-logs:/var/log/asterisk
+      - asterisk-tls:/etc/asterisk/tls
+      - ./asterisk/sounds:/usr/share/asterisk/sounds/custom:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "asterisk", "-rx", "core show channels"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  sipp:
+    build:
+      context: ./sipp
+      dockerfile: Dockerfile
+    container_name: sip-lab-sipp
+    network_mode: host
+    depends_on:
+      asterisk:
+        condition: service_healthy
+    profiles:
+      - testing
+    volumes:
+      - ./sipp/scenarios:/scenarios:ro
+
+  sngrep:
+    image: ghcr.io/irontec/sngrep:latest
+    container_name: sip-lab-sngrep
+    network_mode: host
+    profiles:
+      - debug
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+
+volumes:
+  asterisk-logs:
+  asterisk-tls:

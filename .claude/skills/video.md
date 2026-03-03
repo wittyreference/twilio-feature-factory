@@ -282,11 +282,21 @@ async function observerSubscribesToAll(roomSid, observerSid) {
 
 ### Observer Visibility Levels
 
-| Level | Implementation | Participant Sees |
-|-------|----------------|------------------|
-| **Visible** | Default subscribe-to-all | Observer's identity, audio, video |
-| **Silent** | Observer publishes no tracks | Participant count increases, no media |
-| **Invisible** | Track Subscriptions API exclusion | Participant count increases, no media, no track events |
+| Level | Implementation | Participant Sees | Recorded |
+|-------|----------------|------------------|----------|
+| **Visible** | Default subscribe-to-all | Observer's identity, audio, video | Yes |
+| **Silent** | Observer publishes no tracks | Participant count increases, no media | No |
+| **Invisible** | Track Subscriptions API exclusion | Participant count increases, no media, no track events | No (if no tracks) |
+
+**Observer Recording Pattern:**
+To ensure observers are NOT recorded, connect without publishing tracks:
+```javascript
+// Client-side: Connect as observer without tracks
+const room = await Twilio.Video.connect(token, {
+  name: roomName,
+  tracks: [] // No tracks = no recordings
+});
+```
 
 **Key difference between Silent and Invisible:**
 - **Silent**: Participants receive `participantConnected` and `trackSubscribed` events for observer (even if no tracks)

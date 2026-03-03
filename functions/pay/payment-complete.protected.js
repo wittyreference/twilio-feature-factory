@@ -4,7 +4,11 @@
 exports.handler = async (context, event, callback) => {
   const twiml = new Twilio.twiml.VoiceResponse();
 
-  const { Result, PaymentCardNumber, PaymentCardType } = event;
+  const { Result, PaymentCardNumber, PaymentCardType, PaymentToken, PaymentConfirmationCode } = event;
+
+  console.log(`payment-complete called: Result=${Result}, CardType=${PaymentCardType}, LastFour=${PaymentCardNumber}`);
+  console.log(`Token=${PaymentToken}, ConfirmationCode=${PaymentConfirmationCode}`);
+  console.log(`CallSid=${event.CallSid}, PaymentSid=${event.PaymentSid}`);
 
   if (Result === 'success') {
     const lastFour = PaymentCardNumber || '****';

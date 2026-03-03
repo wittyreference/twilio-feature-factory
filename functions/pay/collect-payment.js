@@ -5,8 +5,11 @@ exports.handler = async (context, event, callback) => {
   const twiml = new Twilio.twiml.VoiceResponse();
 
   const chargeAmount = event.chargeAmount || context.PAYMENT_CHARGE_AMOUNT || '0.00';
-  const paymentConnector = context.PAYMENT_CONNECTOR || 'Default';
+  const paymentConnector = event.paymentConnector || context.PAYMENT_CONNECTOR || 'Default';
   const currency = context.PAYMENT_CURRENCY || 'usd';
+
+  console.log(`collect-payment called: connector=${paymentConnector}, amount=${chargeAmount}, currency=${currency}`);
+  console.log(`CallSid=${event.CallSid}, From=${event.From}, To=${event.To}`);
 
   twiml.say({ voice: 'Polly.Amy' },
     'Welcome to our payment system. You will now be prompted to enter your credit card information securely.'
@@ -18,9 +21,13 @@ exports.handler = async (context, event, callback) => {
     currency,
     paymentMethod: 'credit-card',
     tokenType: 'one-time',
+    timeout: 5,
     action: '/pay/payment-complete',
     statusCallback: '/pay/payment-status',
   });
+
+  const xml = twiml.toString();
+  console.log(`TwiML generated: ${xml}`);
 
   return callback(null, twiml);
 };

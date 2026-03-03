@@ -1,0 +1,15 @@
+{
+  "name": "sip-lab-websocket-agents",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ConversationRelay WebSocket agents for SIP Lab testing",
+  "scripts": {
+    "customer": "node customer-agent.js",
+    "hostess": "node hostess-agent.js",
+    "start": "node customer-agent.js & node hostess-agent.js & wait"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "ws": "^8.18.0"
+  }
+}

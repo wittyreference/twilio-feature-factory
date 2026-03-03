@@ -272,6 +272,57 @@
       }
     };
 
+    // Run preflight connectivity test
+    window.runPreflight = async function(token) {
+      return new Promise((resolve, reject) => {
+        const progressEvents = [];
+        let preflightTest;
+
+        try {
+          preflightTest = Twilio.Video.runPreflight(token);
+
+          preflightTest.on('progress', (progress) => {
+            progressEvents.push({
+              name: progress,
+              timestamp: Date.now()
+            });
+            log('Preflight progress: ' + progress);
+          });
+
+          preflightTest.on('completed', (report) => {
+            log('Preflight completed');
+            resolve({
+              success: true,
+              progressEvents,
+              report: {
+                testTiming: report.testTiming,
+                networkTiming: report.networkTiming,
+                stats: report.stats,
+                selectedIceCandidatePairStats: report.selectedIceCandidatePairStats,
+                iceCandidateStats: report.iceCandidateStats,
+                progressEvents: report.progressEvents
+              }
+            });
+          });
+
+          preflightTest.on('failed', (error) => {
+            log('Preflight failed: ' + error.message);
+            resolve({
+              success: false,
+              progressEvents,
+              error: {
+                message: error.message,
+                code: error.code
+              }
+            });
+          });
+
+        } catch (err) {
+          reject(err);
+        }
+      });
+    };
+
     function startAudioLevelUpdates() {
       audioLevelInterval = setInterval(() => {
         const level = window.getAudioLevel();
@@ -472,6 +523,20 @@
             }
           };
           log('Simulcast enabled for 3+ participants');
+        }
+
+        // OPTIONAL: Add bandwidth profile with adaptive simulcast
+        if (window.BANDWIDTH_PROFILE_MODE) {
+          connectOptions.preferredVideoCodecs = [{ codec: 'VP8', simulcast: window.ADAPTIVE_SIMULCAST || false }];
+          connectOptions.bandwidthProfile = {
+            video: {
+              mode: window.BANDWIDTH_PROFILE_MODE,
+              trackSwitchOffMode: 'predicted',
+              clientTrackSwitchOffControl: 'auto',
+              contentPreferencesMode: 'auto'
+            }
+          };
+          log('Bandwidth profile mode: ' + window.BANDWIDTH_PROFILE_MODE + ', adaptive simulcast: ' + (window.ADAPTIVE_SIMULCAST || false));
         }
 
         // Connect to room

@@ -421,6 +421,108 @@ screenTrack.stop();
 - Consider `contentHint: 'detail'` for text, `'motion'` for video
 - Handle `ended` event when user stops via browser UI
 
+### DataTrack API
+
+DataTracks enable real-time data exchange between participants without using audio/video bandwidth. Essential for collaborative features.
+
+**Use Cases:**
+- In-call chat messages
+- Cursor position sharing (whiteboard, annotation)
+- Participant status indicators (typing, hand raised)
+- Custom signaling (mute notifications, reactions)
+- Game state synchronization
+
+**Creating and Publishing:**
+```javascript
+const { LocalDataTrack } = Twilio.Video;
+
+// Create a named data track
+const dataTrack = new LocalDataTrack({ name: 'chat' });
+
+// Publish to room
+await room.localParticipant.publishTrack(dataTrack);
+
+// Send string messages
+dataTrack.send('Hello from Alice!');
+
+// Send JSON (stringify first)
+dataTrack.send(JSON.stringify({ type: 'cursor', x: 100, y: 200 }));
+
+// Send binary data (ArrayBuffer)
+const buffer = new ArrayBuffer(8);
+dataTrack.send(buffer);
+```
+
+**Receiving Messages:**
+```javascript
+// Handle new participants
+room.on('participantConnected', participant => {
+  participant.on('trackSubscribed', track => {
+    if (track.kind === 'data') {
+      track.on('message', (data) => {
+        if (typeof data === 'string') {
+          console.log('String message:', data);
+          // Parse JSON if needed
+          const parsed = JSON.parse(data);
+        } else {
+          console.log('Binary data:', data); // ArrayBuffer
+        }
+      });
+    }
+  });
+});
+
+// Handle existing participants (already in room when you join)
+room.participants.forEach(participant => {
+  participant.tracks.forEach(publication => {
+    if (publication.track?.kind === 'data') {
+      publication.track.on('message', handleMessage);
+    }
+  });
+  participant.on('trackSubscribed', handleTrackSubscribed);
+});
+```
+
+**Bidirectional Chat Pattern:**
+```javascript
+// Alice creates chat track
+const aliceChat = new LocalDataTrack({ name: 'chat' });
+await room.localParticipant.publishTrack(aliceChat);
+
+// Bob creates response track
+const bobChat = new LocalDataTrack({ name: 'chat-response' });
+await room.localParticipant.publishTrack(bobChat);
+
+// Both listen for each other's messages
+// Result: True bidirectional messaging
+```
+
+**Key Constraints:**
+| Constraint | Limit |
+|------------|-------|
+| Max message size | 64 KB |
+| Delivery | Ordered, reliable (SCTP) |
+| Latency | Low (WebRTC data channel) |
+| Recording | NOT recorded (data tracks excluded) |
+
+**Gotchas:**
+- DataTracks are NOT recorded - only audio/video tracks are captured
+- Must handle both existing and new participants when setting up listeners
+- Binary data arrives as ArrayBuffer, not typed arrays
+- Track name helps identify purpose (e.g., `chat`, `cursor`, `state`)
+
+**Message Order Guarantee:**
+DataTracks use SCTP (reliable, ordered delivery). Messages arrive in the order sent:
+
+```javascript
+// Sender
+for (let i = 0; i < 20; i++) {
+  dataTrack.send(`message-${i}`);
+}
+
+// Receiver - messages arrive in order: message-0, message-1, ... message-19
+```
+
 ### iOS SDK
 
 **Key Differences:**
@@ -534,11 +636,25 @@ const room = await connect(token, {
   preferredVideoCodecs: [{ codec: 'VP8', simulcast: true }],
   bandwidthProfile: {
     video: {
-      mode: 'collaboration',
-      dominantSpeakerPriority: 'high',
+      mode: 'collaboration',  // or 'grid' or 'presentation'
       trackSwitchOffMode: 'predicted',
       clientTrackSwitchOffControl: 'auto',  // Auto-manage track visibility
-      contentPreferencesMode: 'auto'         // Allocate bandwidth by render size
+      contentPreferencesMode: 'auto'        // Allocate bandwidth by render size
+    }
+  }
+});
+```
+
+**Presentation Mode for Screen Share:**
+```javascript
+const room = await connect(token, {
+  preferredVideoCodecs: [{ codec: 'VP8', simulcast: true }],
+  bandwidthProfile: {
+    video: {
+      mode: 'presentation',  // Prioritizes screen share over cameras
+      trackSwitchOffMode: 'predicted',
+      clientTrackSwitchOffControl: 'auto',
+      contentPreferencesMode: 'auto'
     }
   }
 });
@@ -560,14 +676,47 @@ const room = await connect(token, {
 
 ### Network Quality API
 
-Monitor connection quality per participant:
+Monitor connection quality per participant. Enable via connect options:
+
 ```javascript
+const room = await connect(token, {
+  name: roomName,
+  tracks: localTracks,
+  networkQuality: {
+    local: 3,  // Verbosity for local participant (1-3)
+    remote: 1  // Verbosity for remote participants (1-3)
+  }
+});
+```
+
+**Verbosity Levels:**
+| Level | Data Provided |
+|-------|---------------|
+| 1 | `networkQualityLevel` only (0-5) |
+| 2 | Level + audio/video send/recv quality |
+| 3 | Level + detailed stats per track |
+
+**Monitoring Quality:**
+```javascript
+// Track local participant quality
+room.localParticipant.on('networkQualityLevelChanged', (level, stats) => {
+  console.log(`Local quality: ${level}`);
+  if (stats) {
+    console.log(`Audio send: ${stats.audio?.send}, recv: ${stats.audio?.recv}`);
+    console.log(`Video send: ${stats.video?.send}, recv: ${stats.video?.recv}`);
+  }
+});
+
+// Track remote participant quality
 room.on('participantConnected', participant => {
   participant.on('networkQualityLevelChanged', (level, stats) => {
-    // level: 0-5 (0 = unknown, 1 = poor, 5 = excellent)
     console.log(`${participant.identity}: quality ${level}`);
   });
 });
+
+// Access current quality synchronously
+const currentLevel = room.localParticipant.networkQualityLevel;
+const currentStats = room.localParticipant.networkQualityStats;
 ```
 
 **Quality Levels:**
@@ -578,7 +727,146 @@ room.on('participantConnected', participant => {
 | 3 | Moderate | Monitor for degradation |
 | 2 | Poor | Consider reducing video quality |
 | 1 | Very poor | May need to disable video |
-| 0 | Unknown | Network quality not available |
+| 0/null | Unknown | Network quality not yet measured |
+
+**Key Behaviors:**
+- Quality level is `null` until first measurement (typically 2-5 seconds after connect)
+- Events fire when quality changes, not continuously
+- Both local and remote quality visible to all participants
+- Quality can fluctuate during a call (5 → 4 → 3 is normal under varying conditions)
+
+**UI Pattern:**
+```javascript
+function getQualityIndicator(level) {
+  if (level === null) return '⏳'; // Measuring
+  if (level >= 4) return '🟢';     // Good
+  if (level >= 2) return '🟡';     // Fair
+  return '🔴';                      // Poor
+}
+```
+
+### Dominant Speaker Detection
+
+Identify who is currently speaking in multi-participant rooms. Essential for spotlight views and speaker-focused layouts.
+
+**Enable via connect options:**
+```javascript
+const room = await connect(token, {
+  name: roomName,
+  tracks: localTracks,
+  dominantSpeaker: true  // Required to enable detection
+});
+```
+
+**Tracking the dominant speaker:**
+```javascript
+// Listen for speaker changes
+room.on('dominantSpeakerChanged', (participant) => {
+  if (participant) {
+    console.log(`Dominant speaker: ${participant.identity}`);
+    // Highlight this participant's video tile
+  } else {
+    console.log('No dominant speaker (silence or only local audio)');
+  }
+});
+
+// Access current dominant speaker synchronously
+const currentSpeaker = room.dominantSpeaker;
+if (currentSpeaker) {
+  console.log(`Currently speaking: ${currentSpeaker.identity}`);
+}
+```
+
+**Key Behaviors:**
+- `dominantSpeakerChanged` fires when the active speaker changes
+- Event participant is `null` when no remote participant has audio (silence or local-only)
+- Detection is based on audio energy analysis - works with any audio source
+- Events can fire frequently (every 1-2 seconds) during active conversation
+- Only remote participants can be dominant speaker - local participant is never dominant
+
+**Use Cases:**
+- Spotlight/active speaker view - enlarge dominant speaker's video
+- Recording focus - composition can prioritize dominant speaker
+- Accessibility - announce speaker changes for screen readers
+- Analytics - track speaking time per participant
+
+**Combining with Bandwidth Profiles:**
+```javascript
+const room = await connect(token, {
+  dominantSpeaker: true,
+  bandwidthProfile: {
+    video: {
+      mode: 'collaboration',           // Prioritize dominant speaker
+      dominantSpeakerPriority: 'high'  // Higher quality for active speaker
+    }
+  }
+});
+```
+
+### Preflight API
+
+Test network connectivity and WebRTC capabilities BEFORE joining a room. Essential for diagnosing connection issues and setting user expectations.
+
+**Run preflight test:**
+```javascript
+const preflightTest = Twilio.Video.runPreflight(accessToken);
+
+// Track progress through connection stages
+preflightTest.on('progress', (progress) => {
+  console.log(`Preflight stage: ${progress}`);
+  // Stages: mediaAcquired → connected → iceConnected →
+  //         dtlsConnected → mediaSubscribed → peerConnectionConnected → mediaStarted
+});
+
+// Handle completion with diagnostic report
+preflightTest.on('completed', (report) => {
+  console.log('Test duration:', report.testTiming.duration, 'ms');
+  console.log('RTT average:', report.stats.rtt.average, 'ms');
+  console.log('Packet loss:', report.stats.packetLoss.average, '%');
+  console.log('ICE candidate type:', report.selectedIceCandidatePairStats.localCandidate.candidateType);
+});
+
+// Handle failure
+preflightTest.on('failed', (error) => {
+  console.error('Preflight failed:', error.code, error.message);
+});
+```
+
+**Progress Events (in order):**
+1. `mediaAcquired` - Local camera/microphone captured (~120ms)
+2. `connected` - Connected to Twilio signaling (~800ms)
+3. `iceConnected` - ICE connectivity established (~1.7s)
+4. `dtlsConnected` - DTLS encryption handshake complete (~2s)
+5. `mediaSubscribed` - Test media track subscribed (~2s)
+6. `peerConnectionConnected` - WebRTC connection established (~2s)
+7. `mediaStarted` - Media flowing through connection (~2.2s)
+
+**Report Fields:**
+- `testTiming.duration` - Total test duration in milliseconds
+- `networkTiming.connect.duration` - Time to connect to Twilio servers
+- `networkTiming.media.duration` - Time to establish media path
+- `stats.jitter` - Jitter statistics (min/max/average) in milliseconds
+- `stats.rtt` - Round-trip time statistics (min/max/average) in milliseconds
+- `stats.packetLoss` - Packet loss percentage (min/max/average)
+- `selectedIceCandidatePairStats` - Winning ICE candidate pair details
+- `iceCandidateStats` - All gathered ICE candidates
+
+**ICE Candidate Types:**
+- `host` - Direct connection via local network address
+- `srflx` - Server reflexive (NAT traversal via STUN)
+- `relay` - Relayed through TURN server (fallback, higher latency)
+
+**Use Cases:**
+- Pre-call diagnostics - Show user network quality before joining
+- Troubleshooting - Identify firewall/NAT issues blocking WebRTC
+- Quality warnings - Alert users if RTT or packet loss are high
+- Connection type - Determine if using direct or relayed connection
+
+**Best Practices:**
+- Run preflight before first call in a session
+- Cache results for 5-10 minutes (network conditions are stable short-term)
+- Show user-friendly status: "Checking connection..." → "Connection quality: Good"
+- If preflight fails, suggest network troubleshooting before attempting call
 
 ### Video Capture Constraints
 
@@ -690,8 +978,11 @@ const room = await client.video.v1.rooms.create({
 ```
 
 **Recording Rules (selective):**
+
+Recording Rules provide fine-grained control over what gets recorded. Rules are evaluated in order - first match wins.
+
 ```javascript
-// Include specific participants
+// Include specific participant only
 await client.video.v1.rooms(roomSid)
   .recordingRules
   .update({
@@ -700,7 +991,52 @@ await client.video.v1.rooms(roomSid)
       { type: 'exclude', all: true }  // Exclude everyone else
     ]
   });
+
+// Record audio only (no video)
+await client.video.v1.rooms(roomSid)
+  .recordingRules
+  .update({
+    rules: [
+      { type: 'include', all: true },
+      { type: 'exclude', kind: 'video' }
+    ]
+  });
+
+// Stop all recording mid-session
+await client.video.v1.rooms(roomSid)
+  .recordingRules
+  .update({
+    rules: [{ type: 'exclude', all: true }]
+  });
 ```
+
+**Rule Filter Options:**
+| Filter | Values | Description |
+|--------|--------|-------------|
+| `all` | `true` | Match all participants/tracks |
+| `publisher` | identity string | Match specific participant |
+| `kind` | `audio`, `video` | Match track type |
+| `track` | track name | Match specific track |
+
+**Critical Constraint:** The `all` filter cannot be combined with other filters in the same rule. Use separate rules instead:
+```javascript
+// WRONG - will fail with "Invalid Recording Rule(s)"
+{ type: 'include', all: true, kind: 'audio' }
+
+// CORRECT - use two rules
+[
+  { type: 'include', all: true },
+  { type: 'exclude', kind: 'video' }
+]
+```
+
+**Dynamic Recording Control:**
+Recording Rules can be updated mid-session to start, stop, or change recording:
+- **Start:** Apply `include` rules → new recordings begin
+- **Stop:** Apply `exclude all` → current recordings complete immediately
+- **Restart:** Re-apply `include` rules → new recording segments created
+
+Each start/stop cycle creates separate recording resources (not appended to previous).
 
 **External Storage:**
 Configure S3 for recordings > 24 hours:
@@ -715,6 +1051,46 @@ Configure S3 for recordings > 24 hours:
 | `completed` | Recording available for download |
 | `deleted` | Recording has been deleted |
 | `failed` | Recording failed |
+
+**Recording File Validation:**
+
+For strong validation, download and verify actual recording files:
+
+```javascript
+const { execSync } = require('child_process');
+const fs = require('fs');
+
+// Download recording via authenticated Media URL
+const mediaUrl = `https://video.twilio.com/v1/Recordings/${recording.sid}/Media`;
+const outputPath = `recording-${recording.sid}.mka`;  // .mka for audio, .mkv for video
+
+execSync(`curl -s -L -u "${apiKey}:${apiSecret}" "${mediaUrl}" -o "${outputPath}"`);
+
+// Validate with ffprobe
+const ffprobeOutput = execSync(
+  `ffprobe -v quiet -print_format json -show_format -show_streams "${outputPath}"`,
+  { encoding: 'utf-8' }
+);
+const metadata = JSON.parse(ffprobeOutput);
+
+// Verify stream type
+const audioStream = metadata.streams.find(s => s.codec_type === 'audio');
+const videoStream = metadata.streams.find(s => s.codec_type === 'video');
+
+// Verify duration matches API (within tolerance)
+const fileDuration = parseFloat(metadata.format.duration);
+expect(fileDuration).toBeCloseTo(recording.duration, 0);  // Within 1 second
+
+// Cleanup
+fs.unlinkSync(outputPath);
+```
+
+**File Extensions:**
+| Track Type | Container | Extension |
+|------------|-----------|-----------|
+| Audio | Matroska | `.mka` |
+| Video | Matroska | `.mkv` |
+| Composition | MP4/WebM | `.mp4` / `.webm` |
 
 ### Compositions
 
@@ -740,17 +1116,41 @@ while (status !== 'completed' && status !== 'failed') {
 ```
 
 **Composition Hooks (automatic):**
+
+Hooks automatically create compositions when rooms end - no manual API call needed.
+
 ```javascript
-await client.video.v1.compositionHooks.create({
+const hook = await client.video.v1.compositionHooks.create({
   friendlyName: 'auto-compose-all',
   enabled: true,
   audioSources: ['*'],
   videoLayout: { grid: { video_sources: ['*'] } },
   resolution: '1280x720',
   format: 'mp4',
-  statusCallback: 'https://example.com/composition-status'
+  trim: true,  // Only compose rooms with recordings
+  statusCallback: 'https://example.com/composition-status',
+  statusCallbackMethod: 'POST'
 });
+
+// Hook SID starts with 'HK'
+console.log(hook.sid);  // HK...
+
+// Delete hook when no longer needed
+await client.video.v1.compositionHooks(hook.sid).remove();
 ```
+
+**Hook Callback Events:**
+Status callbacks fire in this order:
+```
+composition-enqueued → composition-started → composition-progress → composition-available
+```
+
+**Key Behaviors:**
+- Hooks are account-level resources (persist across rooms)
+- All rooms with recordings trigger the hook when they end
+- Use `trim: true` to skip rooms without recordings
+- Multiple hooks can exist; all matching hooks create compositions
+- Composition settings (resolution, format, layout) come from hook config
 
 **Layout Options:**
 - `grid` - Equal-size tiles in grid
@@ -991,6 +1391,21 @@ const room = await client.video.v1.rooms.create({
 Useful for: billing, preventing abandoned sessions
 Risk: Unexpected disconnection if set too short
 
+**Critical:** Minimum value is 600 seconds (10 minutes), despite docs saying 0-86400. Values below 600 fail with error 53123.
+
+```javascript
+const room = await client.video.v1.rooms.create({
+  uniqueName: 'timed-session',
+  type: 'group',
+  maxParticipantDuration: 600  // Minimum: 600 seconds (10 minutes)
+});
+```
+
+**Disconnect Error:**
+- Code: `53216`
+- Message: "Participant session length exceeded."
+- Recordings auto-complete when participant is disconnected
+
 ### Recording Storage Retention
 
 **Gotcha:** Without external storage, recordings deleted after 24 hours.
@@ -1026,17 +1441,130 @@ Available regions: `us1`, `us2`, `ie1`, `de1`, `au1`, `br1`, `jp1`, `sg1`, `in1`
 
 ### Reconnection Handling
 
-**Gotcha:** Network blips disconnect participants without warning.
+The SDK automatically attempts to reconnect when network disruptions occur. Monitor state transitions to provide appropriate UX.
 
-Pattern:
+**Room State Transitions:**
+```
+connected → reconnecting → connected (success)
+connected → reconnecting → disconnected (timeout after ~30 seconds)
+```
+
+**Local Participant Pattern:**
 ```javascript
+const room = await connect(token, { name: roomName, tracks: localTracks });
+
+room.on('reconnecting', (error) => {
+  console.log(`Reconnecting... (${error?.code}: ${error?.message})`);
+  // Show "reconnecting" UI indicator
+  // Error code 53001 = signaling connection disconnected
+});
+
+room.on('reconnected', () => {
+  console.log('Reconnected successfully');
+  // Restore normal UI
+});
+
 room.on('disconnected', (room, error) => {
   if (error?.code === 53001) {
-    // Signaling disconnected - attempt reconnect
-    reconnectToRoom();
+    console.log('Disconnected due to network timeout');
+    // Offer manual reconnect option
   }
 });
 ```
+
+**Remote Participant Pattern:**
+Remote participants also emit reconnecting/reconnected events:
+```javascript
+room.on('participantConnected', participant => {
+  participant.on('reconnecting', () => {
+    console.log(`${participant.identity} is reconnecting...`);
+    // Show indicator on their video tile
+  });
+
+  participant.on('reconnected', () => {
+    console.log(`${participant.identity} reconnected`);
+    // Restore normal display
+  });
+});
+```
+
+**Key Behaviors:**
+- SDK auto-reconnects for ~30 seconds before giving up
+- Error code 53001 indicates signaling connection lost
+- Tracks are preserved across reconnection (no need to republish)
+- Remote participants see `participant-reconnecting` / `participant-reconnected` events
+- Room state is accessible via `room.state` (`connected`, `reconnecting`, `disconnected`)
+
+**Testing with CDP:**
+Use Chrome DevTools Protocol to simulate network disruption in tests:
+```javascript
+const cdpSession = await context.newCDPSession(page);
+
+// Simulate offline
+await cdpSession.send('Network.emulateNetworkConditions', {
+  offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0
+});
+
+// Restore network
+await cdpSession.send('Network.emulateNetworkConditions', {
+  offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1
+});
+```
+
+### Disconnect Error Codes
+
+When a room emits `disconnected`, the error parameter indicates why the disconnect occurred. Use this for appropriate UX messaging.
+
+**Error Code Reference:**
+
+| Code | Meaning | UX Recommendation |
+|------|---------|-------------------|
+| `null` | Normal disconnect (voluntary leave) | "You left the room" |
+| `null` | Participant removed via API | Same as normal - cannot distinguish! |
+| 53001 | Signaling connection lost (network) | "Connection lost - try rejoining" |
+| 53118 | Room completed by host/API | "The host ended the meeting" |
+| 53216 | Max participant duration reached | "Session time limit reached" |
+| 20104 | Access token expired | "Session expired - please rejoin" |
+| 20101 | Invalid access token | "Authentication error" |
+
+**Handling Disconnects:**
+```javascript
+room.on('disconnected', (room, error) => {
+  if (!error) {
+    // Normal disconnect - user left voluntarily OR was kicked via API
+    // Cannot distinguish these two cases from the disconnect event!
+    showMessage('You have left the room');
+    return;
+  }
+
+  switch (error.code) {
+    case 53001:
+      showMessage('Connection lost. Please check your network and try again.');
+      offerRejoinOption();
+      break;
+    case 53118:
+      showMessage('The meeting has ended.');
+      break;
+    case 53216:
+      showMessage('Your session time has expired.');
+      break;
+    case 20104:
+      showMessage('Your session has expired. Please sign in again.');
+      redirectToLogin();
+      break;
+    default:
+      showMessage(`Disconnected: ${error.message}`);
+      console.error('Disconnect error:', error.code, error.message);
+  }
+});
+```
+
+**Important Limitation:**
+Participant removal via API (`participants(sid).update({ status: 'disconnected' })`) produces NO error code. The disconnected participant cannot distinguish between:
+- Being kicked by an admin
+- Voluntarily leaving
+
+If kick detection is required, implement custom signaling (e.g., DataTrack message before removal).
 
 ---
 
@@ -1101,6 +1629,20 @@ Location: `__tests__/e2e/video-sdk/`
 | **3 participants + recording + composition** | 6 recordings created, composition completes with MP4, duration > 0 |
 | **Screen sharing** | Screen track published with `name: 'screen'`, remote sees 2 video tracks |
 | **Real-time transcription** | Room created with `transcribeParticipantsOnConnect: true`, callbacks logged |
+| **PSTN consultation** | 2 browser + 1 PSTN participant, 5 recordings, composition with mixed audio |
+| **Exam proctoring** | Student recorded, proctor invisible via Track Subscriptions API, 0 proctor recordings |
+| **DataTrack collaboration** | Bidirectional message exchange, 20 rapid messages received in order |
+| **Network Quality monitoring** | Local/remote quality levels (0-5), `networkQualityLevelChanged` events fire |
+| **Reconnection - successful** | Brief disruption triggers `reconnecting` → `reconnected` with tracks preserved |
+| **Reconnection - timeout** | Prolonged disruption (30s) triggers `disconnected` with error 53001 |
+| **Reconnection - remote observer** | Bob sees Alice's `participant-reconnecting` and `participant-reconnected` events |
+| **Dominant speaker - basic** | 3 participants, `dominantSpeakerChanged` fires, `room.dominantSpeaker` accessible |
+| **Dominant speaker - transitions** | Muting participants changes dominant speaker, multiple unique speakers detected |
+| **Recording Rules - audio only** | `include all` + `exclude kind=video` = only audio recorded (0 video) |
+| **Recording Rules - dynamic** | Start/stop/restart recording mid-session via rule updates, creates separate recording segments |
+| **Composition Hooks** | Hook auto-creates composition on room end, callbacks fire (enqueued→started→progress→available) |
+| **Bandwidth Profile - presentation** | Presentation mode with adaptive simulcast, screen share + camera tracks flow correctly |
+| **Max Participant Duration** | 2 participants auto-disconnected at 600s with error 53216, recordings completed |
 
 ### Stream Verification Patterns
 
@@ -1220,6 +1762,47 @@ The video-sdk project in `playwright.config.js` uses:
 14. **Simulcast creates multiple resolutions** - With simulcast enabled, WebRTC stats show 3 video entries per local track (e.g., 320x180, 640x360, 1280x720).
 15. **Transcription with synthetic audio** - Chrome's fake audio capture (even with a speech WAV file) may not produce transcription output. The transcription service may not recognize synthetic audio as speech. Test verifies API integration, not transcription accuracy.
 16. **Screen share canvas capture** - Canvas-based screen simulation for tests doesn't report exact dimensions in WebRTC stats (shows null), but track is published and received correctly.
+17. **DataTracks are NOT recorded** - Only audio and video tracks are captured. DataTracks for chat/collaboration are excluded from recordings.
+18. **DataTrack messages are ordered** - SCTP guarantees reliable, ordered delivery. 20 rapid messages arrive in exact send order.
+19. **Network quality starts as null** - `networkQualityLevel` is `null` until first measurement (2-5 seconds after connect). Don't assume immediate availability.
+20. **Quality levels fluctuate normally** - Seeing quality change from 5 → 4 → 3 during a call is normal behavior, not an error. Network conditions vary.
+21. **Both local and remote quality visible** - Each participant can monitor both their own quality AND remote participants' quality levels.
+22. **Network quality requires connect option** - Must enable `networkQuality: { local: 1, remote: 1 }` in connect options to receive events.
+23. **Reconnection timeout is ~30 seconds** - SDK auto-reconnects for approximately 30 seconds before emitting `disconnected` with error 53001.
+24. **Tracks survive reconnection** - Published tracks are preserved across reconnect; no need to republish after `reconnected` event.
+25. **Remote participants see reconnection state** - Use `participant.on('reconnecting')` and `participant.on('reconnected')` to track remote peer network issues.
+26. **CDP network simulation works for WebSocket** - `Network.emulateNetworkConditions` with `offline: true` reliably triggers SDK reconnection logic.
+27. **Dominant speaker requires connect option** - Must set `dominantSpeaker: true` in connect options; disabled by default.
+28. **Local participant is never dominant** - Only remote participants can be dominant speaker; when only local has audio, dominant is `null`.
+29. **Muting affects dominant speaker** - Disabling audio tracks removes participant from dominant speaker consideration.
+30. **Dominant speaker events fire frequently** - In active conversations, `dominantSpeakerChanged` can fire every 1-2 seconds.
+31. **Recording Rules `all` filter is exclusive** - Cannot combine `all: true` with `kind` or `publisher` in same rule; use separate rules.
+32. **No rules = no recording** - Rooms without `recordParticipantsOnConnect` and no Recording Rules produce zero recordings.
+33. **Recording Rules stop immediately** - Applying `exclude all` completes in-progress recordings instantly; no delay.
+34. **Restart creates new recordings** - Re-applying include rules after exclude creates separate recording resources, not appended segments.
+35. **Recording files are Matroska format** - Audio recordings are `.mka`, video recordings are `.mkv` (not MP4).
+36. **Recording Media URL requires auth** - Use `curl -u "apiKey:apiSecret"` with `-L` to follow redirects.
+37. **ffprobe validates recording content** - Use `show_format` and `show_streams` to verify duration and stream types match API metadata.
+38. **Composition Hooks are account-level** - Hooks persist across rooms; delete test hooks in `finally` block to avoid affecting other rooms.
+39. **Composition Hook callback events** - Lifecycle: `composition-enqueued` → `composition-started` → `composition-progress` → `composition-available`.
+40. **Use `trim: true` for hooks** - Ensures only rooms with actual recordings trigger composition (empty rooms are skipped).
+41. **Simulcast creates 3 layers per track** - With adaptive simulcast, WebRTC stats show 6 entries for 2 video tracks (3 layers × 2 tracks).
+42. **Not all simulcast layers send data** - Unused layers show `packetsSent: 0`; SFU only requests layers subscribers need.
+43. **Remote track stats may be null initially** - `packetsReceived: null` indicates track exists but hasn't started receiving; handle gracefully.
+44. **`dominantSpeakerPriority` is deprecated** - Use `clientTrackSwitchOffControl: 'auto'` and `contentPreferencesMode: 'auto'` instead.
+45. **`maxParticipantDuration` minimum is 600 seconds** - Despite docs saying 0-86400, values below 600 fail with error 53123.
+46. **Max duration disconnect code is 53216** - Error message: "Participant session length exceeded." (not 53118 as some docs suggest).
+47. **Recordings auto-complete on max duration disconnect** - When participants are disconnected, their recordings complete with duration matching session length.
+48. **Preflight doesn't require room name** - Token for preflight only needs identity; no room grant needed.
+49. **Preflight test duration ~10-15 seconds** - Full diagnostic cycle including 10s media sampling takes 10-15 seconds.
+50. **Preflight reports 7 progress events** - mediaAcquired → connected → iceConnected → dtlsConnected → mediaSubscribed → peerConnectionConnected → mediaStarted.
+51. **ICE candidates include multiple types** - Typical preflight gathers 10+ host, 1+ srflx, 3+ relay candidates for connectivity options.
+52. **TURN relay is common fallback** - Selected ICE pair often shows `relay` type when behind restrictive firewalls; this is expected, not an error.
+53. **Normal disconnect has no error code** - `room.on('disconnected', (room, error))` receives `error: null` for voluntary leave.
+54. **Room completion gives error 53118** - When room is ended via API, participants receive error code 53118 "Room completed".
+55. **Participant removal has NO error code** - Kicking a participant via API (`participant.update({ status: 'disconnected' })`) produces no error code - indistinguishable from normal leave!
+56. **Token expiry error is 20104** - Access token expired. Token invalid is 20101.
+57. **Cannot distinguish kicked vs left** - The SDK treats participant removal identically to voluntary disconnect; implement custom signaling if kick detection needed.
 
 ### Testing 3+ Participant Calls
 

@@ -179,8 +179,8 @@ test.describe('Video SDK - Max Participant Duration', () => {
       console.log('\nAlice disconnect event:', JSON.stringify(aliceDisconnectData, null, 2));
       console.log('Bob disconnect event:', JSON.stringify(bobDisconnectData, null, 2));
 
-      // Verify error code 53118 (max participant duration exceeded)
-      // Note: The exact error code may vary; some versions use different codes
+      // Verify error code 53216 (Participant Session Length Exceeded)
+      // Note: 53118 is for room completion via API, 53216 is for max duration
       if (aliceDisconnectData?.code) {
         console.log(`Alice disconnect code: ${aliceDisconnectData.code}`);
       }

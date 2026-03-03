@@ -819,6 +819,49 @@ const call = await client.calls.create({
 
 **Gotcha:** PSTN participants cannot see video - they only hear audio. Plan your UX accordingly.
 
+**PSTN Recording Math:**
+```
+Total recordings = (browser_participants × 2) + pstn_participants
+Example: 2 browsers + 1 PSTN = (2 × 2) + 1 = 5 recordings
+  - Expert: audio + video (2)
+  - Patient: audio + video (2)
+  - Phone Consultant: audio only (1)
+```
+
+**Verifying PSTN Participant Tracks:**
+```javascript
+const pstnTracks = await twilioClient.video.v1
+  .rooms(roomSid)
+  .participants(pstnParticipant.sid)
+  .publishedTracks.list();
+
+const videoTracks = pstnTracks.filter(t => t.kind === 'video');
+const audioTracks = pstnTracks.filter(t => t.kind === 'audio');
+
+expect(videoTracks.length).toBe(0); // PSTN has no video
+expect(audioTracks.length).toBe(1); // PSTN has audio
+```
+
+**Browser Remote Track Counts with PSTN:**
+- `remote_video = browser_participants - 1` (no video from PSTN)
+- `remote_audio = total_participants - 1` (audio from all)
+- `remote_participant_count = total_participants - 1` (PSTN counts as participant)
+
+**Composition with PSTN Audio:**
+```javascript
+const composition = await twilioClient.video.v1.compositions.create({
+  roomSid,
+  audioSources: ['*'], // Includes PSTN audio automatically
+  videoLayout: { grid: { video_sources: ['*'] } }, // Browser video only
+  // ...
+});
+```
+
+**PSTN Join Timing:**
+- After `calls.create()`, poll room participants until PSTN appears
+- Allow 60 seconds for phone answer and room join
+- Identity is system-generated if no explicit identity provided
+
 ---
 
 ## Gotchas & Edge Cases

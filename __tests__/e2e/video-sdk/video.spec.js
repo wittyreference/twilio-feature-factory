@@ -15,7 +15,7 @@ async function pollUntil(fetchFn, checkFn, timeoutMs, intervalMs = 3000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const result = await fetchFn();
-    if (checkFn(result)) return result;
+    if (checkFn(result)) {return result;}
     await new Promise(r => setTimeout(r, intervalMs));
   }
   throw new Error('Poll timeout');
@@ -550,7 +550,7 @@ test.describe('Video SDK - Webhook Verification', () => {
           .services(SYNC_SERVICE_SID)
           .documents(syncDocName)
           .remove();
-      } catch (cleanupErr) {
+      } catch (_cleanupErr) {
         console.log('Sync cleanup warning:', cleanupErr.message);
       }
 
@@ -696,7 +696,7 @@ test.describe('Video SDK - Three Participants with Recording and Composition', (
     expect(completedComposition.duration).toBeGreaterThan(0);
     expect(completedComposition.size).toBeGreaterThan(0);
 
-    console.log(`Composition completed successfully!`);
+    console.log('Composition completed successfully!');
     console.log(`  SID: ${completedComposition.sid}`);
     console.log(`  Duration: ${completedComposition.duration}s`);
     console.log(`  Size: ${completedComposition.size} bytes`);
@@ -746,7 +746,7 @@ test.describe('Video SDK - Three Participants with Recording and Composition', (
         expect(fileDuration).toBeLessThan(completedComposition.duration + 1);
 
         console.log(`  Validated: H.264 video (${videoStream.width}x${videoStream.height}), AAC audio, ${fileDuration.toFixed(1)}s`);
-      } catch (ffprobeErr) {
+      } catch (_ffprobeErr) {
         // ffprobe not available, skip detailed validation but verify file is valid MP4
         const fileOutput = execSync(`file "${outputPath}"`, { encoding: 'utf-8' });
         expect(fileOutput).toContain('MP4');
@@ -767,8 +767,8 @@ test.describe('Video SDK - Real-time Transcription', () => {
   const SYNC_SERVICE_SID = process.env.TWILIO_SYNC_SERVICE_SID;
 
   // Expected speech content for validation
-  const ALICE_SPEECH = 'what is the video skill for claude code';
-  const BOB_SPEECH = 'the video skill helps claude build twilio video applications';
+  const _ALICE_SPEECH = 'what is the video skill for claude code';
+  const _BOB_SPEECH = 'the video skill helps claude build twilio video applications';
 
   test.skip(!process.env.TWILIO_ACCOUNT_SID || !SYNC_SERVICE_SID || SYNC_SERVICE_SID.startsWith('ISx'),
     'Requires Twilio credentials and Sync Service');
@@ -857,7 +857,7 @@ test.describe('Video SDK - Real-time Transcription', () => {
     // Check for transcription callbacks
     const transcriptionSyncDocName = `callbacks-video-transcription-${roomSid}`;
     let transcriptionDoc;
-    let transcribedText = { alice: [], bob: [] };
+    const transcribedText = { alice: [], bob: [] };
 
     try {
       transcriptionDoc = await twilioClient.sync.v1
@@ -927,7 +927,7 @@ test.describe('Video SDK - Real-time Transcription', () => {
         .services(SYNC_SERVICE_SID)
         .documents(`callbacks-video-room-${roomSid}`)
         .remove();
-    } catch (cleanupErr) {
+    } catch (_cleanupErr) {
       // Ignore cleanup errors
     }
 
@@ -1042,7 +1042,7 @@ test.describe('Video SDK - Screen Sharing', () => {
       expect(stats.local.video.length).toBe(2);
 
       // Find the screen share track (should be 1920x1080)
-      const screenTrack = stats.local.video.find(t =>
+      const _screenTrack = stats.local.video.find(t =>
         t.dimensions && t.dimensions.width === 1920 && t.dimensions.height === 1080
       );
 

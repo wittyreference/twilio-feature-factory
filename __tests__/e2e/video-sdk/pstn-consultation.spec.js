@@ -282,7 +282,7 @@ test.describe('Video SDK - Professional Consultation with PSTN Participant', () 
 
         console.log(`  Validated: H.264 video (${videoStream.width}x${videoStream.height}), AAC audio, ${fileDuration.toFixed(1)}s`);
         console.log('  Audio includes mixed input from expert, patient, AND PSTN consultant');
-      } catch (ffprobeErr) {
+      } catch (_ffprobeErr) {
         // ffprobe not available, basic validation
         const fileOutput = execSync(`file "${outputPath}"`, { encoding: 'utf-8' });
         expect(fileOutput).toContain('MP4');

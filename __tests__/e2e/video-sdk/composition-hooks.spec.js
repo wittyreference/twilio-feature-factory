@@ -214,7 +214,7 @@ test.describe('Video SDK - Composition Hooks', () => {
           expect(fileDuration).toBeLessThan(completedComposition.duration + 2);
 
           console.log(`  Validated: H.264 video, AAC audio, ${fileDuration.toFixed(1)}s`);
-        } catch (ffprobeErr) {
+        } catch (_ffprobeErr) {
           const fileOutput = execSync(`file "${outputPath}"`, { encoding: 'utf-8' });
           expect(fileOutput).toContain('MP4');
           console.log(`  File type: ${fileOutput.trim()}`);
@@ -265,7 +265,7 @@ test.describe('Video SDK - Composition Hooks', () => {
                 .services(SYNC_SERVICE_SID)
                 .documents(compositionSyncDocName)
                 .remove();
-            } catch (cleanupErr) {
+            } catch (_cleanupErr) {
               // Ignore cleanup errors
             }
           }

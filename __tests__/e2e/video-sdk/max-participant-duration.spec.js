@@ -243,7 +243,7 @@ test.describe('Video SDK - Max Participant Duration', () => {
     try {
       await twilioClient.video.v1.rooms(roomSid).update({ status: 'completed' });
       console.log('Room ended');
-    } catch (err) {
+    } catch (_err) {
       // Room may have auto-completed
       console.log('Room already completed');
     }

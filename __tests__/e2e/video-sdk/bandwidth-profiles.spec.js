@@ -8,7 +8,7 @@ const twilio = require('twilio');
 const generateRoomName = () => `bandwidth-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 
 // Twilio client for API operations
-let twilioClient;
+let _twilioClient;
 
 test.beforeAll(() => {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -16,7 +16,7 @@ test.beforeAll(() => {
   const apiSecret = process.env.TWILIO_API_SECRET;
 
   if (accountSid && apiKey && apiSecret) {
-    twilioClient = twilio(apiKey, apiSecret, { accountSid });
+    _twilioClient = twilio(apiKey, apiSecret, { accountSid });
   }
 });
 

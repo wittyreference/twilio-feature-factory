@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video SDK Test Harness</title>
+  <!--
+    ABOUTME: Minimal browser video app for Video SDK E2E testing.
+    ABOUTME: Exposes DOM elements for Playwright assertions — status, tracks, audio levels.
+  -->
+  <style>
+    body { font-family: monospace; max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    .status-bar { padding: 8px 12px; margin-bottom: 16px; border-radius: 4px; font-weight: bold; }
+    .status-bar.disconnected { background: #f3f4f6; color: #374151; }
+    .status-bar.connecting { background: #fef3c7; color: #92400e; }
+    .status-bar.connected { background: #d1fae5; color: #065f46; }
+    .status-bar.error { background: #fee2e2; color: #991b1b; }
+    .controls { margin: 16px 0; }
+    .controls input { width: 200px; padding: 6px; font-family: monospace; }
+    .controls button { padding: 6px 16px; margin-left: 4px; cursor: pointer; }
+    .video-container { display: flex; gap: 20px; margin: 20px 0; }
+    .video-panel { flex: 1; }
+    .video-panel h4 { margin: 0 0 8px 0; }
+    .video-panel video { width: 100%; max-width: 400px; background: #1f2937; border-radius: 4px; }
+    .stats { background: #f9fafb; border: 1px solid #e5e7eb; padding: 12px; margin: 16px 0; font-size: 13px; }
+    .stats div { margin: 4px 0; }
+    #log { background: #f9fafb; border: 1px solid #e5e7eb; padding: 8px; height: 200px; overflow-y: auto; font-size: 12px; white-space: pre-wrap; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h2>Video SDK Test Harness</h2>
+
+  <div id="status" class="status-bar disconnected">disconnected</div>
+
+  <div class="stats">
+    <div><strong>Room SID:</strong> <span id="room-sid">-</span></div>
+    <div><strong>Room Name:</strong> <span id="room-name">-</span></div>
+    <div><strong>Identity:</strong> <span id="identity">-</span></div>
+    <div><strong>Local Tracks:</strong> <span id="local-audio-tracks">0</span> audio, <span id="local-video-tracks">0</span> video</div>
+    <div><strong>Remote Participants:</strong> <span id="remote-participant-count">0</span></div>
+    <div><strong>Remote Tracks:</strong> <span id="remote-audio-tracks">0</span> audio, <span id="remote-video-tracks">0</span> video</div>
+    <div><strong>Remote Audio Level:</strong> <span id="audio-level">-inf</span> dB</div>
+  </div>
+
+  <div class="controls">
+    <input id="room-input" type="text" placeholder="Room name" />
+    <button id="btn-join" disabled>Join</button>
+    <button id="btn-leave" disabled>Leave</button>
+    <button id="btn-screen-share" disabled>Share Screen</button>
+    <span id="screen-share-status">off</span>
+  </div>
+
+  <div class="video-container">
+    <div class="video-panel">
+      <h4>Local Video</h4>
+      <div id="local-video"></div>
+    </div>
+    <div class="video-panel">
+      <h4>Remote Video</h4>
+      <div id="remote-video"></div>
+    </div>
+  </div>
+
+  <div id="error" class="hidden" style="color: #dc2626; margin: 8px 0;"></div>
+
+  <h3>Event Log</h3>
+  <div id="log"></div>
+
+  <!-- Video SDK served from local Express server -->
+  <script src="/sdk/twilio-video.min.js"></script>
+  <script>
+    // DOM elements
+    const statusEl = document.getElementById('status');
+    const roomSidEl = document.getElementById('room-sid');
+    const roomNameEl = document.getElementById('room-name');
+    const identityEl = document.getElementById('identity');
+    const localAudioTracksEl = document.getElementById('local-audio-tracks');
+    const localVideoTracksEl = document.getElementById('local-video-tracks');
+    const remoteAudioTracksEl = document.getElementById('remote-audio-tracks');
+    const remoteVideoTracksEl = document.getElementById('remote-video-tracks');
+    const remoteParticipantCountEl = document.getElementById('remote-participant-count');
+    const audioLevelEl = document.getElementById('audio-level');
+    const localVideoEl = document.getElementById('local-video');
+    const remoteVideoEl = document.getElementById('remote-video');
+    const errorEl = document.getElementById('error');
+    const roomInput = document.getElementById('room-input');
+    const btnJoin = document.getElementById('btn-join');
+    const btnLeave = document.getElementById('btn-leave');
+    const btnScreenShare = document.getElementById('btn-screen-share');
+    const screenShareStatusEl = document.getElementById('screen-share-status');
+    const logEl = document.getElementById('log');
+
+    // State
+    let room = null;
+    let localTracks = [];
+    let screenShareTrack = null;
+    let audioContext = null;
+    let audioAnalyser = null;
+    let audioDataArray = null;
+    let audioLevelInterval = null;
+    let customAudioContext = null;
+    let customAudioSource = null;
+
+    // Track counts
+    let localAudioCount = 0;
+    let localVideoCount = 0;
+    let remoteAudioCount = 0;
+    let remoteVideoCount = 0;
+    let remoteParticipantCount = 0;
+
+    // Create audio track from a WAV file URL
+    // Used for transcription testing with specific speech per participant
+    async function createAudioTrackFromFile(fileUrl) {
+      try {
+        log('Loading audio file: ' + fileUrl);
+        const response = await fetch(fileUrl);
+        const arrayBuffer = await response.arrayBuffer();
+
+        customAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const audioBuffer = await customAudioContext.decodeAudioData(arrayBuffer);
+
+        // Create a MediaStreamDestination to convert audio to a stream
+        const destination = customAudioContext.createMediaStreamDestination();
+
+        // Create a buffer source and connect it
+        customAudioSource = customAudioContext.createBufferSource();
+        customAudioSource.buffer = audioBuffer;
+        customAudioSource.loop = true; // Loop the audio for continuous speech
+        customAudioSource.connect(destination);
+        customAudioSource.start();
+
+        // Create a LocalAudioTrack from the stream
+        const audioTrack = new Twilio.Video.LocalAudioTrack(destination.stream.getAudioTracks()[0]);
+        log('Created audio track from file');
+        return audioTrack;
+      } catch (err) {
+        log('Failed to create audio from file: ' + err.message);
+        return null;
+      }
+    }
+
+    // Get the audio file URL based on identity
+    function getAudioFileUrl(identity) {
+      const audioFiles = {
+        'alice': '/fixtures/alice-speech.wav',
+        'bob': '/fixtures/bob-speech.wav',
+      };
+      return audioFiles[identity] || null;
+    }
+
+    function setStatus(status) {
+      statusEl.textContent = status;
+      statusEl.className = 'status-bar ' + status;
+    }
+
+    function setError(msg) {
+      errorEl.textContent = msg;
+      errorEl.classList.remove('hidden');
+    }
+
+    function clearError() {
+      errorEl.textContent = '';
+      errorEl.classList.add('hidden');
+    }
+
+    function log(msg) {
+      const ts = new Date().toISOString().split('T')[1].slice(0, 12);
+      logEl.textContent += ts + ' ' + msg + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function updateTrackCounts() {
+      localAudioTracksEl.textContent = localAudioCount;
+      localVideoTracksEl.textContent = localVideoCount;
+      remoteAudioTracksEl.textContent = remoteAudioCount;
+      remoteVideoTracksEl.textContent = remoteVideoCount;
+      remoteParticipantCountEl.textContent = remoteParticipantCount;
+    }
+
+    // Audio level metering via Web Audio API
+    function setupAudioAnalyser(audioTrack) {
+      try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        audioAnalyser = audioContext.createAnalyser();
+        audioAnalyser.fftSize = 256;
+        audioDataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
+
+        // Create MediaStreamSource from the audio track
+        const mediaStream = new MediaStream([audioTrack.mediaStreamTrack]);
+        const source = audioContext.createMediaStreamSource(mediaStream);
+        source.connect(audioAnalyser);
+
+        log('Audio analyser setup complete');
+      } catch (err) {
+        log('Audio analyser setup failed: ' + err.message);
+      }
+    }
+
+    // Expose for Playwright tests
+    window.getAudioLevel = function() {
+      if (!audioAnalyser || !audioDataArray) return -Infinity;
+      audioAnalyser.getByteFrequencyData(audioDataArray);
+      const sum = audioDataArray.reduce((a, b) => a + b, 0);
+      const avg = sum / audioDataArray.length;
+      // Convert to dB-like scale (0-255 -> roughly -100 to 0 dB)
+      return avg > 0 ? 20 * Math.log10(avg / 255) : -Infinity;
+    };
+
+    // Expose WebRTC stats for Playwright tests
+    window.getTrackStats = async function() {
+      if (!room) return null;
+
+      try {
+        const reports = await room.getStats();
+
+        const stats = {
+          local: { video: [], audio: [] },
+          remote: { video: [], audio: [] }
+        };
+
+        reports.forEach(report => {
+          // Publisher (local) stats
+          report.localVideoTrackStats.forEach(s => {
+            stats.local.video.push({
+              trackSid: s.trackSid,
+              packetsSent: s.packetsSent,
+              bytesSent: s.bytesSent,
+              frameRate: s.frameRate,
+              captureFrameRate: s.captureFrameRate,
+              dimensions: s.dimensions,
+              captureDimensions: s.captureDimensions,
+              roundTripTime: s.roundTripTime
+            });
+          });
+
+          report.localAudioTrackStats.forEach(s => {
+            stats.local.audio.push({
+              trackSid: s.trackSid,
+              packetsSent: s.packetsSent,
+              bytesSent: s.bytesSent,
+              audioLevel: s.audioLevel,
+              jitter: s.jitter,
+              roundTripTime: s.roundTripTime
+            });
+          });
+
+          // Subscriber (remote) stats
+          report.remoteVideoTrackStats.forEach(s => {
+            stats.remote.video.push({
+              trackSid: s.trackSid,
+              packetsReceived: s.packetsReceived,
+              bytesReceived: s.bytesReceived,
+              frameRate: s.frameRate,
+              dimensions: s.dimensions
+            });
+          });
+
+          report.remoteAudioTrackStats.forEach(s => {
+            stats.remote.audio.push({
+              trackSid: s.trackSid,
+              packetsReceived: s.packetsReceived,
+              bytesReceived: s.bytesReceived
+            });
+          });
+        });
+
+        return stats;
+      } catch (err) {
+        log('getTrackStats error: ' + err.message);
+        return null;
+      }
+    };
+
+    // Run preflight connectivity test
+    window.runPreflight = async function(token) {
+      return new Promise((resolve, reject) => {
+        const progressEvents = [];
+        let preflightTest;
+
+        try {
+          preflightTest = Twilio.Video.runPreflight(token);
+
+          preflightTest.on('progress', (progress) => {
+            progressEvents.push({
+              name: progress,
+              timestamp: Date.now()
+            });
+            log('Preflight progress: ' + progress);
+          });
+
+          preflightTest.on('completed', (report) => {
+            log('Preflight completed');
+            resolve({
+              success: true,
+              progressEvents,
+              report: {
+                testTiming: report.testTiming,
+                networkTiming: report.networkTiming,
+                stats: report.stats,
+                selectedIceCandidatePairStats: report.selectedIceCandidatePairStats,
+                iceCandidateStats: report.iceCandidateStats,
+                progressEvents: report.progressEvents
+              }
+            });
+          });
+
+          preflightTest.on('failed', (error) => {
+            log('Preflight failed: ' + error.message);
+            resolve({
+              success: false,
+              progressEvents,
+              error: {
+                message: error.message,
+                code: error.code
+              }
+            });
+          });
+
+        } catch (err) {
+          reject(err);
+        }
+      });
+    };
+
+    function startAudioLevelUpdates() {
+      audioLevelInterval = setInterval(() => {
+        const level = window.getAudioLevel();
+        audioLevelEl.textContent = level === -Infinity ? '-inf' : level.toFixed(1);
+      }, 100);
+    }
+
+    function stopAudioLevelUpdates() {
+      if (audioLevelInterval) {
+        clearInterval(audioLevelInterval);
+        audioLevelInterval = null;
+      }
+      if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+      }
+      audioAnalyser = null;
+      audioDataArray = null;
+      audioLevelEl.textContent = '-inf';
+    }
+
+    // Attach track to DOM element
+    function attachTrack(track, container) {
+      const el = track.attach();
+      container.appendChild(el);
+      log('Attached ' + track.kind + ' track to DOM');
+    }
+
+    // Detach track from DOM
+    function detachTrack(track) {
+      track.detach().forEach(el => el.remove());
+      log('Detached ' + track.kind + ' track from DOM');
+    }
+
+    // Handle remote participant
+    function handleParticipantConnected(participant) {
+      log('Participant connected: ' + participant.identity);
+      remoteParticipantCount++;
+      updateTrackCounts();
+
+      // Handle existing tracks
+      participant.tracks.forEach(publication => {
+        if (publication.isSubscribed) {
+          handleTrackSubscribed(publication.track, participant);
+        }
+      });
+
+      // Handle new track subscriptions
+      participant.on('trackSubscribed', track => handleTrackSubscribed(track, participant));
+      participant.on('trackUnsubscribed', track => handleTrackUnsubscribed(track, participant));
+    }
+
+    function handleTrackSubscribed(track, participant) {
+      log('Subscribed to ' + track.kind + ' track from ' + participant.identity);
+
+      if (track.kind === 'video') {
+        attachTrack(track, remoteVideoEl);
+        remoteVideoCount++;
+      } else if (track.kind === 'audio') {
+        attachTrack(track, remoteVideoEl); // Audio elements can be in the same container
+        remoteAudioCount++;
+        // Setup audio analyser for the first remote audio track
+        if (remoteAudioCount === 1) {
+          setupAudioAnalyser(track);
+          startAudioLevelUpdates();
+        }
+      }
+      updateTrackCounts();
+    }
+
+    function handleTrackUnsubscribed(track, participant) {
+      log('Unsubscribed from ' + track.kind + ' track from ' + participant.identity);
+      detachTrack(track);
+
+      if (track.kind === 'video') {
+        remoteVideoCount = Math.max(0, remoteVideoCount - 1);
+      } else if (track.kind === 'audio') {
+        remoteAudioCount = Math.max(0, remoteAudioCount - 1);
+        if (remoteAudioCount === 0) {
+          stopAudioLevelUpdates();
+        }
+      }
+      updateTrackCounts();
+    }
+
+    function handleParticipantDisconnected(participant) {
+      log('Participant disconnected: ' + participant.identity);
+      remoteParticipantCount = Math.max(0, remoteParticipantCount - 1);
+      // Tracks are automatically unsubscribed, but let's clean up counts
+      participant.tracks.forEach(publication => {
+        if (publication.track) {
+          if (publication.track.kind === 'video') {
+            remoteVideoCount = Math.max(0, remoteVideoCount - 1);
+          } else if (publication.track.kind === 'audio') {
+            remoteAudioCount = Math.max(0, remoteAudioCount - 1);
+          }
+        }
+      });
+      updateTrackCounts();
+      if (remoteAudioCount === 0) {
+        stopAudioLevelUpdates();
+      }
+    }
+
+    async function joinRoom(roomName) {
+      clearError();
+      setStatus('connecting');
+      log('Joining room: ' + roomName);
+
+      try {
+        // Fetch token
+        const tokenUrl = window.TOKEN_URL || '/api/token';
+        const identity = window.IDENTITY || undefined;
+        let params = `?room=${encodeURIComponent(roomName)}`;
+        if (identity) params += `&identity=${encodeURIComponent(identity)}`;
+
+        const resp = await fetch(tokenUrl + params);
+        if (!resp.ok) {
+          throw new Error('Token fetch failed: ' + resp.status);
+        }
+
+        const data = await resp.json();
+        identityEl.textContent = data.identity;
+        log('Token received for identity: ' + data.identity);
+
+        // Create local tracks - request 720p but allow fallback for fake devices
+        const videoConstraints = window.VIDEO_CONSTRAINTS || {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 }
+        };
+
+        // OBSERVER_MODE: Connect without publishing any tracks (for invisible observer pattern)
+        // Observer can see/hear others but publishes nothing and won't be recorded
+        if (window.OBSERVER_MODE) {
+          localTracks = [];
+          log('Observer mode: connecting without tracks');
+        }
+        // Check if we should use custom audio from file (for transcription tests)
+        else if (window.USE_CUSTOM_AUDIO) {
+          const audioFileUrl = getAudioFileUrl(identity);
+          let customAudioTrack = null;
+          if (audioFileUrl) {
+            customAudioTrack = await createAudioTrackFromFile(audioFileUrl);
+          }
+          if (customAudioTrack) {
+            // Create only video track from camera, use custom audio
+            const videoTracks = await Twilio.Video.createLocalTracks({
+              audio: false,
+              video: videoConstraints
+            });
+            localTracks = [...videoTracks, customAudioTrack];
+            log('Using custom audio file for identity: ' + identity);
+          } else {
+            localTracks = await Twilio.Video.createLocalTracks({
+              audio: true,
+              video: videoConstraints
+            });
+          }
+        } else {
+          // Default: Use microphone audio and camera video
+          localTracks = await Twilio.Video.createLocalTracks({
+            audio: true,
+            video: videoConstraints
+          });
+        }
+
+        // Count and attach local tracks
+        localTracks.forEach(track => {
+          if (track.kind === 'audio') {
+            localAudioCount++;
+          } else if (track.kind === 'video') {
+            localVideoCount++;
+            attachTrack(track, localVideoEl);
+          }
+        });
+        updateTrackCounts();
+        log('Local tracks created: ' + localAudioCount + ' audio, ' + localVideoCount + ' video');
+
+        // Build connect options - base config for 1:1 calls
+        const connectOptions = {
+          name: roomName,
+          tracks: localTracks,
+          dominantSpeaker: true,
+          networkQuality: { local: 1, remote: 1 }
+        };
+
+        // OPTIONAL: Add simulcast for 3+ participants (only when flag is set)
+        // Existing tests do NOT set this flag, so they use base config unchanged
+        if (window.SIMULCAST_ENABLED) {
+          connectOptions.preferredVideoCodecs = [{ codec: 'VP8', simulcast: true }];
+          connectOptions.bandwidthProfile = {
+            video: {
+              mode: 'grid',
+              trackSwitchOffMode: 'predicted',
+              clientTrackSwitchOffControl: 'auto',
+              contentPreferencesMode: 'auto'
+            }
+          };
+          log('Simulcast enabled for 3+ participants');
+        }
+
+        // OPTIONAL: Add bandwidth profile with adaptive simulcast
+        if (window.BANDWIDTH_PROFILE_MODE) {
+          connectOptions.preferredVideoCodecs = [{ codec: 'VP8', simulcast: window.ADAPTIVE_SIMULCAST || false }];
+          connectOptions.bandwidthProfile = {
+            video: {
+              mode: window.BANDWIDTH_PROFILE_MODE,
+              trackSwitchOffMode: 'predicted',
+              clientTrackSwitchOffControl: 'auto',
+              contentPreferencesMode: 'auto'
+            }
+          };
+          log('Bandwidth profile mode: ' + window.BANDWIDTH_PROFILE_MODE + ', adaptive simulcast: ' + (window.ADAPTIVE_SIMULCAST || false));
+        }
+
+        // Connect to room
+        room = await Twilio.Video.connect(data.token, connectOptions);
+
+        roomSidEl.textContent = room.sid;
+        roomNameEl.textContent = room.name;
+        setStatus('connected');
+        log('Connected to room: ' + room.name + ' (SID: ' + room.sid + ')');
+
+        // Handle existing participants
+        room.participants.forEach(handleParticipantConnected);
+
+        // Handle new participants
+        room.on('participantConnected', handleParticipantConnected);
+        room.on('participantDisconnected', handleParticipantDisconnected);
+
+        room.on('disconnected', (room, error) => {
+          if (error) {
+            log('Disconnected with error: ' + error.message);
+            setError(error.message);
+          } else {
+            log('Disconnected from room');
+          }
+          cleanup();
+        });
+
+        btnJoin.disabled = true;
+        btnLeave.disabled = false;
+        btnScreenShare.disabled = false;
+
+      } catch (err) {
+        setStatus('error');
+        setError(err.message);
+        log('Error joining room: ' + err.message);
+        cleanup();
+      }
+    }
+
+    function cleanup() {
+      // Stop screen share track if active
+      if (screenShareTrack) {
+        screenShareTrack.stop();
+        screenShareTrack = null;
+      }
+
+      // Stop custom audio source and context
+      if (customAudioSource) {
+        try { customAudioSource.stop(); } catch (e) {}
+        customAudioSource = null;
+      }
+      if (customAudioContext) {
+        try { customAudioContext.close(); } catch (e) {}
+        customAudioContext = null;
+      }
+
+      // Stop local tracks
+      localTracks.forEach(track => {
+        track.stop();
+        detachTrack(track);
+      });
+      localTracks = [];
+      localAudioCount = 0;
+      localVideoCount = 0;
+      remoteAudioCount = 0;
+      remoteVideoCount = 0;
+      remoteParticipantCount = 0;
+      updateTrackCounts();
+
+      // Clear video containers
+      localVideoEl.innerHTML = '';
+      remoteVideoEl.innerHTML = '';
+
+      // Stop audio level updates
+      stopAudioLevelUpdates();
+
+      // Reset UI
+      roomSidEl.textContent = '-';
+      roomNameEl.textContent = '-';
+      setStatus('disconnected');
+      btnJoin.disabled = false;
+      btnLeave.disabled = true;
+      btnScreenShare.disabled = true;
+      btnScreenShare.textContent = 'Share Screen';
+      screenShareStatusEl.textContent = 'off';
+
+      room = null;
+    }
+
+    function leaveRoom() {
+      if (room) {
+        log('Leaving room...');
+        room.disconnect();
+      }
+    }
+
+    // Screen share using canvas simulation (for E2E tests)
+    // Best practice: Cap at 1920x1080 - higher resolutions cause lag on low bandwidth subscribers
+    async function startScreenShare() {
+      if (!room) {
+        log('Cannot share screen: not connected to room');
+        return;
+      }
+      if (screenShareTrack) {
+        log('Screen share already active');
+        return;
+      }
+
+      try {
+        // For E2E tests: create a video track from canvas (simulated screen)
+        // In production: use navigator.mediaDevices.getDisplayMedia()
+        const canvas = document.createElement('canvas');
+        canvas.width = 1920;
+        canvas.height = 1080;
+        const ctx = canvas.getContext('2d');
+
+        // Draw simulated screen content
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#eee';
+        ctx.font = '64px monospace';
+        ctx.fillText('Screen Share Test', 100, 120);
+        ctx.font = '32px monospace';
+        ctx.fillText('1920x1080 @ 5fps', 100, 180);
+        ctx.fillText('Room: ' + room.name, 100, 240);
+        ctx.fillText('Identity: ' + room.localParticipant.identity, 100, 300);
+
+        // 5 fps is sufficient for screen content (not video playback)
+        const stream = canvas.captureStream(5);
+        screenShareTrack = new Twilio.Video.LocalVideoTrack(stream.getVideoTracks()[0], {
+          name: 'screen'
+        });
+
+        await room.localParticipant.publishTrack(screenShareTrack);
+        localVideoCount++;
+        updateTrackCounts();
+        screenShareStatusEl.textContent = 'sharing';
+        btnScreenShare.textContent = 'Stop Share';
+        log('Screen share started (1920x1080 @ 5fps)');
+      } catch (err) {
+        log('Screen share error: ' + err.message);
+        setError('Screen share failed: ' + err.message);
+      }
+    }
+
+    async function stopScreenShare() {
+      if (!screenShareTrack) {
+        log('No screen share active');
+        return;
+      }
+
+      try {
+        await room.localParticipant.unpublishTrack(screenShareTrack);
+        screenShareTrack.stop();
+        screenShareTrack = null;
+        localVideoCount = Math.max(0, localVideoCount - 1);
+        updateTrackCounts();
+        screenShareStatusEl.textContent = 'off';
+        btnScreenShare.textContent = 'Share Screen';
+        log('Screen share stopped');
+      } catch (err) {
+        log('Stop screen share error: ' + err.message);
+      }
+    }
+
+    function toggleScreenShare() {
+      if (screenShareTrack) {
+        stopScreenShare();
+      } else {
+        startScreenShare();
+      }
+    }
+
+    // Expose screen share functions for Playwright tests
+    window.startScreenShare = startScreenShare;
+    window.stopScreenShare = stopScreenShare;
+    window.isScreenSharing = () => !!screenShareTrack;
+
+    // Event handlers
+    btnJoin.addEventListener('click', () => {
+      const roomName = roomInput.value.trim();
+      if (roomName) {
+        joinRoom(roomName);
+      }
+    });
+
+    btnLeave.addEventListener('click', leaveRoom);
+
+    btnScreenShare.addEventListener('click', toggleScreenShare);
+
+    roomInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !btnJoin.disabled) {
+        const roomName = roomInput.value.trim();
+        if (roomName) {
+          joinRoom(roomName);
+        }
+      }
+    });
+
+    // Enable join button when page loads
+    window.addEventListener('load', () => {
+      btnJoin.disabled = false;
+      log('Video SDK harness ready');
+    });
+
+    // Expose room for debugging
+    window.getRoom = () => room;
+  </script>
+</body>
+</html>

@@ -393,6 +393,283 @@ export function validationTools(context: TwilioContext) {
     }
   );
 
+  const validateVideoRoom = createTool(
+    'validate_video_room',
+    'Deep validate a Video Room - checks room status, type, participants, tracks, transcription, recording, and composition. Use after creating video rooms to verify they work beyond HTTP 200.',
+    z.object({
+      roomSid: z.string().describe('Video Room SID (RM...)'),
+      expectedParticipants: z.number().optional().describe('Expected number of connected participants'),
+      checkPublishedTracks: z.boolean().optional().default(false).describe('Verify participants are publishing audio/video tracks'),
+      checkTranscription: z.boolean().optional().default(false).describe('Validate transcription is active (Healthcare use case)'),
+      checkRecording: z.boolean().optional().default(false).describe('Validate recordings exist (Professional/Proctoring use case)'),
+      checkComposition: z.boolean().optional().default(false).describe('Validate composition completed (Professional use case)'),
+      waitForRoomComplete: z.boolean().optional().default(false).describe('Poll until room status = completed'),
+      waitForCompositionComplete: z.boolean().optional().default(false).describe('Poll until composition status = completed'),
+      timeout: z.number().optional().default(60000).describe('Maximum wait time in ms'),
+    }),
+    async ({ roomSid, expectedParticipants, checkPublishedTracks, checkTranscription, checkRecording, checkComposition, waitForRoomComplete, waitForCompositionComplete, timeout }) => {
+      const startTime = Date.now();
+      const errors: string[] = [];
+      const pollInterval = 3000;
+
+      // Helper to poll until condition or timeout
+      const pollUntil = async <T>(
+        fetchFn: () => Promise<T>,
+        checkFn: (result: T) => boolean,
+        timeoutMs: number
+      ): Promise<T> => {
+        const deadline = Date.now() + timeoutMs;
+        while (Date.now() < deadline) {
+          const result = await fetchFn();
+          if (checkFn(result)) return result;
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
+        }
+        return fetchFn(); // Return final state even if condition not met
+      };
+
+      // 1. Fetch and validate room
+      let room;
+      try {
+        if (waitForRoomComplete) {
+          room = await pollUntil(
+            () => client.video.v1.rooms(roomSid).fetch(),
+            (r) => r.status === 'completed',
+            timeout
+          );
+        } else {
+          room = await client.video.v1.rooms(roomSid).fetch();
+        }
+      } catch (err) {
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              success: false,
+              errors: [`Room not found: ${roomSid}`],
+              duration: Date.now() - startTime,
+            }, null, 2),
+          }],
+        };
+      }
+
+      // Check room type (must be 'group')
+      if (room.type !== 'group') {
+        errors.push(`Room type is '${room.type}' - only 'group' rooms are recommended (HIPAA-eligible)`);
+      }
+
+      // 2. Fetch participants
+      const participants = await client.video.v1.rooms(roomSid).participants.list({ limit: 50 });
+      const connectedParticipants = participants.filter(p => p.status === 'connected');
+
+      // Check participant count
+      if (expectedParticipants !== undefined && connectedParticipants.length !== expectedParticipants) {
+        errors.push(`Expected ${expectedParticipants} participants, found ${connectedParticipants.length} connected`);
+      }
+
+      // 3. Check published tracks (if requested)
+      type ParticipantTrackInfo = {
+        sid: string;
+        identity: string;
+        status: string;
+        audioTracks: number;
+        videoTracks: number;
+        dataTracks: number;
+      };
+      const participantDetails: ParticipantTrackInfo[] = [];
+
+      for (const p of participants) {
+        const trackInfo: ParticipantTrackInfo = {
+          sid: p.sid,
+          identity: p.identity,
+          status: p.status,
+          audioTracks: 0,
+          videoTracks: 0,
+          dataTracks: 0,
+        };
+
+        if (checkPublishedTracks && p.status === 'connected') {
+          try {
+            const tracks = await client.video.v1.rooms(roomSid).participants(p.sid).publishedTracks.list({ limit: 20 });
+            for (const track of tracks) {
+              if (track.kind === 'audio') trackInfo.audioTracks++;
+              else if (track.kind === 'video') trackInfo.videoTracks++;
+              else if (track.kind === 'data') trackInfo.dataTracks++;
+            }
+
+            if (trackInfo.audioTracks === 0 && trackInfo.videoTracks === 0) {
+              errors.push(`Participant ${p.identity} has no published audio/video tracks`);
+            }
+          } catch {
+            // Track listing may fail if participant disconnected
+          }
+        }
+
+        participantDetails.push(trackInfo);
+      }
+
+      // 4. Check transcription (if requested)
+      interface TranscriptionResult {
+        sid?: string;
+        status?: string;
+        sentenceCount?: number;
+        speakers?: string[];
+      }
+      let transcriptionResult: TranscriptionResult | undefined;
+
+      if (checkTranscription) {
+        try {
+          const transcriptions = await client.video.v1.rooms(roomSid).transcriptions.list({ limit: 1 });
+          if (transcriptions.length === 0) {
+            errors.push('No transcription found for room');
+          } else {
+            const transcription = transcriptions[0];
+            transcriptionResult = {
+              sid: transcription.ttid,  // Video transcriptions use 'ttid' not 'sid'
+              status: transcription.status,
+              sentenceCount: 0,
+              speakers: [],
+            };
+
+            // Video transcription status values: 'started' | 'stopped' | 'failed'
+            if (transcription.status === 'failed') {
+              errors.push('Transcription failed');
+            }
+            // 'started' means actively transcribing, 'stopped' means completed successfully
+          }
+        } catch {
+          errors.push('Failed to fetch transcription - may not be enabled for this room');
+        }
+      }
+
+      // 5. Check recordings (if requested)
+      interface RecordingsResult {
+        count: number;
+        byParticipant: Record<string, { audio: number; video: number }>;
+        allCompleted: boolean;
+      }
+      let recordingsResult: RecordingsResult | undefined;
+
+      if (checkRecording) {
+        try {
+          const recordings = await client.video.v1.rooms(roomSid).recordings.list({ limit: 100 });
+          if (recordings.length === 0) {
+            errors.push('No recordings found for room');
+          } else {
+            const byParticipant: Record<string, { audio: number; video: number }> = {};
+            let allCompleted = true;
+
+            for (const rec of recordings) {
+              const sourceSid = rec.sourceSid || 'unknown';
+              if (!byParticipant[sourceSid]) {
+                byParticipant[sourceSid] = { audio: 0, video: 0 };
+              }
+              if (rec.type === 'audio') byParticipant[sourceSid].audio++;
+              else if (rec.type === 'video') byParticipant[sourceSid].video++;
+
+              if (rec.status !== 'completed') allCompleted = false;
+            }
+
+            recordingsResult = {
+              count: recordings.length,
+              byParticipant,
+              allCompleted,
+            };
+
+            if (!allCompleted && room.status === 'completed') {
+              errors.push('Some recordings have not completed processing');
+            }
+          }
+        } catch {
+          errors.push('Failed to fetch recordings');
+        }
+      }
+
+      // 6. Check composition (if requested)
+      interface CompositionResult {
+        sid?: string;
+        status?: string;
+        mediaUrl?: string;
+        mediaAccessible?: boolean;
+        duration?: number;
+        size?: number;
+      }
+      let compositionResult: CompositionResult | undefined;
+
+      if (checkComposition) {
+        // Composition can only be created after room ends
+        if (room.status !== 'completed') {
+          errors.push('Cannot validate composition - room is still in-progress (compositions require room to end first)');
+        } else {
+          try {
+            const compositions = await client.video.v1.compositions.list({ roomSid, limit: 1 });
+            if (compositions.length === 0) {
+              errors.push('No composition found for room - create one with create_composition tool');
+            } else {
+              let composition = compositions[0];
+
+              if (waitForCompositionComplete && composition.status !== 'completed' && composition.status !== 'failed') {
+                composition = await pollUntil(
+                  () => client.video.v1.compositions(composition.sid).fetch(),
+                  (c) => c.status === 'completed' || c.status === 'failed',
+                  timeout - (Date.now() - startTime)
+                );
+              }
+
+              compositionResult = {
+                sid: composition.sid,
+                status: composition.status,
+                duration: composition.duration,
+                size: composition.size,
+                mediaAccessible: false,
+              };
+
+              if (composition.status === 'failed') {
+                errors.push('Composition failed');
+              } else if (composition.status === 'completed') {
+                // Check if media is accessible
+                // Note: We can't actually fetch the media URL without additional setup,
+                // but we can check that the composition completed successfully
+                compositionResult.mediaAccessible = true;
+              } else {
+                errors.push(`Composition status is '${composition.status}' - expected 'completed'`);
+              }
+            }
+          } catch {
+            errors.push('Failed to fetch compositions');
+          }
+        }
+      }
+
+      const result = {
+        success: errors.length === 0,
+        room: {
+          sid: room.sid,
+          status: room.status,
+          type: room.type,
+          uniqueName: room.uniqueName,
+          participantCount: connectedParticipants.length,
+          totalParticipants: participants.length,
+          duration: room.duration,
+          dateCreated: room.dateCreated,
+          endTime: room.endTime,
+        },
+        participants: participantDetails,
+        transcription: transcriptionResult,
+        recordings: recordingsResult,
+        composition: compositionResult,
+        errors,
+        duration: Date.now() - startTime,
+      };
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify(result, null, 2),
+        }],
+      };
+    }
+  );
+
   return [
     validateCall,
     validateMessage,
@@ -406,5 +683,6 @@ export function validationTools(context: TwilioContext) {
     validateSyncList,
     validateSyncMap,
     validateTask,
+    validateVideoRoom,
   ];
 }

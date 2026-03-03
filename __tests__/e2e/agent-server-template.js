@@ -2,7 +2,7 @@
 // ABOUTME: Configurable ConversationRelay WebSocket server for agent-to-agent testing.
 // ABOUTME: Can be configured as questioner (Agent A) or answerer (Agent B) role.
 
-require('dotenv').config();
+require('dotenv').config({ override: true });
 
 const { WebSocketServer } = require('ws');
 const Anthropic = require('@anthropic-ai/sdk');

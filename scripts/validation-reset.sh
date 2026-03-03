@@ -25,13 +25,13 @@ if [ ! -f ".env" ]; then
     exit 1
 fi
 
+# Clear inherited Twilio vars that could conflict with .env
+unset TWILIO_REGION TWILIO_EDGE TWILIO_API_KEY TWILIO_API_SECRET 2>/dev/null || true
+
 # Source credentials
 set -a
 source .env
 set +a
-
-# Force US1 — regional env vars from .env could silently redirect API calls
-unset TWILIO_REGION TWILIO_EDGE
 
 if [ -z "$TWILIO_ACCOUNT_SID" ] || [ -z "$TWILIO_AUTH_TOKEN" ]; then
     echo -e "${RED}Error: TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN must be set in .env${NC}" >&2

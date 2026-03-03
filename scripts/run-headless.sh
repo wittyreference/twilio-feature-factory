@@ -172,6 +172,8 @@ fi
 
 # Source .env if present (provides Twilio credentials for MCP server)
 if [ -f ".env" ]; then
+    # Clear inherited Twilio vars that could conflict with .env
+    unset TWILIO_REGION TWILIO_EDGE TWILIO_API_KEY TWILIO_API_SECRET 2>/dev/null || true
     set -a
     source .env
     set +a

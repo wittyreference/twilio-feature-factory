@@ -5,7 +5,7 @@ const path = require('path');
 const express = require('express');
 
 // Load environment variables from project root .env
-require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../../../.env'), override: true });
 
 const twilio = require('twilio');
 const AccessToken = twilio.jwt.AccessToken;

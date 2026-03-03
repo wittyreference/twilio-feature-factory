@@ -42,6 +42,8 @@ echo ""
 # 1. .env exists and has credentials
 echo -e "${BOLD}Credentials${NC}"
 if [ -f ".env" ]; then
+    # Clear inherited Twilio vars that could conflict with .env
+    unset TWILIO_REGION TWILIO_EDGE TWILIO_API_KEY TWILIO_API_SECRET 2>/dev/null || true
     set -a; source .env; set +a
     check ".env file" 0 ""
 else

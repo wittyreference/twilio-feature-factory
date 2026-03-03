@@ -74,6 +74,8 @@ Cross-cutting gotchas discovered through real debugging sessions. Domain-specifi
 
 - **`source .env` does not undo commented-out vars** — Shell variables persist in memory after commenting out lines in `.env`. Must explicitly `unset TWILIO_REGION TWILIO_EDGE` etc. before re-sourcing. This interacts badly with MCP (which also needs a restart to pick up the unset).
 
+- **dotenv `{ override: true }` is project-wide policy** — All `require('dotenv').config()` calls in this project use `{ override: true }` so `.env` values always win over inherited shell vars. The shipped `.envrc` provides the same isolation for shell scripts via explicit `unset` before loading. New users with pre-existing Twilio env vars (from `.zshrc`, other projects, or Twilio CLI) would otherwise hit silent auth failures. Run `./scripts/env-doctor.sh` to diagnose conflicts.
+
 ## Hooks & Documentation Flywheel
 
 - **Hooks receive tool input on stdin as JSON, not env vars** — `CLAUDE_TOOL_INPUT_FILE_PATH`, `CLAUDE_TOOL_INPUT_COMMAND`, `CLAUDE_TOOL_INPUT_CONTENT` don't exist. Parse stdin with `jq`: `FILE_PATH="$(cat | jq -r '.tool_input.file_path // empty')"`. All 4 hooks (pre-bash-validate, pre-write-validate, post-write, post-bash) were silently broken until fixed.

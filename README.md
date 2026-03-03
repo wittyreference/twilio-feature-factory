@@ -100,33 +100,45 @@ During execution, autonomous agents have access to:
    - `TWILIO_AUTH_TOKEN`
    - `TWILIO_PHONE_NUMBER`
 
-4. **Export environment variables**
+   > **If you already have Twilio env vars in your shell** (from `.zshrc`, another project, or Twilio CLI), they will silently override your `.env` values and cause auth failures. Step 4 prevents this. If you hit unexpected 401 errors, run `./scripts/env-doctor.sh` to diagnose.
 
-   The Twilio MCP server needs your `.env` variables exported into the shell. The easiest way is [direnv](https://direnv.net/):
+4. **Set up environment isolation** (strongly recommended)
+
+   This project ships an `.envrc` that provides clean environment isolation — it unsets any inherited Twilio vars from your shell before loading your `.env`. Install [direnv](https://direnv.net/) to activate it:
 
    ```bash
    brew install direnv
    echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc  # or ~/.bashrc for bash
    source ~/.zshrc
-   echo 'dotenv' > .envrc
    direnv allow
    ```
 
-   This auto-loads `.env` whenever you `cd` into the project. Without this, the MCP server will fail to start because it can't read your Twilio credentials.
+   This automatically unsets any inherited Twilio env vars and loads your `.env` whenever you `cd` into the project. Without direnv, conflicting shell variables from other projects or your shell profile will cause auth failures.
 
    **Alternative** (no install required):
    ```bash
+   # Unset potentially conflicting vars, then load .env
+   unset TWILIO_ACCOUNT_SID TWILIO_AUTH_TOKEN TWILIO_API_KEY TWILIO_API_SECRET \
+         TWILIO_REGION TWILIO_EDGE TWILIO_PHONE_NUMBER
    set -a && source .env && set +a
    ```
    Run this before launching Claude Code each session.
 
-5. **Start development server**
+5. **Verify environment** (optional)
+
+   ```bash
+   ./scripts/env-doctor.sh
+   ```
+
+   Checks for conflicts between your shell environment and `.env` file. Also runs automatically before `npm start`.
+
+6. **Start development server**
 
    ```bash
    npm start
    ```
 
-6. **Build your first app**
+7. **Build your first app**
 
    In Claude Code, start by referencing the brainstorm template:
 

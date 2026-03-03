@@ -3,7 +3,7 @@
 // ABOUTME: Run with: node __tests__/e2e/conversation-relay-server.js
 
 // Load environment variables from .env
-require('dotenv').config();
+require('dotenv').config({ override: true });
 
 /**
  * ConversationRelay E2E Test Server

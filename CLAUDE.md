@@ -84,6 +84,7 @@ Agent Teams coordinate multiple Claude Code instances for parallel work. Use `/t
 | Phone number management | [functions/phone-numbers/CLAUDE.md](/functions/phone-numbers/CLAUDE.md) |
 | Callback handlers | [functions/callbacks/CLAUDE.md](/functions/callbacks/CLAUDE.md) |
 | SIP & BYOC connectivity | `.claude/skills/sip-byoc.md` (load on demand) |
+| SIP Lab (local PBX testing) | [infrastructure/sip-lab/CLAUDE.md](/infrastructure/sip-lab/CLAUDE.md) |
 | Compliance & regulatory | `.claude/skills/compliance-regulatory.md` (load on demand) |
 | Payments guide | `.claude/skills/payments.md` (load on demand) |
 | Deep validation | [agents/mcp-servers/twilio/src/validation/CLAUDE.md](/agents/mcp-servers/twilio/src/validation/CLAUDE.md) |
@@ -150,6 +151,7 @@ twilio api:core:available-phone-numbers:local:list --voice-enabled --sms-enabled
 Also check:
 - `.claude/references/tool-boundaries.md` before deployment decisions
 - `.claude/references/doc-map.md` to find which doc covers your operation
+- `./scripts/env-doctor.sh` if hitting unexpected auth failures (detects shell vs `.env` conflicts)
 
 ### Before Code Changes
 
@@ -252,6 +254,7 @@ Rules that have each caused real debugging time loss. These exist in domain-spec
 - **`source .env` doesn't undo commented-out vars** — Shell retains values after commenting out lines. Must explicitly `unset` each variable before re-sourcing.
 - **SDK auto-reads `TWILIO_REGION`/`TWILIO_EDGE` from env** — Setting these in `.env` silently routes all API calls to regional endpoints even when not passed to the constructor. US1 auth tokens fail with 401 on regional endpoints. Comment out when not actively testing regions.
 - **Empty `voiceUrl` on a Twilio number = silent instant call failure** — Calling a number with `voiceUrl: ""` produces `status: failed, duration: 0` with ZERO diagnostics (no debugger alerts, no notifications, no error codes). Indistinguishable from auth failures or account blocks. Always verify destination webhooks via `list_phone_numbers` before debugging call routing.
+- **dotenv default mode doesn't override shell vars** — `require('dotenv').config()` skips vars already in `process.env`. All project dotenv calls use `{ override: true }` so `.env` always wins. If you add new dotenv usage, include `override: true`. The shipped `.envrc` provides the same isolation for shell scripts via explicit `unset` before loading.
 
 # Session discipline
 

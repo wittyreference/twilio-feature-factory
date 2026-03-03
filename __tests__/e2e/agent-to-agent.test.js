@@ -2,7 +2,7 @@
 // ABOUTME: End-to-end test for agent-to-agent autonomous testing.
 // ABOUTME: Starts both agent servers, triggers test call, and validates results.
 
-require('dotenv').config();
+require('dotenv').config({ override: true });
 
 const { spawn, exec } = require('child_process');
 const { promisify } = require('util');

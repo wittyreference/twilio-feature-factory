@@ -1,7 +1,7 @@
 // ABOUTME: Jest setup file that loads environment variables and configures test context.
 // ABOUTME: Provides Twilio credentials and helper functions for all tests.
 
-require('dotenv').config();
+require('dotenv').config({ override: true });
 
 const Twilio = require('twilio');
 

@@ -24,7 +24,7 @@
  *   CONVERSATION_RELAY_URL=wss://xxx.ngrok.io node __tests__/e2e/conversation-relay-e2e.js
  */
 
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const Twilio = require('twilio');
 
 // Configuration

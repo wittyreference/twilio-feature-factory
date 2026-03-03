@@ -5,7 +5,7 @@ node_modules/
 .env
 .env.local
 .env.*.local
-.envrc
+.env.sip-lab
 
 # Twilio serverless
 .twiliodeployinfo

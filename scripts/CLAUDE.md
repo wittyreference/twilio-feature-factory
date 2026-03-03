@@ -18,6 +18,8 @@ This directory contains CLI scripts for project setup and maintenance.
 | `check-demo-health.sh` | `./scripts/check-demo-health.sh` | Pre-demo health check (ngrok, server, API keys, credentials) |
 | `run-validation-suite.sh` | `./scripts/run-validation-suite.sh` | Run E2E deep validation suite against live US1 Twilio APIs |
 | `generate-postman-collection.js` | `node scripts/generate-postman-collection.js > postman/collection.json` | Generate Newman E2E collection from compact spec (44 requests, 14 folders) |
+| `env-doctor.sh` | `./scripts/env-doctor.sh` | Detect shell vs .env conflicts, orphaned regional vars, direnv status |
+| `dogfood-env.sh` | `./scripts/dogfood-env.sh` | Simulate new-user onboarding with conflicting shell env vars |
 | `api-sync/` | `cd scripts/api-sync && npm run sync` | Automated Twilio API drift detection and coverage analysis |
 
 ## Setup Script
@@ -307,6 +309,77 @@ CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --task random-valida
 1. Re-source `.env` if in a shell session
 2. Run `npm run deploy:dev` to create a fresh serverless deployment
 3. Configure webhooks on phone numbers as needed
+
+## Environment Doctor Script
+
+The `env-doctor.sh` script detects conflicts between the user's shell environment and the project's `.env` file before they cause mysterious auth failures.
+
+### What It Checks (5 Sections)
+
+1. **Project .env** — Verifies `.env` file exists
+2. **Credential conflicts** — Compares `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` between shell and `.env`. Flags mismatches with masked values.
+3. **Regional routing** — Detects orphaned `TWILIO_REGION`/`TWILIO_EDGE` set in shell but absent from `.env` (causes silent 401 failures)
+4. **API key auth** — Detects API key mismatches between shell and `.env`
+5. **Environment isolation** — Checks direnv installation and `.envrc` allow status
+
+### Usage
+
+```bash
+# Standalone
+./scripts/env-doctor.sh
+
+# Runs automatically before npm start (via prestart hook in package.json)
+npm start
+```
+
+### Exit Codes
+
+- `0` — No conflicts (or warnings only)
+- `1` — Conflicts detected that will cause auth failures
+
+### Integration
+
+- Called by the `prestart` npm script — runs before every `npm start`
+- Referenced in README Quick Start step 5
+- Referenced in `.env.example` header
+
+## Dogfood Environment Script
+
+The `dogfood-env.sh` script simulates a new user with pre-existing conflicting Twilio shell vars cloning and setting up the repo. Validates all protection layers.
+
+### What It Tests (6 Sections, 17 Tests)
+
+1. **dotenv override** — Proves `{ override: true }` makes `.env` win, and default mode loses
+2. **env-doctor detection** — Verifies env-doctor catches account SID mismatch and regional contamination
+3. **`.envrc` presence** — Confirms `.envrc` ships with the repo and contains unset commands
+4. **Shell script unsets** — Checks all 4 scripts have unset blocks before sourcing `.env`
+5. **npm prestart** — Verifies `package.json` runs env-doctor before start
+6. **README guidance** — Confirms README warns about conflicts and provides fix commands
+
+### Usage
+
+```bash
+# Run simulation
+./scripts/dogfood-env.sh
+
+# Keep the /tmp clone for inspection
+./scripts/dogfood-env.sh --keep
+
+# Show full env-doctor output
+./scripts/dogfood-env.sh --verbose
+```
+
+### How It Works
+
+1. Saves current shell env, exports fake conflicting Twilio vars
+2. Copies working tree to `/tmp/ff-dogfood-TIMESTAMP` (rsync, not git clone, so uncommitted changes are included)
+3. Creates a `.env` with different values than the shell vars
+4. Runs each test section, comparing expected vs actual behavior
+5. Restores original env and cleans up `/tmp` clone
+
+### Exit Code
+
+Exit code equals the number of failed tests (0 = all passed).
 
 ## API Sync Script
 

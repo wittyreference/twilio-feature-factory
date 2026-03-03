@@ -499,7 +499,7 @@ async function main() {
   let authToken = process.env.TWILIO_AUTH_TOKEN;
 
   if (fs.existsSync(envPath)) {
-    require('dotenv').config({ path: envPath });
+    require('dotenv').config({ path: envPath, override: true });
     accountSid = process.env.TWILIO_ACCOUNT_SID;
     authToken = process.env.TWILIO_AUTH_TOKEN;
   }

@@ -12,6 +12,7 @@
     "test:voice-sdk": "npx playwright test",
     "test:voice-sdk:headed": "npx playwright test --headed",
     "test:all": "npm test && npm run test:e2e",
+    "prestart": "./scripts/env-doctor.sh || echo '\\n  Environment issues detected. See above. Continuing anyway...\\n'",
     "start": "twilio serverless:start",
     "start:ngrok": "twilio serverless:start --ngrok",
     "deploy:dev": "twilio serverless:deploy --environment dev",

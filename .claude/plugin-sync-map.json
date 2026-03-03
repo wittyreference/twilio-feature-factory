@@ -2,13 +2,15 @@
   "plugin_repo": "../twilio-claude-plugin",
   "mappings": {
     "skills": [
-      { "factory": ".claude/skills/context-compression.md", "plugin": "skills/context-compression/SKILL.md", "adaptation": "frontmatter" },
-      { "factory": ".claude/skills/context-fundamentals.md", "plugin": "skills/context-fundamentals/SKILL.md", "adaptation": "frontmatter" },
+      { "factory": ".claude/skills/context-engineering.md", "plugin": "skills/context-engineering/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/skills/deep-validation.md", "plugin": "skills/deep-validation/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": ".claude/skills/memory-systems.md", "plugin": "skills/memory-systems/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/skills/multi-agent-patterns.md", "plugin": "skills/multi-agent-patterns/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/skills/tdd-workflow.md", "plugin": "skills/tdd-workflow/SKILL.md", "adaptation": "frontmatter,generalize-agents" },
       { "factory": ".claude/skills/voice-use-case-map.md", "plugin": "skills/voice-use-case-map/SKILL.md", "adaptation": "frontmatter" },
+      { "factory": ".claude/skills/sip-byoc.md", "plugin": "skills/sip-byoc/SKILL.md", "adaptation": "frontmatter" },
+      { "factory": ".claude/skills/compliance-regulatory.md", "plugin": "skills/compliance-regulatory/SKILL.md", "adaptation": "frontmatter" },
+      { "factory": ".claude/skills/payments.md", "plugin": "skills/payments/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": "functions/voice/CLAUDE.md", "plugin": "skills/voice/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": "functions/messaging/CLAUDE.md", "plugin": "skills/messaging/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": "functions/verify/CLAUDE.md", "plugin": "skills/verify/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
@@ -16,14 +18,15 @@
       { "factory": "functions/taskrouter/CLAUDE.md", "plugin": "skills/taskrouter/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": "functions/conversation-relay/CLAUDE.md", "plugin": "skills/conversation-relay/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": "functions/messaging-services/CLAUDE.md", "plugin": "skills/messaging-services/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
-      { "factory": ".claude/references/twilio-cli.md", "plugin": "skills/twilio-cli/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
-      { "factory": "CLAUDE.md", "plugin": "skills/twilio-invariants/SKILL.md", "adaptation": "frontmatter,extract-invariants" },
-      { "factory": ".claude/skills/sip-byoc.md", "plugin": "skills/sip-byoc/SKILL.md", "adaptation": "frontmatter" },
-      { "factory": ".claude/skills/compliance-regulatory.md", "plugin": "skills/compliance-regulatory/SKILL.md", "adaptation": "frontmatter" },
-      { "factory": ".claude/skills/payments.md", "plugin": "skills/payments/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": "functions/pay/CLAUDE.md", "plugin": "skills/pay/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": "functions/proxy/CLAUDE.md", "plugin": "skills/proxy/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
-      { "factory": "functions/phone-numbers/CLAUDE.md", "plugin": "skills/phone-numbers/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" }
+      { "factory": "functions/phone-numbers/CLAUDE.md", "plugin": "skills/phone-numbers/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": ".claude/references/twilio-cli.md", "plugin": "skills/twilio-cli/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "CLAUDE.md", "plugin": "skills/twilio-invariants/SKILL.md", "adaptation": "frontmatter,extract-invariants" },
+      { "factory": ".claude/references/brainstorm.md", "plugin": "skills/brainstorm/SKILL.md", "adaptation": "frontmatter" },
+      { "factory": ".claude/references/tool-boundaries.md", "plugin": "skills/tool-boundaries/SKILL.md", "adaptation": "frontmatter" },
+      { "factory": ".claude/references/operational-gotchas.md", "plugin": "skills/operational-gotchas/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": ".claude/workflows/README.md", "plugin": "skills/workflows/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" }
     ],
     "commands": [
       { "factory": ".claude/commands/commit.md", "plugin": "commands/commit.md", "adaptation": "strip-factory-paths" },
@@ -35,7 +38,8 @@
       { "factory": ".claude/commands/twilio-docs.md", "plugin": "commands/twilio-docs.md", "adaptation": "minimal" },
       { "factory": ".claude/commands/twilio-logs.md", "plugin": "commands/twilio-logs.md", "adaptation": "minimal" },
       { "factory": ".claude/commands/validate.md", "plugin": "commands/validate.md", "adaptation": "strip-factory-paths" },
-      { "factory": ".claude/commands/wrap-up.md", "plugin": "commands/wrap-up.md", "adaptation": "strip-factory-paths,strip-meta-mode" }
+      { "factory": ".claude/commands/wrap-up.md", "plugin": "commands/wrap-up.md", "adaptation": "strip-factory-paths,strip-meta-mode" },
+      { "factory": ".claude/commands/learn.md", "plugin": "commands/learn.md", "adaptation": "strip-factory-paths" }
     ],
     "hooks": [
       { "factory": ".claude/hooks/pre-write-validate.sh", "plugin": "hooks/pre-write-validate.sh", "adaptation": "strip-meta-mode" },
@@ -48,7 +52,8 @@
     ],
     "scripts": [
       { "factory": "scripts/env-doctor.sh", "plugin": "scripts/env-doctor.sh", "adaptation": "minimal" },
-      { "factory": ".envrc", "plugin": "scripts/envrc.template", "adaptation": "minimal" }
+      { "factory": ".envrc", "plugin": "scripts/envrc.template", "adaptation": "minimal" },
+      { "factory": "scripts/setup.js", "plugin": "scripts/setup.js", "adaptation": "generalize-names" }
     ],
     "agents": [
       { "factory": ".claude/commands/architect.md", "plugin": "agents/architect.md", "adaptation": "frontmatter-agent,strip-factory-paths,generalize-role" },
@@ -72,7 +77,9 @@
     "commands": [
       ".claude/commands/e2e-test.md",
       ".claude/commands/team.md",
-      ".claude/commands/plugin-sync.md"
+      ".claude/commands/plugin-sync.md",
+      ".claude/commands/ff-sync.md",
+      ".claude/commands/uber-validation.md"
     ],
     "hooks": [
       ".claude/hooks/_meta-mode.sh",
@@ -85,11 +92,34 @@
       ".claude/hooks/task-completed-check.sh",
       ".claude/hooks/teammate-idle-check.sh"
     ],
+    "references": [
+      ".claude/references/doc-map.md",
+      ".claude/references/twilio-api-changes.md"
+    ],
+    "rules": [
+      ".claude/rules/tools-architecture.md"
+    ],
     "infrastructure": [
       "agents/mcp-servers/",
       "agents/feature-factory/",
       "agents/voice-ai-builder/",
-      ".mcp.json"
+      ".mcp.json",
+      "infrastructure/sip-lab/",
+      "functions/helpers/CLAUDE.md"
+    ],
+    "scripts": [
+      "scripts/verify-shipping-ready.sh",
+      "scripts/validate-meta-separation.sh",
+      "scripts/check-claude-doc-drift.sh",
+      "scripts/plugin-drift-check.sh",
+      "scripts/enable-autonomous.sh",
+      "scripts/dogfood-env.sh",
+      "scripts/run-headless.sh",
+      "scripts/run-validation-suite.sh",
+      "scripts/generate-postman-collection.js",
+      "scripts/validation-reset.sh",
+      "scripts/demo.sh",
+      "scripts/check-demo-health.sh"
     ]
   },
   "adaptation_types": {
@@ -104,6 +134,7 @@
     "strip-team-refs": "Remove /team references and Agent Teams mentions",
     "generalize-agents": "Replace factory-specific agent names with generic terms",
     "generalize-role": "Rewrite from factory command perspective to portable agent perspective",
+    "generalize-names": "Replace hardcoded project names with dynamic values (e.g., path.basename(cwd))",
     "extract-invariants": "Extract only the Architectural Invariants section from full CLAUDE.md",
     "restructure": "Significant structural changes beyond simple stripping",
     "simplify": "Reduce to core functionality, removing factory-specific checks",

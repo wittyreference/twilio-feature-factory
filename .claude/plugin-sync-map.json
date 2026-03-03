@@ -46,6 +46,10 @@
       { "factory": ".claude/hooks/session-checklist.sh", "plugin": "hooks/session-checklist.sh", "adaptation": "strip-meta-mode,simplify" },
       { "factory": ".claude/hooks/notify-ready.sh", "plugin": "hooks/notify-ready.sh", "adaptation": "minimal" }
     ],
+    "scripts": [
+      { "factory": "scripts/env-doctor.sh", "plugin": "scripts/env-doctor.sh", "adaptation": "minimal" },
+      { "factory": ".envrc", "plugin": "scripts/envrc.template", "adaptation": "minimal" }
+    ],
     "agents": [
       { "factory": ".claude/commands/architect.md", "plugin": "agents/architect.md", "adaptation": "frontmatter-agent,strip-factory-paths,generalize-role" },
       { "factory": ".claude/commands/dev.md", "plugin": "agents/dev.md", "adaptation": "frontmatter-agent,strip-factory-paths,generalize-role" },

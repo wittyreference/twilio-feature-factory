@@ -1,5 +1,5 @@
-// ABOUTME: Account-level SIP resource tools for IP ACLs, credentials, and IP addresses.
-// ABOUTME: Prerequisites for Elastic SIP Trunking — create ACLs and credential lists before trunk association.
+// ABOUTME: Account-level SIP resource tools for IP ACLs, credentials, IP addresses, and SIP Domains.
+// ABOUTME: Prerequisites for Elastic SIP Trunking and Programmable Voice SIP Domains.
 
 import { z } from 'zod';
 import type { TwilioContext } from '../index.js';
@@ -559,6 +559,336 @@ export function sipTools(context: TwilioContext) {
     }
   );
 
+  // ============ SIP Domains (Programmable Voice) ============
+
+  const listSipDomains = createTool(
+    'list_sip_domains',
+    'List all SIP Domains in the account. SIP Domains are used with Programmable Voice for SIP endpoint registration (unlike Elastic SIP Trunking which uses direct INVITE).',
+    z.object({
+      limit: z.number().min(1).max(100).default(20).describe('Maximum domains to return'),
+    }),
+    async ({ limit }) => {
+      const domains = await client.sip.domains.list({ limit });
+
+      const result = domains.map(d => ({
+        sid: d.sid,
+        friendlyName: d.friendlyName,
+        domainName: d.domainName,
+        voiceUrl: d.voiceUrl,
+        voiceMethod: d.voiceMethod,
+        voiceFallbackUrl: d.voiceFallbackUrl,
+        voiceStatusCallbackUrl: d.voiceStatusCallbackUrl,
+        dateCreated: d.dateCreated,
+        dateUpdated: d.dateUpdated,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            count: result.length,
+            sipDomains: result,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const getSipDomain = createTool(
+    'get_sip_domain',
+    'Get details of a specific SIP Domain.',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID (starts with SD)'),
+    }),
+    async ({ domainSid }) => {
+      const domain = await client.sip.domains(domainSid).fetch();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: domain.sid,
+            friendlyName: domain.friendlyName,
+            domainName: domain.domainName,
+            voiceUrl: domain.voiceUrl,
+            voiceMethod: domain.voiceMethod,
+            voiceFallbackUrl: domain.voiceFallbackUrl,
+            voiceStatusCallbackUrl: domain.voiceStatusCallbackUrl,
+            dateCreated: domain.dateCreated,
+            dateUpdated: domain.dateUpdated,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const createSipDomain = createTool(
+    'create_sip_domain',
+    'Create a new SIP Domain for Programmable Voice. SIP endpoints can register to this domain. Inbound calls to registered endpoints trigger the voiceUrl webhook.',
+    z.object({
+      friendlyName: z.string().describe('Friendly name for the SIP Domain'),
+      domainName: z.string().describe('Unique domain name (e.g., "my-app.sip.twilio.com"). Must end with .sip.twilio.com'),
+      voiceUrl: z.string().url().optional().describe('Voice webhook URL for inbound calls'),
+      voiceMethod: z.enum(['GET', 'POST']).default('POST').describe('HTTP method for voice webhook'),
+      voiceFallbackUrl: z.string().url().optional().describe('Fallback URL if voiceUrl fails'),
+      voiceStatusCallbackUrl: z.string().url().optional().describe('URL for call status updates'),
+    }),
+    async ({ friendlyName, domainName, voiceUrl, voiceMethod, voiceFallbackUrl, voiceStatusCallbackUrl }) => {
+      const domain = await client.sip.domains.create({
+        friendlyName,
+        domainName,
+        voiceMethod,
+        ...(voiceUrl && { voiceUrl }),
+        ...(voiceFallbackUrl && { voiceFallbackUrl }),
+        ...(voiceStatusCallbackUrl && { voiceStatusCallbackUrl }),
+      });
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: domain.sid,
+            friendlyName: domain.friendlyName,
+            domainName: domain.domainName,
+            voiceUrl: domain.voiceUrl,
+            dateCreated: domain.dateCreated,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const updateSipDomain = createTool(
+    'update_sip_domain',
+    'Update a SIP Domain configuration (voice URL, fallback URL, etc.).',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID (starts with SD)'),
+      friendlyName: z.string().optional().describe('New friendly name'),
+      voiceUrl: z.string().url().optional().describe('New voice webhook URL'),
+      voiceMethod: z.enum(['GET', 'POST']).optional().describe('HTTP method for voice webhook'),
+      voiceFallbackUrl: z.string().url().optional().describe('New fallback URL'),
+      voiceStatusCallbackUrl: z.string().url().optional().describe('New status callback URL'),
+    }),
+    async ({ domainSid, ...updates }) => {
+      const domain = await client.sip.domains(domainSid).update({
+        ...(updates.friendlyName && { friendlyName: updates.friendlyName }),
+        ...(updates.voiceUrl && { voiceUrl: updates.voiceUrl }),
+        ...(updates.voiceMethod && { voiceMethod: updates.voiceMethod }),
+        ...(updates.voiceFallbackUrl && { voiceFallbackUrl: updates.voiceFallbackUrl }),
+        ...(updates.voiceStatusCallbackUrl && { voiceStatusCallbackUrl: updates.voiceStatusCallbackUrl }),
+      });
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: domain.sid,
+            friendlyName: domain.friendlyName,
+            domainName: domain.domainName,
+            voiceUrl: domain.voiceUrl,
+            dateUpdated: domain.dateUpdated,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const deleteSipDomain = createTool(
+    'delete_sip_domain',
+    'Delete a SIP Domain. All associated IP ACL and credential list mappings are also removed.',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID (starts with SD)'),
+    }),
+    async ({ domainSid }) => {
+      await client.sip.domains(domainSid).remove();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            deleted: true,
+            domainSid,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  // ============ SIP Domain IP ACL Mappings ============
+
+  const listSipDomainIpAclMappings = createTool(
+    'list_sip_domain_ip_acl_mappings',
+    'List IP ACLs associated with a SIP Domain. IP ACLs control which IP addresses can send SIP traffic to this domain.',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID'),
+      limit: z.number().min(1).max(100).default(20).describe('Maximum mappings to return'),
+    }),
+    async ({ domainSid, limit }) => {
+      const mappings = await client.sip.domains(domainSid)
+        .ipAccessControlListMappings.list({ limit });
+
+      const result = mappings.map(m => ({
+        sid: m.sid,
+        friendlyName: m.friendlyName,
+        dateCreated: m.dateCreated,
+        dateUpdated: m.dateUpdated,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            count: result.length,
+            domainSid,
+            ipAclMappings: result,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const createSipDomainIpAclMapping = createTool(
+    'create_sip_domain_ip_acl_mapping',
+    'Associate an IP ACL with a SIP Domain. Only IPs in the ACL will be allowed to send SIP traffic to this domain.',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID'),
+      ipAccessControlListSid: z.string().startsWith('AL').describe('IP ACL SID to associate'),
+    }),
+    async ({ domainSid, ipAccessControlListSid }) => {
+      const mapping = await client.sip.domains(domainSid)
+        .ipAccessControlListMappings.create({ ipAccessControlListSid });
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: mapping.sid,
+            domainSid,
+            friendlyName: mapping.friendlyName,
+            dateCreated: mapping.dateCreated,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const deleteSipDomainIpAclMapping = createTool(
+    'delete_sip_domain_ip_acl_mapping',
+    'Remove an IP ACL association from a SIP Domain.',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID'),
+      ipAccessControlListSid: z.string().startsWith('AL').describe('IP ACL SID to disassociate'),
+    }),
+    async ({ domainSid, ipAccessControlListSid }) => {
+      await client.sip.domains(domainSid)
+        .ipAccessControlListMappings(ipAccessControlListSid).remove();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            deleted: true,
+            domainSid,
+            ipAccessControlListSid,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  // ============ SIP Domain Credential List Mappings ============
+
+  const listSipDomainCredentialListMappings = createTool(
+    'list_sip_domain_credential_list_mappings',
+    'List credential lists associated with a SIP Domain. These control which username/password pairs can register to this domain.',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID'),
+      limit: z.number().min(1).max(100).default(20).describe('Maximum mappings to return'),
+    }),
+    async ({ domainSid, limit }) => {
+      const mappings = await client.sip.domains(domainSid)
+        .credentialListMappings.list({ limit });
+
+      const result = mappings.map(m => ({
+        sid: m.sid,
+        friendlyName: m.friendlyName,
+        dateCreated: m.dateCreated,
+        dateUpdated: m.dateUpdated,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            count: result.length,
+            domainSid,
+            credentialListMappings: result,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const createSipDomainCredentialListMapping = createTool(
+    'create_sip_domain_credential_list_mapping',
+    'Associate a credential list with a SIP Domain. Endpoints must authenticate with credentials from this list to register.',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID'),
+      credentialListSid: z.string().startsWith('CL').describe('Credential List SID to associate'),
+    }),
+    async ({ domainSid, credentialListSid }) => {
+      const mapping = await client.sip.domains(domainSid)
+        .credentialListMappings.create({ credentialListSid });
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: mapping.sid,
+            domainSid,
+            friendlyName: mapping.friendlyName,
+            dateCreated: mapping.dateCreated,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const deleteSipDomainCredentialListMapping = createTool(
+    'delete_sip_domain_credential_list_mapping',
+    'Remove a credential list association from a SIP Domain.',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID'),
+      credentialListSid: z.string().startsWith('CL').describe('Credential List SID to disassociate'),
+    }),
+    async ({ domainSid, credentialListSid }) => {
+      await client.sip.domains(domainSid)
+        .credentialListMappings(credentialListSid).remove();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            deleted: true,
+            domainSid,
+            credentialListSid,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
   return [
     listIpAccessControlLists,
     getIpAccessControlList,
@@ -580,5 +910,17 @@ export function sipTools(context: TwilioContext) {
     createCredential,
     updateCredential,
     deleteCredential,
+    // SIP Domains (Programmable Voice)
+    listSipDomains,
+    getSipDomain,
+    createSipDomain,
+    updateSipDomain,
+    deleteSipDomain,
+    listSipDomainIpAclMappings,
+    createSipDomainIpAclMapping,
+    deleteSipDomainIpAclMapping,
+    listSipDomainCredentialListMappings,
+    createSipDomainCredentialListMapping,
+    deleteSipDomainCredentialListMapping,
   ];
 }

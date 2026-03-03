@@ -4,7 +4,7 @@ This directory contains the Model Context Protocol (MCP) server that exposes Twi
 
 ## Purpose
 
-The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **310 tools across 28 modules** covering:
+The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **322 tools across 28 modules** covering:
 
 - **Messaging**: SMS/MMS, messaging services, content templates, notifications
 - **Voice**: Call management, conferences, recordings, media streams, Voice Insights, transcriptions, call queues, BYOC trunks, SIP trunking
@@ -44,7 +44,7 @@ src/
     ├── voice-config.ts   # Dialing permissions, BYOC (P2)
     ├── regulatory.ts     # Regulatory bundles (P2)
     ├── media.ts          # Video recordings, compositions (P2)
-    ├── sip.ts            # SIP IP ACLs, credential lists, IP addresses, credentials (P3)
+    ├── sip.ts            # SIP IP ACLs, credentials, SIP Domains + mappings (P3)
     ├── trunking.ts       # SIP trunks, origination URLs, recording settings (P3)
     ├── accounts.ts       # Subaccounts, usage records (P3)
     ├── iam.ts            # API keys, signing keys (P3)
@@ -442,7 +442,7 @@ for await (const message of query({
 | `create_composition_hook` | Create auto-composition rule |
 | `delete_composition_hook` | Delete hook |
 
-### SIP Tools (P3) - 20 tools
+### SIP Tools (P3) - 31 tools
 
 | Tool | Description |
 |------|-------------|
@@ -466,6 +466,17 @@ for await (const message of query({
 | `create_sip_credential` | Add username/password credential |
 | `update_sip_credential` | Update credential password |
 | `delete_sip_credential` | Remove credential |
+| `list_sip_domains` | List SIP Domains (Programmable Voice) |
+| `get_sip_domain` | Get SIP Domain details |
+| `create_sip_domain` | Create SIP Domain for endpoint registration |
+| `update_sip_domain` | Update SIP Domain config (voiceUrl, etc.) |
+| `delete_sip_domain` | Delete SIP Domain |
+| `list_sip_domain_ip_acl_mappings` | List IP ACLs on a SIP Domain |
+| `create_sip_domain_ip_acl_mapping` | Associate IP ACL with SIP Domain |
+| `delete_sip_domain_ip_acl_mapping` | Remove IP ACL from SIP Domain |
+| `list_sip_domain_credential_list_mappings` | List credential lists on a SIP Domain |
+| `create_sip_domain_credential_list_mapping` | Associate credential list with SIP Domain |
+| `delete_sip_domain_credential_list_mapping` | Remove credential list from SIP Domain |
 
 ### Trunking Tools (P3) - 20 tools
 

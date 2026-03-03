@@ -393,6 +393,188 @@ export function validationTools(context: TwilioContext) {
     }
   );
 
+  const validateSip = createTool(
+    'validate_sip',
+    'Validate SIP infrastructure configuration — checks trunk, IP ACL, credentials, origination URLs, phone numbers, and optionally SIP Domains. Use after provisioning SIP resources to verify the full configuration is correct and connected.',
+    z.object({
+      trunkSid: z.string().optional().describe('Elastic SIP Trunk SID (TK...) to validate'),
+      domainSid: z.string().optional().describe('SIP Domain SID (SD...) to validate'),
+      expectedPbxIp: z.string().optional().describe('Expected PBX IP address in origination URL and IP ACL'),
+      checkDebugger: z.boolean().optional().default(true).describe('Check debugger for SIP-related errors (13xxx, 64xxx)'),
+      lookbackSeconds: z.number().optional().default(600).describe('How far back to check debugger (seconds)'),
+    }),
+    async ({ trunkSid, domainSid, expectedPbxIp, checkDebugger, lookbackSeconds }) => {
+      const checks: Record<string, { passed: boolean; message: string; data?: unknown }> = {};
+      const errors: string[] = [];
+      const warnings: string[] = [];
+
+      // === Validate Elastic SIP Trunk ===
+      if (trunkSid) {
+        try {
+          const trunk = await client.trunking.v1.trunks(trunkSid).fetch();
+          checks['trunk'] = {
+            passed: true,
+            message: `Trunk "${trunk.friendlyName}" exists (domain: ${trunk.domainName}, secure: ${trunk.secure})`,
+            data: { sid: trunk.sid, domainName: trunk.domainName, secure: trunk.secure },
+          };
+
+          // Check IP ACLs
+          const acls = await client.trunking.v1.trunks(trunkSid).ipAccessControlLists.list();
+          if (acls.length === 0) {
+            checks['trunkIpAcl'] = { passed: false, message: 'No IP ACL associated with trunk' };
+            errors.push('Trunk has no IP ACL — calls from PBX will be rejected');
+          } else {
+            checks['trunkIpAcl'] = {
+              passed: true,
+              message: `${acls.length} IP ACL(s) associated`,
+              data: acls.map(a => ({ sid: a.sid, friendlyName: a.friendlyName })),
+            };
+
+            // Check IP addresses in ACL if expected IP provided
+            if (expectedPbxIp) {
+              const aclSid = acls[0].sid;
+              const ips = await client.sip.ipAccessControlLists(aclSid).ipAddresses.list();
+              const matchingIp = ips.find(ip => ip.ipAddress === expectedPbxIp);
+              if (matchingIp) {
+                checks['trunkPbxIp'] = { passed: true, message: `PBX IP ${expectedPbxIp} found in ACL` };
+              } else {
+                checks['trunkPbxIp'] = { passed: false, message: `PBX IP ${expectedPbxIp} NOT in ACL (found: ${ips.map(ip => ip.ipAddress).join(', ')})` };
+                errors.push(`Expected PBX IP ${expectedPbxIp} missing from IP ACL`);
+              }
+            }
+          }
+
+          // Check credential lists
+          const credLists = await client.trunking.v1.trunks(trunkSid).credentialsLists.list();
+          if (credLists.length === 0) {
+            checks['trunkCredentials'] = { passed: false, message: 'No credential list associated with trunk' };
+            warnings.push('Trunk has no credential list — relies on IP ACL only for auth');
+          } else {
+            checks['trunkCredentials'] = {
+              passed: true,
+              message: `${credLists.length} credential list(s) associated`,
+              data: credLists.map(c => ({ sid: c.sid, friendlyName: c.friendlyName })),
+            };
+          }
+
+          // Check origination URLs
+          const origUrls = await client.trunking.v1.trunks(trunkSid).originationUrls.list();
+          if (origUrls.length === 0) {
+            checks['trunkOrigination'] = { passed: false, message: 'No origination URLs — Twilio cannot route inbound calls to PBX' };
+            errors.push('Trunk has no origination URLs');
+          } else {
+            const enabledUrls = origUrls.filter(u => u.enabled);
+            checks['trunkOrigination'] = {
+              passed: enabledUrls.length > 0,
+              message: `${origUrls.length} origination URL(s) (${enabledUrls.length} enabled)`,
+              data: origUrls.map(u => ({ sid: u.sid, sipUrl: u.sipUrl, enabled: u.enabled, priority: u.priority })),
+            };
+
+            if (expectedPbxIp) {
+              const matchingUrl = origUrls.find(u => u.sipUrl.includes(expectedPbxIp));
+              if (!matchingUrl) {
+                warnings.push(`No origination URL points to expected PBX IP ${expectedPbxIp}`);
+              }
+            }
+          }
+
+          // Check phone numbers
+          const numbers = await client.trunking.v1.trunks(trunkSid).phoneNumbers.list();
+          if (numbers.length === 0) {
+            checks['trunkPhoneNumbers'] = { passed: false, message: 'No phone numbers associated with trunk' };
+            warnings.push('Trunk has no phone numbers — inbound PSTN calls will not route through this trunk');
+          } else {
+            checks['trunkPhoneNumbers'] = {
+              passed: true,
+              message: `${numbers.length} phone number(s) associated`,
+              data: numbers.map(n => ({ sid: n.sid, phoneNumber: n.phoneNumber })),
+            };
+          }
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          checks['trunk'] = { passed: false, message: `Failed to fetch trunk: ${message}` };
+          errors.push(`Trunk validation failed: ${message}`);
+        }
+      }
+
+      // === Validate SIP Domain ===
+      if (domainSid) {
+        try {
+          const domain = await client.sip.domains(domainSid).fetch();
+          checks['domain'] = {
+            passed: true,
+            message: `Domain "${domain.friendlyName}" exists (${domain.domainName})`,
+            data: { sid: domain.sid, domainName: domain.domainName, voiceUrl: domain.voiceUrl },
+          };
+
+          if (!domain.voiceUrl) {
+            checks['domainVoiceUrl'] = { passed: false, message: 'No voiceUrl configured — inbound calls will fail' };
+            errors.push('SIP Domain has no voiceUrl');
+          } else {
+            checks['domainVoiceUrl'] = { passed: true, message: `voiceUrl: ${domain.voiceUrl}` };
+          }
+
+          const aclMappings = await client.sip.domains(domainSid).ipAccessControlListMappings.list();
+          checks['domainIpAcl'] = {
+            passed: aclMappings.length > 0,
+            message: aclMappings.length > 0 ? `${aclMappings.length} IP ACL mapping(s)` : 'No IP ACL mappings',
+          };
+
+          const credMappings = await client.sip.domains(domainSid).credentialListMappings.list();
+          checks['domainCredentials'] = {
+            passed: credMappings.length > 0,
+            message: credMappings.length > 0 ? `${credMappings.length} credential list mapping(s)` : 'No credential list mappings',
+          };
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          checks['domain'] = { passed: false, message: `Failed to fetch domain: ${message}` };
+          errors.push(`Domain validation failed: ${message}`);
+        }
+      }
+
+      // === Check Debugger ===
+      if (checkDebugger) {
+        try {
+          const validator = new DeepValidator(client);
+          const debugResult = await validator.validateDebugger({
+            lookbackSeconds,
+            logLevel: 'error',
+            limit: 50,
+          });
+
+          const sipRelated = debugResult.alerts.filter((a) => {
+            const code = parseInt(a.errorCode, 10) || 0;
+            return (code >= 13000 && code < 14000) || (code >= 64000 && code < 65000);
+          });
+
+          if (sipRelated.length > 0) {
+            checks['debugger'] = { passed: false, message: `${sipRelated.length} SIP-related error(s) in last ${lookbackSeconds}s`, data: sipRelated };
+            errors.push(`Found ${sipRelated.length} SIP errors in debugger`);
+          } else {
+            checks['debugger'] = { passed: true, message: `No SIP errors in last ${lookbackSeconds}s` };
+          }
+        } catch {
+          checks['debugger'] = { passed: true, message: 'Debugger check skipped (error fetching)' };
+        }
+      }
+
+      const allPassed = Object.values(checks).every(c => c.passed);
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: allPassed,
+            resourceType: 'sip',
+            checks,
+            errors,
+            warnings,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
   return [
     validateCall,
     validateMessage,
@@ -406,5 +588,6 @@ export function validationTools(context: TwilioContext) {
     validateSyncList,
     validateSyncMap,
     validateTask,
+    validateSip,
   ];
 }

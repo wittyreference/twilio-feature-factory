@@ -11,6 +11,7 @@
       { "factory": ".claude/skills/sip-byoc.md", "plugin": "skills/sip-byoc/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/skills/compliance-regulatory.md", "plugin": "skills/compliance-regulatory/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/skills/payments.md", "plugin": "skills/payments/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": ".claude/skills/env-doctor.md", "plugin": "skills/env-doctor/SKILL.md", "adaptation": "frontmatter" },
       { "factory": "functions/voice/CLAUDE.md", "plugin": "skills/voice/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": "functions/messaging/CLAUDE.md", "plugin": "skills/messaging/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": "functions/verify/CLAUDE.md", "plugin": "skills/verify/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },

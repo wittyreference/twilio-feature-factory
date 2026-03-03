@@ -93,6 +93,20 @@ wc -l ~/.claude/projects/-Users-mcarpenter-workspaces-twilio-feature-factory/mem
 - **WARN**: MEMORY.md between 150-200 lines — consider pruning promoted entries
 - **FAIL**: MEMORY.md over 200 lines — content beyond line 200 is truncated by Claude Code and never seen
 
+### Check 2.8: Environment Doctor
+
+Run the env-doctor script to detect shell vs `.env` conflicts:
+
+```bash
+./scripts/env-doctor.sh
+```
+
+- **PASS**: Exit code 0, no failures detected
+- **WARN**: Exit code 0 with warnings (e.g., direnv not installed, shell-only vars)
+- **FAIL**: Exit code 1 — credential mismatches, regional contamination, or missing `.env`
+
+This catches the most common new-user failure mode: inherited shell vars from another Twilio project overriding `.env` values. If it fails, follow the remediation steps in its output before proceeding.
+
 ### Check 3: Auth Validity
 
 ```bash

@@ -207,7 +207,7 @@ test.describe('Video SDK - Disconnect Error Codes', () => {
       // Clean up room
       try {
         await twilioClient.video.v1.rooms(roomSid).update({ status: 'completed' });
-      } catch (e) {
+      } catch (_e) {
         // Room may already be completed
       }
       await context.close();
@@ -225,7 +225,7 @@ test.describe('Video SDK - Disconnect Error Codes', () => {
       await page.goto('/');
 
       // Create a short-lived token (60 seconds TTL)
-      const shortToken = await page.evaluate(async (roomName) => {
+      const _shortToken = await page.evaluate(async (roomName) => {
         // Fetch a token with short TTL from our test server
         // Note: Our test server doesn't support custom TTL, so we'll test with standard token
         // and document that token expiry requires custom token generation

@@ -188,7 +188,7 @@ test.describe('Video SDK - Recording Rules', () => {
           expect(fileDuration).toBeLessThan(rec.duration + 2);
 
           console.log(`  Validated ${rec.sid}: audio-only, ${fileDuration.toFixed(1)}s (API: ${rec.duration}s)`);
-        } catch (ffprobeErr) {
+        } catch (_ffprobeErr) {
           // ffprobe not available - basic file check
           const fileOutput = execSync(`file "${outputPath}"`, { encoding: 'utf-8' });
           console.log(`  File type: ${fileOutput.trim()}`);
@@ -421,7 +421,7 @@ test.describe('Video SDK - Recording Rules', () => {
           expect(fileDuration).toBeLessThan(rec.duration + 2);
 
           console.log(`  Batch ${batch} ${expectedType}: ${fileDuration.toFixed(1)}s (API: ${rec.duration}s)`);
-        } catch (ffprobeErr) {
+        } catch (_ffprobeErr) {
           // ffprobe not available - basic file check
           const fileOutput = execSync(`file "${outputPath}"`, { encoding: 'utf-8' });
           console.log(`  Batch ${batch} ${expectedType}: ${fileOutput.trim()}`);

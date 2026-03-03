@@ -8,7 +8,7 @@ const twilio = require('twilio');
 const generateRoomName = () => `reconnect-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 
 // Twilio client for API operations
-let twilioClient;
+let _twilioClient;
 
 test.beforeAll(() => {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -16,7 +16,7 @@ test.beforeAll(() => {
   const apiSecret = process.env.TWILIO_API_SECRET;
 
   if (accountSid && apiKey && apiSecret) {
-    twilioClient = twilio(apiKey, apiSecret, { accountSid });
+    _twilioClient = twilio(apiKey, apiSecret, { accountSid });
   }
 });
 
@@ -296,13 +296,13 @@ test.describe('Video SDK - Reconnection Handling', () => {
         window.reconnectionEvents = [];
         const room = window.getRoom();
 
-        room.on('reconnecting', (error) => {
+        room.on('reconnecting', (_error) => {
           window.reconnectionEvents.push({ type: 'reconnecting', timestamp: Date.now() });
         });
         room.on('reconnected', () => {
           window.reconnectionEvents.push({ type: 'reconnected', timestamp: Date.now() });
         });
-        room.on('disconnected', (room, error) => {
+        room.on('disconnected', (_room, _error) => {
           window.reconnectionEvents.push({ type: 'disconnected', timestamp: Date.now() });
         });
       });

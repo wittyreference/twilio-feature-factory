@@ -217,7 +217,7 @@ test.describe('Video SDK - Exam Proctoring with Invisible Observer', () => {
         .participants(proctorParticipantSid)
         .publishedTracks.list();
       proctorTrackSids = proctorTracks.map(t => t.sid);
-    } catch (e) {
+    } catch (_e) {
       // Proctor may have disconnected, that's fine
     }
     console.log(`Proctor published tracks: ${proctorTrackSids.length === 0 ? 'NONE (observer mode)' : proctorTrackSids.join(', ')}`);
@@ -333,7 +333,7 @@ test.describe('Video SDK - Exam Proctoring with Invisible Observer', () => {
       for (const rec of completedRecordings) {
         try {
           await twilioClient.sync.v1.services(SYNC_SERVICE_SID).documents(`callbacks-video-recording-${rec.sid}`).remove();
-        } catch (e) { /* ignore */ }
+        } catch (_e) { /* ignore */ }
       }
     } catch (cleanupErr) {
       console.log('Sync cleanup warning:', cleanupErr.message);
@@ -411,7 +411,7 @@ test.describe('Video SDK - Exam Proctoring with Invisible Observer', () => {
 
         console.log(`  Validated: H.264 video, AAC audio, ${parseFloat(metadata.format.duration).toFixed(1)}s`);
         console.log('  Composition contains only student media (proctor in observer mode)');
-      } catch (ffprobeErr) {
+      } catch (_ffprobeErr) {
         const fileOutput = execSync(`file "${outputPath}"`, { encoding: 'utf-8' });
         expect(fileOutput).toContain('MP4');
         console.log('  Validated: MP4 format');

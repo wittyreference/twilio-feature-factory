@@ -804,20 +804,23 @@ app.post('/transcription-callback', (req, res) => {
 
 **Dial-Out:**
 ```javascript
-// From your server
+// From your server - use participantIdentity for meaningful names
 const call = await client.calls.create({
   to: '+1234567890',
   from: twilioNumber,
-  twiml: `<Response><Connect><Room>${roomName}</Room></Connect></Response>`
+  twiml: `<Response><Connect><Room participantIdentity="phone-consultant">${roomName}</Room></Connect></Response>`
 });
 ```
 
 **Identifying PSTN Participants:**
 - No video tracks (audio only)
-- Identity often includes phone number
+- Use `participantIdentity` attribute to set a meaningful identity
+- Without `participantIdentity`, identity is auto-generated (e.g., `+16509554780-634a594e`)
 - Check participant source in events
 
 **Gotcha:** PSTN participants cannot see video - they only hear audio. Plan your UX accordingly.
+
+**Gotcha:** PSTN participants will NOT have audio track details in the Video Participant Summary. Their call information is available via the Voice Insights tool in the Twilio Console instead.
 
 **PSTN Recording Math:**
 ```
@@ -860,7 +863,7 @@ const composition = await twilioClient.video.v1.compositions.create({
 **PSTN Join Timing:**
 - After `calls.create()`, poll room participants until PSTN appears
 - Allow 60 seconds for phone answer and room join
-- Identity is system-generated if no explicit identity provided
+- Use `participantIdentity` TwiML attribute for predictable identity matching
 
 ---
 

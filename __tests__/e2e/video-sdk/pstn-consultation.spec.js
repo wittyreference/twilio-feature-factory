@@ -95,11 +95,13 @@ test.describe('Video SDK - Professional Consultation with PSTN Participant', () 
       await expect(pagePatient.locator('#remote-participant-count')).toHaveText('1', { timeout: 5000 });
 
       // Step 5: Dial PSTN consultant into the video room
+      // Use participantIdentity attribute to give the PSTN participant a meaningful identity
+      const pstnIdentity = 'phone-consultant';
       console.log(`Dialing PSTN consultant: ${CONSULTANT_NUMBER}...`);
       const pstnCall = await twilioClient.calls.create({
         to: CONSULTANT_NUMBER,
         from: FROM_NUMBER,
-        twiml: `<Response><Connect><Room>${roomName}</Room></Connect></Response>`,
+        twiml: `<Response><Connect><Room participantIdentity="${pstnIdentity}">${roomName}</Room></Connect></Response>`,
       });
       pstnCallSid = pstnCall.sid;
       console.log(`PSTN call initiated: ${pstnCallSid}`);
@@ -115,9 +117,8 @@ test.describe('Video SDK - Professional Consultation with PSTN Participant', () 
 
       console.log(`${roomParticipants.length} participants in room`);
 
-      // Step 7: Identify and verify PSTN participant
-      const browserIdentities = ['expert', 'patient'];
-      const pstnParticipant = roomParticipants.find(p => !browserIdentities.includes(p.identity));
+      // Step 7: Identify and verify PSTN participant by the identity we set
+      const pstnParticipant = roomParticipants.find(p => p.identity === pstnIdentity);
       expect(pstnParticipant).toBeDefined();
       console.log(`PSTN participant identity: ${pstnParticipant.identity}`);
 

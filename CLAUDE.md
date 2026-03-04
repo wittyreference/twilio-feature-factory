@@ -256,6 +256,10 @@ Rules that have each caused real debugging time loss. These exist in domain-spec
 - **SDK auto-reads `TWILIO_REGION`/`TWILIO_EDGE` from env** — Setting these in `.env` silently routes all API calls to regional endpoints even when not passed to the constructor. US1 auth tokens fail with 401 on regional endpoints. Comment out when not actively testing regions.
 - **Empty `voiceUrl` on a Twilio number = silent instant call failure** — Calling a number with `voiceUrl: ""` produces `status: failed, duration: 0` with ZERO diagnostics (no debugger alerts, no notifications, no error codes). Indistinguishable from auth failures or account blocks. Always verify destination webhooks via `list_phone_numbers` before debugging call routing.
 - **dotenv default mode doesn't override shell vars** — `require('dotenv').config()` skips vars already in `process.env`. All project dotenv calls use `{ override: true }` so `.env` always wins. If you add new dotenv usage, include `override: true`. The shipped `.envrc` provides the same isolation for shell scripts via explicit `unset` before loading.
+- **`<Pay>` silently ignored on outbound API call legs** — `<Pay>` in inline TwiML on `make_call` produces zero errors, zero callbacks. Must run from a phone number's voice URL webhook. Use `create_payment` REST API for agent-assisted flows.
+- **Conference DTMF is per-call, not cross-participant** — `<Play digits>` on one conference participant generates in-band audio. `<Pay>` on another participant only detects out-of-band RFC 2833 DTMF from its own call's keypad. Cannot inject DTMF across conference participants.
+- **Conference has no parent/child relationships** — Each participant is an independent call. One disconnecting doesn't affect others (unless `endConferenceOnExit=true`). Contrast with `<Dial>`-created calls where parent/child are coupled.
+- **`<Pause>` as first TwiML verb = no-answer** — Webhook must produce audio (`<Say>`) before `<Pause>` to properly answer the call. `<Pause>`-only responses cause the call to ring until timeout.
 
 # Session discipline
 

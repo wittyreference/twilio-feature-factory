@@ -23,6 +23,12 @@
     .controls button { padding: 6px 16px; margin-left: 4px; cursor: pointer; }
     .incoming { margin: 16px 0; padding: 12px; border: 2px dashed #3b82f6; display: none; }
     .incoming.active { display: block; }
+    .dtmf-pad { margin: 16px 0; display: none; }
+    .dtmf-pad.active { display: block; }
+    .dtmf-grid { display: grid; grid-template-columns: repeat(3, 56px); gap: 4px; margin-top: 8px; }
+    .dtmf-grid button { padding: 12px; font-size: 18px; font-family: monospace; cursor: pointer; border: 1px solid #d1d5db; border-radius: 4px; background: #fff; }
+    .dtmf-grid button:hover { background: #f3f4f6; }
+    .dtmf-grid button:active { background: #e5e7eb; }
     #log { background: #f9fafb; border: 1px solid #e5e7eb; padding: 8px; height: 200px; overflow-y: auto; font-size: 12px; white-space: pre-wrap; }
     .hidden { display: none; }
   </style>
@@ -54,6 +60,24 @@
     </div>
   </div>
 
+  <div id="dtmf-panel" class="dtmf-pad">
+    <strong>DTMF Keypad</strong>
+    <div class="dtmf-grid">
+      <button class="dtmf-btn" data-digit="1">1</button>
+      <button class="dtmf-btn" data-digit="2">2</button>
+      <button class="dtmf-btn" data-digit="3">3</button>
+      <button class="dtmf-btn" data-digit="4">4</button>
+      <button class="dtmf-btn" data-digit="5">5</button>
+      <button class="dtmf-btn" data-digit="6">6</button>
+      <button class="dtmf-btn" data-digit="7">7</button>
+      <button class="dtmf-btn" data-digit="8">8</button>
+      <button class="dtmf-btn" data-digit="9">9</button>
+      <button class="dtmf-btn" data-digit="*">*</button>
+      <button class="dtmf-btn" data-digit="0">0</button>
+      <button class="dtmf-btn" data-digit="#">#</button>
+    </div>
+  </div>
+
   <h3>Event Log</h3>
   <div id="log"></div>
 
@@ -72,6 +96,7 @@
     const incomingPanel = document.getElementById('incoming-panel');
     const incomingFrom = document.getElementById('incoming-from');
     const logEl = document.getElementById('log');
+    const dtmfPanel = document.getElementById('dtmf-panel');
 
     let device = null;
     let activeCall = null;
@@ -103,6 +128,7 @@
         setStatus('connected');
         callSidEl.textContent = call.parameters.CallSid || '—';
         log(direction + ' call connected (SID: ' + (call.parameters.CallSid || 'unknown') + ')');
+        dtmfPanel.classList.add('active');
       });
 
       call.on('disconnect', () => {
@@ -111,6 +137,7 @@
         activeCall = null;
         btnHangup.disabled = true;
         btnDial.disabled = false;
+        dtmfPanel.classList.remove('active');
       });
 
       call.on('cancel', () => {
@@ -138,13 +165,24 @@
       });
     }
 
+    // DTMF keypad — send digits on the active call
+    document.querySelectorAll('.dtmf-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!activeCall) return;
+        const digit = btn.dataset.digit;
+        activeCall.sendDigits(digit);
+        log('DTMF sent: ' + digit);
+      });
+    });
+
     async function init() {
       try {
         setStatus('registering');
         log('Fetching access token...');
 
         const tokenUrl = window.TOKEN_URL || '/api/token';
-        const identity = window.IDENTITY || undefined;
+        const urlParams = new URLSearchParams(window.location.search);
+        const identity = window.IDENTITY || urlParams.get('identity') || undefined;
         const params = identity ? '?identity=' + encodeURIComponent(identity) : '';
         const resp = await fetch(tokenUrl + params);
 

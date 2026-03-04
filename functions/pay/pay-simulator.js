@@ -35,14 +35,18 @@ function generateId() {
 exports.handler = async (context, event, callback) => {
   const mode = context.PAY_SIMULATOR_MODE || 'simple';
 
-  console.log(`Payment simulator (${mode} mode) received request`);
-  console.log(`Method: ${event.Method || 'unknown'}`);
-  console.log(`CardType: ${event.CardType || 'unknown'}`);
-  console.log(`Amount: ${event.Amount || 'N/A'}`);
+  // Log ALL params for debugging connector integration
+  const eventKeys = Object.keys(event).filter((k) => k !== 'request');
+  console.log(`Payment simulator (${mode} mode) received: ${JSON.stringify(Object.fromEntries(eventKeys.map((k) => [k, event[k]])))}`);
+
+  // Generic Pay Connector uses lowercase field names: method, cardnumber, expiry_month, etc.
+  const method = event.method || event.Method || '';
+  const cardNumber = event.cardnumber || event.CardNumber || '';
+  const amount = event.amount || event.Amount || '';
 
   // In simple mode, always return success regardless of input
   if (mode === 'simple') {
-    const isCharge = (event.Method || '').toLowerCase() === 'charge';
+    const isCharge = method.toLowerCase() === 'charge';
     const responseBody = isCharge
       ? { charge_id: generateId(), error_code: null, error_message: null }
       : { token_id: generateId(), error_code: null, error_message: null };
@@ -56,10 +60,9 @@ exports.handler = async (context, event, callback) => {
   }
 
   // Robust mode: validate card number patterns
-  const cardNumber = event.CardNumber || '';
   const lastFour = cardNumber.slice(-4);
   const testCard = TEST_CARDS[lastFour];
-  const isCharge = (event.Method || '').toLowerCase() === 'charge';
+  const isCharge = method.toLowerCase() === 'charge';
 
   if (testCard && testCard.result === 'decline') {
     console.log(`Robust mode: declining card ending in ${lastFour} — ${testCard.errorMessage}`);

@@ -153,14 +153,22 @@ const CAPTURE_FIELDS = [
   { field: 'payment-card-number', prompt: "Please enter your 16-digit card number on your phone's keypad now.", waitMs: 18000 },
   { field: 'expiration-date', prompt: 'Got it. Now enter your 4-digit expiration date — month then year. For example, 1-2-2-8 for December 2028.', waitMs: 12000 },
   { field: 'security-code', prompt: 'Now enter the 3-digit security code from the back of your card.', waitMs: 10000 },
-  { field: 'postal-code', prompt: 'Last step — enter your 5-digit ZIP code.', waitMs: 12000 },
+  { field: 'postal-code', prompt: 'Last step — enter your ZIP code, then press the pound key to confirm.', waitMs: 12000 },
 ];
 
 async function runPaymentFlow(customerCallSid, amount, ws) {
   log('PAYMENT', `Starting payment flow: $${amount} on call ${customerCallSid}`);
 
-  // Reset the Sync doc so we can track fresh state
-  await writeSyncDoc('payment-session-active', { status: 'starting', lastUpdated: new Date().toISOString() });
+  // Reset the Sync doc with all fields in "required" so polling doesn't false-positive on stale data
+  await writeSyncDoc('payment-session-active', {
+    status: 'starting',
+    required: 'payment-card-number,expiration-date,security-code,postal-code',
+    capture: null,
+    result: null,
+    paymentCardNumber: null,
+    paymentCardType: null,
+    lastUpdated: new Date().toISOString(),
+  });
 
   // Step 1: Create payment session
   log('PAYMENT', 'create_payment...');
@@ -185,6 +193,10 @@ async function runPaymentFlow(customerCallSid, amount, ws) {
 
     // Brief pause for TTS to start playing, then request capture
     await new Promise((r) => setTimeout(r, 2000));
+
+    // Record timestamp BEFORE the update_payment call so we can ignore stale Sync data
+    const captureRequestedAt = new Date().toISOString();
+
     log('PAYMENT', `update_payment: Capture=${field}`);
     try {
       await twilioClient.calls(customerCallSid).payments(payment.sid).update({
@@ -197,13 +209,17 @@ async function runPaymentFlow(customerCallSid, amount, ws) {
       return { success: false, error: e.message };
     }
 
-    // Poll Sync until "Required" no longer includes this field (= captured)
+    // Poll Sync until a FRESH callback (after our update_payment) shows this field captured.
+    // "Captured" means: Required doesn't include this field, OR Required is null/empty (all done).
     log('PAYMENT', `Waiting for ${field} to be captured (polling Required)...`);
     const captured = await waitForSyncUpdate('payment-session-active', (data) => {
-      // The status callback includes a "Required" field listing uncaptured fields.
-      // When our field drops off the list, it's been captured.
-      if (!data.required) {return false;}
-      return !data.required.includes(field);
+      // Ignore stale data from before our update_payment call
+      if (!data.lastUpdated || data.lastUpdated <= captureRequestedAt) {return false;}
+      // Required is null/empty = all fields captured (last field case)
+      if (data.required === null || data.required === '') {return true;}
+      // Required still present but our field dropped off = this field captured
+      if (typeof data.required === 'string') {return !data.required.includes(field);}
+      return false;
     }, 45000); // 45s timeout — generous for DTMF entry
 
     if (captured) {

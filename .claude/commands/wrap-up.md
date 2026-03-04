@@ -108,7 +108,27 @@ wc -l CLAUDE.md .meta/CLAUDE.md ~/.claude/projects/-Users-mcarpenter-workspaces-
 
 Report the MEMORY.md line count in the summary. If over 150 lines, flag it — entries beyond 200 are truncated and never seen. Prune by replacing promoted entries with pointers (e.g., "See operational-gotchas.md → Voice Call Routing").
 
-### 7. Clear Pending Actions
+### 7. Infrastructure Health Checks
+
+Quick checks that hooks and automation are still working:
+
+**Compaction summary capture:**
+```bash
+# Check the most recent compaction summary
+ls -lt .meta/logs/compaction-summary-*.md 2>/dev/null | head -1
+```
+If the newest summary is more than a week old and sessions have been compacted recently, the `post-compact-summary.sh` hook may have stopped firing. Known issue: Claude Code ≥2.1.59 removed the `isCompactSummary` transcript marker. Check the hook for the `KNOWN ISSUE` comment.
+
+**Plan archiving:**
+```bash
+# Check the most recent archived plan
+ls -lt .meta/plans/ 2>/dev/null | head -3
+```
+If plans are not being archived after plan mode exits, verify the `archive-plan.sh` hook is registered under `Stop` in `.claude/settings.json`.
+
+Report any issues in the summary. Skip if both are healthy.
+
+### 8. Clear Pending Actions
 
 After addressing flywheel suggestions, clear the pending actions file:
 ```markdown
@@ -121,7 +141,7 @@ Actions detected by the documentation flywheel. Review before committing.
 <!-- Doc suggestions will be appended below this line by flywheel-doc-check.sh -->
 ```
 
-### 8. Summary
+### 9. Summary
 
 Output what was updated:
 

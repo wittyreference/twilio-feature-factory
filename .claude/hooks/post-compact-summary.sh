@@ -1,6 +1,11 @@
 #!/bin/bash
 # ABOUTME: Captures the compaction summary after context is compacted.
 # ABOUTME: Extracts the summary from transcript and saves for debugging.
+#
+# KNOWN ISSUE: Claude Code ≥2.1.59 removed the isCompactSummary boolean marker
+# from transcript entries and may no longer fire SessionStart with source=compact.
+# This hook attempts both the legacy boolean detection and content-based fallback,
+# but may not capture summaries on newer versions. See: github.com/anthropics/claude-code/issues
 
 # Read JSON input from stdin.
 # Two callers:
@@ -39,9 +44,25 @@ mkdir -p "$LOGS_DIR"
 
 # Extract the compaction summary from transcript
 if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
-    # Find the LAST entry with isCompactSummary: true and extract the full message content
-    # Use -s (slurp) to read all entries, filter to summaries, take last one
+    # Try two detection methods:
+    # 1. (Legacy, ≤2.1.50) isCompactSummary boolean field
+    # 2. (Current, ≥2.1.59) Content-based detection — look for "continued from a previous conversation"
     SUMMARY=$(jq -rs '[.[] | select(.isCompactSummary == true)] | last | .message.content' "$TRANSCRIPT_PATH" 2>/dev/null)
+
+    if [ -z "$SUMMARY" ] || [ "$SUMMARY" = "null" ]; then
+        # Fallback: find by content pattern (Claude Code ≥2.1.59 dropped the boolean marker)
+        # In new format, the summary is a user message with string content containing
+        # "This session is being continued from a previous conversation"
+        SUMMARY=$(grep '"This session is being continued' "$TRANSCRIPT_PATH" 2>/dev/null \
+            | while IFS= read -r line; do
+                # Only accept user messages with string content (the actual summary)
+                content_type=$(echo "$line" | jq -r '.message.content | type' 2>/dev/null)
+                msg_type=$(echo "$line" | jq -r '.type' 2>/dev/null)
+                if [ "$content_type" = "string" ] && [ "$msg_type" = "user" ]; then
+                    echo "$line" | jq -r '.message.content' 2>/dev/null
+                fi
+            done | tail -1)
+    fi
 
     if [ -n "$SUMMARY" ] && [ "$SUMMARY" != "null" ]; then
         {

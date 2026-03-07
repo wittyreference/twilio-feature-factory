@@ -42,7 +42,7 @@ This demonstrates how multiple Twilio products work together and shows the full 
 ┌─────────────────────────────────────────────────────────────┐
 │  3. EXECUTE                                                 │
 │     Autonomous agents run:                                  │
-│     /architect → /spec → /test-gen → /dev → /review → /docs│
+│     /architect → /prototype? → /spec → /test-gen → /dev → ...  │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐

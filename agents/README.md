@@ -59,7 +59,7 @@ npx feature-factory new-feature "add SMS verification"
 └─────────────────────────────────────────────────────┘
          │
          ▼
-/architect → /spec → /test-gen → /dev → /review → /docs
+/architect → /prototype (if unknowns) → /spec → /test-gen → /dev → /review → /docs
 ```
 
 Each phase invokes a specialized subagent with:

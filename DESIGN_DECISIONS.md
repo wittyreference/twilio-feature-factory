@@ -1536,6 +1536,47 @@ Implementation approach:
 
 ---
 
+## Decision 34: Accord-Informed Pipeline Evolution
+
+### Context
+
+Danilo Campos' "How to Build Software" accord (accord.exchange/how-to-build-software) establishes shared vocabulary and principles for human-AI software collaboration. A comparative review against our practices revealed areas where we exceed the accord (operational enforcement, TDD, doc flywheel) and areas where we lagged (no prototyping phase, unnamed LLM velocity risk, directive framing).
+
+### Decision
+
+**Adopt the accord's strongest unique insights while preserving our operational strengths.**
+
+Specific changes:
+1. **Add `/prototype` phase** to the development pipeline — a quick spike for unknown integrations, producing learnings rather than production code
+2. **Name the LLM velocity trap** — articulate why pipeline enforcement exists, not just that it does
+3. **Reframe collaboration sections** as shared agreements rather than directives
+4. **Add "vertical slice"** to the architect's planning vocabulary
+5. **Articulate "store truth once"** in Sync documentation
+
+### Rationale
+
+1. **Prototyping phase**: Session 58 (Pay integration) burned hours because we went straight to TDD without prototyping `<Pay>` behavior. A 5-minute spike would have revealed that `<Pay>` is silent on outbound legs and that conference DTMF doesn't cross participants.
+2. **Naming risks builds understanding**: We mechanically prevent the LLM velocity trap via hooks, but naming the risk helps anyone reading the docs understand *why* the enforcement exists.
+3. **Accord framing is healthier**: "Shared language between collaborators" is more accurate than "instructions to the AI" — our communication style section already embodies this philosophy.
+
+### Alternatives Considered
+
+- **Adopt the accord wholesale**: Rejected — our operational enforcement (hooks, pipeline gate, MCP validation) exceeds the accord's general guidance. We'd lose specificity.
+- **Ignore it**: Rejected — the prototyping gap is real and cost us debugging time.
+
+### Consequences
+
+- Pipeline now has a conditional `/prototype` step between `/architect` and `/spec`
+- Architect subagent identifies unknowns and recommends whether prototyping is needed
+- CLAUDE.md reads as a shared agreement, not a one-way directive
+- New `/prototype` slash command available
+
+### Status
+
+**Accepted** - 2026-03-06
+
+---
+
 ## Decision N: [Title]
 
 ### Context
@@ -1612,3 +1653,4 @@ Implementation approach:
 | 2026-02-25 | D31 | Generative chaos validation (LLM-generated scenarios, 7 archetypes, 7 categories, anti-repetition, difficulty dial) |
 | 2026-02-26 | D32 | Chaos validation baseline: 4.52/5.0 across 21 scenarios. Updated 2026-02-27: full matrix 4.71/5.0 across 42 scenarios, 49/49 archetype×category pairs |
 | 2026-03-01 | D33 | Archived context as active agent memory (804 plans + 51 compaction summaries → session context loader) |
+| 2026-03-06 | D34 | Accord-informed pipeline evolution: /prototype phase, LLM velocity trap naming, collaboration reframe |

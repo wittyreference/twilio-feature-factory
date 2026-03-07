@@ -114,11 +114,14 @@ Agent Teams coordinate multiple Claude Code instances for parallel work. Use `/t
 For any task that creates new serverless functions or implements significant new features, you MUST use the development pipeline — either via `/orchestrate` or by running the phases sequentially:
 
 1. `/architect` — Design review and service selection
-2. `/spec` — Detailed technical specification
-3. `/test-gen` — Write failing tests (TDD Red Phase)
-4. `/dev` — Implement to pass tests (TDD Green Phase)
-5. `/review` — Code review and security audit
-6. `/docs` — Documentation updates
+2. `/prototype` — Quick spike to test unknowns *(conditional — architect recommends when needed)*
+3. `/spec` — Detailed technical specification
+4. `/test-gen` — Write failing tests (TDD Red Phase)
+5. `/dev` — Implement to pass tests (TDD Green Phase)
+6. `/review` — Code review and security audit
+7. `/docs` — Documentation updates
+
+**When to prototype**: When the architect identifies unknowns — unfamiliar APIs, ambiguous documentation, multi-service interactions not previously tested, or real-time protocols with undocumented edge cases. The output is a short "Spike Results" note, not production code. Skip prototyping when the team has prior experience with all involved APIs.
 
 **When to use the pipeline:**
 - Creating new files in `functions/`
@@ -170,7 +173,9 @@ When you learn something unexpected, add it to the learnings file **IMMEDIATELY*
 
 For the full capture-promote-clear documentation workflow, see the `doc-flywheel` skill.
 
-# Interaction
+# Shared Working Agreement
+
+This section establishes shared language and expectations between human and AI collaborators. These aren't directives to follow — they're principles we both operate under.
 
 - When you first work with a new user, ask for their preferred name and update this file.
 - **Preferred name: [Your name here]**
@@ -183,7 +188,7 @@ For the full capture-promote-clear documentation workflow, see the `doc-flywheel
 - It's encouraged to push back with evidence when you disagree.
 - Ask questions when something is unclear rather than making assumptions.
 
-## Communication style
+## Communication Style
 
 - Get straight to the point. Skip the preamble phrases like "Great idea!", "Good question!", "Absolutely!", "That's a great point!", etc.
 - Be direct without being cold. Friendly and professional, not effusive.
@@ -206,6 +211,7 @@ For the full capture-promote-clear documentation workflow, see the `doc-flywheel
 - When you are trying to fix a bug or compilation error or any other issue, YOU MUST NEVER throw away the old implementation and rewrite without explicit permission from the user. If you are going to do this, YOU MUST STOP and get explicit permission from the user.
 - NEVER name things as 'improved' or 'new' or 'enhanced', etc. Code naming should be evergreen. What is new today will be "old" someday.
 - Commit your work regularly using git. Commit whenever you complete an atomic unit of functionality — a discrete feature, bug fix, or substantial logical chunk — regardless of how many files changed. Each commit should represent a coherent, working state. Write clear, descriptive commit messages in imperative mood. Don't wait until everything is done; commit incrementally as you complete meaningful pieces.
+- **LLM velocity trap**: AI tools can produce plausible-looking code faster than anyone can evaluate it, locking you into an approach that conceals subtle problems. The pipeline enforcement, TDD mandate, and "smallest reasonable changes" principle exist to counteract this — they force validation checkpoints before momentum builds. When you feel the urge to skip ahead, that's the trap working.
 
 # Getting help
 
@@ -340,6 +346,7 @@ The following slash commands are available for specialized tasks:
 | Command | Description |
 |---------|-------------|
 | `/architect [topic]` | Architect - design review, pattern selection, CLAUDE.md maintenance |
+| `/prototype [topic]` | Quick spike to test unknowns — no tests, no docs, produces learnings |
 | `/spec [feature]` | Specification writer - creates detailed technical specifications |
 | `/test-gen [feature]` | Test generator - TDD Red Phase, writes failing tests first |
 | `/dev [task]` | Developer - TDD Green Phase, implements to pass tests |

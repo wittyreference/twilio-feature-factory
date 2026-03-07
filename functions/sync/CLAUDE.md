@@ -436,6 +436,19 @@ Create a Sync Service in the Twilio Console or via CLI:
 twilio api:sync:v1:services:create --friendly-name "My Sync Service"
 ```
 
+## Core Principle: Store Truth Once
+
+**Store truth once, then compute its consequences.**
+
+Sync objects should hold authoritative state — not derived or duplicated data. If a value can be computed from existing state, compute it at read time rather than storing it separately.
+
+- Don't store `itemCount` alongside a List — compute it from `syncListItems.list()`
+- Don't duplicate a Document's fields into a Map — reference the Document
+- Don't store timestamps in two places — pick one source and derive the other
+- Use webhook events to trigger computations, not to sync redundant copies
+
+This prevents conflicting state and eliminates an entire class of consistency bugs.
+
 ## Best Practices
 
 1. **Use Unique Names**: Always set `uniqueName` for predictable access patterns

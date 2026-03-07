@@ -26,7 +26,7 @@ Twilio Agent Factory is an **AI-powered development system** for building Twilio
 ┌─────────────────────────────────────────────────────────────────┐
 │  3. EXECUTE                                                     │
 │     Autonomous agents run the pipeline:                         │
-│     /architect → /spec → /test-gen → /dev → /review → /docs    │
+│     /architect → /prototype? → /spec → /test-gen → /dev → ...  │
 │     Human approval gates at key checkpoints                     │
 └─────────────────────────────────────────────────────────────────┘
                               ↓

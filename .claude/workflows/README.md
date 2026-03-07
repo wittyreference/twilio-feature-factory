@@ -7,7 +7,8 @@ This document describes the available workflow patterns for developing Twilio fe
 | Command | Role | Description |
 |---------|------|-------------|
 | `/orchestrate` | Workflow Coordinator | Runs full development pipelines automatically |
-| `/architect` | Architect | Design review, pattern selection, CLAUDE.md maintenance |
+| `/architect` | Architect | Design review, pattern selection, unknowns identification |
+| `/prototype` | Prototyper | Quick spike to test unknowns — no tests, produces learnings |
 | `/spec` | Specification Writer | Creates detailed technical specifications |
 | `/test-gen` | Test Generator | TDD Red Phase - writes failing tests first |
 | `/dev` | Developer | TDD Green Phase - implements to pass tests |
@@ -25,20 +26,21 @@ This document describes the available workflow patterns for developing Twilio fe
 Full development pipeline for building new Twilio functionality:
 
 ```text
-/architect ──► /spec ──► /test-gen ──► /dev ──► /review ──► /test ──► /docs
+/architect ──► /prototype (if unknowns) ──► /spec ──► /test-gen ──► /dev ──► /review ──► /test ──► /docs
 ```
 
 **Orchestrated**: `/orchestrate new-feature [description]`
 
 **Manual execution**:
 
-1. `/architect [feature]` - Get architecture review and pattern recommendations
-2. `/spec [feature]` - Create detailed technical specification
-3. `/test-gen [feature]` - Generate failing tests (TDD Red)
-4. `/dev [feature]` - Implement to pass tests (TDD Green)
-5. `/review` - Code review and security audit
-6. `/test` - Run full test suite
-7. `/docs` - Update documentation
+1. `/architect [feature]` - Get architecture review, identify unknowns
+2. `/prototype [unknowns]` - Quick spike to test unfamiliar APIs *(skip if no unknowns)*
+3. `/spec [feature]` - Create detailed technical specification
+4. `/test-gen [feature]` - Generate failing tests (TDD Red)
+5. `/dev [feature]` - Implement to pass tests (TDD Green)
+6. `/review` - Code review and security audit
+7. `/test` - Run full test suite
+8. `/docs` - Update documentation
 
 ### Bug Fix Pipeline
 
@@ -240,7 +242,8 @@ Each subagent suggests the next logical step:
 
 | After | Suggests |
 |-------|----------|
-| `/architect` | `/spec` for detailed specification |
+| `/architect` | `/prototype` (if unknowns) or `/spec` (if no unknowns) |
+| `/prototype` | `/spec` for detailed specification |
 | `/spec` | `/test-gen` for test generation |
 | `/test-gen` | `/dev` for implementation |
 | `/dev` | `/review` for code review |
@@ -308,8 +311,9 @@ Each subagent suggests the next logical step:
 ## Best Practices
 
 1. **Always start with `/architect`** for new features to ensure proper design
-2. **Use `/spec`** to clarify requirements before writing code
-3. **Never skip `/test-gen`** - tests must exist before implementation
+2. **Prototype unknowns first** — if the architect identifies unfamiliar APIs or ambiguous behavior, spike them before writing a spec
+3. **Use `/spec`** to clarify requirements before writing code
+4. **Never skip `/test-gen`** - tests must exist before implementation
 4. **Run `/review`** before merging any significant changes
 5. **Keep `/docs`** updated as features evolve
 6. **Use `/twilio-logs`** when debugging production issues

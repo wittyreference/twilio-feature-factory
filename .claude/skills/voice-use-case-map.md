@@ -4,18 +4,18 @@ Definitive per-use-case product mapping for Twilio Voice. Load this skill when r
 
 ## Quick Reference (scan this first)
 
-| UC | Name | Core Products | Key Feature |
-|----|------|--------------|-------------|
-| 1 | Voice Notifications | Voice API, Say, Gather, AMD, Recording | Outbound reminder + speech confirm |
-| 2 | Self-Service (IVR) | Voice API, Say, Gather, Recording | Multi-level menu, DTMF + speech |
-| 3 | Inbound Contact Center | TaskRouter, Conference, Recording, Sync | Skills-based routing to agents |
-| 4 | Outbound Contact Center | Conference, Participants API, AMD, Recording | Agent-first then connect customer |
-| 5 | AI Agents (ConversationRelay) | ConversationRelay, Recording, Sync, SMS | WebSocket LLM integration |
-| 6 | AI Agents (Media Streams) | `<Connect><Stream>`, Recording | Raw audio WebSocket, bring-your-own STT/TTS |
-| 7 | Sales Dialer | Conference, AMD, Recording, Participants API | Parallel/power dialing |
-| 8 | Call Tracking | Voice API, Say (whisper), Dial, Recording, Sync | Campaign attribution + forwarding |
-| 9 | PSTN Connectivity | SIP Trunking, BYOC | Carrier interconnect (not prototyped) |
-| 10 | AI/ML Transcription | Voice Intelligence, Language Operators | Post-call analysis of recordings |
+| UC | Name | Core Products | Key Feature | Prototype? |
+|----|------|--------------|-------------|------------|
+| 1 | Voice Notifications | Voice API, Say, Gather, AMD, Recording | Outbound reminder + speech confirm | No — well-understood APIs |
+| 2 | Self-Service (IVR) | Voice API, Say, Gather, Recording | Multi-level menu, DTMF + speech | No — well-understood APIs |
+| 3 | Inbound Contact Center | TaskRouter, Conference, Recording, Sync | Skills-based routing to agents | Yes — TaskRouter reservation flow |
+| 4 | Outbound Contact Center | Conference, Participants API, AMD, Recording | Agent-first then connect customer | Yes — AMD timing, Participants API |
+| 5 | AI Agents (ConversationRelay) | ConversationRelay, Recording, Sync, SMS | WebSocket LLM integration | Yes — WebSocket protocol, voice selection |
+| 6 | AI Agents (Media Streams) | `<Connect><Stream>`, Recording | Raw audio WebSocket, bring-your-own STT/TTS | Yes — raw audio format, STT/TTS integration |
+| 7 | Sales Dialer | Conference, AMD, Recording, Participants API | Parallel/power dialing | Yes — AMD + parallel dial timing |
+| 8 | Call Tracking | Voice API, Say (whisper), Dial, Recording, Sync | Campaign attribution + forwarding | No — well-understood APIs |
+| 9 | PSTN Connectivity | SIP Trunking, BYOC | Carrier interconnect (not prototyped) | Yes — SIP registration, TLS, E.164 dialplan |
+| 10 | AI/ML Transcription | Voice Intelligence, Language Operators | Post-call analysis of recordings | Yes — `source_sid` vs `media_url`, operator config |
 
 **Complements:** `.claude/skills/voice.md` (decision frameworks), `functions/conversation-relay/CLAUDE.md` (ConversationRelay protocol details).
 

@@ -11,12 +11,17 @@ exports.handler = async (context, event, callback) => {
     recordingStatusCallbackEvent: 'completed',
   });
 
+  // Extract appointment details from event params with sensible defaults
+  const clinicName = event.ClinicName || 'Valley Health Clinic';
+  const appointmentDate = event.AppointmentDate || 'tomorrow, Wednesday, at 2:30 PM';
+  const doctorName = event.DoctorName || 'Doctor Johnson';
+
   // Announce appointment details
   twiml.say(
     { voice: 'Polly.Amy', language: 'en-GB' },
-    'Hello, this is an automated reminder from Valley Health Clinic. ' +
-    'You have an appointment scheduled for tomorrow, Wednesday, at 2:30 PM ' +
-    'with Doctor Johnson.'
+    `Hello, this is an automated reminder from ${clinicName}. ` +
+    `You have an appointment scheduled for ${appointmentDate} ` +
+    `with ${doctorName}.`
   );
 
   // Gather confirmation via speech or DTMF

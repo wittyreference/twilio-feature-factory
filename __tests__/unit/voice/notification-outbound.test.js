@@ -65,6 +65,59 @@ describe('notification-outbound handler', () => {
     expect(twiml).toContain('recordingStatusCallbackEvent="completed"');
   });
 
+  it('should use default appointment details when not provided', async () => {
+    await handler(context, event, callback);
+
+    const [, response] = callback.mock.calls[0];
+    const twiml = response.toString();
+    expect(twiml).toContain('Valley Health Clinic');
+    expect(twiml).toContain('Wednesday');
+    expect(twiml).toContain('Doctor Johnson');
+  });
+
+  it('should use custom clinic name from event params', async () => {
+    event.ClinicName = 'Sunshine Medical Center';
+    await handler(context, event, callback);
+
+    const [, response] = callback.mock.calls[0];
+    const twiml = response.toString();
+    expect(twiml).toContain('Sunshine Medical Center');
+    expect(twiml).not.toContain('Valley Health Clinic');
+  });
+
+  it('should use custom appointment date from event params', async () => {
+    event.AppointmentDate = 'Friday, March 15th, at 10:00 AM';
+    await handler(context, event, callback);
+
+    const [, response] = callback.mock.calls[0];
+    const twiml = response.toString();
+    expect(twiml).toContain('Friday, March 15th, at 10:00 AM');
+    expect(twiml).not.toContain('Wednesday');
+  });
+
+  it('should use custom doctor name from event params', async () => {
+    event.DoctorName = 'Doctor Smith';
+    await handler(context, event, callback);
+
+    const [, response] = callback.mock.calls[0];
+    const twiml = response.toString();
+    expect(twiml).toContain('Doctor Smith');
+    expect(twiml).not.toContain('Doctor Johnson');
+  });
+
+  it('should use all custom params together', async () => {
+    event.ClinicName = 'City Hospital';
+    event.AppointmentDate = 'Monday at 9 AM';
+    event.DoctorName = 'Doctor Lee';
+    await handler(context, event, callback);
+
+    const [, response] = callback.mock.calls[0];
+    const twiml = response.toString();
+    expect(twiml).toContain('City Hospital');
+    expect(twiml).toContain('Monday at 9 AM');
+    expect(twiml).toContain('Doctor Lee');
+  });
+
   it('should say appointment details', async () => {
     await handler(context, event, callback);
 

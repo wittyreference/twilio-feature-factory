@@ -86,6 +86,7 @@ Agent Teams coordinate multiple Claude Code instances for parallel work. Use `/t
 | SIP & BYOC connectivity | `.claude/skills/sip-byoc.md` (load on demand) |
 | SIP Lab (local PBX testing) | [infrastructure/sip-lab/CLAUDE.md](/infrastructure/sip-lab/CLAUDE.md) |
 | Compliance & regulatory | `.claude/skills/compliance-regulatory.md` (load on demand) |
+| Media Streams (raw audio) | `.claude/skills/media-streams.md` (load on demand) |
 | Payments guide | `.claude/skills/payments.md` (load on demand) |
 | Deep validation | [agents/mcp-servers/twilio/src/validation/CLAUDE.md](/agents/mcp-servers/twilio/src/validation/CLAUDE.md) |
 | Autonomous worker | [agents/feature-factory/CLAUDE.md](/agents/feature-factory/CLAUDE.md#autonomous-worker) |

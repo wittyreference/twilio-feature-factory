@@ -1,5 +1,5 @@
 // ABOUTME: Inbound call tracking handler that logs campaign attribution and forwards calls.
-// ABOUTME: Whispers campaign source to business, records the call, and logs to Sync.
+// ABOUTME: Whispers campaign source to business and records the call.
 
 exports.handler = async function (context, event, callback) {
   const twiml = new Twilio.twiml.VoiceResponse();

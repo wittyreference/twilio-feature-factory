@@ -32,7 +32,7 @@ This directory contains Twilio Voice API functions for handling phone calls.
 ### Call Tracking (UC8)
 | File | Access | Description |
 |------|--------|-------------|
-| `call-tracking-inbound.js` | Public | Inbound call tracking with campaign attribution, whisper, and Sync logging |
+| `call-tracking-inbound.js` | Public | Inbound call tracking with campaign attribution, whisper, and call recording |
 
 ### Conference Management
 | File | Access | Description |

@@ -262,3 +262,94 @@ TrustHub: `create/list/get/update/delete_customer_profile`, entity assignments, 
 Regulatory: `list/get/create/update/delete_regulatory_bundle`, `list/create/delete_bundle_item_assignment`, `list/get/create/update/delete_supporting_document`, `list/create_regulatory_end_user`, `list_regulations`
 
 Messaging Services: `get_a2p_status`, `list_messaging_services`
+
+---
+
+## Data Retention & Lifecycle
+
+### Recording Retention
+
+Twilio stores call recordings based on account-level configuration:
+
+| Setting | Behavior |
+|---------|----------|
+| Default | Recordings persist indefinitely until explicitly deleted |
+| Auto-delete | Configurable via Twilio Console (Account → Voice → Recordings) |
+| Manual delete | `DELETE /2010-04-01/Accounts/{SID}/Recordings/{SID}` |
+
+**Action items:**
+- Set a retention policy in Console before going to production
+- Use `recordingStatusCallback` to copy recordings to your own storage if needed long-term
+- Delete recordings after processing when compliance allows
+
+### Voice Intelligence Transcript Lifecycle
+
+Transcripts created via Voice Intelligence persist until explicitly deleted:
+
+```bash
+# Delete a transcript
+twilio api:intelligence:v2:transcripts:remove --sid GTxxxxxxxx
+
+# Delete via MCP
+delete_transcript(transcriptSid)
+```
+
+Transcripts reference recordings by `source_sid` — deleting the recording does NOT delete the transcript. Delete both independently.
+
+### Right-to-Delete (GDPR/CCPA)
+
+When a data subject requests deletion:
+
+1. **Recordings**: Delete via Recordings API for each call SID
+2. **Transcripts**: Delete via Voice Intelligence API
+3. **Call logs**: Cannot be deleted via API — Twilio retains for 13 months minimum
+4. **SMS logs**: Cannot be deleted via API — Twilio retains for 13 months minimum
+5. **Sync documents**: Delete via Sync API (`sync_service.documents(sid).remove()`)
+
+**Conflicting mandates**: GDPR right-to-delete may conflict with financial recordkeeping (SOX, PCI DSS). Flag conflicts for legal review — this is a business decision, not a technical one.
+
+### Sync Document TTL
+
+Sync documents, lists, and maps support TTL (Time-To-Live) for automatic expiration:
+
+```javascript
+// Create a document with 24-hour TTL
+await client.sync.v1.services(syncServiceSid)
+  .documents.create({
+    uniqueName: 'session-data',
+    data: { ... },
+    ttl: 86400  // seconds (24 hours)
+  });
+
+// Update TTL on existing document
+await client.sync.v1.services(syncServiceSid)
+  .documents('session-data')
+  .update({ ttl: 3600 });  // 1 hour
+```
+
+Use TTL for:
+- Session state that should auto-expire
+- PII that must not persist beyond a workflow
+- Temporary compliance data (verification codes, OTPs)
+
+### Audit Logging Patterns
+
+Twilio does not provide a built-in audit log. Build your own:
+
+- **Event Streams**: Subscribe to voice/messaging events for real-time audit trail
+- **Status callbacks**: Log all status transitions (initiated → ringing → answered → completed)
+- **Sync event handlers**: Track document/list/map mutations
+- **Recording status callbacks**: Track recording lifecycle (started → completed → deleted)
+
+Store audit logs in your own infrastructure — Twilio's call/message logs have limited retention and cannot be queried for compliance purposes.
+
+### Retention Summary by Data Type
+
+| Data Type | Twilio Retention | API Deletable | Notes |
+|-----------|-----------------|:-------------:|-------|
+| Call recordings | Until deleted (configurable) | Yes | Set retention policy in Console |
+| VI transcripts | Until deleted | Yes | Independent of recording lifecycle |
+| Call logs | 13 months | No | Twilio-managed retention |
+| SMS logs | 13 months | No | Twilio-managed retention |
+| Sync data | Until deleted or TTL expires | Yes | Use TTL for auto-expiration |
+| Verify attempts | 60 days | No | Twilio-managed retention |

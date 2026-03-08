@@ -275,20 +275,14 @@ fi
 echo ""
 echo -e "${CYAN}[4/14]${NC} Create Verify service..."
 
-VERIFY_STDERR_FILE=$(mktemp)
-VERIFY_JSON=$(curl -s -w "\n%{http_code}" -X POST "https://verify.twilio.com/v2/Services" \
+# Verify API rejects FriendlyNames with 5+ total digits (error 60200).
+# Convert timestamp to alpha-only hash to avoid this restriction.
+VERIFY_ALPHA_ID=$(echo "$TIMESTAMP" | md5 | tr '0-9' 'g-p' | head -c 8)
+VERIFY_JSON=$(curl -s -X POST "https://verify.twilio.com/v2/Services" \
     -u "$AUTH" \
-    -d "FriendlyName=validation-verify-${TIMESTAMP}" \
+    -d "FriendlyName=validation-verify-${VERIFY_ALPHA_ID}" \
     -d "CodeLength=6" \
-    2>"$VERIFY_STDERR_FILE" || echo '{}')
-VERIFY_HTTP_CODE=$(echo "$VERIFY_JSON" | tail -1)
-VERIFY_JSON=$(echo "$VERIFY_JSON" | sed '$d')
-if [ "$VERBOSE" = true ]; then
-    echo -e "  ${DIM}HTTP ${VERIFY_HTTP_CODE} | Raw: $(echo "$VERIFY_JSON" | head -c 200)${NC}"
-    VERIFY_STDERR=$(cat "$VERIFY_STDERR_FILE" 2>/dev/null)
-    [ -n "$VERIFY_STDERR" ] && echo -e "  ${DIM}stderr: ${VERIFY_STDERR}${NC}"
-fi
-rm -f "$VERIFY_STDERR_FILE"
+    2>/dev/null || echo '{}')
 
 VERIFY_SID=$(echo "$VERIFY_JSON" | python3 -c "
 import sys, json

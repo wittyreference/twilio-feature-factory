@@ -176,7 +176,7 @@ const verification = await client.verify.v2
 ### Common Error Codes
 | Code | Description |
 |------|-------------|
-| `60200` | Invalid parameter |
+| `60200` | Invalid parameter (also: FriendlyName has 5+ total digits) |
 | `60202` | Max send attempts reached |
 | `60203` | Max check attempts reached |
 | `60212` | Verification expired |
@@ -252,3 +252,7 @@ TWILIO_VERIFY_SERVICE_SID=VAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3. **Handle Timeouts**: Codes expire; inform users clearly
 4. **Secure Endpoints**: Use `.protected.js` for all verification endpoints
 5. **Log Attempts**: Track verification attempts for security monitoring
+
+## Gotchas
+
+- **Verify Service FriendlyName rejects 5+ total digits** — The Verify API returns error 60200 ("Invalid parameter: FriendlyName") if the name contains 5 or more digit characters total, even if non-consecutive. Names like `my-service-12345` or `svc-1a2b3c4d5e` will fail. Use alpha-only suffixes for programmatic names: `echo "$TIMESTAMP" | md5 | tr '0-9' 'g-p' | head -c 8`

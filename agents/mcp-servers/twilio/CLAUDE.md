@@ -4,7 +4,7 @@ This directory contains the Model Context Protocol (MCP) server that exposes Twi
 
 ## Purpose
 
-The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **322 tools across 28 modules** covering:
+The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **339 tools across 28 modules** covering:
 
 - **Messaging**: SMS/MMS, messaging services, content templates, notifications
 - **Voice**: Call management, conferences, recordings, media streams, Voice Insights, transcriptions, call queues, BYOC trunks, SIP trunking
@@ -218,20 +218,37 @@ for await (const message of query({
 | `update_sync_map_item` | Update key-value pair |
 | `remove_sync_map_item` | Delete by key |
 
-### TaskRouter Tools — 13 tools
+### TaskRouter Tools — 30 tools
 
 | Tool | Description |
 |------|-------------|
+| `list_workspaces` | List all workspaces in account |
+| `create_workspace` | Create workspace (Tier 2) |
+| `get_workspace` | Get workspace details |
+| `update_workspace` | Update workspace config |
+| `delete_workspace` | Delete workspace and all children (Tier 3) |
 | `create_task` | Create a new task |
 | `list_tasks` | List tasks with status filter |
 | `get_task_status` | Check task status |
 | `update_task` | Change priority, attributes, assignment status |
+| `delete_task` | Delete a task (Tier 3) |
+| `create_worker` | Create worker with skills/attributes |
 | `list_workers` | List available workers |
+| `get_worker` | Get worker details |
 | `update_worker` | Change worker activity or attributes (Tier 2) |
+| `delete_worker` | Delete a worker (Tier 3) |
+| `create_workflow` | Create routing workflow with configuration |
 | `list_workflows` | List routing workflows |
+| `get_workflow` | Get workflow details and routing config |
+| `update_workflow` | Update workflow routing rules |
+| `delete_workflow` | Delete a workflow (Tier 3) |
+| `create_task_queue` | Create task queue with target workers expression |
 | `list_task_queues` | List all task queues |
 | `get_task_queue` | Get queue details and target worker expression |
+| `update_task_queue` | Update queue target workers or ordering |
+| `delete_task_queue` | Delete a task queue (Tier 3) |
 | `get_queue_statistics` | Real-time stats: available workers, pending tasks, wait times |
+| `create_activity` | Create worker activity state (e.g. Break, Training) |
 | `list_activities` | List worker activity states (Available, Offline, etc.) |
 | `list_reservations` | List reservations for a task |
 | `update_reservation` | Accept, reject, conference, dequeue, redirect (Tier 2) |

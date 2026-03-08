@@ -65,4 +65,6 @@ Actionable steps to improve reliability
 
 ## Additional Context
 
+<user_request>
 $ARGUMENTS
+</user_request>

@@ -198,4 +198,6 @@ CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=0 claude
 
 ## Current Request
 
+<user_request>
 $ARGUMENTS
+</user_request>

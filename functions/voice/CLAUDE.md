@@ -322,6 +322,22 @@ response.setBody(JSON.stringify({ success: true }));
 
 ## Gotchas
 
+### Env Vars Can Reset on Deploy
+
+`twilio serverless:deploy` doesn't preserve runtime env vars set via the Console or CLI. Always verify env vars after deployment and re-set any that were added outside of `.env`.
+
+### `<Start><Recording>` Syntax is `.recording()`, Not `.record()`
+
+The correct TwiML builder syntax is `twiml.start().recording({...})`. Using `.record()` is a different verb entirely (`<Record>`, which has different behavior — see below).
+
+### Conference Has No Parent/Child Relationships
+
+Each conference participant is an independent call. One participant disconnecting doesn't affect others (unless `endConferenceOnExit=true`). This is different from `<Dial>`-created calls where parent and child legs are coupled — hanging up the parent terminates the child.
+
+### `<Pause>` as First TwiML Verb Does Not Answer the Call
+
+A webhook that returns `<Pause>` as the first verb never properly answers the call — it continues ringing until timeout. Always produce audio (`<Say>` or `<Play>`) before `<Pause>` to answer the call first.
+
 ### `<Record>` Without `action` Creates an Infinite Loop
 
 `<Record>` without an `action` attribute POSTs back to the current URL when recording finishes, re-executing the same TwiML and starting another recording. This creates a loop that generates multiple recordings per call and wastes storage.

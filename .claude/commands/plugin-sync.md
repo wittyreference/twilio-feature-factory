@@ -86,6 +86,8 @@ After successful sync, update `.claude/plugin-sync-state.json` with:
 
 ## Arguments
 
+<user_request>
 $ARGUMENTS
+</user_request>
 
 If arguments are provided, treat them as a filter — only sync files matching the argument pattern (e.g., `/plugin-sync hooks` syncs only hook files, `/plugin-sync voice` syncs only voice-related files).

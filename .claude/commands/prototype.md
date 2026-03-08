@@ -73,4 +73,6 @@ The `/architect` subagent should recommend prototyping when:
 
 ## Current Request
 
+<user_request>
 $ARGUMENTS
+</user_request>

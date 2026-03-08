@@ -179,4 +179,6 @@ When checks fail, provide actionable next steps:
 - Mask SIDs in output: show first 6 and last 4 characters (e.g., `AC1234...5678`)
 - Do not log credentials to any file
 
+<user_request>
 $ARGUMENTS
+</user_request>

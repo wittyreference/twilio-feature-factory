@@ -21,7 +21,9 @@ When autonomous sessions (headless, `/orchestrate`, `/team`) produce code, you s
 
 ## Arguments
 
+<user_request>
 $ARGUMENTS
+</user_request>
 
 ## Behavior Based on Arguments
 

@@ -264,4 +264,6 @@ After fixes, re-run: `/review [files]`
 
 ## Current Task
 
+<user_request>
 $ARGUMENTS
+</user_request>

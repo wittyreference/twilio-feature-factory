@@ -1,6 +1,6 @@
 # Twilio Documentation Lookup
 
-Search Twilio's official documentation for information on: $ARGUMENTS
+Search Twilio's official documentation for information on: <user_request>$ARGUMENTS</user_request>
 
 ## Search Strategy
 

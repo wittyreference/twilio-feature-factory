@@ -17,7 +17,9 @@ Four validation planes, each testing a different dimension:
 
 ## Arguments
 
+<user_request>
 $ARGUMENTS
+</user_request>
 
 Parse arguments for flags:
 - `--planes A,B,C,D` — which planes to run (default: all)

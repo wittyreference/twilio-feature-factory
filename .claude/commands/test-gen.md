@@ -279,4 +279,6 @@ The developer should make these tests pass with minimal code.
 
 ## Current Task
 
+<user_request>
 $ARGUMENTS
+</user_request>

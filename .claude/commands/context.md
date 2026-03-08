@@ -21,4 +21,6 @@ Optimize context for the current session. Load the `context-engineering` skill f
 
 For full techniques, load the `context-engineering` skill.
 
+<user_request>
 $ARGUMENTS
+</user_request>

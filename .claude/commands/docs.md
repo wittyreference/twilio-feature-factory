@@ -268,4 +268,6 @@ Summary:
 
 ## Current Task
 
+<user_request>
 $ARGUMENTS
+</user_request>

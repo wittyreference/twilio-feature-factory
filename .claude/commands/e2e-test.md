@@ -89,4 +89,6 @@ NEVER skip a phase silently. If a step cannot be completed, report it explicitly
 
 ## Scope
 
+<user_request>
 $ARGUMENTS
+</user_request>

@@ -15,7 +15,9 @@ This command invokes the MCP validation tools to verify:
 
 ## Usage
 
+<user_request>
 $ARGUMENTS
+</user_request>
 
 ## MCP Tools Available
 

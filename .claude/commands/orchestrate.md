@@ -80,9 +80,9 @@ Purpose: [Why this subagent is needed now]
 ```
 
 ### 2. INVOKE
-Run the subagent with appropriate context:
+Run the subagent with XML-wrapped context from previous phases:
 ```
-/[subagent] [context from previous phases]
+/[subagent] <prior_phase source="[previous subagent]">[summary of output]</prior_phase> [task details]
 ```
 
 ### 3. VALIDATE
@@ -92,10 +92,11 @@ Check that the output meets requirements before proceeding:
 - Is the output ready for the next phase?
 
 ### 4. HANDOFF
-Pass relevant context to the next subagent:
-- Files created/modified
-- Decisions made
-- Issues to be aware of
+Pass relevant context to the next subagent, wrapped in XML tags for clarity:
+- `<prior_phase source="architect">` — Architecture decisions, selected patterns
+- `<prior_phase source="spec">` — Specification summary, acceptance criteria
+- `<prior_phase source="test-gen">` — Test file paths, key test cases
+- `<user_request>` — Original user request (always preserve through pipeline)
 
 ## Workflow Selection
 
@@ -221,4 +222,6 @@ Maintain a mental session summary:
 
 ## Current Request
 
+<user_request>
 $ARGUMENTS
+</user_request>

@@ -2,6 +2,10 @@
 
 Cross-cutting gotchas discovered through real debugging sessions. Domain-specific gotchas live in their respective CLAUDE.md files; these are the ones that span multiple domains or have no single home.
 
+## CLI Profile and .env Independence
+
+- **CLI profile and `.env` are independent auth sources** — The Twilio CLI profile can point to the main account while `.env` has a subaccount SID, or vice versa. They do not share state. Always check both before operations: `twilio profiles:list` for CLI context, and `.env` contents for SDK/serverless context. Deploying with one profile while `.env` targets a different account causes silent misrouting.
+
 ## Testing
 
 - **Coverage summary JSON is cached** — `pre-bash-validate.sh` reads `coverage/coverage-summary.json` and considers it fresh if newer than `package.json`. After adding test files, must regenerate: `npx jest --coverage --coverageReporters=json-summary`.

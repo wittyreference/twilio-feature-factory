@@ -65,45 +65,7 @@ Agent Teams coordinate multiple Claude Code instances for parallel work. Use `/t
 
 ## Documentation Navigator
 
-| Looking for... | Location |
-|----------------|----------|
-| Project-wide standards | This file (CLAUDE.md) |
-| Architectural decisions | [DESIGN_DECISIONS.md](/DESIGN_DECISIONS.md) |
-| MCP server patterns | [agents/mcp-servers/twilio/CLAUDE.md](/agents/mcp-servers/twilio/CLAUDE.md) |
-| Tool boundaries | [.claude/references/tool-boundaries.md](/.claude/references/tool-boundaries.md) |
-| Voice/TwiML patterns | [functions/voice/CLAUDE.md](/functions/voice/CLAUDE.md) |
-| Voice use case product map | `.claude/skills/voice-use-case-map.md` (load on demand) |
-| SMS/MMS patterns | [functions/messaging/CLAUDE.md](/functions/messaging/CLAUDE.md) |
-| Real-time voice AI | [functions/conversation-relay/CLAUDE.md](/functions/conversation-relay/CLAUDE.md) |
-| Verification patterns | [functions/verify/CLAUDE.md](/functions/verify/CLAUDE.md) |
-| State synchronization | [functions/sync/CLAUDE.md](/functions/sync/CLAUDE.md) |
-| Task routing | [functions/taskrouter/CLAUDE.md](/functions/taskrouter/CLAUDE.md) |
-| Messaging services | [functions/messaging-services/CLAUDE.md](/functions/messaging-services/CLAUDE.md) |
-| PCI-compliant payments | [functions/pay/CLAUDE.md](/functions/pay/CLAUDE.md) |
-| Proxy / number masking | [functions/proxy/CLAUDE.md](/functions/proxy/CLAUDE.md) |
-| Phone number management | [functions/phone-numbers/CLAUDE.md](/functions/phone-numbers/CLAUDE.md) |
-| Callback handlers | [functions/callbacks/CLAUDE.md](/functions/callbacks/CLAUDE.md) |
-| SIP & BYOC connectivity | `.claude/skills/sip-byoc.md` (load on demand) |
-| SIP Lab (local PBX testing) | [infrastructure/sip-lab/CLAUDE.md](/infrastructure/sip-lab/CLAUDE.md) |
-| Compliance & regulatory | `.claude/skills/compliance-regulatory.md` (load on demand) |
-| Media Streams (raw audio) | `.claude/skills/media-streams.md` (load on demand) |
-| Payments guide | `.claude/skills/payments.md` (load on demand) |
-| Deep validation | [agents/mcp-servers/twilio/src/validation/CLAUDE.md](/agents/mcp-servers/twilio/src/validation/CLAUDE.md) |
-| Autonomous worker | [agents/feature-factory/CLAUDE.md](/agents/feature-factory/CLAUDE.md#autonomous-worker) |
-| Setup scripts | [scripts/CLAUDE.md](/scripts/CLAUDE.md) |
-| API changes/drift | [.claude/references/twilio-api-changes.md](/.claude/references/twilio-api-changes.md) |
-| Twilio CLI reference | [.claude/references/twilio-cli.md](/.claude/references/twilio-cli.md) |
-| Operational gotchas (testing, deploy, SDK) | [.claude/references/operational-gotchas.md](/.claude/references/operational-gotchas.md) |
-| Context Hub (external APIs) | `.claude/skills/context-hub.md` (load on demand) |
-| Hooks reference | `.claude/skills/hooks-reference.md` (load on demand) |
-| Environment doctor | `.claude/skills/env-doctor.md` (load on demand) |
-| Autonomous mode | `.claude/skills/autonomous-guide.md` (load on demand) |
-| Headless runner | `scripts/run-headless.sh --help` (CI/CD, `claude -p` wrapper) |
-| Agent teams details | `.claude/skills/agent-teams-guide.md` (load on demand) |
-| Doc flywheel | `.claude/skills/doc-flywheel.md` (load on demand) |
-| Learning exercises | `.claude/commands/learn.md`, `.meta/learning/` |
-| Implementation progress | Todo file (see [Meta-Development Mode](#meta-development-mode)) |
-| Session learnings | Learnings file (see [Meta-Development Mode](#meta-development-mode)) |
+See [.claude/references/doc-navigator.md](/.claude/references/doc-navigator.md) for the full topic-to-file lookup table (36 entries covering all domains, skills, and references).
 
 ## Your Role as Primary Agent
 - **Architecture & Planning**: Lead on system design and specification creation
@@ -113,68 +75,21 @@ Agent Teams coordinate multiple Claude Code instances for parallel work. Use `/t
 
 ## Development Pipeline
 
-For any task that creates new serverless functions or implements significant new features, you MUST use the development pipeline — either via `/orchestrate` or by running the phases sequentially:
+New serverless functions and significant features MUST use the development pipeline via `/orchestrate` (architect → prototype → spec → test-gen → dev → review → docs). The pre-write hook enforces this — new function files without corresponding tests will be blocked.
 
-1. `/architect` — Design review and service selection
-2. `/prototype` — Quick spike to test unknowns *(conditional — architect recommends when needed)*
-3. `/spec` — Detailed technical specification
-4. `/test-gen` — Write failing tests (TDD Red Phase)
-5. `/dev` — Implement to pass tests (TDD Green Phase)
-6. `/review` — Code review and security audit
-7. `/docs` — Documentation updates
-
-**When to prototype**: When the architect identifies unknowns — unfamiliar APIs, ambiguous documentation, multi-service interactions not previously tested, or real-time protocols with undocumented edge cases. The output is a short "Spike Results" note, not production code. Skip prototyping when the team has prior experience with all involved APIs.
-
-**When to use the pipeline:**
-- Creating new files in `functions/`
-- Adding a new Twilio feature or use case
-- Implementing anything that touches voice, messaging, verification, or other Twilio products
-
-**When the pipeline is NOT needed:**
-- Bug fixes to existing files
-- Documentation updates
-- Configuration changes
-- Single-line tweaks or refactors within an existing file
-
-The pre-write hook enforces this — new function files without corresponding tests will be blocked.
+**When to use**: New files in `functions/`, new Twilio features, anything touching voice/messaging/verification.
+**When NOT needed**: Bug fixes, doc updates, config changes, single-line refactors within existing files.
+**When to prototype**: Conditional — when architect identifies unknowns (unfamiliar APIs, ambiguous docs, multi-service interactions not previously tested, real-time protocols with undocumented edge cases). Output is a short "Spike Results" note, not production code.
 
 ## Documentation Protocol
 
 This project uses a **doc-first approach**: Check → Act → Record.
 
-### Before CLI Operations
-
-**ALWAYS read `.claude/references/twilio-cli.md` before running `twilio` commands.**
-
-```bash
-# WRONG: Guessing at CLI flags
-twilio api:core:available-phone-numbers:local:list --voice-enabled=true
-
-# RIGHT: Check docs first, flags are presence-based
-twilio api:core:available-phone-numbers:local:list --voice-enabled --sms-enabled
-```
-
-Also check:
-- `.claude/references/tool-boundaries.md` before deployment decisions
-- `.claude/references/doc-map.md` to find which doc covers your operation
-- `./scripts/env-doctor.sh` if hitting unexpected auth failures (detects shell vs `.env` conflicts)
-
-### Before Code Changes
-
-Read the relevant `CLAUDE.md` file for the domain you're modifying. See Documentation Navigator table above for full list.
-- **External APIs**: If code calls non-Twilio APIs, check context-hub: `chub search "<api>"`. See `.claude/skills/context-hub.md` for workflow.
-
-### Discovery Capture
-
-When you learn something unexpected, add it to the learnings file **IMMEDIATELY** (see [Meta-Development Mode](#meta-development-mode) for path). Don't wait until the end of a task — capture inline as you discover.
-
-### Before Committing
-
-1. Check the pending actions file for doc update suggestions (see [Meta-Development Mode](#meta-development-mode) for path)
-2. Address suggestions or consciously defer them
-3. Verify you recorded any learnings from this session
-
-For the full capture-promote-clear documentation workflow, see the `doc-flywheel` skill.
+- **Before CLI ops**: Read `.claude/references/twilio-cli.md` — CLI flags are presence-based, not `=true`. Check `tool-boundaries.md` before deployment decisions. Run `./scripts/env-doctor.sh` if hitting auth failures.
+- **Before code changes**: Read the domain's CLAUDE.md (see Documentation Navigator). For external APIs, check context-hub: `.claude/skills/context-hub.md`.
+- **Discovery capture**: Add to learnings file IMMEDIATELY when you learn something unexpected (see [Meta-Development Mode](#meta-development-mode) for path).
+- **Before committing**: Check pending-actions file, address or defer suggestions, verify learnings captured.
+- Full workflow: see the `doc-flywheel` skill.
 
 # Shared Working Agreement
 
@@ -199,6 +114,7 @@ This section establishes shared language and expectations between human and AI c
 - It's fine to disagree, express uncertainty, or say "I don't know" - that's more useful than false confidence or hollow agreement.
 - Keep responses concise. If something can be said in fewer words, do that.
 - Save enthusiasm for when something is genuinely interesting or well-done, so it means something when you express it.
+- Bias toward action over analysis. Start producing deliverables within the first 2-3 messages. If research is needed, do it inline as you write — don't do a separate exploration pass first. When interrupted, take it as a signal to produce output immediately.
 
 # Writing code
 
@@ -220,6 +136,7 @@ This section establishes shared language and expectations between human and AI c
 
 - ALWAYS ask for clarification rather than making assumptions.
 - If you're having trouble with something, it's ok to stop and ask for help. Especially if it's something your human might be better at.
+- Before starting a deliverable (document, audit, plan, analysis), confirm the framing with a 1-2 sentence summary of what you'll produce and what perspective you'll take. "I'll write a [type] from [perspective] covering [scope]." This prevents wasted effort on wrong-format outputs.
 
 # Debugging
 
@@ -249,26 +166,7 @@ When a pre-write or pre-bash hook blocks your action, **do not guess at workarou
 
 ## Architectural Invariants
 
-Rules that have each caused real debugging time loss. These exist in domain-specific CLAUDE.md files — this index ensures they're loaded every session.
-
-- **`Twilio.Response.setBody()` requires strings** — Passing objects causes `Buffer.from(object)` TypeError. Always `JSON.stringify()` + Content-Type header. (~29 latent instances across voice/ and conversation-relay/)
-- **`console.error()` → 82005 alerts** — Use `console.log()` for operational logging. Only `console.error()` in catch blocks. `console.warn()` → 82004.
-- **ConversationRelay uses `last`, not `isFinal`** — Protocol sends `{ last: true }`. Checking `isFinal` silently drops all follow-up utterances.
-- **Env vars can reset on deploy** — `twilio serverless:deploy` doesn't preserve runtime env vars. Always verify after deployment.
-- **CLI profile and `.env` are independent** — CLI profile can point to main account while `.env` has subaccount SID. Check both before operations.
-- **TwiML: one document controls a call at a time** — Updating a participant's TwiML exits their current state (conference, queue). Exception: `<Start><Stream>`, `<Start><Recording>`, `<Start><Siprec>` fork background processes.
-- **Voice Intelligence: `source_sid`, not `media_url`** — Use Recording SID for transcript creation. `media_url` requires auth the Intelligence API can't provide.
-- **Google Neural voices for ConversationRelay** — Polly voices may be blocked (error 64101). Use `Google.en-US-Neural2-F` as default.
-- **`<Start><Recording>` syntax is `.recording()`, not `.record()`** — `twiml.start().recording({...})` is correct.
-- **MCP server inherits env at launch, not runtime** — Changing `.env` or exporting variables mid-session does NOT update MCP tools. Must restart Claude Code entirely.
-- **`source .env` doesn't undo commented-out vars** — Shell retains values after commenting out lines. Must explicitly `unset` each variable before re-sourcing.
-- **SDK auto-reads `TWILIO_REGION`/`TWILIO_EDGE` from env** — Setting these in `.env` silently routes all API calls to regional endpoints even when not passed to the constructor. US1 auth tokens fail with 401 on regional endpoints. Comment out when not actively testing regions.
-- **Empty `voiceUrl` on a Twilio number = silent instant call failure** — Calling a number with `voiceUrl: ""` produces `status: failed, duration: 0` with ZERO diagnostics (no debugger alerts, no notifications, no error codes). Indistinguishable from auth failures or account blocks. Always verify destination webhooks via `list_phone_numbers` before debugging call routing.
-- **dotenv default mode doesn't override shell vars** — `require('dotenv').config()` skips vars already in `process.env`. All project dotenv calls use `{ override: true }` so `.env` always wins. If you add new dotenv usage, include `override: true`. The shipped `.envrc` provides the same isolation for shell scripts via explicit `unset` before loading.
-- **`<Pay>` silently ignored on outbound API call legs** — `<Pay>` in inline TwiML on `make_call` produces zero errors, zero callbacks. Must run from a phone number's voice URL webhook. Use `create_payment` REST API for agent-assisted flows.
-- **Conference DTMF is per-call, not cross-participant** — `<Play digits>` on one conference participant generates in-band audio. `<Pay>` on another participant only detects out-of-band RFC 2833 DTMF from its own call's keypad. Cannot inject DTMF across conference participants.
-- **Conference has no parent/child relationships** — Each participant is an independent call. One disconnecting doesn't affect others (unless `endConferenceOnExit=true`). Contrast with `<Dial>`-created calls where parent/child are coupled.
-- **`<Pause>` as first TwiML verb = no-answer** — Webhook must produce audio (`<Say>`) before `<Pause>` to properly answer the call. `<Pause>`-only responses cause the call to ring until timeout.
+Rules that prevent real debugging time loss. Loaded contextually via `.claude/rules/*-invariants.md` (serverless, environment, voice-protocol). Each rule also lives in its domain CLAUDE.md file. See `.claude/references/operational-gotchas.md` for cross-cutting gotchas.
 
 # Session discipline
 
@@ -301,31 +199,7 @@ Rules that have each caused real debugging time loss. These exist in domain-spec
 - **Todo Management**: Check off completed work in the todo file (see [Meta-Development Mode](#meta-development-mode))
 - **GitHub Integration**: Use agent scripts to create issues and sync with todo tasks
 
-## Build and Development Commands
-
-```bash
-# Install dependencies
-npm install
-
-# Run local development server
-npm start                    # Start on port 3000
-npm run start:ngrok          # Start with ngrok tunnel
-
-# Testing
-npm test                     # Run unit and integration tests
-npm run test:watch           # Run tests in watch mode
-npm run test:coverage        # Run tests with coverage report
-npm run test:e2e             # Run Newman E2E tests
-npm run test:all             # Run all tests
-
-# Linting
-npm run lint                 # Check for linting errors
-npm run lint:fix             # Auto-fix linting errors
-
-# Deployment
-npm run deploy:dev           # Deploy to dev environment
-npm run deploy:prod          # Deploy to production
-```
+Build/dev commands are in `.claude/rules/build-commands.md` (loads when working on functions or tests).
 
 ## Function Access Levels
 
@@ -333,44 +207,6 @@ npm run deploy:prod          # Deploy to production
 - `*.protected.js` - **Protected**: Require valid Twilio request signature
 - `*.private.js` - **Private**: Only callable from other functions
 
-## Custom Slash Commands
+## Slash Commands
 
-The following slash commands are available for specialized tasks:
-
-### Workflow Commands
-
-| Command | Description |
-|---------|-------------|
-| `/orchestrate [workflow] [task]` | Workflow coordinator - runs full development pipelines |
-| `/team [workflow] [task]` | Agent team coordinator - parallel multi-agent workflows |
-
-### Development Subagents
-
-| Command | Description |
-|---------|-------------|
-| `/architect [topic]` | Architect - design review, pattern selection, CLAUDE.md maintenance |
-| `/prototype [topic]` | Quick spike to test unknowns — no tests, no docs, produces learnings |
-| `/spec [feature]` | Specification writer - creates detailed technical specifications |
-| `/test-gen [feature]` | Test generator - TDD Red Phase, writes failing tests first |
-| `/dev [task]` | Developer - TDD Green Phase, implements to pass tests |
-| `/review [target]` | Senior developer - code review, security audit, approval authority |
-| `/test [scope]` | Test runner - executes and validates test suites |
-| `/docs [scope]` | Technical writer - documentation updates and maintenance |
-
-### Utility Commands
-
-| Command | Description |
-|---------|-------------|
-| `/commit [scope]` | Git commit with pre-commit checks, conventional messages, todo tracking |
-| `/push` | Push to remote with test verification and branch tracking |
-| `/preflight` | Environment verification — CLI profile, env vars, auth validity |
-| `/twilio-docs [topic]` | Searches Twilio documentation |
-| `/twilio-logs` | Fetches and analyzes Twilio debugger logs |
-| `/deploy [env]` | Deployment helper with pre/post checks |
-| `/e2e-test [scope]` | E2E tests against live Twilio — real numbers, deep validation |
-| `/validate [type] [SID]` | Deep validation of individual Twilio resources |
-| `/context [action]` | Context optimization - summarize, load, or analyze context |
-| `/wrap-up [scope]` | End-of-session doc updates — learnings, CLAUDE.md, todo, pending actions |
-| `/learn [action]` | Interactive learning exercises on autonomous work |
-| `/plugin-sync` | Detect and reconcile drift between factory source and plugin distribution |
-| `/uber-validation` | Unified cross-repo validation — plugin dogfooding, sequential, chaos, FF cross-repo |
+See `.claude/rules/slash-commands.md` for the full command reference. Key entry points: `/orchestrate`, `/team`, `/architect`.

@@ -380,4 +380,6 @@ Run `/context summarize` if the session is long, to compress progress before han
 
 ## Current Task
 
+<user_request>
 $ARGUMENTS
+</user_request>

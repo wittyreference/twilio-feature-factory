@@ -130,6 +130,11 @@ STATEEOF
     fi
 fi
 
+# 5. Update check (quiet mode — only prints if update available)
+if [ -f "$PROJECT_ROOT/scripts/check-updates.sh" ]; then
+    bash "$PROJECT_ROOT/scripts/check-updates.sh" --quiet 2>&1 || true
+fi
+
 echo "Run /preflight for full environment validation." >&2
 
 # --- Reset Session Tracking ---

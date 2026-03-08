@@ -22,6 +22,7 @@ PROMPT=""
 PROMPT_FILE=""
 TASK_NAME=""
 CLEAN_SLATE=false
+ENV_FILE=".env"
 
 # Resolve a pre-defined task name to its prompt
 resolve_task_prompt() {
@@ -50,6 +51,12 @@ resolve_task_prompt() {
         uber-validation)
             cat "$(dirname "$0")/headless-tasks/uber-validation.md"
             ;;
+        chaos-only)
+            cat "$(dirname "$0")/headless-tasks/chaos-only.md"
+            ;;
+        nonvoice-only)
+            cat "$(dirname "$0")/headless-tasks/nonvoice-only.md"
+            ;;
         *)
             echo ""
             ;;
@@ -67,11 +74,13 @@ Options:
   --output-format F  Output format: stream-json, json, text (default: stream-json)
   --prompt-file PATH Read prompt from a file instead of command line
   --task NAME        Use a pre-defined task prompt
+  --env-file PATH    Source this env file instead of .env (default: .env)
   --clean            Run validation-reset.sh before starting (clean slate)
   --list-tasks       List available pre-defined tasks
   --help             Show this help message
 
-Pre-defined tasks: validate, test-fix, lint-fix, typecheck, deploy-dev, e2e-validate, random-validation, uber-validation
+Pre-defined tasks: validate, test-fix, lint-fix, typecheck, deploy-dev, e2e-validate,
+                   random-validation, uber-validation, chaos-only, nonvoice-only
 
 Environment:
   CLAUDE_HEADLESS_ACKNOWLEDGED=true  Required. Confirms you accept autonomous risks.
@@ -95,9 +104,12 @@ list_tasks() {
     echo "  deploy-dev    Run /preflight, then deploy to dev environment"
     echo "  e2e-validate  Full E2E: deploy, live calls, callback verification, auto-fix (use --max-turns 80)"
     echo "  random-validation  Random use case build + deploy + deep validation (use --max-turns 120)"
+    echo "  chaos-only    Chaos resilience testing — no Twilio API calls (use --max-turns 60)"
+    echo "  nonvoice-only Nonvoice validation: SMS, Verify, Sync, TaskRouter (use --max-turns 120)"
     echo ""
     echo "Flags:"
     echo "  --clean            Run validation-reset.sh first (deletes deployment, recreates services)"
+    echo "  --env-file PATH    Source env file (default: .env) — use for lane isolation"
 }
 
 # Parse arguments
@@ -117,6 +129,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --task)
             TASK_NAME="$2"
+            shift 2
+            ;;
+        --env-file)
+            ENV_FILE="$2"
             shift 2
             ;;
         --clean)
@@ -170,22 +186,27 @@ if [ "$CLAUDE_HEADLESS_ACKNOWLEDGED" != "true" ]; then
     exit 1
 fi
 
-# Source .env if present (provides Twilio credentials for MCP server)
-if [ -f ".env" ]; then
-    # Clear inherited Twilio vars that could conflict with .env
+# Source env file (provides Twilio credentials for MCP server)
+if [ -f "$ENV_FILE" ]; then
+    # Clear inherited Twilio vars that could conflict with env file
     unset TWILIO_REGION TWILIO_EDGE TWILIO_API_KEY TWILIO_API_SECRET 2>/dev/null || true
     set -a
-    source .env
+    source "$ENV_FILE"
     set +a
+else
+    if [ "$ENV_FILE" != ".env" ]; then
+        echo -e "${RED}Error: Env file not found: $ENV_FILE${NC}" >&2
+        exit 1
+    fi
 fi
 
 # --- Clean slate (optional) ---
 if [ "$CLEAN_SLATE" = true ]; then
     echo -e "${CYAN}Running validation reset (clean slate)...${NC}"
     if ./scripts/validation-reset.sh; then
-        echo -e "${GREEN}Reset complete. Re-sourcing .env...${NC}"
+        echo -e "${GREEN}Reset complete. Re-sourcing ${ENV_FILE}...${NC}"
         set -a
-        source .env
+        source "$ENV_FILE"
         set +a
         export VALIDATION_CLEAN=true
     else
@@ -235,6 +256,9 @@ SESSION_LOG=".claude/autonomous-sessions/${SESSION_ID}.log"
     fi
     if [ -n "$PROMPT_FILE" ]; then
         echo "Prompt file: ${PROMPT_FILE}"
+    fi
+    if [ "$ENV_FILE" != ".env" ]; then
+        echo "Env file: ${ENV_FILE}"
     fi
     if [ "$CLEAN_SLATE" = true ]; then
         echo "Clean slate: yes"

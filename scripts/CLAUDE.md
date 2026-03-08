@@ -25,6 +25,7 @@ This directory contains CLI scripts for project setup and maintenance.
 | `env-doctor.sh` | `./scripts/env-doctor.sh` | Detect shell vs .env conflicts, orphaned regional vars, direnv status |
 | `dogfood-env.sh` | `./scripts/dogfood-env.sh` | Simulate new-user onboarding with conflicting shell env vars |
 | `validate-provisioning.sh` | `./scripts/validate-provisioning.sh` | Clean-room provisioning validator — ephemeral resources, full lifecycle, auto-teardown |
+| `run-regression.sh` | `./scripts/run-regression.sh` | Regression validation orchestrator — parallel fast checks + headless validation lanes |
 | `api-sync/` | `cd scripts/api-sync && npm run sync` | Automated Twilio API drift detection and coverage analysis |
 
 ## Setup Script
@@ -222,6 +223,8 @@ CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --task validate --ma
 | `deploy-dev` | Run /preflight, then deploy to dev. Report URLs. |
 | `e2e-validate` | Full E2E: deploy, live calls, callback verification, auto-fix. Use `--max-turns 80`. |
 | `random-validation` | Random use case build + deploy + deep validation. Use `--max-turns 120`. |
+| `chaos-only` | Chaos resilience validation — no Twilio APIs, safe for parallel. Use `--max-turns 60`. |
+| `nonvoice-only` | Nonvoice validation: SMS, Verify, Sync, TaskRouter via MCP. Use `--max-turns 120`. |
 
 ### Task Prompt Files
 
@@ -232,6 +235,8 @@ For complex tasks that don't fit in a one-liner, store prompt files in `scripts/
 - `e2e-validate.md` — Autonomous E2E validation: deploy → live calls → callback verification → auto-fix (3 phases, 3 retries each)
 - `parallel-refactor.md` — Scope-parallel refactoring: spawns one Task subagent per domain/package, each self-verifying. Requires companion spec at `.meta/refactor-spec.md`.
 - `random-validation.md` — Headless-optimized random use case: select UC, build inline (no slash commands), deploy, deep validate with MCP tools, capture learnings. Requires `FORCE_USE_CASE=UCN` for parallel diversity.
+- `chaos-only.md` — Chaos resilience validation: generates novel scenarios from 7 archetypes × 7 categories, evaluates architect instructions, scores 5 dimensions. No Twilio API calls.
+- `nonvoice-only.md` — Nonvoice product validation: deploys functions, validates Messaging (MC1-MC3), Verify (VC1-VC2), Sync (SY1-SY4), TaskRouter (TR1-TR3) via MCP tools. 12 checks total.
 
 Use with: `./scripts/run-headless.sh --prompt-file scripts/headless-tasks/validate.md`
 
@@ -277,6 +282,75 @@ These were discovered across 16 headless sessions and 4 rounds of prompt iterati
 | **Wrong prompt file wastes sessions** | `--prompt-file .meta/random-validation.md` (interactive plan) vs `--task random-validation` (headless-optimized) | Always use `--task random-validation` for headless runs |
 | **MCP server needs `.env` sourced** | MCP tools fail with auth errors if env vars aren't exported | `run-headless.sh` must export env vars for MCP tools to work |
 | **Headless validation burns turns on infrastructure** | Setup, deploy, and webhook config consume 30-40% of turn budget before validation starts | Use `--task random-validation` with `--max-turns 120` to leave room |
+
+## Regression Testing Script
+
+The `run-regression.sh` script orchestrates parallel validation after significant codebase changes.
+
+### Modes
+
+| Mode | What It Runs | Time | LLM Turns |
+|------|-------------|------|-----------|
+| `--quick` | Phase 1 only: parallel fast checks | ~5 min | 0 |
+| `--standard` | Phase 1 + chaos validation | ~60 min | ~60 |
+| `--full` | Phase 1 + 3 parallel headless lanes | ~2 hours | ~300 |
+| `--serial` | Phase 1 + headless lanes sequentially | ~3-4 hours | ~300 |
+
+### Phase 1: Parallel Fast Checks
+
+Runs up to 7 checks in background (`&`), waits for all, collects exit codes:
+- `npm test --bail` — unit/integration tests
+- `npm run lint` — ESLint
+- `npx tsc --noEmit` — MCP server typecheck
+- `check-claude-doc-drift.sh` — CLAUDE.md inventory drift
+- `validate-meta-separation.sh` — .meta/ file isolation
+- `npm run test:e2e` — Newman collection (if available)
+- `verify-shipping-ready.sh` — shipping readiness (if available)
+
+### Phase 2: Headless Validation Lanes
+
+Three lanes with resource isolation:
+
+| Lane | Task | Resources | Turns |
+|------|------|-----------|-------|
+| Lane A | `random-validation` | Default `.env` (voice, webhooks, ngrok) | 120 |
+| Lane B | `nonvoice-only` | `.env.lane-b` (separate Sync, Verify, TaskRouter, Messaging) | 120 |
+| Lane C | `chaos-only` | None (no Twilio API calls) | 60 |
+
+`--full` runs all three in parallel. `--serial` runs them sequentially (no `.env.lane-b` needed). `--standard` runs only Lane C.
+
+### Lane B Resource Isolation
+
+For `--full` mode, provision a second set of Twilio resources stored in `.env.lane-b`:
+- 2 phone numbers (voice+SMS enabled)
+- Sync service, Verify service, Messaging service
+- TaskRouter workspace + default workflow
+
+One-time setup via `scripts/setup.js` or manually. `.env.lane-b` is gitignored.
+
+### Usage
+
+```bash
+# Fast checks only (no LLM, no Twilio costs)
+./scripts/run-regression.sh --quick
+
+# + chaos validation
+CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-regression.sh --standard
+
+# Full parallel (requires .env.lane-b)
+CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-regression.sh --full
+
+# Full sequential (no .env.lane-b needed)
+CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-regression.sh --serial
+```
+
+### Reports
+
+Results are saved to `.meta/regression-reports/YYYYMMDD-HHMMSS/`:
+- `phase1-*.log` / `phase1-*.exit` — fast check logs and exit codes
+- `lane-*.log` / `lane-*.exit` — headless lane logs and exit codes
+- `*-results.json` — structured JSON results from headless tasks
+- `summary.md` — consolidated markdown report
 
 ## Validation Reset Script
 

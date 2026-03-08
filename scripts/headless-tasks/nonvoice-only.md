@@ -1,4 +1,4 @@
-<!-- ABOUTME: Headless nonvoice validation: SMS, Verify, Sync, TaskRouter via MCP tools against live Twilio APIs. -->
+<!-- ABOUTME: Headless nonvoice validation: SMS, Verify, Sync, TaskRouter, Video via MCP tools against live Twilio APIs. -->
 <!-- ABOUTME: Deploys serverless functions, runs validation checks, captures structured results. -->
 
 You are running headless via `claude -p`. You have NO interactive terminal.
@@ -9,7 +9,7 @@ You are running headless via `claude -p`. You have NO interactive terminal.
 - Do NOT use `${}` parameter substitution or `$()` command substitution in Bash — the sandbox blocks them
 - Do NOT try to create temp directories with `mkdir` — use the Write tool instead (it implicitly creates directories)
 
-**Your job**: Deploy serverless functions, validate nonvoice Twilio products (Messaging, Verify, Sync, TaskRouter) via MCP tools, and write structured results.
+**Your job**: Deploy serverless functions, validate nonvoice Twilio products (Messaging, Verify, Sync, TaskRouter, Video) via MCP tools, and write structured results.
 
 ## Step 0: Environment Check
 
@@ -20,7 +20,8 @@ import os
 vars = ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_PHONE_NUMBER',
         'TWILIO_SYNC_SERVICE_SID', 'TWILIO_VERIFY_SERVICE_SID',
         'TWILIO_MESSAGING_SERVICE_SID', 'TWILIO_TASKROUTER_WORKSPACE_SID',
-        'TWILIO_TASKROUTER_WORKFLOW_SID']
+        'TWILIO_TASKROUTER_WORKFLOW_SID',
+        'TWILIO_API_KEY', 'TWILIO_API_SECRET']
 for v in vars:
     val = os.environ.get(v, 'NOT SET')
     masked = val[:4] + '...' + val[-4:] if len(val) > 8 else val
@@ -131,6 +132,31 @@ Use `mcp__twilio__list_workflows` with TWILIO_TASKROUTER_WORKSPACE_SID.
 
 Record results.
 
+## Step 5b: Video Validation (VD1-VD3)
+
+**Note**: Video rooms require API Key auth. Check TWILIO_API_KEY and TWILIO_API_SECRET from environment.
+If either is NOT SET, SKIP all VD checks and mark them as SKIP with note "API Key credentials not configured".
+
+### VD1: Create Video Room
+Use `mcp__twilio__create_video_room` with:
+- Unique name: "regression-test-TIMESTAMP" (use python3 to generate)
+- Type: "group"
+- StatusCallback: deployment URL + "/video/callbacks/room-status"
+
+**Validate:** Room SID returned (starts with RM), status is "in-progress".
+
+### VD2: List Video Rooms
+Use `mcp__twilio__list_video_rooms` to verify the created room appears.
+
+**Validate:** Room from VD1 appears in the list with correct unique name and type "group".
+
+### VD3: Complete Room
+Use `mcp__twilio__update_room` with the room SID from VD1 to set status to "completed".
+
+**Validate:** Room status is "completed" after update.
+
+Record results for each.
+
 ## Step 6: Write Results
 
 Write a structured JSON results file using the Write tool:
@@ -140,7 +166,7 @@ Write a structured JSON results file using the Write tool:
   "runId": "nonvoice-YYYYMMDD-HHMMSS",
   "timestamp": "ISO timestamp",
   "deploymentUrl": "the-deployed-domain.twil.io",
-  "totalChecks": 12,
+  "totalChecks": 15,
   "passed": 0,
   "failed": 0,
   "skipped": 0,
@@ -196,6 +222,7 @@ Only include genuine findings — if all 12 checks pass cleanly, write "All 12 c
 Clean up test artifacts created during validation:
 - Delete the Sync document created in SY1 (if you have the SID)
 - Delete the Sync list created in SY4
+- The Video room from VD1 was already completed in VD3 (no further cleanup needed)
 
 Do NOT delete services, phone numbers, or the deployment — those are shared infrastructure.
 
@@ -217,8 +244,11 @@ Print a summary table as your final output:
 | TR1: List Workers | PASS/FAIL | ... |
 | TR2: List Queues | PASS/FAIL | ... |
 | TR3: List Workflows | PASS/FAIL | ... |
+| VD1: Create Video Room | PASS/FAIL/SKIP | ... |
+| VD2: List Video Rooms | PASS/FAIL/SKIP | ... |
+| VD3: Complete Room | PASS/FAIL/SKIP | ... |
 
-**Total**: X/12 passed
+**Total**: X/15 passed
 
 ## Pacing
 
@@ -227,7 +257,8 @@ You have up to 120 turns. Budget:
 - Step 2: 15 turns (messaging — 5 per check)
 - Step 3: 10 turns (verify)
 - Step 4: 20 turns (sync — 5 per check)
-- Step 5: 15 turns (taskrouter)
+- Step 5: 12 turns (taskrouter)
+- Step 5b: 10 turns (video — may SKIP if no API key)
 - Steps 6-9: 12 turns (results + learnings + cleanup + summary)
 
 If any step takes more than its budget, skip remaining sub-checks in that step and mark them as SKIP. Move on.

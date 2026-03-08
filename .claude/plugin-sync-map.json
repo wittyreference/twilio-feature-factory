@@ -9,6 +9,8 @@
       { "factory": ".claude/skills/multi-agent-patterns.md", "plugin": "skills/multi-agent-patterns/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/skills/tdd-workflow.md", "plugin": "skills/tdd-workflow/SKILL.md", "adaptation": "frontmatter,generalize-agents" },
       { "factory": ".claude/skills/voice-use-case-map.md", "plugin": "skills/voice-use-case-map/SKILL.md", "adaptation": "frontmatter" },
+      { "factory": ".claude/skills/video.md", "plugin": "skills/video/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/video/CLAUDE.md", "plugin": "skills/video-patterns/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": ".claude/skills/sip-byoc.md", "plugin": "skills/sip-byoc/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/skills/compliance-regulatory.md", "plugin": "skills/compliance-regulatory/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/skills/payments.md", "plugin": "skills/payments/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },

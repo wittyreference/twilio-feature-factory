@@ -23,6 +23,9 @@ npm run test:coverage        # Run tests with coverage report
 npm run test:e2e             # Run Newman E2E tests
 npm run test:all             # Run all tests
 
+# Video E2E tests (requires API key)
+npm run test:video-sdk       # Run Playwright video SDK tests
+
 # Linting
 npm run lint                 # Check for linting errors
 npm run lint:fix             # Auto-fix linting errors

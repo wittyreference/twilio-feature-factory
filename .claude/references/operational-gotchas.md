@@ -30,7 +30,13 @@ Cross-cutting gotchas discovered through real debugging sessions. Domain-specifi
 
 - **Inbound leg CallSid differs from outbound API call SID** — When initiating outbound to a tracking number, the function sees a different CallSid (inbound child). Sync docs keyed by inbound SID, recordings on outbound SID.
 
+## Verify API
+
+- **Verify Service FriendlyName rejects names with 5+ total digits (error 60200)** — `POST /v2/Services` returns "Invalid parameter" if the FriendlyName contains 5 or more digit characters total, even non-consecutive (e.g. `test-20260307-abc` has 8 digits). Convert numeric identifiers to alpha-only hash: `echo "$TS" | md5 | tr '0-9' 'g-p' | head -c 8`.
+
 ## Voice Call Routing
+
+- **REST API `Twiml` parameter for inline TwiML** — `POST .../Calls.json` accepts a `Twiml` parameter with inline TwiML instead of requiring a `Url` webhook. Useful for provisioning tests and one-off calls. CLI equivalent: `twilio api:core:calls:create --twiml '<Response><Say>Hello</Say></Response>'`.
 
 - **Empty `voiceUrl` on a Twilio number causes silent instant call failure** — When `make_call` targets a Twilio number that has no voice webhook configured (`voiceUrl: ""`), the call fails instantly with `duration: 0`. Twilio produces ZERO diagnostics: no debugger alerts, no call notifications, no error codes, no Voice Insights errors. The only symptom is `status: failed` with start_time === end_time. This wastes enormous debugging time because it looks identical to auth failures, regional routing issues, or account-level blocks. **Always verify destination number webhooks before troubleshooting call failures.** Use `list_phone_numbers` and check that every number involved in testing has a non-empty `voiceUrl`.
 

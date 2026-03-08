@@ -1577,6 +1577,42 @@ Specific changes:
 
 ---
 
+## Decision 35: Clean-Room Provisioning Validation
+
+### Context
+
+Existing validation types (sequential, parallel, uber, chaos, non-voice) reuse pre-existing infrastructure — phone numbers, services, serverless deployments. Provisioning paths (search/purchase numbers, create services, deploy new serverless services, create VI services) are never exercised during validation.
+
+### Decision
+
+**Created `scripts/validate-provisioning.sh` that tests the full provisioning lifecycle using ephemeral resources with a `validation-` prefix alongside existing infrastructure.**
+
+14 tests covering: number search, purchase, 6 service creations (Sync, Verify, Messaging, TaskRouter workspace+queue+workflow, Serverless, Voice Intelligence), webhook config, SMS, outbound call, deep call validation, and auto-teardown via trap EXIT. Cost: ~$0.07/run.
+
+### Rationale
+
+1. Provisioning paths are the most fragile surface area — auth changes, API deprecations, and account limits all manifest here first
+2. Ephemeral resources with a `validation-` prefix allow safe creation alongside production infrastructure without risk of collision or accidental cleanup
+3. Trap-based teardown ensures resources are cleaned up even on script failure, preventing resource leaks
+
+### Alternatives Considered
+
+- **Full account wipe before each validation**: Too destructive — breaks payment demo, SIP lab, and agent-to-agent infrastructure
+- **Testing only via MCP tools**: Doesn't validate raw REST API provisioning paths
+- **Integrating into uber-validation**: Keeps provisioning validation independent since it has different failure modes (auth, billing, rate limits vs. functional correctness)
+
+### Consequences
+
+- Provisioning bugs (auth failures, API changes, account limits) are now caught before they surface in production setups
+- Discovered Verify API FriendlyName digit restriction during first run
+- Standalone script, not wired into uber-validation pipeline
+
+### Status
+
+**Accepted** - 2026-03-07
+
+---
+
 ## Decision N: [Title]
 
 ### Context
@@ -1654,3 +1690,4 @@ Specific changes:
 | 2026-02-26 | D32 | Chaos validation baseline: 4.52/5.0 across 21 scenarios. Updated 2026-02-27: full matrix 4.71/5.0 across 42 scenarios, 49/49 archetype×category pairs |
 | 2026-03-01 | D33 | Archived context as active agent memory (804 plans + 51 compaction summaries → session context loader) |
 | 2026-03-06 | D34 | Accord-informed pipeline evolution: /prototype phase, LLM velocity trap naming, collaboration reframe |
+| 2026-03-07 | D35 | Clean-room provisioning validation: 14-test ephemeral lifecycle script, ~$0.07/run |

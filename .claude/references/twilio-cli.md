@@ -768,6 +768,21 @@ twilio api:taskrouter:v1:workspaces:workers:update \
 | TaskRouter | `api:taskrouter:v1:workspaces` | list, create, fetch |
 | TaskRouter | `api:taskrouter:v1:workspaces:workers` | list, create, update |
 
+### Provisioning REST API Endpoints
+
+Direct REST API endpoints used for provisioning validation and programmatic resource management.
+
+| Operation | Endpoint | Method |
+|-----------|----------|--------|
+| Search available numbers | `api.twilio.com/.../AvailablePhoneNumbers/US/Local.json` | GET |
+| Purchase number | `api.twilio.com/.../IncomingPhoneNumbers.json` | POST |
+| Release number | `api.twilio.com/.../IncomingPhoneNumbers/{SID}.json` | DELETE |
+| Create Serverless service | `serverless.twilio.com/v1/Services` | POST |
+| Delete Serverless service | `serverless.twilio.com/v1/Services/{SID}` | DELETE |
+| Create VI service | `intelligence.twilio.com/v2/Services` | POST |
+| Delete VI service | `intelligence.twilio.com/v2/Services/{SID}` | DELETE |
+| Make call with inline TwiML | `api.twilio.com/.../Calls.json` (use `Twiml` param) | POST |
+
 ---
 
 ## Global Flags

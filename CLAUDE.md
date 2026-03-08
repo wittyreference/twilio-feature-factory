@@ -168,6 +168,8 @@ When a pre-write or pre-bash hook blocks your action, **do not guess at workarou
 
 Rules that prevent real debugging time loss. Loaded contextually via `.claude/rules/*-invariants.md` (serverless, environment, voice-protocol). Each rule also lives in its domain CLAUDE.md file. See `.claude/references/operational-gotchas.md` for cross-cutting gotchas.
 
+- **Verify FriendlyName: max 4 total digits** — `POST /v2/Services` returns 60200 ("Invalid parameter") if FriendlyName contains 5+ digit characters total, even non-consecutive. Use alpha-only identifiers for programmatic names (`echo "$TS" | md5 | tr '0-9' 'g-p' | head -c 8`).
+
 # Session discipline
 
 - Prioritize the pipeline over ad-hoc implementation. For tasks that create new functions, always invoke `/orchestrate` or run pipeline phases sequentially. Ad-hoc coding (skipping architect/spec) is only appropriate for bug fixes and small edits to existing files.

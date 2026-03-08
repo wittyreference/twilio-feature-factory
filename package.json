@@ -21,7 +21,8 @@
     "lint": "eslint functions/ __tests__/",
     "lint:fix": "eslint functions/ __tests__/ --fix",
     "demo": "./scripts/demo.sh",
-    "test:e2e:deployed": "newman run postman/collection.json -e postman/environment-deployed.json --timeout-request 10000"
+    "test:e2e:deployed": "newman run postman/collection.json -e postman/environment-deployed.json --timeout-request 10000",
+    "test:sip-lab": "./scripts/run-sip-lab-e2e.sh"
   },
   "keywords": [
     "twilio",

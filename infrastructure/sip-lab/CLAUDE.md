@@ -98,6 +98,28 @@ docker exec sip-lab-asterisk asterisk -rx "channel originate PJSIP/+1NXXNXXXXXX@
 
 SIP UA registers to Twilio SIP Domain. Requires additional MCP tools (see below).
 
+### Phase D: Full PSTN Connectivity Validation (automated)
+
+End-to-end test proving the complete call path works with recording and transcription.
+
+```bash
+# Run all SIP Lab E2E tests
+npm run test:sip-lab
+# Or directly
+./scripts/run-sip-lab-e2e.sh
+```
+
+**Test file**: `__tests__/e2e/sip-lab/pstn-connectivity.test.js`
+
+**What it validates**:
+1. Outbound API call from a Twilio number TO the trunk-associated number
+2. Call routes through SIP trunk to Asterisk, is answered, audio plays
+3. Call recording captured via `record: true` on API call
+4. Voice Intelligence transcript created from recording SID
+5. No SIP errors (13xxx, 64xxx) in debugger during test window
+
+**Prerequisites**: Running droplet with Asterisk, provisioned trunk with phone number, Voice Intelligence service (auto-discovered if `TWILIO_INTELLIGENCE_SERVICE_SID` not set).
+
 ## Twilio SIP Resource Lifecycle
 
 Provisioned by `setup-sip-lab.js` in this order:

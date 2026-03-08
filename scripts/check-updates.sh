@@ -179,7 +179,7 @@ if semver_lt "$LOCAL_VERSION" "$REMOTE_VERSION"; then
     if [ -n "$RELEASE_NAME" ]; then
         log_stderr "  Release: $RELEASE_NAME"
     fi
-    log_stderr "  Update:  cd $(pwd) && git pull origin main"
+    log_stderr "  Update:  cd $(pwd) && ./scripts/update.sh"
     if [ -n "$RELEASE_URL" ]; then
         log_stderr "  Details: $RELEASE_URL"
     fi

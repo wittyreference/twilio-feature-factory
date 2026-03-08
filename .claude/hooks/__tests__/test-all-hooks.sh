@@ -229,6 +229,26 @@ MD_SID_JSON=$(python3 -c "import json; print(json.dumps({'tool_input':{'file_pat
 EXIT=$(echo "$MD_SID_JSON" | bash "$HOOK_DIR/pre-write-validate.sh" >/dev/null 2>&1; echo $?)
 assert_exit "Credential check skipped for .md" "0" "$EXIT"
 
+# Test: credential check skipped for .env files
+ENV_SID_JSON=$(python3 -c "import json; print(json.dumps({'tool_input':{'file_path':'$PROJECT_ROOT/.env','content':'TWILIO_ACCOUNT_SID=$FAKE_SID'}}))")
+EXIT=$(echo "$ENV_SID_JSON" | CLAUDE_ALLOW_PRODUCTION_WRITE=true bash "$HOOK_DIR/pre-write-validate.sh" >/dev/null 2>&1; echo $?)
+assert_exit "Credential check skipped for .env" "0" "$EXIT"
+
+# Test: credential check skipped for .env.lane-b
+ENV_LANE_JSON=$(python3 -c "import json; print(json.dumps({'tool_input':{'file_path':'$PROJECT_ROOT/.env.lane-b','content':'TWILIO_ACCOUNT_SID=$FAKE_SID'}}))")
+EXIT=$(echo "$ENV_LANE_JSON" | CLAUDE_ALLOW_PRODUCTION_WRITE=true bash "$HOOK_DIR/pre-write-validate.sh" >/dev/null 2>&1; echo $?)
+assert_exit "Credential check skipped for .env.lane-b" "0" "$EXIT"
+
+# Test: credential check skipped for ~/.twilio-cli/ config
+CLI_JSON=$(python3 -c "import json; print(json.dumps({'tool_input':{'file_path':'/Users/someone/.twilio-cli/config.json','content':'\"accountSid\": \"$FAKE_SID\"'}}))")
+EXIT=$(echo "$CLI_JSON" | CLAUDE_ALLOW_PRODUCTION_WRITE=true bash "$HOOK_DIR/pre-write-validate.sh" >/dev/null 2>&1; echo $?)
+assert_exit "Credential check skipped for .twilio-cli config" "0" "$EXIT"
+
+# Test: credential check skipped for node_modules
+NODE_JSON=$(python3 -c "import json; print(json.dumps({'tool_input':{'file_path':'$PROJECT_ROOT/node_modules/twilio/lib/rest.js','content':'const sid = \"$FAKE_SID\";'}}))")
+EXIT=$(echo "$NODE_JSON" | CLAUDE_ALLOW_PRODUCTION_WRITE=true bash "$HOOK_DIR/pre-write-validate.sh" >/dev/null 2>&1; echo $?)
+assert_exit "Credential check skipped for node_modules" "0" "$EXIT"
+
 # ============================================
 # pre-bash-validate.sh tests
 # ============================================

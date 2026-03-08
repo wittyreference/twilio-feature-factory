@@ -131,14 +131,25 @@ RESOLVED_PROJECT_ROOT="$(realpath "$PROJECT_ROOT" 2>/dev/null || echo "$PROJECT_
 # CREDENTIAL SAFETY CHECK
 # ============================================
 
-# Skip credential checks for test files, docs, and env examples
+# Skip credential checks for infrastructure/config files that legitimately
+# contain credentials, plus test files, docs, and env examples.
 # Uses a flag instead of exit 0 so downstream checks (assertion warnings,
 # naming patterns) still run — those are specifically designed for .md files.
 SKIP_CREDENTIALS=false
+
+# Test files and docs
 if [[ "$FILE_PATH" =~ \.test\.(js|ts)$ ]] || [[ "$FILE_PATH" =~ \.spec\.(js|ts)$ ]] || \
    [[ "$FILE_PATH" =~ _test\.go$ ]] || \
    [[ "$FILE_PATH" =~ __tests__/ ]] || [[ "$FILE_PATH" =~ \.md$ ]] || \
    [[ "$FILE_PATH" =~ \.env\.example$ ]] || [[ "$FILE_PATH" =~ \.env\.sample$ ]]; then
+    SKIP_CREDENTIALS=true
+fi
+
+# Infrastructure/config files that legitimately contain credentials.
+# These are gitignored or external to the repo — not application code.
+if [[ "$(basename "$FILE_PATH")" =~ ^\.env(\..*)?$ ]] || \
+   [[ "$FILE_PATH" =~ \.twilio-cli/ ]] || \
+   [[ "$FILE_PATH" =~ node_modules/ ]]; then
     SKIP_CREDENTIALS=true
 fi
 

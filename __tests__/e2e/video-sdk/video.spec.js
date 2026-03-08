@@ -446,7 +446,7 @@ test.describe('Video SDK - Disconnect Handling', () => {
 });
 
 test.describe('Video SDK - Webhook Verification', () => {
-  const CALLBACK_BASE_URL = 'https://prototype-9863-dev.twil.io';
+  const CALLBACK_BASE_URL = process.env.TWILIO_CALLBACK_BASE_URL;
   const SYNC_SERVICE_SID = process.env.TWILIO_SYNC_SERVICE_SID;
 
   test.skip(!process.env.TWILIO_ACCOUNT_SID || !SYNC_SERVICE_SID || SYNC_SERVICE_SID.startsWith('ISx'),
@@ -550,7 +550,7 @@ test.describe('Video SDK - Webhook Verification', () => {
           .services(SYNC_SERVICE_SID)
           .documents(syncDocName)
           .remove();
-      } catch (_cleanupErr) {
+      } catch (cleanupErr) {
         console.log('Sync cleanup warning:', cleanupErr.message);
       }
 
@@ -561,7 +561,7 @@ test.describe('Video SDK - Webhook Verification', () => {
 });
 
 test.describe('Video SDK - Three Participants with Recording and Composition', () => {
-  const CALLBACK_BASE_URL = 'https://prototype-9863-dev.twil.io';
+  const CALLBACK_BASE_URL = process.env.TWILIO_CALLBACK_BASE_URL;
 
   test.skip(!process.env.TWILIO_ACCOUNT_SID, 'Requires Twilio credentials');
 
@@ -763,7 +763,7 @@ test.describe('Video SDK - Three Participants with Recording and Composition', (
 });
 
 test.describe('Video SDK - Real-time Transcription', () => {
-  const CALLBACK_BASE_URL = 'https://prototype-9863-dev.twil.io';
+  const CALLBACK_BASE_URL = process.env.TWILIO_CALLBACK_BASE_URL;
   const SYNC_SERVICE_SID = process.env.TWILIO_SYNC_SERVICE_SID;
 
   // Expected speech content for validation
@@ -927,7 +927,7 @@ test.describe('Video SDK - Real-time Transcription', () => {
         .services(SYNC_SERVICE_SID)
         .documents(`callbacks-video-room-${roomSid}`)
         .remove();
-    } catch (_cleanupErr) {
+    } catch (cleanupErr) {
       // Ignore cleanup errors
     }
 

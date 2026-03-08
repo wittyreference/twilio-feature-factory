@@ -35,7 +35,7 @@ test.beforeAll(() => {
 });
 
 test.describe('Video SDK - Professional Consultation with PSTN Participant', () => {
-  const CALLBACK_BASE_URL = 'https://prototype-9863-dev.twil.io';
+  const CALLBACK_BASE_URL = process.env.TWILIO_CALLBACK_BASE_URL;
   const FROM_NUMBER = process.env.TWILIO_PHONE_NUMBER;
   const CONSULTANT_NUMBER = process.env.TEST_PHONE_NUMBER;
 

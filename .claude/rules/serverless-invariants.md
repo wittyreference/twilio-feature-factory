@@ -20,4 +20,5 @@ Rules that have each caused real debugging time loss. See domain CLAUDE.md files
 - **Conference DTMF is per-call, not cross-participant** — `<Play digits>` on one conference participant generates in-band audio. Cannot inject DTMF across conference participants.
 - **Conference has no parent/child relationships** — Each participant is an independent call. One disconnecting doesn't affect others (unless `endConferenceOnExit=true`). Contrast with `<Dial>`-created calls where parent/child are coupled.
 - **`<Pause>` as first TwiML verb = no-answer** — Webhook must produce audio (`<Say>`) before `<Pause>` to properly answer the call.
+- **Video rooms require API Key auth** — AccessToken for Video uses API Key + Secret, not Auth Token. Functions must have TWILIO_API_KEY and TWILIO_API_SECRET env vars.
 </architectural_invariants>

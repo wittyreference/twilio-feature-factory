@@ -8,6 +8,8 @@
 | Tool boundaries | [.claude/references/tool-boundaries.md](/.claude/references/tool-boundaries.md) |
 | Voice/TwiML patterns | [functions/voice/CLAUDE.md](/functions/voice/CLAUDE.md) |
 | Voice use case product map | `.claude/skills/voice-use-case-map.md` (load on demand) |
+| Video patterns | [functions/video/CLAUDE.md](/functions/video/CLAUDE.md) |
+| Video skill (advanced) | `.claude/skills/video.md` (load on demand) |
 | SMS/MMS patterns | [functions/messaging/CLAUDE.md](/functions/messaging/CLAUDE.md) |
 | Real-time voice AI | [functions/conversation-relay/CLAUDE.md](/functions/conversation-relay/CLAUDE.md) |
 | Verification patterns | [functions/verify/CLAUDE.md](/functions/verify/CLAUDE.md) |

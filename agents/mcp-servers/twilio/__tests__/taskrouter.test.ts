@@ -42,8 +42,8 @@ describe('taskrouterTools', () => {
   });
 
   describe('tool structure', () => {
-    it('should return an array of 5 tools', () => {
-      expect(tools).toHaveLength(5);
+    it('should return an array of 13 tools', () => {
+      expect(tools).toHaveLength(13);
     });
 
     it('should have create_task tool with correct metadata', () => {

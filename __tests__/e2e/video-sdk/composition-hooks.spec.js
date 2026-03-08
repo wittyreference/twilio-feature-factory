@@ -35,7 +35,7 @@ test.beforeAll(() => {
 });
 
 test.describe('Video SDK - Composition Hooks', () => {
-  const CALLBACK_BASE_URL = 'https://prototype-9863-dev.twil.io';
+  const CALLBACK_BASE_URL = process.env.TWILIO_CALLBACK_BASE_URL;
   const SYNC_SERVICE_SID = process.env.TWILIO_SYNC_SERVICE_SID;
 
   test.skip(!process.env.TWILIO_ACCOUNT_SID, 'Requires Twilio credentials');
@@ -265,7 +265,7 @@ test.describe('Video SDK - Composition Hooks', () => {
                 .services(SYNC_SERVICE_SID)
                 .documents(compositionSyncDocName)
                 .remove();
-            } catch (_cleanupErr) {
+            } catch (cleanupErr) {
               // Ignore cleanup errors
             }
           }

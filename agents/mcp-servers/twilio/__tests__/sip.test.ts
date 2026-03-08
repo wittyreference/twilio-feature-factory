@@ -39,8 +39,8 @@ describe('sipTools', () => {
   });
 
   describe('tool structure', () => {
-    it('should return an array of 20 tools', () => {
-      expect(tools).toHaveLength(20);
+    it('should return an array of 31 tools', () => {
+      expect(tools).toHaveLength(31);
     });
 
     it('should have list_sip_ip_access_control_lists tool with correct metadata', () => {

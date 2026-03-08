@@ -621,7 +621,7 @@ export function validationTools(context: TwilioContext) {
         } else {
           room = await client.video.v1.rooms(roomSid).fetch();
         }
-      } catch (err) {
+      } catch (_err) {
         return {
           content: [{
             type: 'text' as const,

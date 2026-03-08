@@ -2,6 +2,7 @@
   "plugin_repo": "../twilio-claude-plugin",
   "mappings": {
     "skills": [
+      { "factory": ".claude/skills/context-hub.md", "plugin": "skills/context-hub/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/skills/context-engineering.md", "plugin": "skills/context-engineering/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/skills/deep-validation.md", "plugin": "skills/deep-validation/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": ".claude/skills/memory-systems.md", "plugin": "skills/memory-systems/SKILL.md", "adaptation": "frontmatter" },

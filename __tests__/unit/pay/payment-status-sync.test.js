@@ -89,7 +89,7 @@ describe('payment-status-sync handler', () => {
       await handler(context, event, callback);
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('result=success')
+        expect.stringContaining('"Result":"success"')
       );
     });
   });
@@ -105,11 +105,10 @@ describe('payment-status-sync handler', () => {
       await handler(context, event, callback);
 
       expect(mockSyncService).toHaveBeenCalledWith('IS1234567890');
-      expect(mockSyncDocuments).toHaveBeenCalledWith('payment-PK5678');
+      expect(mockSyncDocuments).toHaveBeenCalledWith('payment-session-active');
       expect(mockSyncUpdate).toHaveBeenCalledWith({
         data: expect.objectContaining({
           callSid: 'CA1234',
-          paymentSid: 'PK5678',
           result: 'success',
         }),
       });
@@ -128,7 +127,7 @@ describe('payment-status-sync handler', () => {
 
       expect(mockSyncCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          uniqueName: 'payment-PK5678',
+          uniqueName: 'payment-session-active',
           ttl: 86400,
         })
       );
@@ -148,12 +147,18 @@ describe('payment-status-sync handler', () => {
       expect(mockSyncService).not.toHaveBeenCalled();
     });
 
-    it('should skip Sync write when no PaymentSid', async () => {
+    it('should write Sync document even without PaymentSid', async () => {
       const event = { CallSid: 'CA1234' };
 
       await handler(context, event, callback);
 
-      expect(mockSyncService).not.toHaveBeenCalled();
+      expect(mockSyncService).toHaveBeenCalledWith('IS1234567890');
+      expect(mockSyncDocuments).toHaveBeenCalledWith('payment-session-active');
+      expect(mockSyncUpdate).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          callSid: 'CA1234',
+        }),
+      });
     });
   });
 

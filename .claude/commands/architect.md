@@ -112,6 +112,7 @@ When recommending advanced APIs, explicitly note:
 - What is the user trying to accomplish?
 - What Twilio capabilities are needed?
 - How does this fit with existing functionality?
+- Are non-Twilio external APIs involved? Check context-hub (`chub search "<api>"`) for current docs.
 
 ### Step 2: Evaluate Architecture Fit
 
@@ -363,6 +364,7 @@ Before starting a design review, optimize your context:
 2. **Reference similar functions**: Find existing patterns to follow
 3. **Load multi-agent patterns skill**: `.claude/skills/multi-agent-patterns.md` for complex designs
 4. **Load voice use case product map**: `.claude/skills/voice-use-case-map.md` when recommending Twilio products for a voice use case — provides definitive per-use-case product mappings
+5. **Check context-hub for external API docs**: If the feature uses APIs beyond Twilio's core (Stripe, OpenAI, etc.), run `chub search "<api>"` for current docs. Load `.claude/skills/context-hub.md` for the full workflow.
 
 ### Manage Context During Review
 

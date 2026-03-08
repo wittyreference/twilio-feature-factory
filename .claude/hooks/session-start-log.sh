@@ -135,6 +135,11 @@ if [ -f "$PROJECT_ROOT/scripts/check-updates.sh" ]; then
     bash "$PROJECT_ROOT/scripts/check-updates.sh" --quiet 2>&1 || true
 fi
 
+# 6. Context Hub availability
+if command -v chub >/dev/null 2>&1; then
+    echo "Context Hub (chub) available for external API docs." >&2
+fi
+
 echo "Run /preflight for full environment validation." >&2
 
 # --- Reset Session Tracking ---

@@ -94,6 +94,7 @@ Agent Teams coordinate multiple Claude Code instances for parallel work. Use `/t
 | API changes/drift | [.claude/references/twilio-api-changes.md](/.claude/references/twilio-api-changes.md) |
 | Twilio CLI reference | [.claude/references/twilio-cli.md](/.claude/references/twilio-cli.md) |
 | Operational gotchas (testing, deploy, SDK) | [.claude/references/operational-gotchas.md](/.claude/references/operational-gotchas.md) |
+| Context Hub (external APIs) | `.claude/skills/context-hub.md` (load on demand) |
 | Hooks reference | `.claude/skills/hooks-reference.md` (load on demand) |
 | Environment doctor | `.claude/skills/env-doctor.md` (load on demand) |
 | Autonomous mode | `.claude/skills/autonomous-guide.md` (load on demand) |
@@ -161,6 +162,7 @@ Also check:
 ### Before Code Changes
 
 Read the relevant `CLAUDE.md` file for the domain you're modifying. See Documentation Navigator table above for full list.
+- **External APIs**: If code calls non-Twilio APIs, check context-hub: `chub search "<api>"`. See `.claude/skills/context-hub.md` for workflow.
 
 ### Discovery Capture
 

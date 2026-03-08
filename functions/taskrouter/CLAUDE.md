@@ -564,6 +564,26 @@ AFTER_CALL_ACTIVITY_SID=WAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6. **Clean Up Tasks**: Complete or cancel tasks when done to avoid orphaned tasks
 7. **Use Activities Properly**: Ensure workers set correct activity for accurate routing
 
+## Gotchas
+
+### `HAS` Expression May Silently Fail to Match Workers
+
+Queue `targetWorkers` expressions like `"skills" HAS "english"` can fail to match workers whose attributes include the value. The queue's `realTimeStatistics` will show `totalEligibleWorkers: 0` and `totalAvailableWorkers: 0`, but no error is raised — tasks just sit in the queue until timeout.
+
+**Diagnosis**: Check queue real-time statistics via `get_queue_statistics` MCP tool or:
+```javascript
+const stats = await workspace.taskQueues(queueSid).realTimeStatistics().fetch();
+console.log(stats.totalEligibleWorkers, stats.totalAvailableWorkers);
+```
+
+If `totalEligibleWorkers` is 0 but workers exist with matching attributes, the expression is the problem.
+
+**Workaround**: For single-queue setups, use `1==1` (match all workers). For multi-queue, test expressions against specific workers using the TaskRouter Expression Evaluator in the Console.
+
+### Conference Instruction `record` Parameter Takes a String
+
+The assignment callback `conference` instruction requires `conference_record: 'record-from-start'` (string), NOT `conference_record: true` (boolean). Boolean values are silently ignored and no recording is created.
+
 ## File Naming Conventions
 
 - `*.js` - Public endpoints (for TwiML responses like enqueue)

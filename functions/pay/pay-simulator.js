@@ -42,7 +42,7 @@ exports.handler = async (context, event, callback) => {
   // Generic Pay Connector uses lowercase field names: method, cardnumber, expiry_month, etc.
   const method = event.method || event.Method || '';
   const cardNumber = event.cardnumber || event.CardNumber || '';
-  const amount = event.amount || event.Amount || '';
+  const _amount = event.amount || event.Amount || '';
 
   // In simple mode, always return success regardless of input
   if (mode === 'simple') {

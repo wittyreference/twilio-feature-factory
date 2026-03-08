@@ -18,6 +18,9 @@ This directory contains CLI scripts for project setup and maintenance.
 | `check-demo-health.sh` | `./scripts/check-demo-health.sh` | Pre-demo health check (ngrok, server, API keys, credentials) |
 | `run-validation-suite.sh` | `./scripts/run-validation-suite.sh` | Run E2E deep validation suite against live US1 Twilio APIs |
 | `generate-postman-collection.js` | `node scripts/generate-postman-collection.js > postman/collection.json` | Generate Newman E2E collection from compact spec (44 requests, 14 folders) |
+| `check-updates.sh` | `./scripts/check-updates.sh` | Check local version against latest GitHub release; cached, session-start integrated |
+| `update.sh` | `./scripts/update.sh` | Self-contained updater — handles clones, forks, and templates uniformly |
+| `validate-updates.sh` | `./scripts/validate-updates.sh` | Cross-repo validation of check-updates.sh and update.sh across 3 GitHub repos |
 | `env-doctor.sh` | `./scripts/env-doctor.sh` | Detect shell vs .env conflicts, orphaned regional vars, direnv status |
 | `dogfood-env.sh` | `./scripts/dogfood-env.sh` | Simulate new-user onboarding with conflicting shell env vars |
 | `api-sync/` | `cd scripts/api-sync && npm run sync` | Automated Twilio API drift detection and coverage analysis |

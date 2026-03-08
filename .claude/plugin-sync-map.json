@@ -24,7 +24,7 @@
       { "factory": "functions/proxy/CLAUDE.md", "plugin": "skills/proxy/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": "functions/phone-numbers/CLAUDE.md", "plugin": "skills/phone-numbers/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": ".claude/references/twilio-cli.md", "plugin": "skills/twilio-cli/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
-      { "factory": "CLAUDE.md", "plugin": "skills/twilio-invariants/SKILL.md", "adaptation": "frontmatter,extract-invariants" },
+      { "factory": ".claude/rules/serverless-invariants.md", "plugin": "skills/twilio-invariants/SKILL.md", "adaptation": "frontmatter,merge-invariant-rules", "additional_sources": [".claude/rules/environment-invariants.md", ".claude/rules/voice-protocol-invariants.md"] },
       { "factory": ".claude/references/brainstorm.md", "plugin": "skills/brainstorm/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/references/tool-boundaries.md", "plugin": "skills/tool-boundaries/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/references/operational-gotchas.md", "plugin": "skills/operational-gotchas/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
@@ -96,10 +96,14 @@
     ],
     "references": [
       ".claude/references/doc-map.md",
+      ".claude/references/doc-navigator.md",
       ".claude/references/twilio-api-changes.md"
     ],
     "rules": [
-      ".claude/rules/tools-architecture.md"
+      ".claude/rules/tools-architecture.md",
+      ".claude/rules/slash-commands.md",
+      ".claude/rules/build-commands.md",
+      ".claude/rules/self-service.md"
     ],
     "infrastructure": [
       "agents/mcp-servers/",
@@ -137,7 +141,8 @@
     "generalize-agents": "Replace factory-specific agent names with generic terms",
     "generalize-role": "Rewrite from factory command perspective to portable agent perspective",
     "generalize-names": "Replace hardcoded project names with dynamic values (e.g., path.basename(cwd))",
-    "extract-invariants": "Extract only the Architectural Invariants section from full CLAUDE.md",
+    "extract-invariants": "DEPRECATED — invariants moved to .claude/rules/*-invariants.md",
+    "merge-invariant-rules": "Concatenate all *-invariants.md rules files (primary + additional_sources) into one plugin skill, stripping paths: frontmatter",
     "restructure": "Significant structural changes beyond simple stripping",
     "simplify": "Reduce to core functionality, removing factory-specific checks",
     "minimal": "Little or no adaptation needed, near-identical copy"

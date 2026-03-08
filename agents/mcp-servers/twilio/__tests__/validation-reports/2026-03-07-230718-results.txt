@@ -1,0 +1,848 @@
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[config] (WARN) [94mmessage[0m[90m TS151002: [0mUsing hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+  console.log
+    
+    === SMS Deep Validation Test ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:118:17)
+
+  console.log
+    From: +12069666002
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:119:17)
+
+  console.log
+    To: +12062021014
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:120:17)
+
+  console.log
+    
+    Message sent: SMa4b47dca16e237c45481a93ee73fd004
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:130:17)
+
+  console.log
+    Waiting 5s for message to process...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:137:17)
+
+  console.log
+    
+    Running deep validation...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:141:17)
+
+  console.log
+    
+    Resource: message SMa4b47dca16e237c45481a93ee73fd004
+    Status: delivered
+    Success: false
+    Duration: 569ms
+    
+    Checks:
+      ✓ resourceStatus: Message status: delivered
+      ✓ debuggerAlerts: No alerts found
+      ✗ syncCallbacks: No callback data received (Sync document not found)
+    
+    Errors:
+      - No callback data received (Sync document not found)
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:149:17)
+
+  console.error
+    
+    Validation FAILED
+
+      163 |           expect(validationResult.checks.resourceStatus.passed).toBe(false); // Correctly detected failure
+      164 |         } else if (!validationResult.success) {
+    > 165 |           console.error('\nValidation FAILED');
+          |                   ^
+      166 |           console.error('Errors:', validationResult.errors);
+      167 |           expect(validationResult.success).toBe(true);
+      168 |         } else {
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:165:19)
+
+  console.error
+    Errors: [ 'No callback data received (Sync document not found)' ]
+
+      164 |         } else if (!validationResult.success) {
+      165 |           console.error('\nValidation FAILED');
+    > 166 |           console.error('Errors:', validationResult.errors);
+          |                   ^
+      167 |           expect(validationResult.success).toBe(true);
+      168 |         } else {
+      169 |           console.log('\nValidation PASSED ✓');
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:166:19)
+
+  console.log
+    
+    === Voice Call Deep Validation Test ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:182:17)
+
+  console.log
+    From: +12069666002
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:183:17)
+
+  console.log
+    To: +12062021014
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:184:17)
+
+  console.log
+    
+    Call initiated: CA2e12aaa3cb135c2afa716952827e6342
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:194:17)
+
+  console.log
+    Waiting 15s for call to complete...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:201:17)
+
+  console.log
+    
+    Running deep validation...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:205:17)
+
+  console.log
+    
+    Resource: call CA2e12aaa3cb135c2afa716952827e6342
+    Status: completed
+    Success: true
+    Duration: 788ms
+    
+    Checks:
+      ✓ resourceStatus: Call status: completed
+      ✓ debuggerAlerts: No alerts found
+      ✓ callNotifications: No call notifications
+      ✓ callEvents: 0 call events, no errors
+      ✓ voiceInsights: Voice Insights not available: The requested resource /v1/Voice/CA2e12aaa3cb135c2afa716952827e6342/Summary was not found
+      ✗ syncCallbacks: No callback data received (Sync document not found)
+    
+    Errors:
+      - No callback data received (Sync document not found)
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:213:17)
+
+  console.log
+    
+    Voice Insights available
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:224:19)
+
+  console.log
+    
+    Validation PASSED ✓
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:237:19)
+
+  console.log
+    
+    === Verification Deep Validation Test ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:258:17)
+
+  console.log
+    Service: VA9e7e8053cac853563655953bb5f0b28c
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:259:17)
+
+  console.log
+    To: +12062021014
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:260:17)
+
+  console.log
+    
+    Verification started: VEaff1b6124622e23ce6f797dfdc0a7de0
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:270:17)
+
+  console.log
+    Waiting 3s for verification to process...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:278:17)
+
+  console.log
+    
+    Running deep validation...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:282:17)
+
+  console.log
+    
+    Resource: verification VEaff1b6124622e23ce6f797dfdc0a7de0
+    Status: pending
+    Success: true
+    Duration: 346ms
+    
+    Checks:
+      ✓ resourceStatus: Verification status: pending
+      ✓ debuggerAlerts: No alerts found
+      ✗ syncCallbacks: No callback data received (Sync document not found)
+    
+    Warnings:
+      - No callback data received (Sync document not found)
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:292:17)
+
+  console.log
+    
+    Validation PASSED ✓
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:305:19)
+
+  console.log
+    
+    === Full Messaging Workflow Deep Validation ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:318:17)
+
+  console.log
+    
+    1. Checking account status...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:322:17)
+
+  console.log
+       Account: twilio-agent-factory (active)
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:330:17)
+
+  console.log
+    
+    2. Sending test message...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:333:17)
+
+  console.log
+       Sent: SM69db78471ec4d08e3484e1b9e8979764
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:345:17)
+
+  console.log
+    
+    3. Waiting for delivery...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:348:17)
+
+  console.log
+    
+    4. Deep validating message...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:351:17)
+
+  console.log
+    
+    5. Checking debugger for issues...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:374:17)
+
+  console.log
+    
+    === Workflow Summary ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:396:17)
+
+  console.log
+    ✓ Account Check: Account twilio-agent-factory is active
+
+      at __tests__/e2e-deep-validation.test.ts:399:19
+          at Array.forEach (<anonymous>)
+
+  console.log
+    ✓ Send Message: SID: SM69db78471ec4d08e3484e1b9e8979764
+
+      at __tests__/e2e-deep-validation.test.ts:399:19
+          at Array.forEach (<anonymous>)
+
+  console.log
+    ✓ Deep Validation: Status: delivered, Checks: resourceStatus:✓, debuggerAlerts:✓, syncCallbacks:✓
+
+      at __tests__/e2e-deep-validation.test.ts:399:19
+          at Array.forEach (<anonymous>)
+
+  console.log
+    ✓ Debugger Check: No alerts found
+
+      at __tests__/e2e-deep-validation.test.ts:399:19
+          at Array.forEach (<anonymous>)
+
+  console.log
+    
+    Overall: PASSED ✓
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:403:17)
+
+  console.log
+    
+    === Debugger Validation Test ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:429:15)
+
+  console.log
+    Total alerts: 7
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:435:15)
+
+  console.log
+    Error alerts: 7
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:436:15)
+
+  console.log
+    Warning alerts: 0
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:437:15)
+
+  console.log
+    Success: false
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:438:15)
+
+  console.log
+    
+    Recent alerts:
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:441:17)
+
+  console.log
+      [error] 64102: msg=Unable+to+connect+to+websocket+URL&Msg=Unable+to+connect+to+websocket+URL&Er
+
+      at __tests__/e2e-deep-validation.test.ts:443:19
+          at Array.forEach (<anonymous>)
+
+  console.log
+      [error] 64102: msg=Unable+to+connect+to+websocket+URL&Msg=Unable+to+connect+to+websocket+URL&Er
+
+      at __tests__/e2e-deep-validation.test.ts:443:19
+          at Array.forEach (<anonymous>)
+
+  console.log
+      [error] 64102: msg=Unable+to+connect+to+websocket+URL&Msg=Unable+to+connect+to+websocket+URL&Er
+
+      at __tests__/e2e-deep-validation.test.ts:443:19
+          at Array.forEach (<anonymous>)
+
+  console.log
+      [error] 64102: msg=Unable+to+connect+to+websocket+URL&Msg=Unable+to+connect+to+websocket+URL&Er
+
+      at __tests__/e2e-deep-validation.test.ts:443:19
+          at Array.forEach (<anonymous>)
+
+  console.log
+      [error] 64102: msg=Unable+to+connect+to+websocket+URL&Msg=Unable+to+connect+to+websocket+URL&Er
+
+      at __tests__/e2e-deep-validation.test.ts:443:19
+          at Array.forEach (<anonymous>)
+
+  console.log
+    
+    Debugger Validation PASSED ✓
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:452:15)
+
+  console.log
+    
+    === Sync Document Validation Test ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:495:15)
+
+  console.log
+    Service: IS8d793d6cb78bcc3367d66a7eb9ab1f0b
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:496:15)
+
+  console.log
+    Created doc: ETe1dbe45ee8db66bb1f249bdb5c256f29 (e2e-test-doc-1772953643670)
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:506:15)
+
+  console.log
+    Success: true
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:518:15)
+
+  console.log
+    Document SID: ETe1dbe45ee8db66bb1f249bdb5c256f29
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:519:15)
+
+  console.log
+    Data keys: count, status, tags
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:520:15)
+
+  console.log
+    
+    Sync Document Validation PASSED ✓
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:527:15)
+
+  console.log
+    Cleaned up test doc: e2e-test-doc-1772953643670
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:485:17)
+
+  console.log
+    
+    === Sync List Validation Test ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:569:15)
+
+  console.log
+    Created list: ESc4d48c82cf65fffbaf94f40aca51a715 (e2e-test-list-1772953643670)
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:575:15)
+
+  console.log
+    Added 3 items
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:584:15)
+
+  console.log
+    Success: true
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:597:15)
+
+  console.log
+    List SID: ESc4d48c82cf65fffbaf94f40aca51a715
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:598:15)
+
+  console.log
+    Item count: 3
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:599:15)
+
+  console.log
+    
+    Sync List Validation PASSED ✓
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:604:15)
+
+  console.log
+    Cleaned up test list: e2e-test-list-1772953643670
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:559:17)
+
+  console.log
+    
+    === Sync Map Validation Test ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:646:15)
+
+  console.log
+    Created map: MP06d1eb1156c0157b1bf444b089cf7101 (e2e-test-map-1772953643670)
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:652:15)
+
+  console.log
+    Added 2 map items
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:665:15)
+
+  console.log
+    Success: true
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:676:15)
+
+  console.log
+    Map SID: MP06d1eb1156c0157b1bf444b089cf7101
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:677:15)
+
+  console.log
+    Item count: 2
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:678:15)
+
+  console.log
+    Keys: config, settings
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:679:15)
+
+  console.log
+    
+    Sync Map Validation PASSED ✓
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:688:15)
+
+  console.log
+    Cleaned up test map: e2e-test-map-1772953643670
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:636:17)
+
+  console.log
+    
+    === TaskRouter Validation Test ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:732:15)
+
+  console.log
+    Workspace: WS19d8f4d67b7074cde4cd40b4435bdda0
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:733:15)
+
+  console.log
+    Using workflow: WWb9b41d2ca3a19f97337a9073f8d14fc3
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:746:15)
+
+  console.log
+    Created task: WT334b4ca903ba67e33baad8d9dc007434
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:762:15)
+
+  console.log
+    Success: true
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:775:15)
+
+  console.log
+    Task SID: WT334b4ca903ba67e33baad8d9dc007434
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:776:15)
+
+  console.log
+    Assignment status: assigned
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:777:15)
+
+  console.log
+    Priority: 0
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:778:15)
+
+  console.log
+    Reservations: 1
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:779:15)
+
+  console.log
+    Events: 3
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:780:15)
+
+  console.log
+    
+    TaskRouter Validation PASSED ✓
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:787:15)
+
+  console.log
+    
+    === Recording Validation Test ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:810:15)
+
+  console.log
+    Validating recording: REfa81484fdf4ae40400b2f00b3a1d8aee
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:820:15)
+
+  console.log
+      Call SID: CAbf88e405fdc2f02720f1d8cf3d2bac3e
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:821:15)
+
+  console.log
+      Duration: 3s
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:822:15)
+
+  console.log
+      Status: completed
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:823:15)
+
+  console.log
+    
+    Success: true
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:830:15)
+
+  console.log
+    Recording SID: REfa81484fdf4ae40400b2f00b3a1d8aee
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:831:15)
+
+  console.log
+    Status: completed
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:832:15)
+
+  console.log
+    Duration: 3s
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:833:15)
+
+  console.log
+    
+    Recording Validation PASSED ✓
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:838:15)
+
+  console.log
+    
+    === Transcript Validation Test ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:861:15)
+
+  console.log
+    No completed transcripts found — skipping
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:868:17)
+
+  console.log
+    
+    === Language Operator Validation Test ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:913:15)
+
+  console.log
+    No completed transcripts found — skipping
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:920:17)
+
+  console.log
+    
+    === Sync CRUD Lifecycle Test ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:991:15)
+
+  console.log
+    1. Creating document...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:996:15)
+
+  console.log
+    2. Updating document...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:1006:15)
+
+  console.log
+    3. Reading document...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:1014:15)
+
+  console.log
+    4. Running deep validation...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:1020:15)
+
+  console.log
+    5. Deleting document...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:1030:15)
+
+  console.log
+    
+    === Lifecycle Summary ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:1042:15)
+
+  console.log
+    ✓ Create: SID: ETdfa76b114145484b7784c7b7f8ff9550
+
+      at __tests__/e2e-deep-validation.test.ts:1043:36
+          at Array.forEach (<anonymous>)
+
+  console.log
+    ✓ Update: version=2
+
+      at __tests__/e2e-deep-validation.test.ts:1043:36
+          at Array.forEach (<anonymous>)
+
+  console.log
+    ✓ Read: status=updated
+
+      at __tests__/e2e-deep-validation.test.ts:1043:36
+          at Array.forEach (<anonymous>)
+
+  console.log
+    ✓ Validate: keys=status,updatedAt,version
+
+      at __tests__/e2e-deep-validation.test.ts:1043:36
+          at Array.forEach (<anonymous>)
+
+  console.log
+    ✓ Delete: Confirmed gone
+
+      at __tests__/e2e-deep-validation.test.ts:1043:36
+          at Array.forEach (<anonymous>)
+
+  console.log
+    
+    Sync CRUD Lifecycle PASSED ✓
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:1045:15)
+
+  console.log
+    
+    === Phone Number Search + Configure Flow ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:1082:15)
+
+  console.log
+    1. Searching available numbers (US, area 415)...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:1086:15)
+
+  console.log
+       First: +14158557171 (Sausalito)
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:1097:17)
+
+  console.log
+    2. Listing owned numbers...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:1101:15)
+
+  console.log
+    3. Configuring voiceUrl on +12069666002...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:1120:17)
+
+  console.log
+    4. Verifying configuration...
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:1131:17)
+
+  console.log
+    
+    === Flow Summary ===
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:1141:15)
+
+  console.log
+    ✓ Search: Found 1 numbers
+
+      at __tests__/e2e-deep-validation.test.ts:1142:36
+          at Array.forEach (<anonymous>)
+
+  console.log
+    ✓ List Owned: 5 number(s) owned
+
+      at __tests__/e2e-deep-validation.test.ts:1142:36
+          at Array.forEach (<anonymous>)
+
+  console.log
+    ✓ Configure: voiceUrl set to https://e2e-test-1772953686995.example.c...
+
+      at __tests__/e2e-deep-validation.test.ts:1142:36
+          at Array.forEach (<anonymous>)
+
+  console.log
+    ✓ Verify: voiceUrl confirmed: true
+
+      at __tests__/e2e-deep-validation.test.ts:1142:36
+          at Array.forEach (<anonymous>)
+
+  console.log
+    
+    Phone Number Flow PASSED ✓
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:1144:15)
+
+  console.log
+    Restored voiceUrl on PNfd5828a643b61df0a24f4144be8c1e91
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:1072:17)
+
+FAIL __tests__/e2e-deep-validation.test.ts (48.015 s)
+  E2E Deep Validation Tests
+    SMS Deep Validation
+      ✕ should send SMS and validate delivery via multiple endpoints (6132 ms)
+    Voice Call Deep Validation
+      ✓ should make call and validate via Voice Insights and Call Events (15953 ms)
+    Verification Deep Validation
+      ✓ should start verification and validate via multiple endpoints (3773 ms)
+    Full Workflow Deep Validation
+      ✓ should run complete messaging workflow with validation at each step (6035 ms)
+  Standalone Debugger Validation
+    ✓ should check debugger for recent alerts (376 ms)
+  Sync Document Validation
+    ✓ should create and validate a Sync Document (686 ms)
+  Sync List Validation
+    ✓ should create and validate a Sync List (1271 ms)
+  Sync Map Validation
+    ✓ should create and validate a Sync Map (1110 ms)
+  TaskRouter Validation
+    ✓ should create and validate a TaskRouter task (3684 ms)
+  Recording Validation
+    ✓ should validate a recent recording from the account (756 ms)
+  Transcript Validation
+    ✓ should validate a recent transcript from the account (389 ms)
+  Language Operator Validation
+    ✓ should validate language operator results on a transcript (362 ms)
+  Sync CRUD Lifecycle
+    ✓ should create, update, read, validate, and delete a Sync Document (1238 ms)
+  Phone Number Search + Configure Flow
+    ✓ should search available numbers, list owned numbers, and configure a webhook (1460 ms)
+  Proxy Session Lifecycle
+    ○ skipped should create, inspect, and close a Proxy session
+
+  ● E2E Deep Validation Tests › SMS Deep Validation › should send SMS and validate delivery via multiple endpoints
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      165 |           console.error('\nValidation FAILED');
+      166 |           console.error('Errors:', validationResult.errors);
+    > 167 |           expect(validationResult.success).toBe(true);
+          |                                            ^
+      168 |         } else {
+      169 |           console.log('\nValidation PASSED ✓');
+      170 |           expect(validationResult.checks.resourceStatus.passed).toBe(true);
+
+      at Object.<anonymous> (__tests__/e2e-deep-validation.test.ts:167:44)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 1 skipped, 13 passed, 15 total
+Snapshots:   0 total
+Time:        48.147 s
+Ran all test suites matching /e2e-deep-validation/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

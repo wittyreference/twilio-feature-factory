@@ -109,9 +109,7 @@ This catches the most common new-user failure mode: inherited shell vars from an
 
 ### Check 3: Auth Validity
 
-```bash
-twilio api:core:accounts:fetch --sid $TWILIO_ACCOUNT_SID -o json
-```
+Use MCP tool `get_account` to verify credentials work:
 
 - **PASS**: Returns account data (report friendly name and status)
 - **FAIL**: Auth error, expired OAuth token, network failure, or account suspended
@@ -120,9 +118,7 @@ This is the most important check — it proves credentials actually work right n
 
 ### Check 4: Deployment Status (only with `--verbose`)
 
-```bash
-twilio serverless:list --properties serviceName,dateUpdated
-```
+Use MCP tool `list_services` to check deployment state.
 
 - **INFO**: Shows last deploy date and service name
 - **WARN**: No deployments found (first deploy, or different profile)

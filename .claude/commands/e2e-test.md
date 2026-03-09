@@ -26,11 +26,7 @@ Verify these are set and valid:
 
 ### 3. Deployment Status
 
-Check that functions are deployed and current:
-
-```bash
-twilio serverless:list --properties serviceName,dateUpdated
-```
+Check that functions are deployed and current using MCP tool `list_services`.
 
 If the last deploy is stale or functions were modified since, suggest deploying first with `/deploy`.
 
@@ -40,7 +36,7 @@ Use REAL phone numbers for all operations. NEVER use Twilio magic test numbers (
 
 ### Place Test Calls/Messages
 
-Use the Twilio CLI or MCP tools to initiate real calls and messages. Record every resource SID.
+Use MCP tools (`make_call`, `send_sms`) to initiate real calls and messages. Record every resource SID for SID-targeted validation.
 
 ### Validate Results
 

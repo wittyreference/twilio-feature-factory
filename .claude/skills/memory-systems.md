@@ -351,8 +351,9 @@ git status
 # Check recent test changes
 git diff HEAD~3 __tests__/
 
-# Check Twilio logs
-twilio debugger:logs:list --limit 10
+# Check Twilio logs — SID-targeted if you have one
+# validate_debugger(resourceSid: "CA...") for a specific resource
+# get_debugger_logs for time-window browsing
 ```
 
 ## Implementation Checklist

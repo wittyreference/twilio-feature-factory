@@ -1,20 +1,40 @@
 # Twilio Logs Analyzer
 
-Fetch and analyze recent Twilio debugger logs to identify issues.
+Fetch and analyze Twilio debugger logs to identify issues. Uses MCP tools for structured, SID-targeted analysis.
 
-## Fetch Logs
+## Strategy: SID-First
 
-Run the following command to get recent logs:
+Always start with the most targeted tool available:
+
+### Have a specific resource SID?
+
+Use the domain-specific validation tool for deep analysis:
+
+| Resource | Tool | What You Get |
+|----------|------|-------------|
+| Call (`CA...`) | `validate_call(callSid)` | Status + notifications + Voice Insights + recordings |
+| Message (`SM...`) | `validate_message(messageSid)` | Delivery status + debugger alerts |
+| Recording (`RE...`) | `validate_recording(recordingSid)` | Completion status + duration |
+| Transcript (`GT...`) | `validate_transcript(transcriptSid)` | Completion + sentences |
+| Any resource SID | `validate_debugger(resourceSid: "XX...")` | Debugger alerts filtered to that resource |
+
+### Investigating a time window?
+
+- `get_debugger_logs(limit, startDate, endDate)` — list alerts in a window
+- `analyze_errors` — automatic pattern detection and error grouping
+
+### General health check?
+
+- `validate_debugger(lookbackSeconds: 300)` — recent alerts across the account
+
+### CLI fallback (human debugging only)
 
 ```bash
 twilio debugger:logs:list --limit 20
-```
-
-For more detailed logs:
-
-```bash
 twilio debugger:logs:list --limit 50 --start-date "YYYY-MM-DD"
 ```
+
+Use CLI only for interactive human debugging sessions, not agent workflows.
 
 ## Analysis Focus
 

@@ -23,6 +23,7 @@ This document defines the architectural boundaries between MCP Server, Twilio CL
 3. **Functions = Real-Time Webhooks**: Handle calls/messages, return TwiML.
 4. **Never Cross Layers**: MCP does not invoke CLI. Functions do not use MCP.
 5. **Teams = Parallel Coordination**: Multiple agents working simultaneously. Teammates must not edit the same file.
+6. **SID-First Principle**: When you have a specific resource SID (call, message, recording, transcript, task, room, trunk, Sync resource), always use the SID-targeted `validate_*` or `get_*` tool instead of listing and filtering. SID-targeted tools provide deep validation (status, notifications, insights, sub-resources) in a single call. Reserve `list_*` tools for discovery when you don't have a SID.
 
 ---
 
@@ -57,6 +58,65 @@ Read-only operations agents can perform freely via MCP tools.
 | Get call queue | `get_queue` | Queue details |
 | Get payment status | `get_payment` | Payment status check |
 | Get verification status | `get_verification_status` | Status check |
+| Validate call (deep) | `validate_call` | Status + notifications + Voice Insights |
+| Validate message (deep) | `validate_message` | Delivery + debugger alerts |
+| Validate recording | `validate_recording` | Completion polling + duration |
+| Validate transcript | `validate_transcript` | Completion + sentences |
+| Validate debugger | `validate_debugger` | Alerts, optionally filtered by resourceSid |
+| Validate voice AI flow | `validate_voice_ai_flow` | Full flow: call → recording → transcript |
+| Validate two-way | `validate_two_way` | Bidirectional conversation |
+| Validate language operator | `validate_language_operator` | Operator results on transcript |
+| Validate Sync document | `validate_sync_document` | Data structure + content |
+| Validate Sync list | `validate_sync_list` | Item count + structure |
+| Validate Sync map | `validate_sync_map` | Key/value validation |
+| Validate TaskRouter task | `validate_task` | Task deep validation |
+| Validate SIP | `validate_sip` | Infrastructure validation |
+| Validate video room | `validate_video_room` | Room + participants + tracks |
+| List serverless services | `list_services` | Deployment state |
+| List serverless functions | `list_functions` | Function inventory |
+| List serverless logs | `list_logs` | Runtime logs |
+| List environments | `list_environments` | Deployment environments |
+| List builds | `list_builds` | Build history |
+| Get build status | `get_build_status` | Build completion |
+| List assets | `list_assets` | Asset inventory |
+| List variables | `list_variables` | Environment variables |
+| List Studio flows | `list_studio_flows` | Flow inventory |
+| Get Studio flow | `get_flow` | Flow definition |
+| Get execution status | `get_execution_status` | Flow execution state |
+| List execution steps | `list_execution_steps` | Step-by-step trace |
+| List messaging services | `list_messaging_services` | Service inventory |
+| Get messaging service | `get_messaging_service` | Service config |
+| Lookup phone number | `lookup_phone_number` | Carrier info, validation |
+| Check fraud risk | `check_fraud_risk` | Fraud assessment |
+| List video rooms | `list_video_rooms` | Room inventory |
+| Get video room | `get_room` | Room details |
+| List room participants | `list_room_participants` | Participant inventory |
+| List room recordings | `list_room_recordings` | Recording inventory |
+| List proxy services | `list_proxy_services` | Proxy inventory |
+| Get proxy service | `get_proxy_service` | Service config |
+| List proxy sessions | `list_proxy_sessions` | Session inventory |
+| List content templates | `list_content_templates` | Template inventory |
+| Get content template | `get_content_template` | Template details |
+| List intelligence services | `list_intelligence_services` | Service inventory |
+| List transcripts | `list_transcripts` | Transcript inventory |
+| Get transcript | `get_transcript` | Transcript details |
+| List sentences | `list_sentences` | Sentence extraction |
+| List operator results | `list_operator_results` | AI operator output |
+| List SIP domains | `list_sip_domains` | Domain inventory |
+| List SIP trunks | `list_sip_trunks` | Trunk inventory |
+| Get SIP trunk | `get_sip_trunk` | Trunk config |
+| List regulatory bundles | `list_regulatory_bundles` | Compliance status |
+| Get account | `get_account` | Account info + status |
+| List accounts | `list_accounts` | Sub-account inventory |
+| Get account balance | `get_account_balance` | Balance check |
+| List API keys | `list_api_keys` | Key inventory |
+| List addresses | `list_addresses` | Address inventory |
+| List voice pricing | `list_voice_pricing_countries` | Pricing reference |
+| List messaging pricing | `list_messaging_pricing_countries` | Pricing reference |
+| List notify services | `list_notify_services` | Notification services |
+| List customer profiles | `list_customer_profiles` | TrustHub profiles |
+| List trust products | `list_trust_products` | Trust products |
+| List end users | `list_end_users` | End user inventory |
 
 ### Tier 2: Controlled (Agent with Guardrails)
 
@@ -85,6 +145,25 @@ Write operations agents can perform with rate limits or validation.
 | Create payment | `create_payment` | PCI Mode required (irreversible) |
 | Update payment | `update_payment` | Completes/cancels payment |
 | Dequeue member | `dequeue_member` | Redirects queued caller |
+| Create video room | `create_video_room` | Room creation |
+| Update video room | `update_room` | Room state changes |
+| Trigger Studio flow | `trigger_flow` | Flow execution |
+| Create messaging service | `create_messaging_service` | Service setup |
+| Update messaging service | `update_messaging_service` | Config changes |
+| Delete messaging service | `delete_messaging_service` | Service removal |
+| Create proxy session | `create_proxy_session` | Anonymous communication |
+| Create content template | `create_content_template` | Template creation |
+| Delete content template | `delete_content_template` | Template removal |
+| Create transcript | `create_transcript` | Intelligence transcription |
+| Delete transcript | `delete_transcript` | Transcript removal |
+| Create notify service | `create_notify_service` | Notification setup |
+| Send notification | `send_notification` | Push notification |
+| Create SIP domain | `create_sip_domain` | SIP infrastructure |
+| Update SIP domain | `update_sip_domain` | SIP config changes |
+| Create SIP trunk | `create_sip_trunk` | Trunking infrastructure |
+| Update SIP trunk | `update_sip_trunk` | Trunk config changes |
+| Create variable | `create_variable` | Serverless env var |
+| Update variable | `update_variable` | Env var changes |
 
 ### Tier 3: Supervised (Human Confirmation Required)
 
@@ -172,10 +251,13 @@ When the same operation can be done multiple ways, use this guide:
 
 | Tool | Use When |
 |------|----------|
-| MCP `get_debugger_logs` | Automated error analysis, monitoring workflows |
+| MCP `validate_debugger(resourceSid)` | SID-targeted: alerts for a specific call/message/resource |
+| MCP `validate_call(callSid)` / `validate_message(messageSid)` | Deep validation including debugger alerts for that resource |
+| MCP `get_debugger_logs` | Time-window browsing when no specific SID available |
+| MCP `analyze_errors` | Pattern detection and error grouping |
 | CLI `debugger:logs:list` | Interactive human debugging session |
 
-**Rule**: Functionally equivalent. Use MCP for agent workflows, CLI for human debugging.
+**Rule**: SID-first — use `validate_*` tools when you have a resource SID. Use `get_debugger_logs` for discovery. CLI for human debugging only.
 
 ### Phone Number Configuration
 
@@ -194,6 +276,90 @@ When the same operation can be done multiple ways, use this guide:
 | Function `start-verification.protected.js` | User-facing flows triggered by form submission |
 
 **Rule**: Use Function for user-initiated, MCP for agent/system-initiated.
+
+### Sync State
+
+| Tool | Use When |
+|------|----------|
+| MCP `validate_sync_document(serviceSid, name)` | SID-targeted: deep validation of a specific document |
+| MCP `validate_sync_list(serviceSid, name)` / `validate_sync_map(serviceSid, name)` | SID-targeted: validate list/map structure and contents |
+| MCP `create_document`, `update_document`, List/Map CRUD tools | Agent state management workflows |
+| Function (via `context.getTwilioClient()`) | Event-triggered state updates from webhooks |
+| CLI `twilio api:sync:*` | One-off manual inspection |
+
+**Rule**: SID-first for validation. MCP for agent workflows. Functions for event-triggered updates.
+
+### TaskRouter
+
+| Tool | Use When |
+|------|----------|
+| MCP `validate_task(taskSid)` | SID-targeted: deep validation of a specific task |
+| MCP `list_workers`, `get_queue_statistics`, `list_task_queues`, `list_activities` | Agent monitoring and management (30 tools) |
+| MCP `create_task`, `update_task`, `update_worker`, `update_reservation` | Agent-driven task orchestration |
+| Function (via `context.getTwilioClient()`) | Worker updates from call events, assignment callbacks |
+| CLI `twilio api:taskrouter:*` | One-time workspace setup |
+
+**Rule**: SID-first for task validation. MCP for monitoring. Functions for event-triggered routing.
+
+### Serverless Inspection
+
+| Tool | Use When |
+|------|----------|
+| MCP `list_services`, `list_functions`, `list_logs` | Agent querying deployment state |
+| MCP `list_environments`, `list_builds`, `get_build_status` | Deployment status checks |
+| CLI `serverless:deploy`, `serverless:activate` | Deployment, promotion, rollback (Tier 3) |
+
+**Rule**: MCP for read-only inspection. CLI for all infrastructure changes.
+
+### Account & Usage
+
+| Tool | Use When |
+|------|----------|
+| MCP `get_account` | Auth validation, account status check |
+| MCP `list_usage_records`, `get_account_balance` | Automated monitoring, cost analysis |
+| CLI `twilio api:core:accounts:fetch` | Manual account inspection |
+
+**Rule**: MCP for agent-automated monitoring. CLI for manual inspection.
+
+### Recordings & Transcripts
+
+| Tool | Use When |
+|------|----------|
+| MCP `validate_recording(recordingSid)` | SID-targeted: completion polling + status |
+| MCP `validate_transcript(transcriptSid)` | SID-targeted: completion + sentence extraction |
+| MCP `validate_language_operator(transcriptSid)` | SID-targeted: operator results on a transcript |
+| MCP `list_recordings`, `list_transcripts`, `list_sentences` | Discovery when no specific SID |
+| CLI | Manual one-off retrieval |
+
+**Rule**: SID-first for validation. List tools for discovery only.
+
+### Studio Flows
+
+| Tool | Use When |
+|------|----------|
+| MCP `trigger_flow`, `get_execution_status`, `list_execution_steps` | Always MCP for agent interaction |
+| MCP `list_studio_flows`, `get_flow` | Flow discovery and inspection |
+
+**Rule**: Always MCP. No dedicated CLI equivalent.
+
+### Lookups
+
+| Tool | Use When |
+|------|----------|
+| MCP `lookup_phone_number` | Phone number validation and carrier info |
+| MCP `check_fraud_risk` | Fraud risk assessment |
+
+**Rule**: Always MCP. No dedicated CLI equivalent.
+
+### Video
+
+| Tool | Use When |
+|------|----------|
+| MCP `validate_video_room(roomSid)` | SID-targeted: room + participants + tracks + recordings |
+| MCP `create_video_room`, `list_video_rooms` | Room management |
+| MCP `list_room_participants`, `get_participant` | Participant management |
+
+**Rule**: SID-first for room validation. Always MCP — no dedicated CLI equivalent.
 
 ---
 

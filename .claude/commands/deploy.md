@@ -52,8 +52,9 @@ After deployment:
    - Verify all functions are listed
 
 2. **Test Endpoints**
-   - Make test calls/messages
-   - Check Twilio debugger for errors
+   - Make test calls/messages using MCP `make_call` / `send_sms`
+   - Validate each test with SID-targeted tools: `validate_call(callSid)`, `validate_message(messageSid)`
+   - Check for deployment errors: `validate_debugger(lookbackSeconds: 300)`
 
 3. **Update Webhook URLs**
    If needed, update phone number webhooks:

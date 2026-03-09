@@ -25,6 +25,14 @@ This directory contains Twilio Conversation Relay functions for building real-ti
 | `start-agent-test.protected.js` | Protected | Test orchestrator that initiates agent-to-agent calls and validates results |
 | `validate-agent-test.protected.js` | Protected | Validates agent-to-agent test results by retrieving transcripts from Sync |
 
+### Payment Testing Infrastructure
+| File | Access | Description |
+|------|--------|-------------|
+| `payment-test-start.protected.js` | Protected | Orchestrates agent-assisted payment test — creates 3-participant conference (Payment Agent, Customer Agent, DTMF Injector) |
+| `payment-agent-inbound.protected.js` | Protected | Inbound call handler for Payment Agent — routes to Payment Agent's ConversationRelay WebSocket |
+| `customer-agent-inbound.protected.js` | Protected | Inbound call handler for Customer Agent — routes to Customer Agent's ConversationRelay WebSocket |
+| `dtmf-hold.js` | Public | Hold endpoint for DTMF Injector conference participant — returns long pause TwiML until updated with `<Play digits>` |
+
 ### Callbacks
 | File | Access | Description |
 |------|--------|-------------|

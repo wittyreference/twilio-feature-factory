@@ -178,6 +178,15 @@ if [ -n "$SMOKE_FAILURES" ]; then
     echo "  Fix these before starting work. Run 'npm test' for details." >&2
 fi
 
+# 8. Local dev server startup (needed for Newman E2E tests on port 3000)
+if [ -z "$SKIP_DEV_SERVER" ] && [ -d "$PROJECT_ROOT/functions" ]; then
+    if ! lsof -i :3000 >/dev/null 2>&1; then
+        # Start dev server in background (twilio-run directly, bypasses npm prestart)
+        (cd "$PROJECT_ROOT" && npx twilio-run --port 3000 >/dev/null 2>&1 &)
+        echo "Dev server started on :3000 (background, for Newman E2E)." >&2
+    fi
+fi
+
 echo "Run /preflight for full environment validation." >&2
 
 # --- Session Context Loader ---

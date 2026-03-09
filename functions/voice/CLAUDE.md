@@ -52,6 +52,12 @@ This directory contains Twilio Voice API functions for handling phone calls.
 |------|--------|-------------|
 | `pizza-agent-connect.js` | Public | Connects incoming calls to the pizza-ordering AI agent via ConversationRelay |
 
+### SIP Lab
+| File | Access | Description |
+|------|--------|-------------|
+| `sip-customer-inbound.js` | Public | ConversationRelay handler for SIP Lab customer agent — connects to customer WebSocket, starts recording |
+| `sip-hostess-inbound.js` | Public | ConversationRelay handler for SIP Lab hostess agent — connects to hostess WebSocket, starts recording |
+
 ### Media Streams (UC6)
 | File | Access | Description |
 |------|--------|-------------|

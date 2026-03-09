@@ -927,7 +927,7 @@ test.describe('Video SDK - Real-time Transcription', () => {
         .services(SYNC_SERVICE_SID)
         .documents(`callbacks-video-room-${roomSid}`)
         .remove();
-    } catch (cleanupErr) {
+    } catch (_cleanupErr) {
       // Ignore cleanup errors
     }
 

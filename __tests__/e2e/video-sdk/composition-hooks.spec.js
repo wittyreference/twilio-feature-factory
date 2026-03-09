@@ -265,7 +265,7 @@ test.describe('Video SDK - Composition Hooks', () => {
                 .services(SYNC_SERVICE_SID)
                 .documents(compositionSyncDocName)
                 .remove();
-            } catch (cleanupErr) {
+            } catch (_cleanupErr) {
               // Ignore cleanup errors
             }
           }

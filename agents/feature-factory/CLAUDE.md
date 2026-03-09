@@ -36,6 +36,18 @@ src/
 │   ├── qa.ts             # Test execution, coverage, security
 │   ├── review.ts         # Code review, security audit
 │   └── docs.ts           # Documentation updates
+├── schemas/              # Phase output Zod schemas (advisory validation)
+│   ├── index.ts          # Barrel + schemaToPromptDescription
+│   ├── registry.ts       # Schema registry (Map)
+│   ├── fragments.ts      # Shared composable schema pieces
+│   ├── validation.ts     # validatePhaseOutput() — advisory, never blocks
+│   ├── architect.ts      # 3 variants (new-feature, bug-fix, refactor)
+│   ├── spec.ts           # 1 variant (new-feature)
+│   ├── test-gen.ts       # 2 variants (new-feature, bug-fix)
+│   ├── dev.ts            # 3 variants (new-feature, bug-fix, refactor)
+│   ├── qa.ts             # 4 variants (new-feature, bug-fix, refactor×2)
+│   ├── review.ts         # 3 variants (new-feature, bug-fix, refactor)
+│   └── docs.ts           # 1 variant (new-feature)
 ├── workflows/            # Pipeline definitions
 │   ├── new-feature.ts    # Full TDD pipeline for new features
 │   ├── bug-fix.ts        # Diagnosis and fix pipeline
@@ -527,6 +539,40 @@ Source: `src/stall-detection.ts`
 Tests: `__tests__/stall-detection.test.ts`
 
 Exports: `createStallTracker`, `hashToolInput`, `buildInterventionMessage`, `DEFAULT_STALL_DETECTION_CONFIG`
+
+## Phase Output Validation
+
+Zod schemas validate agent outputs at phase boundaries. Validation is **advisory only** — it never blocks workflows. Results are logged, attached to `AgentResult.outputValidation`, and emitted as `phase-output-validation` events.
+
+### How It Works
+
+1. Each workflow/agent/phase combination has a registered Zod schema (17 total across 3 workflows)
+2. After `parseAgentOutput()`, the orchestrator runs `safeParse()` against the schema
+3. Validation result is attached to `AgentResult.outputValidation`
+4. A `PhaseOutputValidationEvent` is emitted before `phase-completed`
+5. `generatePhaseSummary()` includes validation status
+
+### Schema Registry
+
+Schemas are keyed by `workflow:agent:phaseName` (e.g., `new-feature:architect:Design Review`). This handles agents appearing in multiple workflows (qa appears 4 times across workflows) and agents appearing twice in the same workflow (qa in refactor: Test Baseline + Final Verification).
+
+### Dual-Purpose Schemas
+
+`schemaToPromptDescription(schema)` converts a Zod schema into the same `Record<string, string>` format used in agent prompts. When a schema is registered, `buildAgentPrompt()` uses it instead of the legacy `AgentConfig.outputSchema`. This means schemas are the single source of truth for both validation and prompt generation.
+
+### Design Decisions
+
+- **Fields default to `.optional()`**: Only fields accessed by `nextPhaseInput`/`validation` functions are required
+- **`.passthrough()` on all schemas**: LLMs produce extra fields — schemas allow them
+- **Registry over AgentConfig**: Schemas live in the registry, not on `AgentConfig`, avoiding interface changes
+- **No generic `AgentResult<T>`**: Would cascade through WorkflowState, events, persistence
+
+### Module
+
+Source: `src/schemas/` — `registry.ts`, `index.ts`, `validation.ts`, `fragments.ts`, plus per-agent files
+Tests: `__tests__/schemas/` — 9 test files, 143 tests
+
+Exports: `registerPhaseSchema`, `getPhaseSchema`, `getRegisteredSchemaKeys`, `schemaToPromptDescription`, `validatePhaseOutput`, `qaVerdictSchema`, `reviewVerdictSchema`
 
 ## Phase Retry
 

@@ -140,6 +140,44 @@ if command -v chub >/dev/null 2>&1; then
     echo "Context Hub (chub) available for external API docs." >&2
 fi
 
+# 7. Codebase smoke test (syntax + deps, <200ms)
+SMOKE_FAILURES=""
+
+# 7a. node_modules existence
+if [ ! -d "$PROJECT_ROOT/node_modules" ]; then
+    SMOKE_FAILURES="${SMOKE_FAILURES} node_modules(missing)"
+fi
+
+# 7b. package.json valid JSON
+if ! node -e "JSON.parse(require('fs').readFileSync('$PROJECT_ROOT/package.json','utf8'))" 2>/dev/null; then
+    SMOKE_FAILURES="${SMOKE_FAILURES} package.json(invalid)"
+fi
+
+# 7c. Syntax check all function files (single node process via vm.Script, ~80ms)
+if [ -d "$PROJECT_ROOT/functions" ]; then
+    SYNTAX_ERRORS=$(node -e "
+const fs = require('fs');
+const vm = require('vm');
+const {execSync} = require('child_process');
+const files = execSync('find $PROJECT_ROOT/functions -name \"*.js\" -not -path \"*/node_modules/*\"').toString().trim().split('\n').filter(Boolean);
+const errors = [];
+for (const f of files) {
+  try { new vm.Script(fs.readFileSync(f, 'utf8'), {filename: f}); }
+  catch(e) { errors.push(f.replace('$PROJECT_ROOT/', '') + ': ' + e.message.split('\n')[0]); }
+}
+if (errors.length) { console.log(errors.length); console.error(errors.join('\n')); process.exit(1); }
+" 2>&1 || true)
+    if [ -n "$SYNTAX_ERRORS" ]; then
+        BAD_COUNT=$(echo "$SYNTAX_ERRORS" | head -1)
+        SMOKE_FAILURES="${SMOKE_FAILURES} functions(${BAD_COUNT} syntax errors)"
+    fi
+fi
+
+if [ -n "$SMOKE_FAILURES" ]; then
+    echo "SMOKE TEST FAILED:${SMOKE_FAILURES}" >&2
+    echo "  Fix these before starting work. Run 'npm test' for details." >&2
+fi
+
 echo "Run /preflight for full environment validation." >&2
 
 # --- Session Context Loader ---

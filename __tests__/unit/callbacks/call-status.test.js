@@ -182,4 +182,25 @@ describe('call-status callback', () => {
       })
     );
   });
+
+  it('should return TwiML when DialCallStatus is present', async () => {
+    const context = { TWILIO_SYNC_SERVICE_SID: 'IS123' };
+    const event = {
+      CallSid: 'CAdial',
+      CallStatus: 'completed',
+      DialCallStatus: 'completed',
+      To: '+15559876543',
+      From: '+15551234567',
+    };
+
+    await handler(context, event, callback);
+
+    expect(callback).toHaveBeenCalledTimes(1);
+    const [error, response] = callback.mock.calls[0];
+    expect(error).toBeNull();
+    // Should be a VoiceResponse (TwiML), not a JSON response
+    const twimlStr = response.toString();
+    expect(twimlStr).toContain('Say');
+    expect(twimlStr).toContain('Hangup');
+  });
 });

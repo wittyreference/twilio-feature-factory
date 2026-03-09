@@ -83,7 +83,16 @@ exports.handler = async function (context, event, callback) {
       console.log(`Call ${CallSid} status: ${CallStatus}${durationInfo}`);
     }
 
-    // Return success
+    // If this is a <Dial action> callback, Twilio expects TwiML back.
+    // Dial action callbacks include the DialCallStatus parameter.
+    if (event.DialCallStatus) {
+      const twiml = new Twilio.twiml.VoiceResponse();
+      twiml.say('Thank you. Goodbye.');
+      twiml.hangup();
+      return callback(null, twiml);
+    }
+
+    // For status callbacks (recording, call progress), return JSON
     const response = new Twilio.Response();
     response.setStatusCode(200);
     response.appendHeader('Content-Type', 'application/json');

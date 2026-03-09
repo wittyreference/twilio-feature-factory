@@ -142,6 +142,69 @@ fi
 
 echo "Run /preflight for full environment validation." >&2
 
+# --- Session Context Loader ---
+# Surface accumulated knowledge so Claude starts with relevant context.
+# Fast reads only (grep, wc, ls). No jq on large files.
+
+LEARNINGS_FILE="$SESSION_DIR/learnings.md"
+PENDING_FILE="$SESSION_DIR/pending-actions.md"
+DECISIONS_FILE="$PROJECT_ROOT/DESIGN_DECISIONS.md"
+COMPACTION_DIR="$LOGS_DIR"
+
+CONTEXT_LINES=""
+
+# Recent learnings: count + last 3 topic headers
+if [ -f "$LEARNINGS_FILE" ]; then
+    LEARN_COUNT=$(grep -c '^## \[' "$LEARNINGS_FILE" 2>/dev/null) || LEARN_COUNT=0
+    if [ "$LEARN_COUNT" -gt 0 ]; then
+        RECENT_TOPICS=$(grep '^## \[' "$LEARNINGS_FILE" | tail -3 | sed 's/^## \[[0-9-]*\] //' | sed 's/^ *//' | tr '\n' '|' | sed 's/|$//;s/|/, /g')
+        LEARN_MSG="Learnings: $LEARN_COUNT entries (latest: $RECENT_TOPICS)"
+        if [ "$LEARN_COUNT" -gt 10 ]; then
+            LEARN_MSG="$LEARN_MSG — consider pruning"
+        fi
+        CONTEXT_LINES="${CONTEXT_LINES}${LEARN_MSG}\n"
+    fi
+fi
+
+# Recent design decisions: last 2 titles
+if [ -f "$DECISIONS_FILE" ]; then
+    RECENT_DECISIONS=$(grep '^## Decision [0-9]' "$DECISIONS_FILE" | tail -2 | sed 's/^## //' | tr '\n' '|' | sed 's/|$//;s/|/, /g')
+    if [ -n "$RECENT_DECISIONS" ]; then
+        CONTEXT_LINES="${CONTEXT_LINES}Decisions: $RECENT_DECISIONS\n"
+    fi
+fi
+
+# Last compaction summary: filename + age
+LATEST_COMPACTION=$(ls -t "$COMPACTION_DIR"/compaction-summary-*.md 2>/dev/null | head -1)
+if [ -n "$LATEST_COMPACTION" ]; then
+    COMP_NAME=$(basename "$LATEST_COMPACTION" .md | sed 's/compaction-summary-//')
+    COMP_MTIME=$(stat -f '%m' "$LATEST_COMPACTION" 2>/dev/null || stat -c '%Y' "$LATEST_COMPACTION" 2>/dev/null)
+    if [ -n "$COMP_MTIME" ]; then
+        COMP_AGE_DAYS=$(( ($(date +%s) - COMP_MTIME) / 86400 ))
+        COMP_MSG="Last compaction: $COMP_NAME (${COMP_AGE_DAYS}d ago)"
+        if [ "$COMP_AGE_DAYS" -gt 7 ]; then
+            COMP_MSG="$COMP_MSG — stale, hook may have stopped firing"
+        fi
+        CONTEXT_LINES="${CONTEXT_LINES}${COMP_MSG}\n"
+    fi
+fi
+
+# Pending actions count (non-auto-cleared entries)
+if [ -f "$PENDING_FILE" ]; then
+    PENDING_COUNT=$(grep -c '^- ' "$PENDING_FILE" 2>/dev/null) || PENDING_COUNT=0
+    if [ "$PENDING_COUNT" -gt 0 ]; then
+        CONTEXT_LINES="${CONTEXT_LINES}Pending actions: $PENDING_COUNT\n"
+    fi
+fi
+
+# Output context block if anything was found
+if [ -n "$CONTEXT_LINES" ]; then
+    echo "--- Session Context ---" >&2
+    printf "$CONTEXT_LINES" >&2
+    echo "Use /recall <topic> to search accumulated knowledge." >&2
+    echo "---" >&2
+fi
+
 # --- Reset Session Tracking ---
 # Reset session-start timestamp for the flywheel
 date +%s > "$SESSION_DIR/.session-start"

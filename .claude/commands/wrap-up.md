@@ -18,6 +18,31 @@ git diff --cached --name-only  # staged changes only
 
 Read the pending actions file for flywheel-generated suggestions.
 
+### 1b. Mine Commit Messages for Un-Captured Learnings
+
+Check this session's commits for discovery signals that may not have been recorded:
+
+```bash
+# Get session start timestamp
+SESSION_START=$(cat {session-dir}/.session-start 2>/dev/null)
+# List commits made this session
+git log --since="@${SESSION_START}" --format='%h %s' 2>/dev/null
+```
+
+Scan commit subjects for learning signal words: `fix`, `discover`, `gotcha`, `quirk`, `workaround`, `bug`, `edge case`, `actually`, `found that`, `regression`, `broken`, `issue`.
+
+For each flagged commit:
+1. Check if the topic already appears in the learnings file
+2. If not, flag it as a potential un-captured learning
+
+Report flagged commits (if any) before proceeding to step 2:
+```
+Potential un-captured learnings from commits:
+- abc1234: "fix: Verify FriendlyName rejects 5+ digits" — not found in learnings
+```
+
+Skip this step if no commits were made this session or none match signal words.
+
 ### 2. Capture Learnings
 
 Review the session's changes and identify anything worth recording:

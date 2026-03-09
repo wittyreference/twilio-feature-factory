@@ -83,7 +83,8 @@
       ".claude/commands/team.md",
       ".claude/commands/plugin-sync.md",
       ".claude/commands/ff-sync.md",
-      ".claude/commands/uber-validation.md"
+      ".claude/commands/uber-validation.md",
+      ".claude/commands/recall.md"
     ],
     "hooks": [
       ".claude/hooks/_meta-mode.sh",

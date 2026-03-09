@@ -39,6 +39,7 @@ paths:
 | `/e2e-test [scope]` | E2E tests against live Twilio — real numbers, deep validation |
 | `/validate [type] [SID]` | Deep validation of individual Twilio resources |
 | `/context [action]` | Context optimization - summarize, load, or analyze context |
+| `/recall [topic]` | Search accumulated knowledge — learnings, decisions, gotchas, domain docs |
 | `/wrap-up [scope]` | End-of-session doc updates — learnings, CLAUDE.md, todo, pending actions |
 | `/learn [action]` | Interactive learning exercises on autonomous work |
 | `/plugin-sync` | Detect and reconcile drift between factory source and plugin distribution |

@@ -96,6 +96,21 @@ Only update docs where the session's changes actually warrant it. Don't touch do
 
 After promoting, replace the detailed item with a pointer (e.g., "See functions/voice/CLAUDE.md#gotchas"). Don't delete — pointers prevent re-discovery of the same gotcha.
 
+**Tag stale entries for auto-removal**: Entries that meet ANY of these criteria should be tagged with `<!-- prune -->` above their `##` header:
+
+- **Session implementation history**: Sections with "(Session N)" that document WHAT was built, not operational patterns needed going forward. The scripts/code they describe are self-documenting.
+- **Duplicate of shipped docs**: Content that exists word-for-word in root CLAUDE.md, a domain CLAUDE.md, or a references file. Replace with a one-line pointer before tagging.
+- **Obsolete pointers**: References to plans, roadmaps, or state files that no longer exist.
+
+Tagged entries are auto-removed at next session start by `session-start-log.sh`.
+
+Example:
+```markdown
+<!-- prune -->
+## Some Stale Section (Session 42)
+- Details that are now in shipped docs...
+```
+
 **Cross-check learnings ↔ auto-memory**: Ensure nothing fell through the cracks:
 - Read the session learnings file — are there entries that should also be in auto-memory (for cross-session persistence)?
 - Read auto-memory — are there entries from this session that should also be in the learnings file (for the promote/clear flywheel)?

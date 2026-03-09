@@ -14,11 +14,11 @@ This project uses Claude Code hooks (configured in `.claude/settings.json`) to e
 | `subagent-log.sh` | SubagentStop | Logs workflow activity, triggers flywheel |
 | `teammate-idle-check.sh` | TeammateIdle | Quality gate before teammate goes idle |
 | `task-completed-check.sh` | TaskCompleted | TDD/coverage/credential gate on task completion |
-| `session-checklist.sh` | Stop | Warns about uncommitted changes, unpushed commits, stale learnings |
+| `session-checklist.sh` | Stop | Warns about uncommitted changes, unpushed commits, stale learnings, MEMORY.md size |
 | `archive-plan.sh` | Stop | Archives plan files with metadata |
 | `notify-ready.sh` | Stop | Desktop notification when done |
 | `pre-compact.sh` | PreCompact | Creates compaction marker for post-compact-summary |
-| `session-start-log.sh` | SessionStart (all) | Logs session starts, 7 bootstrap checks (env, CLI, stale session, exercises, updates, context hub, codebase smoke test), context loading, resets session tracking |
+| `session-start-log.sh` | SessionStart (all) | Logs session starts, 8 bootstrap checks (env, CLI, stale session, exercises, updates, context hub, codebase smoke test, MEMORY.md auto-prune), context loading, resets session tracking |
 | `post-compact-summary.sh` | SessionStart (compact) | Extracts compaction summary from transcript |
 | `_meta-mode.sh` | *(sourced by other hooks)* | Helper: detects `.meta/` directory, sets environment-aware paths |
 | `flywheel-session-summary.sh` | *(sourced by other hooks)* | Helper: generates session summary for flywheel processing |

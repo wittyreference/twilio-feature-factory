@@ -1,6 +1,6 @@
 #!/bin/bash
 # ABOUTME: Archives the current plan file when a Claude Code session ends.
-# ABOUTME: Environment-aware: writes to .meta/plans/ (meta) or .claude/archive/plans/ (shipped).
+# ABOUTME: Content-hash dedup prevents duplicate archives. Environment-aware routing.
 
 set -euo pipefail
 
@@ -39,6 +39,21 @@ AGE=$((CURRENT_TIME - PLAN_MTIME))
 if [[ $AGE -gt 28800 ]]; then
     exit 0  # Plan is older than 8 hours, probably not from this session
 fi
+
+# Content-hash dedup: skip if an identical plan is already archived.
+# Hash the plan body (excludes our metadata header which varies per archive).
+PLAN_HASH=$(md5 -q "$LATEST_PLAN" 2>/dev/null || md5sum "$LATEST_PLAN" | cut -d' ' -f1)
+
+# Check existing archives for matching content hash.
+# Strip the metadata header (everything before first blank line after ---) before hashing.
+for existing in "$ARCHIVE_DIR"/*.md; do
+    [[ -f "$existing" ]] || continue
+    # Extract body after YAML front matter (skip lines until second ---, then blank line)
+    EXISTING_BODY_HASH=$(sed '1,/^---$/d' "$existing" | sed '1,/^$/d' | md5 -q /dev/stdin 2>/dev/null || sed '1,/^---$/d' "$existing" | sed '1,/^$/d' | md5sum | cut -d' ' -f1)
+    if [[ "$PLAN_HASH" == "$EXISTING_BODY_HASH" ]]; then
+        exit 0  # Identical plan already archived, skip
+    fi
+done
 
 # Extract title from first heading
 TITLE=$(grep -m1 '^# ' "$LATEST_PLAN" | sed 's/^# //' | head -1)

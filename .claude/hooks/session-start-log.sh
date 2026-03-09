@@ -252,6 +252,24 @@ if [ -n "$CONTEXT_LINES" ]; then
     echo "---" >&2
 fi
 
+# --- MEMORY.md auto-prune ---
+# Remove sections tagged with <!-- prune --> markers from previous wrap-up
+MEMORY_FILE="$HOME/.claude/projects/-Users-mcarpenter-workspaces-twilio-feature-factory/memory/MEMORY.md"
+if [ -f "$MEMORY_FILE" ]; then
+    if grep -q '<!-- prune -->' "$MEMORY_FILE"; then
+        PRUNE_COUNT=$(grep -c '<!-- prune -->' "$MEMORY_FILE")
+        # Remove sections: from <!-- prune --> through its ## header and content, stopping at next ## heading
+        # Uses skip==0 instead of !skip for BSD awk (macOS) compatibility
+        awk '/<!-- prune -->/{skip=1;seen_header=0;next} /^## /{if(skip){if(seen_header){skip=0;print;next}else{seen_header=1;next}}} skip==0' "$MEMORY_FILE" > "${MEMORY_FILE}.tmp"
+        mv "${MEMORY_FILE}.tmp" "$MEMORY_FILE"
+        echo "MEMORY: Auto-pruned $PRUNE_COUNT stale entries from MEMORY.md" >&2
+    fi
+    MEMORY_LINES=$(wc -l < "$MEMORY_FILE" | tr -d ' ')
+    if [ "$MEMORY_LINES" -gt 100 ]; then
+        echo "MEMORY: ${MEMORY_LINES}/200 lines (entries after 200 are truncated). Run /wrap-up to review." >&2
+    fi
+fi
+
 # --- Reset Session Tracking ---
 # Reset session-start timestamp for the flywheel
 date +%s > "$SESSION_DIR/.session-start"

@@ -1910,6 +1910,132 @@
     ]
   },
   {
+    "name": "list_sip_domains",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.domains.list"
+    ],
+    "params": [
+      "limit"
+    ]
+  },
+  {
+    "name": "get_sip_domain",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.domains"
+    ],
+    "params": [
+      "domainSid"
+    ]
+  },
+  {
+    "name": "create_sip_domain",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.domains.create"
+    ],
+    "params": [
+      "friendlyName",
+      "domainName",
+      "voiceUrl",
+      "voiceMethod",
+      "voiceFallbackUrl",
+      "voiceStatusCallbackUrl"
+    ]
+  },
+  {
+    "name": "update_sip_domain",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.domains"
+    ],
+    "params": [
+      "domainSid",
+      "friendlyName",
+      "voiceUrl",
+      "voiceMethod",
+      "voiceFallbackUrl",
+      "voiceStatusCallbackUrl"
+    ]
+  },
+  {
+    "name": "delete_sip_domain",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.domains"
+    ],
+    "params": [
+      "domainSid"
+    ]
+  },
+  {
+    "name": "list_sip_domain_ip_acl_mappings",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.domains"
+    ],
+    "params": [
+      "domainSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "create_sip_domain_ip_acl_mapping",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.domains"
+    ],
+    "params": [
+      "domainSid",
+      "ipAccessControlListSid"
+    ]
+  },
+  {
+    "name": "delete_sip_domain_ip_acl_mapping",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.domains"
+    ],
+    "params": [
+      "domainSid",
+      "ipAccessControlListSid"
+    ]
+  },
+  {
+    "name": "list_sip_domain_credential_list_mappings",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.domains"
+    ],
+    "params": [
+      "domainSid",
+      "limit"
+    ]
+  },
+  {
+    "name": "create_sip_domain_credential_list_mapping",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.domains"
+    ],
+    "params": [
+      "domainSid",
+      "credentialListSid"
+    ]
+  },
+  {
+    "name": "delete_sip_domain_credential_list_mapping",
+    "file": "sip.ts",
+    "sdkCalls": [
+      "client.sip.domains"
+    ],
+    "params": [
+      "domainSid",
+      "credentialListSid"
+    ]
+  },
+  {
     "name": "list_studio_flows",
     "file": "studio.ts",
     "sdkCalls": [
@@ -2375,6 +2501,214 @@
       "dequeueFrom",
       "dequeueTo",
       "conferenceStatusCallback"
+    ]
+  },
+  {
+    "name": "list_workspaces",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces.list"
+    ],
+    "params": [
+      "friendlyName",
+      "limit"
+    ]
+  },
+  {
+    "name": "create_workspace",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces.create"
+    ],
+    "params": [
+      "friendlyName",
+      "eventCallbackUrl",
+      "template"
+    ]
+  },
+  {
+    "name": "get_workspace",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "update_workspace",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "workspaceSid",
+      "friendlyName",
+      "eventCallbackUrl",
+      "defaultActivitySid",
+      "timeoutActivitySid"
+    ]
+  },
+  {
+    "name": "delete_workspace",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "create_worker",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "friendlyName",
+      "attributes",
+      "activitySid",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "get_worker",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "workerSid",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "delete_worker",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "workerSid",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "create_workflow",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "friendlyName",
+      "configuration",
+      "assignmentCallbackUrl",
+      "fallbackAssignmentCallbackUrl",
+      "taskReservationTimeout",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "get_workflow",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "workflowSid",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "update_workflow",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "workflowSid",
+      "friendlyName",
+      "configuration",
+      "assignmentCallbackUrl",
+      "fallbackAssignmentCallbackUrl",
+      "taskReservationTimeout",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "delete_workflow",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "workflowSid",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "create_task_queue",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "friendlyName",
+      "targetWorkers",
+      "maxReservedWorkers",
+      "taskOrder",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "update_task_queue",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "taskQueueSid",
+      "friendlyName",
+      "targetWorkers",
+      "maxReservedWorkers",
+      "taskOrder",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "delete_task_queue",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "taskQueueSid",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "create_activity",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "friendlyName",
+      "available",
+      "workspaceSid"
+    ]
+  },
+  {
+    "name": "delete_task",
+    "file": "taskrouter.ts",
+    "sdkCalls": [
+      "client.taskrouter.v1.workspaces"
+    ],
+    "params": [
+      "taskSid",
+      "workspaceSid"
     ]
   },
   {

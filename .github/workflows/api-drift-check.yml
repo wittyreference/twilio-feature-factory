@@ -73,7 +73,7 @@ jobs:
 
       - name: Create drift issue
         if: steps.check.outputs.has_drift == 'true'
-        uses: peter-evans/create-issue-from-file@v5
+        uses: peter-evans/create-issue-from-file@v6
         with:
           title: 'API Drift: Twilio OAI v${{ steps.check.outputs.version }}'
           content-filepath: scripts/api-sync/reports/latest.md

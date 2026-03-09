@@ -49,7 +49,9 @@ import {
 } from './session.js';
 import { executeHook } from './hooks/index.js';
 import { createCheckpoint, cleanupCheckpoints } from './checkpoints.js';
-import type { PersistedSession, HookContext, PrePhaseHookEvent, CheckpointCreatedEvent } from './types.js';
+import type { PersistedSession, HookContext, PrePhaseHookEvent, CheckpointCreatedEvent, PhaseOutputValidationEvent } from './types.js';
+import { validatePhaseOutput } from './schemas/validation.js';
+import { getPhaseSchema, schemaToPromptDescription } from './schemas/index.js';
 
 /**
  * Serializable replay scenario data persisted to disk after workflow completion.
@@ -383,7 +385,9 @@ export class FeatureFactoryOrchestrator {
    */
   private async runAgent(
     agentType: AgentType,
-    context: AgentContext
+    context: AgentContext,
+    workflowType?: WorkflowType,
+    phaseName?: string
   ): Promise<AgentResult> {
     const agentConfig = getAgentConfig(agentType);
     const tools = getToolSchemas(agentConfig.tools);
@@ -398,7 +402,7 @@ export class FeatureFactoryOrchestrator {
     };
 
     // Build initial prompt
-    const initialPrompt = this.buildAgentPrompt(agentConfig, context);
+    const initialPrompt = this.buildAgentPrompt(agentConfig, context, workflowType, phaseName);
 
     // Track accumulated results
     const filesCreated: string[] = [];
@@ -408,6 +412,7 @@ export class FeatureFactoryOrchestrator {
     let totalOutputTokens = 0;
     let turnsUsed = 0;
     let finalOutput: Record<string, unknown> = {};
+    let finalOutputValidation: import('./types.js').PhaseOutputValidation | undefined;
     let contextCompactions = 0;
     let timedOut = false;
     const agentStartTime = Date.now();
@@ -488,8 +493,10 @@ export class FeatureFactoryOrchestrator {
 
         // If no tool use, we're done
         if (toolUseBlocks.length === 0 || response.stop_reason === 'end_turn') {
-          // Parse final output
-          finalOutput = this.parseAgentOutput(textOutput, agentConfig);
+          // Parse final output with advisory schema validation
+          const parsed = this.parseAgentOutput(textOutput, agentConfig, workflowType, phaseName);
+          finalOutput = parsed.output;
+          finalOutputValidation = parsed.outputValidation;
           break;
         }
 
@@ -650,6 +657,7 @@ export class FeatureFactoryOrchestrator {
         turnsUsed,
         contextCompactions,
         stallDetections: stallTracker?.getInterventionCount() ?? 0,
+        outputValidation: finalOutputValidation,
       };
     } catch (error) {
       // Calculate cost even on error
@@ -680,7 +688,9 @@ export class FeatureFactoryOrchestrator {
    */
   private buildAgentPrompt(
     agentConfig: AgentConfig,
-    context: AgentContext
+    context: AgentContext,
+    workflowType?: WorkflowType,
+    phaseName?: string
   ): string {
     let prompt = `# Task\n\n${context.featureDescription}\n\n`;
 
@@ -702,37 +712,79 @@ export class FeatureFactoryOrchestrator {
       }
     }
 
+    // Prefer schema-derived descriptions when available, fall back to legacy outputSchema
+    let outputDescription = agentConfig.outputSchema;
+    if (workflowType && phaseName) {
+      const schema = getPhaseSchema(workflowType, agentConfig.name, phaseName);
+      if (schema) {
+        const schemaDesc = schemaToPromptDescription(schema);
+        if (schemaDesc) {
+          outputDescription = schemaDesc;
+        }
+      }
+    }
+
     prompt += '# Expected Output\n\n';
     prompt += 'Please provide your response in the following JSON format:\n\n';
     prompt += '```json\n';
-    prompt += JSON.stringify(agentConfig.outputSchema, null, 2);
+    prompt += JSON.stringify(outputDescription, null, 2);
     prompt += '\n```\n';
 
     return prompt;
   }
 
   /**
-   * Parse agent output from response text
+   * Parse agent output from response text.
+   * Returns the parsed output and optional advisory validation result.
    */
   private parseAgentOutput(
     text: string,
-    _agentConfig: AgentConfig
-  ): Record<string, unknown> {
+    _agentConfig: AgentConfig,
+    workflowType?: WorkflowType,
+    phaseName?: string
+  ): { output: Record<string, unknown>; outputValidation?: import('./types.js').PhaseOutputValidation } {
+    let output: Record<string, unknown>;
+
     // Try to extract JSON from response
     const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
     if (jsonMatch) {
       try {
-        return JSON.parse(jsonMatch[1]);
+        output = JSON.parse(jsonMatch[1]);
       } catch {
-        // Fall through to default
+        output = this.fallbackParse(text);
+      }
+    } else {
+      output = this.fallbackParse(text);
+    }
+
+    // Run advisory schema validation if workflow/phase context is available
+    let outputValidation: import('./types.js').PhaseOutputValidation | undefined;
+    if (workflowType && phaseName) {
+      outputValidation = validatePhaseOutput(
+        output,
+        workflowType,
+        _agentConfig.name,
+        phaseName
+      );
+
+      if (this.config.verbose && outputValidation && !outputValidation.valid && !outputValidation.skipped) {
+        console.log(`  [${_agentConfig.name}] Schema validation: ${outputValidation.errors.length} issue(s)`);
+        for (const err of outputValidation.errors) {
+          console.log(`    - ${err.path || '(root)'}: ${err.message}`);
+        }
       }
     }
 
-    // Try to parse entire response as JSON
+    return { output, outputValidation };
+  }
+
+  /**
+   * Fallback JSON parsing for agent output text.
+   */
+  private fallbackParse(text: string): Record<string, unknown> {
     try {
       return JSON.parse(text);
     } catch {
-      // Return raw text as output
       return { rawOutput: text };
     }
   }
@@ -814,6 +866,19 @@ export class FeatureFactoryOrchestrator {
 
     if (result.commits.length > 0) {
       lines.push(`Commits: ${result.commits.join(', ')}`);
+    }
+
+    if (result.outputValidation) {
+      if (result.outputValidation.skipped) {
+        lines.push('Schema validation: skipped (no schema registered)');
+      } else if (result.outputValidation.valid) {
+        lines.push('Schema validation: passed');
+      } else {
+        lines.push(`Schema validation: ${result.outputValidation.errors.length} issue(s)`);
+        for (const err of result.outputValidation.errors) {
+          lines.push(`  - ${err.path || '(root)'}: ${err.message}`);
+        }
+      }
     }
 
     return lines.join('\n');
@@ -1208,8 +1273,10 @@ export class FeatureFactoryOrchestrator {
         learningsContext,
       };
 
-      // Execute agent
-      const result = await this.runAgent(phase.agent, context);
+      // Execute agent with workflow/phase context for schema validation
+      const result = await this.runAgent(
+        phase.agent, context, this.state!.workflow, phase.name
+      );
 
       // Accumulate results across retries
       cumulativeFilesCreated.push(...result.filesCreated);
@@ -1297,6 +1364,17 @@ export class FeatureFactoryOrchestrator {
         }
       }
 
+      // Emit advisory schema validation event if validation was performed
+      if (accumulatedResult.outputValidation && !accumulatedResult.outputValidation.skipped) {
+        yield {
+          type: 'phase-output-validation',
+          phase: phase.name,
+          agent: phase.agent,
+          validation: accumulatedResult.outputValidation,
+          timestamp: new Date(),
+        } as PhaseOutputValidationEvent;
+      }
+
       // Phase succeeded — emit completed and return
       yield {
         type: 'phase-completed',
@@ -1366,7 +1444,7 @@ export class FeatureFactoryOrchestrator {
     description: string,
     learningsContext: string
   ): void {
-    if (!this.state) return;
+    if (!this.state) {return;}
 
     const scenario: PersistedReplayScenario = {
       id: this.state.sessionId,

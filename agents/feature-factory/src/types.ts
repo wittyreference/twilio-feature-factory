@@ -246,6 +246,9 @@ export interface AgentResult {
 
   /** Number of retry attempts (0 = succeeded first try) */
   retryAttempts?: number;
+
+  /** Advisory schema validation result (never blocks workflow) */
+  outputValidation?: PhaseOutputValidation;
 }
 
 /**
@@ -289,6 +292,38 @@ export interface Workflow {
 }
 
 /**
+ * Advisory validation result from Zod schema checking of phase output.
+ * Never blocks workflow execution — provides observability only.
+ */
+export interface PhaseOutputValidation {
+  /** Whether the output matched the schema */
+  valid: boolean;
+
+  /** Validation errors (empty if valid) */
+  errors: PhaseOutputValidationError[];
+
+  /** Registry key used for lookup (workflow:agent:phaseName) */
+  schemaKey: string;
+
+  /** True if no schema was registered for this phase */
+  skipped?: boolean;
+}
+
+/**
+ * A single validation error from schema checking
+ */
+export interface PhaseOutputValidationError {
+  /** Dot-separated path to the invalid field */
+  path: string;
+
+  /** Human-readable error message */
+  message: string;
+
+  /** Zod error code */
+  code: string;
+}
+
+/**
  * Events emitted during workflow execution
  */
 export type WorkflowEvent =
@@ -303,7 +338,8 @@ export type WorkflowEvent =
   | WorkflowCompletedEvent
   | WorkflowErrorEvent
   | CostUpdateEvent
-  | PrePhaseHookEvent;
+  | PrePhaseHookEvent
+  | PhaseOutputValidationEvent;
 
 export interface WorkflowStartedEvent {
   type: 'workflow-started';
@@ -576,5 +612,16 @@ export interface PrePhaseHookEvent {
   phase: string;
   hook: HookType;
   result: HookResult;
+  timestamp: Date;
+}
+
+/**
+ * Advisory phase output validation event
+ */
+export interface PhaseOutputValidationEvent {
+  type: 'phase-output-validation';
+  phase: string;
+  agent: AgentType;
+  validation: PhaseOutputValidation;
   timestamp: Date;
 }

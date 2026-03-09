@@ -100,7 +100,21 @@ export type {
   HookContext,
   HookResult,
   PrePhaseHookEvent,
+  PhaseOutputValidation,
+  PhaseOutputValidationError,
+  PhaseOutputValidationEvent,
 } from './types.js';
+
+// Schema module (phase output validation)
+export {
+  registerPhaseSchema,
+  getPhaseSchema,
+  getRegisteredSchemaKeys,
+  schemaToPromptDescription,
+  validatePhaseOutput,
+  qaVerdictSchema,
+  reviewVerdictSchema,
+} from './schemas/index.js';
 
 // Sandbox module (isolated workflow execution)
 export {

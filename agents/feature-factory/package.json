@@ -38,20 +38,21 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "@twilio-feature-factory/mcp-twilio": "^0.1.0",
-    "commander": "^12.0.0",
     "chalk": "^5.3.0",
+    "commander": "^12.0.0",
     "glob": "^10.3.0",
     "ora": "^8.0.0",
+    "zod": "^3.25.76",
     "zod-to-json-schema": "^3.23.0"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
-    "@types/node": "^20.0.0",
     "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "eslint": "^9.39.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.0",
-    "typescript": "^5.3.0",
-    "eslint": "^9.39.0"
+    "typescript": "^5.3.0"
   },
   "engines": {
     "node": ">=18.0.0"

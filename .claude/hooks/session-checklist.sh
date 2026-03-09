@@ -93,6 +93,15 @@ if [[ -f "$MEMORY_FILE" ]]; then
     fi
 fi
 
+# --- 10. README drift check ---
+README_DRIFT_SCRIPT="$PROJECT_ROOT/scripts/check-readme-drift.sh"
+if [[ -x "$README_DRIFT_SCRIPT" ]]; then
+    DRIFT_OUTPUT=$("$README_DRIFT_SCRIPT" --quiet 2>/dev/null) || true
+    if [[ -n "$DRIFT_OUTPUT" ]]; then
+        ITEMS+=("README: $DRIFT_OUTPUT")
+    fi
+fi
+
 # ============================================
 # Output checklist (only if there are items)
 # ============================================

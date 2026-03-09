@@ -133,6 +133,11 @@ if [ -f "scripts/verify-shipping-ready.sh" ]; then
     run_check "shipping-ready" "./scripts/verify-shipping-ready.sh" &
 fi
 
+# README drift
+if [ -f "scripts/check-readme-drift.sh" ]; then
+    run_check "readme-drift" "./scripts/check-readme-drift.sh" &
+fi
+
 # Wait for all Phase 1 checks
 wait
 

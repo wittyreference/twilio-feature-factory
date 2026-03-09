@@ -77,6 +77,22 @@ else
     ERRORS=$((ERRORS + 1))
 fi
 
+# Check 6: README.md structural drift
+echo ""
+echo "Checking README.md for structural drift..."
+README_DRIFT_SCRIPT="$PROJECT_ROOT/scripts/check-readme-drift.sh"
+if [[ -x "$README_DRIFT_SCRIPT" ]]; then
+    DRIFT_OUTPUT=$("$README_DRIFT_SCRIPT" --quiet 2>/dev/null) || true
+    if [[ -n "$DRIFT_OUTPUT" ]]; then
+        echo "  ✗ ERROR: README.md is out of date: $DRIFT_OUTPUT"
+        ERRORS=$((ERRORS + 1))
+    else
+        echo "  ✓ README.md counts match codebase"
+    fi
+else
+    echo "  - SKIP: check-readme-drift.sh not found"
+fi
+
 # Summary
 echo ""
 echo "=============================================="

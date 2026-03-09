@@ -1,10 +1,10 @@
-# Twilio Agent Factory
+# Twilio Feature Factory
 
 Build Twilio applications with AI-assisted development using Claude Code.
 
 ## What This Is
 
-Twilio Agent Factory is an **AI-powered development system** for building Twilio applications. You brainstorm your idea with Claude Code, approve an implementation plan, and autonomous agents build it for you.
+Twilio Feature Factory is an **AI-powered development system** for building Twilio applications. You brainstorm your idea with Claude Code, approve an implementation plan, and autonomous agents build it for you.
 
 ## The Development Workflow
 
@@ -188,6 +188,10 @@ During execution, autonomous agents have access to:
 | `/wrap-up [scope]` | End-of-session doc updates (learnings, CLAUDE.md, todo) |
 | `/learn [action]` | Interactive learning exercises on autonomous work |
 | `/plugin-sync` | Detect and reconcile drift between factory source and plugin |
+| `/check-updates` | Check for newer versions of Feature Factory |
+| `/ff-sync` | Detect and reconcile drift between FF source and local |
+| `/recall` | Search and recall context from previous sessions |
+| `/uber-validation` | Run comprehensive cross-domain validation |
 
 ### Agent Teams (Experimental)
 
@@ -235,17 +239,17 @@ See [agents/feature-factory/CLAUDE.md](agents/feature-factory/CLAUDE.md) for arc
 ## What's Implemented
 
 **Development Tools**
-- 22 slash commands across workflow, development, and utility categories
+- 26 slash commands across workflow, development, and utility categories
 - MCP Server with 310 Twilio API tools across 27 modules + 8 deep validation tools
 - Voice AI Builder with TwiML and WebSocket generators
 - Feature Factory with autonomous mode, stall detection, and sandbox isolation
 
 **Serverless Functions**
-- Voice, Messaging, Verify, Sync, TaskRouter, Conversation Relay
+- Voice, Messaging, Verify, Sync, TaskRouter, Conversation Relay, Pay, Phone Numbers, Proxy, Video
 
 **Coordination**
 - Agent Teams with 4 pre-configured workflows (new-feature, bug-fix, code-review, refactor)
-- 16 safety and quality hooks
+- 15 safety and quality hooks
 - Work discovery and background polling in Feature Factory
 
 ## Project Structure
@@ -261,15 +265,19 @@ twilio-feature-factory/
 │   ├── taskrouter/          # Skills-based routing
 │   ├── callbacks/           # Status callback handlers
 │   ├── helpers/             # Shared private utilities
-│   └── messaging-services/  # Messaging services (pattern reference)
+│   ├── messaging-services/  # Messaging services (pattern reference)
+│   ├── pay/                 # PCI-compliant payments
+│   ├── phone-numbers/       # Phone number management
+│   ├── proxy/               # Number masking
+│   └── video/               # Video rooms and recordings
 ├── agents/                  # AI development tooling
 │   ├── mcp-servers/twilio/  # MCP server for Twilio APIs
 │   ├── feature-factory/     # Autonomous workflow orchestration
 │   ├── doc-generator/       # Documentation generation
 │   └── voice-ai-builder/    # Voice AI app generator
 ├── .claude/                 # Claude Code configuration
-│   ├── commands/            # Slash command definitions (22)
-│   ├── hooks/               # Safety and quality hooks (16)
+│   ├── commands/            # Slash command definitions (26)
+│   ├── hooks/               # Safety and quality hooks (15)
 │   ├── rules/               # Declarative agent rules
 │   ├── skills/              # Context engineering skills
 │   └── workflows/           # Workflow definitions
@@ -293,6 +301,12 @@ twilio-feature-factory/
 | `npm run lint:fix` | Auto-fix linting errors |
 | `npm run deploy:dev` | Deploy to dev environment |
 | `npm run deploy:prod` | Deploy to production |
+| `npm run demo` | Launch one-command demo with ngrok |
+| `npm run test:voice-sdk` | Run Voice SDK Playwright tests (headless) |
+| `npm run test:voice-sdk:headed` | Run Voice SDK tests (visible browser) |
+| `npm run test:video-sdk` | Run Video SDK Playwright tests (headless) |
+| `npm run test:video-sdk:headed` | Run Video SDK tests (visible browser) |
+| `npm run test:sip-lab` | Run SIP Lab E2E tests |
 
 ## Testing
 
@@ -340,7 +354,7 @@ See `.meta/sequential-validation.md` for the full validation procedure.
 
 ## Safety Features
 
-16 Claude Code hooks protect your code automatically:
+15 Claude Code hooks protect your code automatically:
 
 **Security**
 - Credential blocking (hardcoded SIDs, tokens, API keys)

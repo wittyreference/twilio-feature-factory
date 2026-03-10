@@ -224,6 +224,18 @@ const trunk = await client.voice.v1.byocTrunks.create({
 
 6. **Codec support**: Twilio SIP supports G.711 (PCMU/PCMA) and Opus. If your PBX uses other codecs (G.729, G.722), ensure transcoding is available.
 
+## Common Misconceptions
+
+Outdated tutorials (especially pre-2020 Asterisk guides) propagate these incorrect patterns:
+
+| Misconception | Reality |
+|---------------|---------|
+| Use `sip.us1.twilio.com` endpoint | Endpoint is `{trunkSid}.pstn.twilio.com` — trunk-specific since Elastic SIP Trunking |
+| Configure `auth_realm` | Not a Twilio concept. Twilio uses IP ACL + Credential List auth, not realm-based digest |
+| SIP REGISTER required | Elastic SIP Trunking is INVITE-only. No registration required or supported |
+| Single global SIP endpoint | Each trunk has its own endpoint. Multiple trunks = multiple endpoints |
+| `sips:` requires special setup | Set `secure: true` on trunk creation and use `sips:` scheme in origination URLs |
+
 ## MCP Tools Available
 
 SIP: `list/get/create/update/delete_sip_ip_access_control_list`, `list/get/create/update/delete_sip_ip_address`, `list/get/create/update/delete_sip_credential_list`, `list/get/create/update/delete_sip_credential`

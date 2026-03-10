@@ -47,6 +47,42 @@ Real-time, bidirectional communication between phone calls and AI/LLM backends v
 
 **Not Media Streams** (`<Connect><Stream>`): Media Streams sends raw audio (mulaw 8kHz base64). ConversationRelay sends structured JSON (`type: "prompt"`, `type: "text"`). They are **incompatible** — a CR handler cannot be used with `<Stream>` and vice versa.
 
+## Quickstart (5 Minutes)
+
+Minimum viable ConversationRelay setup:
+
+1. **TwiML function** — Returns `<Connect><ConversationRelay>` pointing to your WebSocket URL
+2. **WebSocket server** — Handles `setup`, `prompt`, and `interrupt` events; sends `text` responses
+3. **Phone number** — Configure voice webhook to your TwiML function
+4. **Call it** — Dial the number, speak, hear AI response
+
+```javascript
+// Minimal TwiML (functions/conversation-relay/relay-connect.js)
+const twiml = new Twilio.twiml.VoiceResponse();
+const connect = twiml.connect();
+connect.conversationRelay({
+  url: 'wss://your-server.ngrok.dev/ws',
+  voice: 'Google.en-US-Neural2-F',
+  transcriptionProvider: 'google',
+  ttsProvider: 'google'
+});
+return callback(null, twiml);
+```
+
+```javascript
+// Minimal WebSocket handler (3 events)
+ws.on('message', (data) => {
+  const msg = JSON.parse(data);
+  if (msg.type === 'setup') { /* session started, msg.callSid available */ }
+  if (msg.type === 'prompt') {
+    ws.send(JSON.stringify({ type: 'text', token: 'Hello! How can I help?' }));
+  }
+  if (msg.type === 'interrupt') { /* user interrupted, stop current response */ }
+});
+```
+
+For full implementations: `pizza-agent-connect.js` (TwiML) and `__tests__/e2e/agent-server-template.js` (WebSocket server).
+
 ## Basic TwiML Setup
 
 ```javascript

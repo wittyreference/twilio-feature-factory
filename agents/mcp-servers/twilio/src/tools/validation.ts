@@ -544,6 +544,7 @@ export function validationTools(context: TwilioContext) {
             lookbackSeconds,
             logLevel: 'error',
             limit: 50,
+            ...(trunkSid && { resourceSid: trunkSid }),
           });
 
           const sipRelated = debugResult.alerts.filter((a) => {
@@ -552,10 +553,10 @@ export function validationTools(context: TwilioContext) {
           });
 
           if (sipRelated.length > 0) {
-            checks['debugger'] = { passed: false, message: `${sipRelated.length} SIP-related error(s) in last ${lookbackSeconds}s`, data: sipRelated };
+            checks['debugger'] = { passed: false, message: `${sipRelated.length} SIP error(s) for trunk ${trunkSid || 'account-wide'} in last ${lookbackSeconds}s`, data: sipRelated };
             errors.push(`Found ${sipRelated.length} SIP errors in debugger`);
           } else {
-            checks['debugger'] = { passed: true, message: `No SIP errors in last ${lookbackSeconds}s` };
+            checks['debugger'] = { passed: true, message: `No SIP errors for trunk ${trunkSid || 'account-wide'} in last ${lookbackSeconds}s` };
           }
         } catch {
           checks['debugger'] = { passed: true, message: 'Debugger check skipped (error fetching)' };

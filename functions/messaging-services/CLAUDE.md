@@ -42,6 +42,19 @@ Registration flow: Brand → Campaign → Number Assignment. Required for US mes
 | `notifications`, `customer_care`, `delivery_notifications`, `account_notification` | Higher |
 | `marketing` | Standard |
 
+### Registration Timeline
+
+**Total: 2–10+ business days.** Do NOT promise same-day high-volume messaging.
+
+| Stage | Duration | Notes |
+|-------|----------|-------|
+| Brand registration | 1–7 business days | Vetting by TCR. Sole proprietors take longer |
+| Campaign registration | 1–3 business days | Per-campaign review |
+| Number assignment | Instant | After campaign approval |
+| Throughput ramp | 1–14 days | Starts at low TPS, ramps to campaign limit |
+
+For 50K+ messages/day, budget 2–4 weeks total including ramp-up. Unregistered traffic on 10DLC numbers gets filtered aggressively.
+
 ## Webhook Parameters
 
 ### Status Callback

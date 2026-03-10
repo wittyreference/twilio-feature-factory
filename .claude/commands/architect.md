@@ -114,6 +114,21 @@ When recommending advanced APIs, explicitly note:
 - How does this fit with existing functionality?
 - Are non-Twilio external APIs involved? Check context-hub (`chub search "<api>"`) for current docs.
 
+#### Requirements Checklist
+
+When the request is vague or underspecified, gather these before proceeding:
+
+| Category | Questions |
+|----------|-----------|
+| **Users** | Concurrent users/calls? Internal vs external? |
+| **Channels** | Voice? SMS? WhatsApp? Video? Must-have vs nice-to-have? |
+| **Scale** | Volume (calls/day, messages/day)? Growth trajectory? |
+| **Integration** | Existing systems to integrate with? CRM, PBX, contact center? |
+| **Compliance** | Industry regulations (HIPAA, PCI, GDPR, SOX)? Data residency? |
+| **Timeline** | Prototype vs production timeline? |
+
+Don't block on gathering all of these — use the use-case ladder to infer reasonable defaults, then call out assumptions explicitly.
+
 ### Step 2: Evaluate Architecture Fit
 
 ```markdown
@@ -171,6 +186,19 @@ When the request mentions **retention**, **recording**, **compliance**, **GDPR**
 4. Suggest tiered retention (e.g., separate PII-scrubbed transcripts from raw recordings) if applicable
 
 Do NOT silently choose one regulation over another. The user must make the compliance decision.
+
+### Step 3c: Feasibility & Scope Assessment
+
+Before recommending an approach, assess whether the request falls within Twilio's platform capabilities:
+
+| Signal | Action |
+|--------|--------|
+| Requires custom infrastructure beyond Twilio (e.g., "bridge to Discord", "real-time translation pipeline") | Flag as **beyond-platform**. State what Twilio provides and what needs custom work. |
+| Scale exceeds Functions limits (e.g., "99.99% SLA", "100M notifications/day") | Note Functions limitations (10s execution, no multi-region, no blue-green). Suggest appropriate deployment model. |
+| Requires services Twilio doesn't offer (e.g., "video transcoding", "custom codec") | Identify gap explicitly. Don't suggest overcomplicated workarounds. |
+| Feasible but complex | Proceed normally with complexity estimate (Low/Medium/High). |
+
+If beyond-platform: Provide a clear "What Twilio CAN do" + "What you need beyond Twilio" breakdown rather than attempting an architecture that hides the complexity.
 
 ### Step 4: Recommend Approach
 

@@ -276,7 +276,7 @@ If SIP Lab is ready:
 1. Collect preserved recording SIDs from previous UCs (at least 2 recordings needed)
 2. If fewer than 2 recordings, mark UC10 as FAIL with "Insufficient recordings from prior UCs"
 3. For each recording, create a Voice Intelligence transcript using `mcp__twilio__create_transcript` with source_sid
-4. Wait 30 seconds for transcripts to process
+4. Wait 90 seconds for transcripts to process. Voice Intelligence queues can take 45-90+ seconds for recordings over 30s. If `validate_transcript` shows "in-progress" after 90s, retry once after another 60 seconds before marking FAIL.
 5. Validate each transcript: `mcp__twilio__validate_transcript` — expect completed with sentences
 6. Run language operators if available: `mcp__twilio__validate_language_operator`
 7. Verify transcript quality: check that sentences contain actual speech (not all silence/music)

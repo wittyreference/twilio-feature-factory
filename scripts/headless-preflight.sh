@@ -74,6 +74,28 @@ for var in "${REQUIRED_VARS[@]}"; do
     fi
 done
 
+# Verify optional SIDs are live (warnings only — MCP auto-resolves defaults)
+if [ -n "${TWILIO_SYNC_SERVICE_SID:-}" ]; then
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+        "https://sync.twilio.com/v1/Services/$TWILIO_SYNC_SERVICE_SID" \
+        -u "$TWILIO_ACCOUNT_SID:$TWILIO_AUTH_TOKEN" 2>/dev/null || echo "000")
+    if [ "$HTTP_CODE" = "404" ]; then
+        warn "TWILIO_SYNC_SERVICE_SID=$TWILIO_SYNC_SERVICE_SID returns 404 — MCP defaults will be used"
+    elif [ "$HTTP_CODE" = "200" ]; then
+        ok "TWILIO_SYNC_SERVICE_SID is live"
+    fi
+fi
+if [ -n "${TWILIO_TASKROUTER_WORKSPACE_SID:-}" ]; then
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+        "https://taskrouter.twilio.com/v1/Workspaces/$TWILIO_TASKROUTER_WORKSPACE_SID" \
+        -u "$TWILIO_ACCOUNT_SID:$TWILIO_AUTH_TOKEN" 2>/dev/null || echo "000")
+    if [ "$HTTP_CODE" = "404" ]; then
+        warn "TWILIO_TASKROUTER_WORKSPACE_SID=$TWILIO_TASKROUTER_WORKSPACE_SID returns 404 — MCP defaults will be used"
+    elif [ "$HTTP_CODE" = "200" ]; then
+        ok "TWILIO_TASKROUTER_WORKSPACE_SID is live"
+    fi
+fi
+
 if [ "$ERRORS" -gt 0 ]; then
     err "Missing $ERRORS required env vars. Cannot proceed."
     exit 1
@@ -146,22 +168,64 @@ if [ -n "${NGROK_DOMAIN_A:-}" ] && [ -n "${NGROK_DOMAIN_B:-}" ]; then
     nohup ngrok http 8081 --domain="$NGROK_DOMAIN_B" --log=/tmp/ngrok-b.log >/dev/null 2>&1 &
     sleep 4
 
-    # Verify tunnels (502 expected — no server yet)
-    HTTP_A=$(curl -s -o /dev/null -w "%{http_code}" "https://${NGROK_DOMAIN_A}" 2>/dev/null || echo "000")
-    HTTP_B=$(curl -s -o /dev/null -w "%{http_code}" "https://${NGROK_DOMAIN_B}" 2>/dev/null || echo "000")
+    # Verify tunnels via ngrok API first (authoritative), then HTTP fallback
+    NGROK_API_TUNNELS=$(curl -s http://localhost:4040/api/tunnels 2>/dev/null || echo "{}")
+    NGROK_TUNNEL_A_FOUND=$(echo "$NGROK_API_TUNNELS" | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    for t in data.get('tunnels', []):
+        if '$NGROK_DOMAIN_A' in t.get('public_url', ''):
+            addr = t.get('config', {}).get('addr', 'unknown')
+            # Extract just the port number
+            port = addr.split(':')[-1] if ':' in addr else addr
+            print(f'port={port}')
+            sys.exit(0)
+    print('not_found')
+except: print('api_error')
+" 2>/dev/null || echo "api_error")
 
-    if [ "$HTTP_A" = "502" ] || [ "$HTTP_A" = "200" ]; then
+    NGROK_TUNNEL_B_FOUND=$(echo "$NGROK_API_TUNNELS" | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    for t in data.get('tunnels', []):
+        if '$NGROK_DOMAIN_B' in t.get('public_url', ''):
+            addr = t.get('config', {}).get('addr', 'unknown')
+            port = addr.split(':')[-1] if ':' in addr else addr
+            print(f'port={port}')
+            sys.exit(0)
+    print('not_found')
+except: print('api_error')
+" 2>/dev/null || echo "api_error")
+
+    # Tunnel A verification
+    if [[ "$NGROK_TUNNEL_A_FOUND" == port=* ]]; then
         NGROK_A_UP=true
-        ok "Ngrok A: https://$NGROK_DOMAIN_A (HTTP $HTTP_A)"
+        ok "Ngrok A: https://$NGROK_DOMAIN_A ($NGROK_TUNNEL_A_FOUND) — verified via API"
     else
-        warn "Ngrok A: HTTP $HTTP_A (expected 502)"
+        # Fallback: HTTP check (502 expected — no server yet)
+        HTTP_A=$(curl -s -o /dev/null -w "%{http_code}" "https://${NGROK_DOMAIN_A}" 2>/dev/null || echo "000")
+        if [ "$HTTP_A" = "502" ] || [ "$HTTP_A" = "200" ]; then
+            NGROK_A_UP=true
+            ok "Ngrok A: https://$NGROK_DOMAIN_A (HTTP $HTTP_A)"
+        else
+            warn "Ngrok A not found — domain $NGROK_DOMAIN_A not in running tunnels (HTTP $HTTP_A)"
+        fi
     fi
 
-    if [ "$HTTP_B" = "502" ] || [ "$HTTP_B" = "200" ]; then
+    # Tunnel B verification
+    if [[ "$NGROK_TUNNEL_B_FOUND" == port=* ]]; then
         NGROK_B_UP=true
-        ok "Ngrok B: https://$NGROK_DOMAIN_B (HTTP $HTTP_B)"
+        ok "Ngrok B: https://$NGROK_DOMAIN_B ($NGROK_TUNNEL_B_FOUND) — verified via API"
     else
-        warn "Ngrok B: HTTP $HTTP_B (expected 502)"
+        HTTP_B=$(curl -s -o /dev/null -w "%{http_code}" "https://${NGROK_DOMAIN_B}" 2>/dev/null || echo "000")
+        if [ "$HTTP_B" = "502" ] || [ "$HTTP_B" = "200" ]; then
+            NGROK_B_UP=true
+            ok "Ngrok B: https://$NGROK_DOMAIN_B (HTTP $HTTP_B)"
+        else
+            warn "Ngrok B not found — domain $NGROK_DOMAIN_B not in running tunnels (HTTP $HTTP_B)"
+        fi
     fi
 else
     log "Step 3: Skipping ngrok (NGROK_DOMAIN_A/B not set)"
@@ -293,7 +357,6 @@ if [ "$SIP_LAB" = true ]; then
 
             if [[ "$CONTAINER_STATUS" == *"Up"* ]]; then
                 ok "Asterisk container running"
-                SIP_LAB_READY=true
             else
                 log "  Asterisk not running — starting..."
                 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no \
@@ -307,9 +370,62 @@ if [ "$SIP_LAB" = true ]; then
                     "docker ps --filter name=sip-lab-asterisk --format '{{.Status}}'" 2>/dev/null || echo "")
                 if [[ "$CONTAINER_STATUS" == *"Up"* ]]; then
                     ok "Asterisk container started"
-                    SIP_LAB_READY=true
                 else
                     err "Failed to start Asterisk container"
+                fi
+            fi
+
+            # SIP-level health check — docker ps is not enough
+            # Verify Asterisk is actually accepting SIP traffic on port 5060
+            if [[ "$CONTAINER_STATUS" == *"Up"* ]]; then
+                # Get the actual container name (may or may not have -1 suffix depending on compose version)
+                SIP_CONTAINER=$(ssh -i "$SSH_KEY" -o ConnectTimeout=5 -o StrictHostKeyChecking=no \
+                    "siplab@$DROPLET_IP" \
+                    "docker ps --filter name=sip-lab-asterisk --format '{{.Names}}' | head -1" \
+                    2>/dev/null || echo "sip-lab-asterisk")
+
+                SIP_HEALTHY=$(ssh -i "$SSH_KEY" -o ConnectTimeout=5 -o StrictHostKeyChecking=no \
+                    "siplab@$DROPLET_IP" \
+                    "docker exec $SIP_CONTAINER asterisk -rx 'core show channels count' 2>/dev/null && echo SIP_OK || echo SIP_FAIL" \
+                    2>/dev/null || echo "SIP_FAIL")
+
+                if [[ "$SIP_HEALTHY" == *"SIP_OK"* ]]; then
+                    ok "Asterisk SIP responding (core show channels)"
+                else
+                    warn "Asterisk container up but SIP not responding — restarting..."
+                    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no \
+                        "siplab@$DROPLET_IP" \
+                        "cd ~/sip-lab && docker compose restart asterisk" 2>/dev/null || true
+                    sleep 8
+
+                    # Retry SIP health check after restart
+                    SIP_HEALTHY=$(ssh -i "$SSH_KEY" -o ConnectTimeout=5 -o StrictHostKeyChecking=no \
+                        "siplab@$DROPLET_IP" \
+                        "docker exec $SIP_CONTAINER asterisk -rx 'core show channels count' 2>/dev/null && echo SIP_OK || echo SIP_FAIL" \
+                        2>/dev/null || echo "SIP_FAIL")
+
+                    if [[ "$SIP_HEALTHY" == *"SIP_OK"* ]]; then
+                        ok "Asterisk SIP responding after restart"
+                    else
+                        err "Asterisk SIP still not responding after restart"
+                    fi
+                fi
+
+                # Verify SIP port is externally reachable (from inside the droplet)
+                SIP_PORT_OPEN=$(ssh -i "$SSH_KEY" -o ConnectTimeout=5 -o StrictHostKeyChecking=no \
+                    "siplab@$DROPLET_IP" \
+                    "timeout 3 bash -c 'echo | nc -u -w1 127.0.0.1 5060 && echo PORT_OK || echo PORT_FAIL'" \
+                    2>/dev/null || echo "PORT_FAIL")
+
+                if [[ "$SIP_PORT_OPEN" == *"PORT_OK"* ]]; then
+                    ok "SIP port 5060/UDP open"
+                else
+                    warn "SIP port 5060/UDP check inconclusive (nc may not be available)"
+                fi
+
+                # Final determination: container up AND SIP responding
+                if [[ "$SIP_HEALTHY" == *"SIP_OK"* ]]; then
+                    SIP_LAB_READY=true
                 fi
             fi
         fi

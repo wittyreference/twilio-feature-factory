@@ -30,6 +30,26 @@ export interface ContextManagerConfig {
 }
 
 /**
+ * Metrics for context window usage tracking.
+ * Tracks truncation and compaction events for observability.
+ */
+export interface ContextMetrics {
+  /** Number of truncation operations performed */
+  truncationCount: number;
+  /** Number of compaction operations performed */
+  compactionCount: number;
+  /** Total characters saved by truncation */
+  charsSavedByTruncation: number;
+  /** Total turn-pairs removed by compaction */
+  totalTurnPairsRemoved: number;
+}
+
+/**
+ * Callback for context budget events.
+ */
+export type ContextMetricCallback = (event: string, detail: Record<string, unknown>) => void;
+
+/**
  * Result of a truncation operation
  */
 export interface TruncationResult {
@@ -194,7 +214,7 @@ function truncateGrep(
   let keptLines = 0;
 
   for (const line of lines) {
-    if (charCount + line.length + 1 > maxChars - 80) break; // 80 chars for marker
+    if (charCount + line.length + 1 > maxChars - 80) {break;} // 80 chars for marker
     charCount += line.length + 1;
     keptLines++;
   }
@@ -271,6 +291,63 @@ export function shouldCompact(
   config: ContextManagerConfig = DEFAULT_CONTEXT_MANAGER_CONFIG
 ): boolean {
   return inputTokensUsed >= config.compactionThresholdTokens;
+}
+
+/**
+ * Check context budget and log warnings at 80% and 90% thresholds.
+ * Returns the usage percentage for monitoring.
+ */
+export function checkContextBudget(
+  inputTokensUsed: number,
+  config: ContextManagerConfig = DEFAULT_CONTEXT_MANAGER_CONFIG,
+  onMetric?: ContextMetricCallback
+): number {
+  const threshold = config.compactionThresholdTokens;
+  const percentage = Math.round((inputTokensUsed / threshold) * 100);
+
+  if (percentage >= 90 && percentage < 100) {
+    const msg = `Context budget at ${percentage}% (${inputTokensUsed}/${threshold} tokens). Compaction imminent.`;
+    console.warn(`[context-manager] ${msg}`);
+    onMetric?.('context_budget_warning', { percentage, inputTokensUsed, threshold, level: 'critical' });
+  } else if (percentage >= 80 && percentage < 90) {
+    const msg = `Context budget at ${percentage}% (${inputTokensUsed}/${threshold} tokens). Approaching compaction threshold.`;
+    console.warn(`[context-manager] ${msg}`);
+    onMetric?.('context_budget_warning', { percentage, inputTokensUsed, threshold, level: 'warning' });
+  }
+
+  return percentage;
+}
+
+/**
+ * Create a fresh ContextMetrics instance.
+ */
+export function createContextMetrics(): ContextMetrics {
+  return {
+    truncationCount: 0,
+    compactionCount: 0,
+    charsSavedByTruncation: 0,
+    totalTurnPairsRemoved: 0,
+  };
+}
+
+/**
+ * Update metrics after a truncation operation.
+ */
+export function recordTruncation(metrics: ContextMetrics, result: TruncationResult): void {
+  if (result.wasTruncated) {
+    metrics.truncationCount++;
+    metrics.charsSavedByTruncation += result.originalLength - result.truncatedLength;
+  }
+}
+
+/**
+ * Update metrics after a compaction operation.
+ */
+export function recordCompaction(metrics: ContextMetrics, result: CompactionResult): void {
+  if (result.turnPairsRemoved > 0) {
+    metrics.compactionCount++;
+    metrics.totalTurnPairsRemoved += result.turnPairsRemoved;
+  }
 }
 
 /**
@@ -355,7 +432,7 @@ export function compactMessages(
  * Extract a one-line summary of tool calls from an assistant message.
  */
 function extractToolSummary(msg: Anthropic.MessageParam): string {
-  if (!Array.isArray(msg.content)) return '';
+  if (!Array.isArray(msg.content)) {return '';}
 
   const toolParts: string[] = [];
 
@@ -401,7 +478,7 @@ function extractResultSummary(msg: Anthropic.MessageParam): {
   const files: string[] = [];
   let testStatus = '';
 
-  if (!Array.isArray(msg.content)) return { files, testStatus };
+  if (!Array.isArray(msg.content)) {return { files, testStatus };}
 
   for (const block of msg.content) {
     if (typeof block === 'object' && 'type' in block && block.type === 'tool_result') {
@@ -473,7 +550,7 @@ function appendToMessageContent(
  */
 function shortenPath(filePath: string): string {
   const parts = filePath.split('/');
-  if (parts.length <= 3) return filePath;
+  if (parts.length <= 3) {return filePath;}
   return `.../${parts.slice(-3).join('/')}`;
 }
 
@@ -481,6 +558,6 @@ function shortenPath(filePath: string): string {
  * Truncate a string argument for display.
  */
 function truncateArg(value: string, maxLength: number): string {
-  if (value.length <= maxLength) return value;
+  if (value.length <= maxLength) {return value;}
   return value.slice(0, maxLength) + '...';
 }

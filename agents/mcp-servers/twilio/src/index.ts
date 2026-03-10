@@ -2,6 +2,7 @@
 // ABOUTME: Exports the createTwilioMcpServer function for use with Claude Agent SDK.
 
 import Twilio from 'twilio';
+import type { z } from 'zod';
 import { messagingTools } from './tools/messaging.js';
 import { voiceTools } from './tools/voice.js';
 import { phoneNumberTools } from './tools/phone-numbers.js';
@@ -35,6 +36,12 @@ import { addressesTools } from './tools/addresses.js';
 // Validation tools (Deep validation beyond HTTP 200)
 import { validationTools } from './tools/validation.js';
 
+/**
+ * Priority tiers for tool loading. Default loads P0 + validation only.
+ * Use 'all' to load every tool (340 tools — previous default behavior).
+ */
+export type ToolTier = 'P0' | 'P1' | 'P2' | 'P3' | 'validation' | 'all';
+
 export interface TwilioMcpServerConfig {
   accountSid?: string;
   authToken?: string;
@@ -46,6 +53,16 @@ export interface TwilioMcpServerConfig {
   verifyServiceSid?: string;
   syncServiceSid?: string;
   taskrouterWorkspaceSid?: string;
+  /** Which tool tiers to load. Default: ['P0', 'validation'] (~108 tools). Use ['all'] for all 340. */
+  toolTiers?: ToolTier[];
+}
+
+export interface TwilioTool {
+  name: string;
+  description: string;
+  inputSchema: z.ZodType;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  handler: (params: any) => Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }>;
 }
 
 export interface TwilioContext {
@@ -98,44 +115,35 @@ export function createTwilioMcpServer(config: TwilioMcpServerConfig = {}) {
     taskrouterWorkspaceSid: config.taskrouterWorkspaceSid || process.env.TWILIO_TASKROUTER_WORKSPACE_SID,
   };
 
+  // Tool tier registry — maps each module to its priority tier
+  const tierRegistry: Record<string, Array<(ctx: TwilioContext) => TwilioTool[]>> = {
+    P0: [messagingTools, voiceTools, phoneNumberTools, verifyTools, paymentsTools, syncTools, taskrouterTools, debuggerTools],
+    P1: [lookupsTools, studioTools, messagingServicesTools, serverlessTools],
+    P2: [intelligenceTools, videoTools, proxyTools, trusthubTools, contentTools, voiceConfigTools, regulatoryTools, mediaTools],
+    P3: [sipTools, trunkingTools, accountsTools, iamTools, pricingTools, notifyTools, addressesTools],
+    validation: [validationTools],
+  };
+
+  // Determine which tiers to load
+  const tiers = config.toolTiers ?? ['P0', 'validation'];
+  const loadAll = tiers.includes('all');
+  const activeTiers = loadAll ? ['P0', 'P1', 'P2', 'P3', 'validation'] : tiers;
+
+  // Collect tools from active tiers
+  const tools: TwilioTool[] = [];
+  for (const tier of activeTiers) {
+    const modules = tierRegistry[tier];
+    if (modules) {
+      for (const mod of modules) {
+        tools.push(...mod(context));
+      }
+    }
+  }
+
   return {
     name: 'twilio-tools',
     version: '1.0.0',
-    tools: [
-      // P0 tools
-      ...messagingTools(context),
-      ...voiceTools(context),
-      ...phoneNumberTools(context),
-      ...verifyTools(context),
-      ...paymentsTools(context),
-      ...syncTools(context),
-      ...taskrouterTools(context),
-      ...debuggerTools(context),
-      // P1 tools
-      ...lookupsTools(context),
-      ...studioTools(context),
-      ...messagingServicesTools(context),
-      ...serverlessTools(context),
-      // P2 tools
-      ...intelligenceTools(context),
-      ...videoTools(context),
-      ...proxyTools(context),
-      ...trusthubTools(context),
-      ...contentTools(context),
-      ...voiceConfigTools(context),
-      ...regulatoryTools(context),
-      ...mediaTools(context),
-      // P3 tools
-      ...sipTools(context),
-      ...trunkingTools(context),
-      ...accountsTools(context),
-      ...iamTools(context),
-      ...pricingTools(context),
-      ...notifyTools(context),
-      ...addressesTools(context),
-      // Validation tools
-      ...validationTools(context),
-    ],
+    tools,
   };
 }
 

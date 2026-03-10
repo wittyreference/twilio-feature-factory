@@ -103,13 +103,34 @@ Examples: `twilio_messaging_send_sms`, `twilio_voice_get_call_logs`, `twilio_syn
 | `TWILIO_STATUS_CALLBACK_URL` | Optional | Delivery webhooks |
 | `TWILIO_FALLBACK_URL` | Optional | Fallback webhook |
 
+## Tool Tiers
+
+Tools are organized into priority tiers. Default loads P0 + validation (~108 tools).
+
+| Tier | Tools | Domains |
+|------|-------|---------|
+| P0 | 94 | Messaging, Voice, Phone Numbers, Verify, Payments, Sync, TaskRouter, Debugger |
+| P1 | 40 | Lookups, Studio, Messaging Services, Serverless |
+| P2 | 97 | Intelligence, Video, Proxy, TrustHub, Content, Voice Config, Regulatory, Media |
+| P3 | 95 | SIP, Trunking, Accounts, IAM, Pricing, Notify, Addresses |
+| validation | 14 | Deep validation beyond HTTP 200 |
+
+Configure via `toolTiers` in `TwilioMcpServerConfig`:
+- Default: `['P0', 'validation']` — 108 tools
+- All tools: `['all']` — 340 tools
+- Custom: `['P0', 'P1', 'validation']` — 148 tools
+
 ## Quick Usage
 
 ```typescript
 import { createTwilioMcpServer } from '@twilio-feature-factory/mcp-twilio';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 
+// Default: P0 + validation (108 tools)
 const twilioServer = createTwilioMcpServer();
+
+// Or load all tiers (340 tools)
+const fullServer = createTwilioMcpServer({ toolTiers: ['all'] });
 
 for await (const message of query({
   prompt: "Send an SMS to +15551234567 saying 'Hello from Claude!'",
@@ -118,7 +139,7 @@ for await (const message of query({
     allowedTools: ['mcp__twilio__messaging_send_sms']
   }
 })) {
-  // Agent autonomously sends the SMS
+  // Agent sends the SMS
 }
 ```
 

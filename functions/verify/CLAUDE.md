@@ -1,6 +1,11 @@
+<!-- ABOUTME: Essential context for Twilio Verify functions — OTP verification across channels. -->
+<!-- ABOUTME: Covers file inventory, API reference, channels, status values, and FriendlyName gotcha. -->
+
 # Verify Functions Context
 
 This directory contains Twilio Verify API functions for phone number and email verification.
+
+**For complete reference, see [REFERENCE.md](./REFERENCE.md).**
 
 ## Files
 
@@ -18,27 +23,20 @@ Twilio Verify provides a complete solution for sending and verifying one-time pa
 - WhatsApp
 - TOTP (authenticator apps)
 
-## API Overview
+## Quick API Reference
 
-### Start Verification
 ```javascript
 const client = context.getTwilioClient();
-const verification = await client.verify.v2
-  .services(serviceSid)
-  .verifications.create({
-    to: '+1234567890',
-    channel: 'sms'
-  });
-```
 
-### Check Verification
-```javascript
-const verificationCheck = await client.verify.v2
-  .services(serviceSid)
-  .verificationChecks.create({
-    to: '+1234567890',
-    code: '123456'
-  });
+// Start verification
+const verification = await client.verify.v2
+  .services(context.TWILIO_VERIFY_SERVICE_SID)
+  .verifications.create({ to: '+1234567890', channel: 'sms' });
+
+// Check verification
+const check = await client.verify.v2
+  .services(context.TWILIO_VERIFY_SERVICE_SID)
+  .verificationChecks.create({ to: '+1234567890', code: '123456' });
 ```
 
 ## Channels
@@ -52,128 +50,16 @@ const verificationCheck = await client.verify.v2
 
 ## Verification Status Values
 
-### After Starting Verification
-- `pending` - Code has been sent, awaiting verification
+| Status | Meaning |
+|--------|---------|
+| `pending` | Code sent, awaiting verification |
+| `approved` | Code correct, verification successful |
+| `canceled` | Verification was canceled |
+| `max_attempts_reached` | Too many incorrect attempts |
+| `expired` | Verification code has expired |
 
-### After Checking Code
-- `approved` - Code is correct, verification successful
-- `pending` - Code is incorrect, still awaiting valid code
-- `canceled` - Verification was canceled
-- `max_attempts_reached` - Too many incorrect attempts
-- `expired` - Verification code has expired
+## Key Error Codes
 
-## Configuration Options
-
-### Service Configuration
-Create a Verify Service in the Twilio Console with these options:
-- **Code Length**: 4-10 digits (default: 6)
-- **Code TTL**: 60-600 seconds (default: 600)
-- **Lookup Enabled**: Validate phone numbers before sending
-- **Skip SMS to Landlines**: Auto-switch landlines to voice
-- **Custom Code Enabled**: Allow custom codes for testing
-
-### Start Verification Options
-```javascript
-const verification = await client.verify.v2
-  .services(serviceSid)
-  .verifications.create({
-    to: '+1234567890',
-    channel: 'sms',
-    locale: 'en',                    // Message language
-    customFriendlyName: 'MyApp',     // Sender name in message
-    customMessage: 'Your code is {{code}}', // Custom template
-    sendDigits: 'wwww1928',          // DTMF to dial (voice)
-    rateLimits: {
-      uniqueName: 'end_user_phone_number',
-      value: '+1234567890'
-    }
-  });
-```
-
-## Common Patterns
-
-### Basic 2FA Flow
-```javascript
-// Step 1: Start verification (user requests code)
-exports.startVerification = async (context, event, callback) => {
-  const client = context.getTwilioClient();
-  const { phoneNumber } = event;
-
-  const verification = await client.verify.v2
-    .services(context.TWILIO_VERIFY_SERVICE_SID)
-    .verifications.create({
-      to: phoneNumber,
-      channel: 'sms'
-    });
-
-  return callback(null, {
-    success: true,
-    status: verification.status
-  });
-};
-
-// Step 2: Check verification (user submits code)
-exports.checkVerification = async (context, event, callback) => {
-  const client = context.getTwilioClient();
-  const { phoneNumber, code } = event;
-
-  const verificationCheck = await client.verify.v2
-    .services(context.TWILIO_VERIFY_SERVICE_SID)
-    .verificationChecks.create({
-      to: phoneNumber,
-      code: code
-    });
-
-  if (verificationCheck.status === 'approved') {
-    // Grant access, create session, etc.
-    return callback(null, { success: true, verified: true });
-  }
-
-  return callback(null, { success: false, verified: false });
-};
-```
-
-### Fallback to Voice
-```javascript
-exports.handler = async (context, event, callback) => {
-  const client = context.getTwilioClient();
-  const { phoneNumber, attemptCount = 0 } = event;
-
-  // Use voice after 2 failed SMS attempts
-  const channel = attemptCount >= 2 ? 'call' : 'sms';
-
-  const verification = await client.verify.v2
-    .services(context.TWILIO_VERIFY_SERVICE_SID)
-    .verifications.create({
-      to: phoneNumber,
-      channel: channel
-    });
-
-  return callback(null, {
-    success: true,
-    status: verification.status,
-    channel: channel
-  });
-};
-```
-
-### Rate Limiting
-```javascript
-const verification = await client.verify.v2
-  .services(serviceSid)
-  .verifications.create({
-    to: phoneNumber,
-    channel: 'sms',
-    rateLimits: {
-      uniqueName: 'end_user_phone_number',
-      value: phoneNumber
-    }
-  });
-```
-
-## Error Handling
-
-### Common Error Codes
 | Code | Description |
 |------|-------------|
 | `60200` | Invalid parameter (also: FriendlyName has 5+ total digits) |
@@ -182,62 +68,7 @@ const verification = await client.verify.v2
 | `60212` | Verification expired |
 | `60223` | Phone number not valid |
 
-### Error Handling Pattern
-```javascript
-exports.handler = async (context, event, callback) => {
-  const client = context.getTwilioClient();
-
-  try {
-    const verification = await client.verify.v2
-      .services(context.TWILIO_VERIFY_SERVICE_SID)
-      .verifications.create({
-        to: event.phoneNumber,
-        channel: 'sms'
-      });
-
-    return callback(null, { success: true, status: verification.status });
-  } catch (error) {
-    if (error.code === 60202) {
-      return callback(null, {
-        success: false,
-        error: 'Too many attempts. Please wait before trying again.'
-      });
-    }
-    if (error.code === 60223) {
-      return callback(null, {
-        success: false,
-        error: 'Invalid phone number format.'
-      });
-    }
-    throw error;
-  }
-};
-```
-
-## Testing Verify Functions
-
-### Test Phone Numbers
-Twilio provides magic phone numbers for testing:
-- `+15005550006` - Always succeeds
-- `+15005550009` - Always fails
-
-### Test Codes
-With Custom Code enabled on your Verify Service:
-- Code `123456` works for test numbers in development
-
-### Integration Test Pattern
-```javascript
-it('should start verification successfully', async () => {
-  const context = createTestContext();
-  const event = { to: '+15005550006', channel: 'sms' };
-
-  await handler(context, event, callback);
-
-  const [, response] = callback.mock.calls[0];
-  expect(response.success).toBe(true);
-  expect(response.status).toBe('pending');
-});
-```
+See [REFERENCE.md](./REFERENCE.md) for full error handling patterns and code samples.
 
 ## Environment Variables
 
@@ -255,4 +86,4 @@ TWILIO_VERIFY_SERVICE_SID=VAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ## Gotchas
 
-- **Verify Service FriendlyName rejects 5+ total digits** — The Verify API returns error 60200 ("Invalid parameter: FriendlyName") if the name contains 5 or more digit characters total, even if non-consecutive. Names like `my-service-12345` or `svc-1a2b3c4d5e` will fail. Use alpha-only suffixes for programmatic names: `echo "$TIMESTAMP" | md5 | tr '0-9' 'g-p' | head -c 8`
+- **Verify Service FriendlyName rejects 5+ total digits** -- The Verify API returns error 60200 ("Invalid parameter: FriendlyName") if the name contains 5 or more digit characters total, even if non-consecutive. Names like `my-service-12345` or `svc-1a2b3c4d5e` will fail. Use alpha-only suffixes for programmatic names: `echo "$TIMESTAMP" | md5 | tr '0-9' 'g-p' | head -c 8`

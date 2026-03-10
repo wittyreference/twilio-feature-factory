@@ -8,7 +8,7 @@ The Voice AI Builder creates production-ready voice AI agents by generating:
 
 1. **TwiML Handlers** - Serverless functions that connect calls to ConversationRelay
 2. **WebSocket Servers** - Real-time speech processing with LLM integration
-3. **LLM Integration** - Anthropic Claude SDK connection code
+3. **LLM Integration** - Anthropic and OpenAI connection code
 
 ## Architecture
 

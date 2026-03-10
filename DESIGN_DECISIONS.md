@@ -1613,6 +1613,40 @@ Existing validation types (sequential, parallel, uber, chaos, non-voice) reuse p
 
 ---
 
+## Decision 36: .meta/ as Single-Developer Session State
+
+### Context
+
+The `.meta/` directory contains session-specific state: learnings, pending actions, validation history, todo tracking, and development logs. An architect review raised the question of whether this should support multiple contributors.
+
+### Decision
+
+**`.meta/` is intentionally single-developer and gitignored. Shared knowledge is promoted to shipped documentation.**
+
+### Rationale
+
+1. **Session state is ephemeral**: Learnings, pending actions, and session files are transient by design — they capture in-progress discoveries, not stable knowledge
+2. **Promotion workflow handles sharing**: The capture-promote-clear cycle moves stable learnings to shipped docs (CLAUDE.md files, REFERENCE.md, operational-gotchas.md, DESIGN_DECISIONS.md) where all contributors benefit
+3. **Divergence is expected**: Different developers working on different features should have independent session state — merging would create noise
+4. **Simplicity**: File-based session tracking avoids the complexity of distributed state synchronization
+
+### Alternatives Considered
+
+- **Git-tracked subset of .meta/**: Would create merge conflicts on session files and expose transient state in commit history
+- **Shared learnings database**: Over-engineering for current team size; the promotion workflow already captures durable knowledge
+
+### Consequences
+
+- Each developer maintains independent `.meta/` state
+- Stable discoveries must be promoted to shipped docs to benefit the team
+- The orchestrator loads learnings from the local `.meta/` directory (or `.claude/` when `.meta/` doesn't exist)
+
+### Status
+
+**Accepted** - 2026-03-09
+
+---
+
 ## Decision N: [Title]
 
 ### Context
@@ -1691,3 +1725,4 @@ Existing validation types (sequential, parallel, uber, chaos, non-voice) reuse p
 | 2026-03-01 | D33 | Archived context as active agent memory (804 plans + 51 compaction summaries → session context loader) |
 | 2026-03-06 | D34 | Accord-informed pipeline evolution: /prototype phase, LLM velocity trap naming, collaboration reframe |
 | 2026-03-07 | D35 | Clean-room provisioning validation: 14-test ephemeral lifecycle script, ~$0.07/run |
+| 2026-03-09 | D36 | .meta/ documented as intentionally single-developer, gitignored session state |

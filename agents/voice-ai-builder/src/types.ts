@@ -66,7 +66,7 @@ export interface ToolDefinition {
  */
 export interface WebSocketGeneratorInput {
   /** LLM provider to use */
-  llmProvider: 'anthropic' | 'openai' | 'custom';
+  llmProvider: 'anthropic' | 'openai';
   /** System prompt for the AI agent */
   systemPrompt: string;
   /** Tools available to the agent */

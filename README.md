@@ -4,7 +4,7 @@ Build Twilio applications with AI-assisted development using Claude Code.
 
 ## What This Is
 
-Twilio Feature Factory is an **AI-powered development system** for building Twilio applications. You brainstorm your idea with Claude Code, approve an implementation plan, and autonomous agents build it for you.
+Twilio Feature Factory is an **AI-assisted development system** for building Twilio applications. You brainstorm your idea with Claude Code, approve an implementation plan, and a supervised development pipeline builds it — with human approval gates at key checkpoints.
 
 ## The Development Workflow
 
@@ -25,9 +25,9 @@ Twilio Feature Factory is an **AI-powered development system** for building Twil
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │  3. EXECUTE                                                     │
-│     Autonomous agents run the pipeline:                         │
+│     Claude Code runs the development pipeline:                  │
 │     /architect → /prototype? → /spec → /test-gen → /dev → ...  │
-│     Human approval gates at key checkpoints                     │
+│     Human approval gates after architect, spec, and review      │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -66,7 +66,7 @@ Twilio Feature Factory is an **AI-powered development system** for building Twil
 
 ### What Agents Use
 
-During execution, autonomous agents have access to:
+During execution, Claude Code's development pipeline has access to:
 
 - **Slash commands** (`/architect`, `/dev`, etc.) - Specialized development roles
 - **MCP tools** - Twilio API operations (send SMS, query logs, etc.)
@@ -147,7 +147,7 @@ During execution, autonomous agents have access to:
    a voice IVR that routes callers to sales or support"
    ```
 
-   Claude Code will help you develop the concept, then enter plan mode to create the implementation plan. Once approved, autonomous agents will build it.
+   Claude Code will help you develop the concept, then enter plan mode to create the implementation plan. Once approved, the supervised pipeline builds it with approval gates at each phase.
 
    See [WALKTHROUGH.md](WALKTHROUGH.md) for a detailed guided tutorial.
 
@@ -218,16 +218,19 @@ Twilio APIs exposed as tools Claude Code can invoke:
 
 ## Feature Factory
 
-The Feature Factory runs development workflows autonomously with three execution modes:
+The Feature Factory orchestrates the supervised development pipeline with human approval gates after architect, spec, and review phases.
+
+**Default: Supervised mode** — Human approves the plan and reviews key phase outputs before proceeding.
 
 - **Interactive CLI** — Standard Claude Code session with `/orchestrate`
-- **Autonomous mode** — `--dangerously-autonomous` with sandbox isolation (on by default)
 - **Headless** — `scripts/run-headless.sh` for CI/CD pipelines, no TTY required
 
 Built-in safeguards:
 - Stall detection and automatic phase retry
 - Git checkpoints at each pipeline stage
 - Quality gates always enforced (TDD, lint, coverage, credential safety)
+
+**Advanced: Autonomous mode** — For experienced users. Requires explicit opt-in via `--dangerously-autonomous`, budget acknowledgment, and sandbox isolation (on by default). See [agents/feature-factory/CLAUDE.md](agents/feature-factory/CLAUDE.md) for details.
 
 ```bash
 # Headless example
@@ -240,7 +243,7 @@ See [agents/feature-factory/CLAUDE.md](agents/feature-factory/CLAUDE.md) for arc
 
 **Development Tools**
 - 26 slash commands across workflow, development, and utility categories
-- MCP Server with 310 Twilio API tools across 27 modules + 8 deep validation tools
+- MCP Server with 340 Twilio API tools across 28 modules including 14 deep validation tools
 - Voice AI Builder with TwiML and WebSocket generators
 - Feature Factory with autonomous mode, stall detection, and sandbox isolation
 
@@ -249,7 +252,7 @@ See [agents/feature-factory/CLAUDE.md](agents/feature-factory/CLAUDE.md) for arc
 
 **Coordination**
 - Agent Teams with 4 pre-configured workflows (new-feature, bug-fix, code-review, refactor)
-- 15 safety and quality hooks
+- 17 safety and quality hooks
 - Work discovery and background polling in Feature Factory
 
 ## Project Structure
@@ -277,7 +280,7 @@ twilio-feature-factory/
 │   └── voice-ai-builder/    # Voice AI app generator
 ├── .claude/                 # Claude Code configuration
 │   ├── commands/            # Slash command definitions (26)
-│   ├── hooks/               # Safety and quality hooks (15)
+│   ├── hooks/               # Safety and quality hooks (17)
 │   ├── rules/               # Declarative agent rules
 │   ├── skills/              # Context engineering skills
 │   └── workflows/           # Workflow definitions
@@ -354,7 +357,7 @@ See `.meta/sequential-validation.md` for the full validation procedure.
 
 ## Safety Features
 
-15 Claude Code hooks protect your code automatically:
+17 Claude Code hooks protect your code automatically:
 
 **Security**
 - Credential blocking (hardcoded SIDs, tokens, API keys)
@@ -386,7 +389,8 @@ See `.meta/sequential-validation.md` for the full validation procedure.
 
 ## Resources
 
-- [WALKTHROUGH.md](WALKTHROUGH.md) - Build your first app (start here!)
+- [QUICKSTART.md](QUICKSTART.md) - Make your first call in 10 minutes (start here!)
+- [WALKTHROUGH.md](WALKTHROUGH.md) - Build a Voice AI Assistant (30-minute guided tutorial)
 - [CLAUDE.md](CLAUDE.md) - Project standards and conventions
 - [agents/README.md](agents/README.md) - Agent architecture details
 - [Twilio Functions Docs](https://www.twilio.com/docs/serverless/functions-assets/functions)

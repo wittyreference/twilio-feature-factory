@@ -1,0 +1,75 @@
+# ABOUTME: E2E validation against deployed Twilio serverless environment.
+# ABOUTME: Runs on manual dispatch and nightly schedule. Requires Twilio secrets.
+
+name: E2E Deployed Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+  schedule:
+    # Run nightly at 6:00 AM UTC (10 PM PT)
+    - cron: '0 6 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-deployed:
+    runs-on: ubuntu-latest
+    # Only run if Twilio secrets are configured
+    if: ${{ vars.TWILIO_CONFIGURED == 'true' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Deploy to dev environment
+        if: ${{ github.event.inputs.environment == 'dev' || github.event_name == 'schedule' }}
+        env:
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+        run: |
+          npm install -g twilio-cli
+          twilio plugins:install @twilio-labs/plugin-serverless
+          npm run deploy:dev
+
+      - name: Wait for deployment to stabilize
+        run: sleep 10
+
+      - name: Run E2E tests against deployed environment
+        env:
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_PHONE_NUMBER: ${{ secrets.TWILIO_PHONE_NUMBER }}
+          TEST_PHONE_NUMBER: ${{ secrets.TEST_PHONE_NUMBER }}
+        run: npm run test:e2e:deployed
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-deployed-results
+          path: |
+            newman/
+            *.html
+          retention-days: 30

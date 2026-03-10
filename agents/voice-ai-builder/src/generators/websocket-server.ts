@@ -60,11 +60,11 @@ function generateServerCode(input: WebSocketGeneratorInput): string {
     lines.push('// Tool definitions');
     lines.push('const TOOLS = [');
     for (const tool of tools) {
-      lines.push(`  {`);
+      lines.push('  {');
       lines.push(`    name: '${tool.name}',`);
       lines.push(`    description: '${escapeString(tool.description)}',`);
       lines.push(`    input_schema: ${JSON.stringify(tool.inputSchema, null, 6).split('\n').join('\n    ')},`);
-      lines.push(`  },`);
+      lines.push('  },');
     }
     lines.push('];');
     lines.push('');
@@ -82,8 +82,7 @@ function generateServerCode(input: WebSocketGeneratorInput): string {
     lines.push('  apiKey: process.env.OPENAI_API_KEY,');
     lines.push('});');
   } else {
-    lines.push('// TODO: Initialize custom LLM client');
-    lines.push('// const customLLM = initializeCustomProvider();');
+    lines.push(`throw new Error('Unsupported LLM provider: ${llmProvider}. Use anthropic or openai.');`);
   }
   lines.push('');
 
@@ -120,7 +119,7 @@ function generateServerCode(input: WebSocketGeneratorInput): string {
   lines.push('// Create WebSocket server');
   lines.push('const wss = new WebSocketServer({ port: Number(PORT) });');
   lines.push('');
-  lines.push(`console.log(\`WebSocket server listening on port \${PORT}\`);`);
+  lines.push('console.log(`WebSocket server listening on port ${PORT}`);');
   lines.push('');
 
   // Connection handler
@@ -230,7 +229,7 @@ function generateContextManagement(lines: string[], strategy: string): void {
     lines.push('  // Summary: summarize old messages when context grows');
     lines.push('  const MAX_MESSAGES = 30;');
     lines.push('  if (messages.length > MAX_MESSAGES) {');
-    lines.push('    // TODO: Implement summarization of older messages');
+    lines.push('    // Falls back to sliding window when context exceeds MAX_MESSAGES');
     lines.push('    return messages.slice(-MAX_MESSAGES);');
     lines.push('  }');
     lines.push('  return messages;');
@@ -289,8 +288,7 @@ function generateLLMFunction(lines: string[], provider: string, hasTools: boolea
     lines.push('  }');
     lines.push("  return choice.message.content || '';");
   } else {
-    lines.push('  // TODO: Implement custom LLM call');
-    lines.push("  return 'Custom LLM response placeholder';");
+    lines.push('  throw new Error(\'Unsupported LLM provider. Use anthropic or openai.\');');
   }
 
   lines.push('}');

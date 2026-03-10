@@ -1,22 +1,46 @@
+// ABOUTME: Twilio MCP server that exposes 340 tools for Claude agents.
+// ABOUTME: Provides standardized access to all Twilio APIs via Model Context Protocol.
+
 # Twilio MCP Server
 
 This directory contains the Model Context Protocol (MCP) server that exposes Twilio API operations as custom tools for Claude agents.
 
+**For complete tool inventory and API reference, see [REFERENCE.md](./REFERENCE.md).**
+
 ## Purpose
 
-The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools. **339 tools across 28 modules** covering:
+The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools.
 
-- **Messaging**: SMS/MMS, messaging services, content templates, notifications
-- **Voice**: Call management, conferences, recordings, media streams, Voice Insights, transcriptions, call queues, BYOC trunks, SIP trunking
-- **Phone Numbers**: Management, regulatory bundles, lookups, addresses
-- **Identity**: Verification, TrustHub profiles, trust products, IAM (API keys)
-- **Routing**: TaskRouter (tasks, queues, workers, activities, reservations), Studio flows, Proxy number masking
-- **Payments**: PCI-compliant payment capture on active calls
-- **Media**: Video rooms, recordings, compositions
-- **Serverless**: Functions, builds, environments, variables
-- **State**: Sync Documents, Lists, Maps for real-time state synchronization
-- **Monitoring**: Debugger logs, usage records, Voice Intelligence
-- **Billing**: Account management, usage triggers, pricing lookups
+## Supported Domains (340 tools across 28 modules)
+
+- **Messaging**: 4 tools for SMS/MMS operations
+- **Voice**: 32 tools for calls, conferences, recordings, insights, transcription, queues
+- **Phone Numbers**: 3 tools for management and lookups
+- **Verify**: 3 tools for phone verification
+- **Payments**: 3 tools for PCI-compliant capture
+- **Sync**: 16 tools for Documents, Lists, Maps
+- **TaskRouter**: 30 tools for task-based routing
+- **Debugger**: 3 tools for error logs and analysis
+- **Lookups**: 2 tools (P1) for phone intelligence
+- **Studio**: 9 tools (P1) for Flow Builder
+- **Messaging Services**: 14 tools (P1) for sender pools and A2P
+- **Serverless**: 15 tools (P1) for Functions management
+- **Intelligence**: 9 tools (P2) for transcripts and analysis
+- **Video**: 10 tools (P2) for rooms and participants
+- **Proxy**: 17 tools (P2) for number masking
+- **TrustHub**: 17 tools (P2) for compliance and business identity
+- **Content**: 4 tools (P2) for message templates
+- **Voice Config**: 14 tools (P2) for BYOC and dialing permissions
+- **Regulatory**: 16 tools (P2) for bundles and compliance
+- **Media**: 10 tools (P2) for video recordings and compositions
+- **SIP**: 31 tools (P3) for IP ACLs, credentials, SIP Domains
+- **Trunking**: 20 tools (P3) for Elastic SIP Trunks
+- **Accounts**: 13 tools (P3) for subaccounts and usage
+- **IAM**: 8 tools (P3) for API keys
+- **Pricing**: 7 tools (P3) for pricing lookups
+- **Notify**: 10 tools (P3) for push notifications
+- **Addresses**: 6 tools (P3) for address management
+- **Validation**: 14 tools for deep validation beyond HTTP 200
 
 ## Architecture
 
@@ -25,66 +49,61 @@ src/
 ├── index.ts              # Main MCP server entry point
 └── tools/
     ├── messaging.ts      # SMS/MMS operations (P0)
-    ├── voice.ts          # Calls, conferences, media streams, insights, transcription (P0)
+    ├── voice.ts          # Calls, conferences, insights (P0)
     ├── phone-numbers.ts  # Phone number management (P0)
     ├── verify.ts         # Verification API (P0)
     ├── payments.ts       # PCI-compliant payments (P0)
-    ├── sync.ts           # Real-time state sync: Documents, Lists, Maps (P0)
-    ├── taskrouter.ts     # Task routing: tasks, queues, workers, activities, reservations (P0)
-    ├── debugger.ts       # Error logs and analysis (P0)
+    ├── sync.ts           # Real-time state sync (P0)
+    ├── taskrouter.ts     # Task routing (P0)
+    ├── debugger.ts       # Error logs (P0)
     ├── lookups.ts        # Phone intelligence (P1)
     ├── studio.ts         # Flow builder (P1)
-    ├── messaging-services.ts  # Sender pools, A2P (P1)
-    ├── serverless.ts     # Functions management (P1)
-    ├── intelligence.ts   # Transcripts, conversation analysis (P2)
-    ├── video.ts          # Video rooms, participants (P2)
+    ├── messaging-services.ts  # Sender pools (P1)
+    ├── serverless.ts     # Functions (P1)
+    ├── intelligence.ts   # Transcripts (P2)
+    ├── video.ts          # Video rooms (P2)
     ├── proxy.ts          # Number masking (P2)
-    ├── trusthub.ts       # Business identity, compliance (P2)
-    ├── content.ts        # Message templates (P2)
-    ├── voice-config.ts   # Dialing permissions, BYOC (P2)
-    ├── regulatory.ts     # Regulatory bundles (P2)
-    ├── media.ts          # Video recordings, compositions (P2)
-    ├── sip.ts            # SIP IP ACLs, credentials, SIP Domains + mappings (P3)
-    ├── trunking.ts       # SIP trunks, origination URLs, recording settings (P3)
-    ├── accounts.ts       # Subaccounts, usage records (P3)
-    ├── iam.ts            # API keys, signing keys (P3)
-    ├── pricing.ts        # Voice, SMS, number pricing (P3)
-    ├── notify.ts         # Push notification services (P3)
-    ├── addresses.ts      # Address management (P3)
-    └── validation.ts     # Deep validation tools (MCP validation wrappers)
+    ├── trusthub.ts       # Compliance (P2)
+    ├── content.ts        # Templates (P2)
+    ├── voice-config.ts   # BYOC/dialing (P2)
+    ├── regulatory.ts     # Bundles (P2)
+    ├── media.ts          # Compositions (P2)
+    ├── sip.ts            # IP ACLs, credentials (P3)
+    ├── trunking.ts       # SIP trunks (P3)
+    ├── accounts.ts       # Subaccounts (P3)
+    ├── iam.ts            # API keys (P3)
+    ├── pricing.ts        # Pricing (P3)
+    ├── notify.ts         # Push notifications (P3)
+    ├── addresses.ts      # Addresses (P3)
+    └── validation.ts     # Deep validation wrappers
 ```
 
 ## Tool Naming Convention
 
 All tools follow the pattern: `twilio_<domain>_<action>`
 
-Examples:
-- `twilio_messaging_send_sms`
-- `twilio_voice_get_call_logs`
-- `twilio_sync_create_document`
+Examples: `twilio_messaging_send_sms`, `twilio_voice_get_call_logs`, `twilio_sync_create_document`
 
 ## Environment Variables
-
-The MCP server requires the following environment variables:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `TWILIO_ACCOUNT_SID` | Yes | Twilio Account SID |
-| `TWILIO_AUTH_TOKEN` | One of auth | Twilio Auth Token (US1 default) |
-| `TWILIO_API_KEY` | One of auth | API Key SID (SK...) — preferred over auth token |
-| `TWILIO_API_SECRET` | One of auth | API Key Secret (pair with API_KEY) |
-| `TWILIO_REGION` | Optional | Regional endpoint (e.g. `au1`, `ie1`) |
-| `TWILIO_EDGE` | Optional | Edge location (e.g. `sydney`, `dublin`) |
+| `TWILIO_AUTH_TOKEN` | One of auth | Auth Token (US1) |
+| `TWILIO_API_KEY` | One of auth | API Key SID (SK...) — preferred |
+| `TWILIO_API_SECRET` | One of auth | API Key Secret |
+| `TWILIO_REGION` | Optional | Regional endpoint (au1, ie1, etc.) |
+| `TWILIO_EDGE` | Optional | Edge location (sydney, dublin, etc.) |
 | `TWILIO_PHONE_NUMBER` | Yes | Default "from" number (E.164) |
-| `TWILIO_VERIFY_SERVICE_SID` | For verify tools | Verify Service SID |
-| `TWILIO_SYNC_SERVICE_SID` | For sync tools | Sync Service SID |
-| `TWILIO_TASKROUTER_WORKSPACE_SID` | For taskrouter | TaskRouter Workspace SID |
-| `TWILIO_MESSAGING_SERVICE_SID` | For messaging services | Messaging Service SID |
-| `TEST_PHONE_NUMBER` | For integration tests | Recipient number for test messages/calls |
-| `TWILIO_STATUS_CALLBACK_URL` | Optional | URL for delivery status webhooks |
-| `TWILIO_FALLBACK_URL` | Optional | Fallback URL when primary webhook fails |
+| `TWILIO_VERIFY_SERVICE_SID` | For verify | Verify Service SID |
+| `TWILIO_SYNC_SERVICE_SID` | For sync | Sync Service SID |
+| `TWILIO_TASKROUTER_WORKSPACE_SID` | For taskrouter | Workspace SID |
+| `TWILIO_MESSAGING_SERVICE_SID` | For messaging | Messaging Service SID |
+| `TEST_PHONE_NUMBER` | For tests | Recipient number |
+| `TWILIO_STATUS_CALLBACK_URL` | Optional | Delivery webhooks |
+| `TWILIO_FALLBACK_URL` | Optional | Fallback webhook |
 
-## Usage with Claude Agent SDK
+## Quick Usage
 
 ```typescript
 import { createTwilioMcpServer } from '@twilio-feature-factory/mcp-twilio';
@@ -103,561 +122,15 @@ for await (const message of query({
 }
 ```
 
-## Tool Reference
-
-### Messaging Tools
-
-| Tool | Description |
-|------|-------------|
-| `send_sms` | Send an SMS message |
-| `send_mms` | Send an MMS with media |
-| `get_message_logs` | Retrieve message history |
-| `get_message_status` | Check delivery status |
-
-### Voice Tools — 32 tools
-
-| Tool | Description |
-|------|-------------|
-| `get_call_logs` | Retrieve call history |
-| `make_call` | Initiate an outbound call |
-| `get_recording` | Fetch call recording |
-| `get_call` | Get detailed call information |
-| `update_call` | Modify in-progress call (redirect, end) |
-| `list_call_recordings` | List recordings for a call |
-| `list_recordings` | List all recordings in account with filters |
-| `delete_recording` | Delete a recording (soft delete) |
-| `start_call_recording` | Start recording an active call |
-| `update_call_recording` | Pause/resume/stop a recording |
-| `delete_call_recording` | Delete a call recording |
-| `list_conferences` | List conferences with filtering |
-| `get_conference` | Get conference details |
-| `update_conference` | Update/end a conference |
-| `list_conference_participants` | List participants in conference |
-| `get_conference_participant` | Get participant details |
-| `update_conference_participant` | Mute, hold, or coach participant |
-| `add_participant_to_conference` | Add participant via Participants API |
-| `list_conference_recordings` | List conference recordings |
-| `start_call_stream` | Start unidirectional media stream (see streams note) |
-| `stop_call_stream` | Stop a media stream |
-| `get_call_summary` | Voice Insights call summary (see timing note) |
-| `list_call_events` | Voice Insights call events |
-| `list_call_metrics` | Voice Insights quality metrics |
-| `get_conference_summary` | Conference Insights summary (see timing note) |
-| `list_conference_participant_summaries` | Conference participant summaries |
-| `get_conference_participant_summary` | Single participant summary |
-| `list_recording_transcriptions` | List transcriptions for recording |
-| `get_transcription` | Get transcription text |
-| `list_queues` | List call queues |
-| `get_queue` | Get queue details (size, wait time) |
-| `dequeue_member` | Dequeue caller by SID or "Front" |
-
-**Recording Methods (by source):**
-| Source | How Created | Control API |
-|--------|-------------|-------------|
-| `DialVerb` | `<Dial record=...>` in TwiML | N/A (TwiML-based) |
-| `RecordVerb` | `<Record>` verb in TwiML | N/A (TwiML-based) |
-| `OutboundAPI` | `Record` param in Calls API | N/A (at call create) |
-| `StartCallRecordingAPI` | `start_call_recording` | `update_call_recording` |
-| `Conference` | `record` on `<Conference>` | Conference API |
-| `Trunking` | Elastic SIP Trunk config | Trunk API |
-
-**Media Streams:**
-- `start_call_stream` starts UNIDIRECTIONAL streams (API equivalent of `<Start><Stream>`)
-- For BIDIRECTIONAL streams (AI agents), use TwiML with `<Connect><Stream>` instead
-- Up to 4 unidirectional streams per call; bidirectional blocks TwiML and allows only 1
-
-**Voice/Conference Insights Timing:**
-- Summaries NOT available immediately after call/conference end
-- Partial data (~2 min): Use `processingState: 'partial'` for early access
-- Final data (30 min): Locked and immutable, check `processingState: 'complete'`
-
-### Phone Number Tools
-
-| Tool | Description |
-|------|-------------|
-| `list_phone_numbers` | List owned phone numbers |
-| `configure_webhook` | Set voice/SMS webhook URLs |
-| `search_available_numbers` | Search for available numbers |
-
-### Verify Tools
-
-| Tool | Description |
-|------|-------------|
-| `start_verification` | Send OTP via SMS/call/email |
-| `check_verification` | Verify user-provided code |
-| `get_verification_status` | Check verification status |
-
-### Payments Tools — 3 tools
-
-**WARNING**: PCI Mode is IRREVERSIBLE and account-wide. Always use a subaccount for payments testing.
-
-| Tool | Description |
-|------|-------------|
-| `create_payment` | Initiate PCI-compliant DTMF payment capture on active call |
-| `update_payment` | Complete, cancel, or capture next field of in-progress payment |
-| `get_payment` | Get payment status and tokenization result |
-
-### Sync Tools — 16 tools
-
-| Tool | Description |
-|------|-------------|
-| `create_document` | Create a Sync document |
-| `update_document` | Update document data |
-| `get_document` | Retrieve document |
-| `list_documents` | List all documents |
-| `create_sync_list` | Create ordered list for event logs, history |
-| `list_sync_lists` | List all Sync Lists |
-| `add_sync_list_item` | Append entry to a list |
-| `list_sync_list_items` | Read list entries with ordering |
-| `update_sync_list_item` | Update entry by index |
-| `remove_sync_list_item` | Delete entry by index |
-| `create_sync_map` | Create key-value map for state, config |
-| `list_sync_maps` | List all Sync Maps |
-| `add_sync_map_item` | Set key-value pair |
-| `get_sync_map_item` | Lookup by key |
-| `update_sync_map_item` | Update key-value pair |
-| `remove_sync_map_item` | Delete by key |
-
-### TaskRouter Tools — 30 tools
-
-| Tool | Description |
-|------|-------------|
-| `list_workspaces` | List all workspaces in account |
-| `create_workspace` | Create workspace (Tier 2) |
-| `get_workspace` | Get workspace details |
-| `update_workspace` | Update workspace config |
-| `delete_workspace` | Delete workspace and all children (Tier 3) |
-| `create_task` | Create a new task |
-| `list_tasks` | List tasks with status filter |
-| `get_task_status` | Check task status |
-| `update_task` | Change priority, attributes, assignment status |
-| `delete_task` | Delete a task (Tier 3) |
-| `create_worker` | Create worker with skills/attributes |
-| `list_workers` | List available workers |
-| `get_worker` | Get worker details |
-| `update_worker` | Change worker activity or attributes (Tier 2) |
-| `delete_worker` | Delete a worker (Tier 3) |
-| `create_workflow` | Create routing workflow with configuration |
-| `list_workflows` | List routing workflows |
-| `get_workflow` | Get workflow details and routing config |
-| `update_workflow` | Update workflow routing rules |
-| `delete_workflow` | Delete a workflow (Tier 3) |
-| `create_task_queue` | Create task queue with target workers expression |
-| `list_task_queues` | List all task queues |
-| `get_task_queue` | Get queue details and target worker expression |
-| `update_task_queue` | Update queue target workers or ordering |
-| `delete_task_queue` | Delete a task queue (Tier 3) |
-| `get_queue_statistics` | Real-time stats: available workers, pending tasks, wait times |
-| `create_activity` | Create worker activity state (e.g. Break, Training) |
-| `list_activities` | List worker activity states (Available, Offline, etc.) |
-| `list_reservations` | List reservations for a task |
-| `update_reservation` | Accept, reject, conference, dequeue, redirect (Tier 2) |
-
-### Debugger Tools
-
-| Tool | Description |
-|------|-------------|
-| `get_debugger_logs` | Fetch recent error logs |
-| `analyze_errors` | Analyze error patterns |
-| `get_usage_records` | Retrieve usage data |
-
-### Lookups Tools (P1)
-
-| Tool | Description |
-|------|-------------|
-| `lookup_phone_number` | Get carrier, line type, caller name |
-| `check_fraud_risk` | Check SIM swap, SMS pumping risk |
-
-### Studio Tools (P1) - 9 tools
-
-| Tool | Description |
-|------|-------------|
-| `list_studio_flows` | List all Studio flows |
-| `get_flow` | Get flow details |
-| `trigger_flow` | Trigger flow execution via REST |
-| `list_executions` | List flow executions |
-| `get_execution_status` | Get execution details |
-| `delete_execution` | Delete an execution |
-| `get_execution_context` | Get execution variables/data |
-| `list_execution_steps` | List steps in execution |
-| `get_step_context` | Get step input/output |
-
-### Messaging Services Tools (P1) - 14 tools
-
-| Tool | Description |
-|------|-------------|
-| `create_messaging_service` | Create sender pool service |
-| `list_messaging_services` | List all messaging services |
-| `get_messaging_service` | Get service details |
-| `update_messaging_service` | Update service config |
-| `delete_messaging_service` | Delete a service |
-| `add_number_to_service` | Add phone number to pool |
-| `list_phone_numbers_in_service` | List numbers in pool |
-| `remove_number_from_service` | Remove number from pool |
-| `list_alpha_senders` | List alpha sender IDs |
-| `add_alpha_sender` | Add alpha sender ID |
-| `remove_alpha_sender` | Remove alpha sender |
-| `list_short_codes` | List short codes |
-| `add_short_code` | Add short code to service |
-| `get_a2p_status` | Get A2P 10DLC registration status |
-
-### Serverless Tools (P1) - 15 tools
-
-| Tool | Description |
-|------|-------------|
-| `list_services` | List serverless services |
-| `get_service` | Get service details |
-| `list_functions` | List functions in a service |
-| `get_function` | Get function details |
-| `list_function_versions` | List function versions |
-| `list_environments` | List deployment environments |
-| `get_build_status` | Get build deployment status |
-| `list_builds` | List all builds |
-| `list_assets` | List assets in service |
-| `list_asset_versions` | List asset versions |
-| `list_variables` | List environment variables |
-| `create_variable` | Create environment variable |
-| `update_variable` | Update variable value |
-| `delete_variable` | Delete a variable |
-| `list_logs` | List function execution logs |
-
-### Intelligence Tools (P2) - 8 tools
-
-**Note:** Intelligence Services must be created in the Twilio Console. There is no API for service creation (as of February 2026). Go to Console → Voice → Voice Intelligence to create a service before using these tools.
-
-| Tool | Description |
-|------|-------------|
-| `list_intelligence_services` | List available Intelligence services |
-| `get_intelligence_service` | Get service details |
-| `list_transcripts` | List transcripts in account |
-| `get_transcript` | Get transcript details |
-| `delete_transcript` | Delete a transcript |
-| `list_sentences` | List sentences in transcript |
-| `list_operator_results` | List operator analysis results |
-| `get_transcript_media` | Get transcript media URL |
-
-### Video Tools (P2) - 10 tools
-
-| Tool | Description |
-|------|-------------|
-| `create_video_room` | Create a video room |
-| `list_video_rooms` | List video rooms |
-| `get_room` | Get room details |
-| `update_room` | Update room (end with status=completed) |
-| `list_room_participants` | List participants in a room |
-| `get_participant` | Get participant details |
-| `update_participant` | Update participant (disconnect) |
-| `list_room_recordings` | List recordings in room |
-| `list_subscribed_tracks` | List subscribed tracks |
-| `list_published_tracks` | List published tracks |
-
-### Proxy Tools (P2) - 17 tools
-
-| Tool | Description |
-|------|-------------|
-| `create_proxy_service` | Create number masking service |
-| `list_proxy_services` | List all proxy services |
-| `get_proxy_service` | Get service details |
-| `update_proxy_service` | Update service config |
-| `delete_proxy_service` | Delete a service |
-| `create_proxy_session` | Create masked session |
-| `list_proxy_sessions` | List sessions in service |
-| `get_proxy_session` | Get session details |
-| `update_proxy_session` | Update session (close) |
-| `delete_proxy_session` | Delete a session |
-| `add_proxy_participant` | Add participant to session |
-| `list_proxy_participants` | List participants |
-| `remove_proxy_participant` | Remove participant |
-| `list_proxy_interactions` | List session interactions |
-| `list_proxy_phone_numbers` | List phone numbers in service |
-| `add_proxy_phone_number` | Add phone number to service |
-| `remove_proxy_phone_number` | Remove phone number |
-
-### TrustHub Tools (P2) - 17 tools
-
-| Tool | Description |
-|------|-------------|
-| `create_customer_profile` | Create customer profile |
-| `list_customer_profiles` | List customer profiles |
-| `get_customer_profile` | Get profile details |
-| `update_customer_profile` | Update profile |
-| `delete_customer_profile` | Delete profile |
-| `list_customer_profile_entity_assignments` | List entity assignments |
-| `create_customer_profile_entity_assignment` | Assign entity to profile |
-| `delete_customer_profile_entity_assignment` | Remove entity assignment |
-| `list_trust_products` | List trust products (A2P brands) |
-| `get_trust_product` | Get trust product details |
-| `create_trust_product` | Create trust product |
-| `update_trust_product` | Update trust product |
-| `delete_trust_product` | Delete trust product |
-| `list_policies` | List compliance policies |
-| `list_end_users` | List end users |
-| `create_end_user` | Create end user |
-| `list_supporting_documents` | List supporting documents |
-
-### Content Tools (P2) - 4 tools
-
-| Tool | Description |
-|------|-------------|
-| `create_content_template` | Create message template |
-| `list_content_templates` | List templates |
-| `get_content_template` | Get template details |
-| `delete_content_template` | Delete a template |
-
-### Voice Config Tools (P2) - 14 tools
-
-| Tool | Description |
-|------|-------------|
-| `get_dialing_permissions` | Get country dialing permissions |
-| `list_dialing_permissions_countries` | List countries with permissions |
-| `list_byoc_trunks` | List BYOC trunks |
-| `get_byoc_trunk` | Get trunk details |
-| `create_byoc_trunk` | Create BYOC trunk |
-| `update_byoc_trunk` | Update trunk config |
-| `delete_byoc_trunk` | Delete trunk |
-| `list_connection_policies` | List connection policies |
-| `create_connection_policy` | Create connection policy |
-| `get_connection_policy` | Get policy details |
-| `delete_connection_policy` | Delete policy |
-| `list_connection_policy_targets` | List policy targets |
-| `create_connection_policy_target` | Add target to policy |
-| `delete_connection_policy_target` | Remove target |
-
-### Regulatory Tools (P2) - 16 tools
-
-| Tool | Description |
-|------|-------------|
-| `list_regulatory_bundles` | List regulatory bundles |
-| `get_bundle_status` | Get bundle status |
-| `create_regulatory_bundle` | Create new bundle |
-| `update_regulatory_bundle` | Update bundle |
-| `delete_regulatory_bundle` | Delete bundle |
-| `list_bundle_item_assignments` | List bundle items |
-| `create_bundle_item_assignment` | Add item to bundle |
-| `delete_bundle_item_assignment` | Remove item from bundle |
-| `list_supporting_documents` | List supporting documents |
-| `get_supporting_document` | Get document details |
-| `create_supporting_document` | Create document |
-| `update_supporting_document` | Update document |
-| `delete_supporting_document` | Delete document |
-| `list_regulations` | List available regulations |
-| `list_regulatory_end_users` | List end users |
-| `create_regulatory_end_user` | Create end user |
-
-### Media Tools (P2) - 10 tools
-
-| Tool | Description |
-|------|-------------|
-| `list_video_recordings` | List video recordings |
-| `get_video_recording` | Get recording details |
-| `delete_video_recording` | Delete a recording |
-| `list_compositions` | List video compositions |
-| `get_composition` | Get composition details |
-| `create_composition` | Create composition from recordings |
-| `delete_composition` | Delete composition |
-| `list_composition_hooks` | List composition hooks |
-| `create_composition_hook` | Create auto-composition rule |
-| `delete_composition_hook` | Delete hook |
-
-### SIP Tools (P3) - 31 tools
-
-| Tool | Description |
-|------|-------------|
-| `list_sip_ip_access_control_lists` | List all IP ACLs in account |
-| `get_sip_ip_access_control_list` | Get IP ACL details |
-| `create_sip_ip_access_control_list` | Create IP ACL |
-| `update_sip_ip_access_control_list` | Rename IP ACL |
-| `delete_sip_ip_access_control_list` | Delete IP ACL |
-| `list_sip_ip_addresses` | List IPs in an ACL |
-| `get_sip_ip_address` | Get IP address entry details |
-| `create_sip_ip_address` | Add IP to ACL |
-| `update_sip_ip_address` | Update IP entry |
-| `delete_sip_ip_address` | Remove IP from ACL |
-| `list_sip_credential_lists` | List all credential lists |
-| `get_sip_credential_list` | Get credential list details |
-| `create_sip_credential_list` | Create credential list |
-| `update_sip_credential_list` | Rename credential list |
-| `delete_sip_credential_list` | Delete credential list |
-| `list_sip_credentials` | List credentials in a list |
-| `get_sip_credential` | Get credential details |
-| `create_sip_credential` | Add username/password credential |
-| `update_sip_credential` | Update credential password |
-| `delete_sip_credential` | Remove credential |
-| `list_sip_domains` | List SIP Domains (Programmable Voice) |
-| `get_sip_domain` | Get SIP Domain details |
-| `create_sip_domain` | Create SIP Domain for endpoint registration |
-| `update_sip_domain` | Update SIP Domain config (voiceUrl, etc.) |
-| `delete_sip_domain` | Delete SIP Domain |
-| `list_sip_domain_ip_acl_mappings` | List IP ACLs on a SIP Domain |
-| `create_sip_domain_ip_acl_mapping` | Associate IP ACL with SIP Domain |
-| `delete_sip_domain_ip_acl_mapping` | Remove IP ACL from SIP Domain |
-| `list_sip_domain_credential_list_mappings` | List credential lists on a SIP Domain |
-| `create_sip_domain_credential_list_mapping` | Associate credential list with SIP Domain |
-| `delete_sip_domain_credential_list_mapping` | Remove credential list from SIP Domain |
-
-### Trunking Tools (P3) - 20 tools
-
-| Tool | Description |
-|------|-------------|
-| `list_sip_trunks` | List Elastic SIP Trunks |
-| `get_sip_trunk` | Get trunk details |
-| `create_sip_trunk` | Create new SIP trunk |
-| `update_sip_trunk` | Update trunk config |
-| `delete_sip_trunk` | Delete a trunk |
-| `list_origination_urls` | List origination URLs |
-| `create_origination_url` | Add origination URL |
-| `update_origination_url` | Update origination URL priority/weight/enabled |
-| `delete_origination_url` | Remove origination URL |
-| `list_trunk_ip_access_control_lists` | List IP ACLs on trunk |
-| `associate_ip_access_control_list` | Associate IP ACL with trunk |
-| `remove_trunk_ip_access_control_list` | Remove IP ACL from trunk |
-| `list_trunk_credential_lists` | List credential lists on trunk |
-| `associate_credential_list` | Associate credential list with trunk |
-| `remove_trunk_credential_list` | Remove credential list |
-| `list_trunk_phone_numbers` | List phone numbers on trunk |
-| `associate_phone_number_to_trunk` | Add phone number to trunk |
-| `remove_phone_number_from_trunk` | Remove phone number from trunk |
-| `get_trunk_recording` | Get trunk recording settings |
-| `update_trunk_recording` | Update trunk recording mode/trim |
-
-### Accounts Tools (P3) - 13 tools
-
-| Tool | Description |
-|------|-------------|
-| `get_account` | Get current account details |
-| `list_accounts` | List accounts (subaccounts) |
-| `create_subaccount` | Create new subaccount |
-| `update_account` | Update account settings |
-| `list_usage_records` | List usage records |
-| `list_usage_records_daily` | List daily usage records |
-| `list_usage_records_monthly` | List monthly usage records |
-| `list_usage_triggers` | List usage triggers |
-| `create_usage_trigger` | Create usage trigger |
-| `get_usage_trigger` | Get trigger details |
-| `update_usage_trigger` | Update trigger config |
-| `delete_usage_trigger` | Delete a trigger |
-| `get_account_balance` | Get account balance |
-
-### IAM Tools (P3) - 8 tools
-
-| Tool | Description |
-|------|-------------|
-| `list_api_keys` | List API keys |
-| `get_api_key` | Get API key details |
-| `create_api_key` | Create new API key |
-| `update_api_key` | Update API key |
-| `delete_api_key` | Delete API key |
-| `list_signing_keys` | List signing keys |
-| `create_signing_key` | Create signing key |
-| `delete_signing_key` | Delete signing key |
-
-### Pricing Tools (P3) - 7 tools
-
-| Tool | Description |
-|------|-------------|
-| `list_voice_pricing_countries` | List countries with voice pricing |
-| `get_voice_pricing_country` | Get voice pricing for country |
-| `get_voice_pricing_number` | Get voice pricing for specific number |
-| `list_messaging_pricing_countries` | List countries with messaging pricing |
-| `get_messaging_pricing_country` | Get messaging pricing for country |
-| `list_phone_number_pricing_countries` | List countries with number pricing |
-| `get_phone_number_pricing_country` | Get phone number pricing for country |
-
-### Notify Tools (P3) - 10 tools
-
-| Tool | Description |
-|------|-------------|
-| `list_notify_services` | List Notify services |
-| `get_notify_service` | Get service details |
-| `create_notify_service` | Create Notify service |
-| `update_notify_service` | Update service config |
-| `delete_notify_service` | Delete a service |
-| `list_notify_bindings` | List bindings in service |
-| `get_notify_binding` | Get binding details |
-| `create_notify_binding` | Create device binding |
-| `delete_notify_binding` | Delete a binding |
-| `send_notification` | Send push notification |
-
-### Addresses Tools (P3) - 6 tools
-
-| Tool | Description |
-|------|-------------|
-| `list_addresses` | List addresses |
-| `get_address` | Get address details |
-| `create_address` | Create new address |
-| `update_address` | Update address |
-| `delete_address` | Delete address |
-| `list_address_phone_numbers` | List phone numbers using address |
-
-### Validation Tools - 13 tools
-
-Deep validation tools that go beyond HTTP 200 OK to verify actual operation success. See [Deep Validation Skill](/.claude/skills/deep-validation.md) for patterns.
-
-| Tool | Description |
-|------|-------------|
-| `validate_call` | Deep call validation with Voice Insights, events, content quality |
-| `validate_message` | Message delivery validation with debugger check |
-| `validate_recording` | Recording completion validation |
-| `validate_transcript` | Voice Intelligence transcript completion + sentence validation |
-| `validate_debugger` | Account-wide debugger error check |
-| `validate_voice_ai_flow` | Full Voice AI flow (call + recording + transcript + SMS) |
-| `validate_two_way` | Two-way conversation validation |
-| `validate_language_operator` | Language Operator results validation |
-| `validate_sync_document` | Sync Document data structure validation |
-| `validate_sync_list` | Sync List item count and structure validation |
-| `validate_sync_map` | Sync Map keys and values validation |
-| `validate_task` | TaskRouter task status, attributes, events validation |
-| `validate_video_room` | Video room validation with participants, tracks, transcription, recording, composition |
-
-**Video Room Validation** checks:
-- Room status and type (must be 'group' for HIPAA eligibility)
-- Participant count and connection status
-- Published/subscribed tracks
-- Transcription status (Healthcare use case)
-- Recording status per participant (Professional/Proctoring use case)
-- Composition status and media accessibility (Professional use case)
-
-## Testing
-
-**No magic numbers.** Tests use real Twilio numbers for authentic API behavior:
-- `TWILIO_PHONE_NUMBER` - FROM number for outbound messages/calls
-- `TEST_PHONE_NUMBER` - TO number (recipient) for outbound tests
-
-Magic test numbers (`+15005550xxx`) are explicitly NOT used because they don't reflect real API behavior, error modes, or carrier interactions.
-
-Run tests:
-```bash
-npm test
-npm run test:coverage
-```
-
-## Security Considerations
+## Security
 
 - Never expose credentials in tool responses
 - Validate all phone numbers are E.164 format
 - Rate limit tool calls to avoid API throttling
 - Audit all operations through agent logging
 
-## API Reference
-
-See [docs/API_REFERENCE.md](docs/API_REFERENCE.md) for comprehensive documentation of:
-
-- All active Twilio APIs (excludes EOL/deprecated)
-- API dependencies and relationships
-- When to use / when NOT to use each API
-- Planned tool implementation roadmap
-
-**Excluded APIs** (EOL/deprecated/preview): Assistants, Autopilot, Chat, Conversations, Flex, Frontline, Fax, IP-Messaging, Microvisor, Preview, Supersim, Wireless, Marketplace
-
-**Version Policy**: When v1 and v2 exist, always use v2.
-
 ## Tool Boundaries
 
-See [/.claude/references/tool-boundaries.md](/.claude/references/tool-boundaries.md) for architectural guidance on:
-
-- **When to use MCP vs CLI vs Functions** - Decision flowchart
-- **Operation risk tiers** - What agents can do autonomously vs. with approval
-- **Golden rules** - MCP = data ops, CLI = infra ops, Functions = webhooks
-- **Anti-patterns to avoid** - Common mistakes and why they're wrong
+See [/.claude/references/tool-boundaries.md](/.claude/references/tool-boundaries.md) for when to use MCP vs CLI vs Functions.
 
 **Key principle**: MCP is a pure API wrapper. It never invokes CLI commands, never deploys, and never makes infrastructure changes.

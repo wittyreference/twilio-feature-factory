@@ -1,6 +1,7 @@
-# Voice Functions Context
+# ABOUTME: Context and reference for Twilio Voice API serverless functions.
+# ABOUTME: Covers file inventory, TwiML control model, webhooks, and critical gotchas.
 
-This directory contains Twilio Voice API functions for handling phone calls.
+For detailed verb options, code patterns, and conference API examples, see [REFERENCE.md](./REFERENCE.md).
 
 ## Files
 
@@ -71,53 +72,11 @@ This directory contains Twilio Voice API functions for handling phone calls.
 
 ## TwiML Voice Verbs
 
-### Common Verbs
-- `<Say>` - Text-to-speech output
-- `<Play>` - Play audio file
-- `<Gather>` - Collect DTMF or speech input
-- `<Dial>` - Connect to another party
-- `<Record>` - Record caller audio
-- `<Conference>` - Join a conference call
-- `<Hangup>` - End the call
-- `<Redirect>` - Transfer to another TwiML endpoint
-- `<Pause>` - Add silence
+Common verbs: `<Say>`, `<Play>`, `<Gather>`, `<Dial>`, `<Record>`, `<Conference>`, `<Hangup>`, `<Redirect>`, `<Pause>`.
 
-### Say Verb Options
-```javascript
-twiml.say({
-  voice: 'Polly.Amy',      // Amazon Polly voice
-  language: 'en-GB',       // Language code
-  loop: 1                  // Number of times to repeat
-}, 'Your message here');
-```
-
-### Gather Verb Options
-```javascript
-twiml.gather({
-  input: 'dtmf speech',    // Input types to accept
-  timeout: 5,              // Seconds to wait for input
-  numDigits: 4,            // Expected DTMF digits
-  finishOnKey: '#',        // Key to finish input
-  action: '/next-handler', // URL to POST results
-  method: 'POST',          // HTTP method
-  speechTimeout: 'auto',   // Auto-detect end of speech
-  hints: 'yes, no, help'   // Speech recognition hints
-});
-```
-
-### Dial Verb Options
-```javascript
-twiml.dial({
-  callerId: '+1234567890', // Caller ID to display
-  timeout: 30,             // Ring timeout in seconds
-  action: '/dial-complete',// Callback URL
-  record: 'record-from-answer' // Recording option
-}).number('+1987654321');
-```
+For detailed options, see [REFERENCE.md](./REFERENCE.md).
 
 ## Voice Webhook Parameters
-
-When Twilio makes a request to your voice webhook, these parameters are included:
 
 | Parameter | Description |
 |-----------|-------------|
@@ -132,180 +91,23 @@ When Twilio makes a request to your voice webhook, these parameters are included
 | `FromState` | Caller's state |
 | `FromCountry` | Caller's country |
 
-### Gather Callback Parameters
-| Parameter | Description |
-|-----------|-------------|
-| `Digits` | DTMF digits pressed |
-| `SpeechResult` | Transcribed speech |
-| `Confidence` | Speech recognition confidence (0-1) |
-
-## Common Patterns
-
-### IVR Menu
-```javascript
-const twiml = new Twilio.twiml.VoiceResponse();
-twiml.say('Press 1 for sales, 2 for support.');
-twiml.gather({
-  numDigits: 1,
-  action: '/ivr-handler'
-});
-twiml.redirect('/voice/incoming-call'); // No input, restart
-```
-
-### Call Forwarding
-```javascript
-const twiml = new Twilio.twiml.VoiceResponse();
-twiml.dial({
-  callerId: event.To,
-  timeout: 20
-}).number('+1234567890');
-twiml.say('The person you called is unavailable.');
-```
-
-### Voicemail
-```javascript
-const twiml = new Twilio.twiml.VoiceResponse();
-twiml.say('Please leave a message after the beep.');
-twiml.record({
-  maxLength: 60,
-  action: '/recording-complete',
-  transcribe: true,
-  transcribeCallback: '/transcription-ready'
-});
-```
-
-### Conference via REST API (Preferred)
-Use the Conferences Participants API for programmatic control:
-
-```javascript
-// Create conference by adding first participant
-const participant = await client.conferences('my-conference')
-  .participants
-  .create({
-    from: context.TWILIO_PHONE_NUMBER,
-    to: participantNumber,
-    timeout: 30,           // Ring timeout
-    timeLimit: 600,        // Max call duration (prevent runaway)
-    startConferenceOnEnter: true,
-    endConferenceOnExit: false,
-    muted: false,
-    beep: true
-  });
-
-// Add additional participants
-await client.conferences('my-conference')
-  .participants
-  .create({
-    from: context.TWILIO_PHONE_NUMBER,
-    to: anotherParticipant,
-    timeout: 30,
-    timeLimit: 600
-  });
-
-// End conference
-await client.conferences(conferenceSid)
-  .update({ status: 'completed' });
-```
-
-### Conference Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `startConferenceOnEnter` | boolean | true | Start when participant joins |
-| `endConferenceOnExit` | boolean | false | End when participant leaves (moderator) |
-| `muted` | boolean | false | Join muted |
-| `beep` | boolean | true | Play beep on join/leave |
-| `timeout` | number | 30 | Ring timeout in seconds |
-| `timeLimit` | number | 14400 | Max call duration in seconds |
-
-### Finding Conferences by Name
-```javascript
-// List in-progress conferences by friendly name
-const conferences = await client.conferences.list({
-  friendlyName: 'my-conference',
-  status: 'in-progress',
-  limit: 1
-});
-
-if (conferences.length > 0) {
-  const conference = conferences[0];
-  console.log(`SID: ${conference.sid}`);
-}
-```
+Gather callbacks include: `Digits` (DTMF), `SpeechResult` (transcribed), `Confidence` (0-1).
 
 ## TwiML Control Model
 
 **Critical**: In almost all cases, only ONE TwiML document controls a call at any given time.
 
-### Exception: Background Operations
+**Exception — Background Operations**: Some verbs fork off and continue running while the call executes other TwiML:
+- `<Start><Stream>` — Media streaming continues
+- `<Start><Recording>` — Recording continues until explicitly stopped
+- `<Start><Siprec>` — SIPREC streaming continues
 
-Some TwiML verbs start background processes that continue running even after the call moves to subsequent TwiML documents:
-
-- **`<Start><Stream>`** - Media streaming continues in the background
-- **`<Start><Recording>`** - Recording continues until explicitly stopped
-- **`<Start><Siprec>`** - SIPREC streaming continues in the background
-
-These operations "fork off" and run concurrently with whatever TwiML executes next. The call can proceed through multiple TwiML documents while the stream/recording remains active.
-
-```javascript
-// Recording starts and continues through subsequent TwiML
-const start = twiml.start();
-start.recording({
-  recordingStatusCallback: `https://${context.DOMAIN_NAME}/recording-complete`,
-  recordingStatusCallbackEvent: 'completed',
-});
-twiml.say('This is being recorded...');
-twiml.redirect('/next-handler'); // Recording continues!
-```
-
-### Key Implications
-
-1. **Updating participant TwiML exits current state**: If a participant is in a conference and you update their call with new TwiML, they immediately exit the conference and execute the new TwiML.
-
-2. **Conference teardown risk**: If the exiting participant had `endConferenceOnExit=true`, the entire conference tears down - appearing as a "dropped call" to other participants.
-
-3. **Call transfer in conference context**: "Transfer" means adding a new participant to the existing conference, NOT replacing TwiML. The original parties stay in the conference.
-
-### Safe Conference Transfer Pattern
-
-```javascript
-// "Transfer" a call by adding a new party to the conference
-// Original caller and agent stay in conference with the new party
-
-// 1. Agent is on call with customer in conference "support-12345"
-// 2. Agent wants to bring in specialist
-
-// Add specialist to existing conference (they join, nobody leaves)
-await client.conferences('support-12345')
-  .participants
-  .create({
-    from: context.TWILIO_PHONE_NUMBER,
-    to: specialistNumber,
-    startConferenceOnEnter: true,  // Start immediately
-    endConferenceOnExit: false     // Don't end when they leave
-  });
-
-// 3. All three parties now in conference
-// 4. Agent can drop off by having their participant removed:
-await client.conferences('support-12345')
-  .participants(agentCallSid)
-  .update({ status: 'completed' });
-```
-
-### Dangerous Pattern (Avoid)
-
-```javascript
-// DON'T: Update participant with new TwiML - exits them from conference
-await client.calls(participantCallSid)
-  .update({
-    twiml: '<Response><Dial>+15551234567</Dial></Response>'
-  });
-// This removes them from conference and may tear it down!
-```
+**Key Implications**:
+1. Updating participant TwiML exits current state (e.g., exits conference)
+2. Conference teardown risk if exiting participant has `endConferenceOnExit=true`
+3. "Transfer" in conference context means adding a participant, NOT replacing TwiML
 
 ## Logging and Response Rules
-
-Twilio Functions generate debugger alerts based on log level:
 
 | Log Level | Alert Code | Effect |
 |-----------|------------|--------|
@@ -313,163 +115,86 @@ Twilio Functions generate debugger alerts based on log level:
 | `console.warn` | 82004 | Generates warning alert — **never use** |
 | `console.error` | 82005 | Generates error alert — **never use** |
 
-Use `console.log` for **all** logging, including error conditions and catch blocks.
-
-**Response bodies**: Always pass a string to `Twilio.Response.setBody()`, not a plain object. Use `JSON.stringify()` and set `Content-Type: application/json`. Passing an object causes `Buffer.from(object)` TypeError in the runtime.
-
-```javascript
-// WRONG — triggers Buffer TypeError
-response.setBody({ success: true });
-
-// RIGHT — explicit JSON serialization
-response.appendHeader('Content-Type', 'application/json');
-response.setBody(JSON.stringify({ success: true }));
-```
+Always pass a string to `response.setBody()`, not an object. Use `JSON.stringify()` and set `Content-Type: application/json`.
 
 ## Gotchas
 
 ### Env Vars Can Reset on Deploy
 
-`twilio serverless:deploy` doesn't preserve runtime env vars set via the Console or CLI. Always verify env vars after deployment and re-set any that were added outside of `.env`.
+`twilio serverless:deploy` doesn't preserve runtime env vars set via Console or CLI. Verify and re-set after deployment.
 
 ### `<Start><Recording>` Syntax is `.recording()`, Not `.record()`
 
-The correct TwiML builder syntax is `twiml.start().recording({...})`. Using `.record()` is a different verb entirely (`<Record>`, which has different behavior — see below).
+The correct syntax is `twiml.start().recording({...})`. Using `.record()` is a different verb (`<Record>`).
 
 ### Conference Has No Parent/Child Relationships
 
-Each conference participant is an independent call. One participant disconnecting doesn't affect others (unless `endConferenceOnExit=true`). This is different from `<Dial>`-created calls where parent and child legs are coupled — hanging up the parent terminates the child.
+Each conference participant is independent. One disconnecting doesn't affect others unless `endConferenceOnExit=true`. Different from `<Dial>` where parent/child are coupled.
 
-### `<Pause>` as First TwiML Verb Does Not Answer the Call
+### `<Pause>` as First TwiML Verb Does Not Answer
 
-A webhook that returns `<Pause>` as the first verb never properly answers the call — it continues ringing until timeout. Always produce audio (`<Say>` or `<Play>`) before `<Pause>` to answer the call first.
+A webhook returning `<Pause>` as the first verb never answers the call — it continues ringing. Always produce audio (`<Say>` or `<Play>`) first.
 
-### `<Record>` Without `action` Creates an Infinite Loop
+### `<Record>` Without `action` Creates Infinite Loop
 
-`<Record>` without an `action` attribute POSTs back to the current URL when recording finishes, re-executing the same TwiML and starting another recording. This creates a loop that generates multiple recordings per call and wastes storage.
-
-```javascript
-// WRONG — loops: Record finishes → redirects to self → records again
-twiml.say('Leave a message.');
-twiml.record({ maxLength: 30 });
-
-// RIGHT — action sends to a different handler
-twiml.say('Leave a message.');
-twiml.record({
-  maxLength: 30,
-  action: '/voice/recording-complete'
-});
-
-// ALSO RIGHT — use <Start><Recording> for background recording (no loop risk)
-twiml.start().recording({
-  recordingStatusCallback: `https://${context.DOMAIN_NAME}/callbacks/recording-status`
-});
-twiml.say('This call is being recorded.');
-```
+`<Record>` without `action` POSTs back to self, re-executing and creating multiple recordings. Always set `action` to a different handler or use `<Start><Recording>` instead.
 
 ### Conference Recording via Participants API
 
-When creating conferences via the Participants API (`client.conferences(name).participants.create()`), do NOT use `client.conferences(name).recordings.create()` to start recording — this fails when accessing conferences by friendly name.
-
-Instead, use `conferenceRecord` on the participant create call:
-
-```javascript
-// WRONG — fails with "recordings.create is not a function" for friendly names
-const recording = await client.conferences('my-conf')
-  .recordings.create({ ... });
-
-// RIGHT — set on participant (typically the first one added)
-await client.conferences('my-conf')
-  .participants.create({
-    from: context.TWILIO_PHONE_NUMBER,
-    to: agentNumber,
-    conferenceRecord: 'record-from-start',
-    conferenceRecordingStatusCallback: `https://${context.DOMAIN_NAME}/callbacks/recording-status`,
-    conferenceRecordingStatusCallbackMethod: 'POST',
-    endConferenceOnExit: true
-  });
-```
+Do NOT use `client.conferences(name).recordings.create()` with friendly names — it fails. Instead, set `conferenceRecord: 'record-from-start'` on the participant create call.
 
 ### Conference Participants API vs TwiML `<Conference>`
 
-The Participants API and TwiML `<Conference>` verb have different parameter formats:
+| Parameter | Participants API | TwiML |
+|-----------|-----------------|-------|
+| Recording | Boolean: `true` / `false` | String: `record-from-start`, `record-from-answer`, etc. |
 
-| Parameter | Participants API | TwiML `<Conference>` |
-|-----------|-----------------|---------------------|
-| `Record` / `record` | Boolean: `true` or `false` | String: `record-from-start`, `record-from-answer`, etc. |
-
-Passing TwiML values to the Participants API (e.g., `Record: 'record-from-start'`) returns HTTP 400.
+Passing TwiML values to API returns HTTP 400.
 
 ### Recording Callback URLs Must Be Absolute
 
-`<Start><Recording>` requires absolute callback URLs. Relative paths like `/callbacks/call-status` trigger error 11200. The recording completes, but the status callback never fires.
+`<Start><Recording>` requires absolute URLs. Relative paths trigger error 11200 — recording completes but callback never fires.
 
-```javascript
-// WRONG — generates 11200
-start.recording({
-  recordingStatusCallback: '/callbacks/call-status',
-});
-
-// RIGHT — absolute URL
-start.recording({
-  recordingStatusCallback: `https://${context.DOMAIN_NAME}/callbacks/call-status`,
-});
-```
-
-Note: `<Gather action>` and `<Dial action>` resolve relative URLs correctly against the function domain. This inconsistency only affects `<Start><Recording>`.
+Note: `<Gather action>` and `<Dial action>` resolve relative URLs correctly. This inconsistency only affects `<Start><Recording>`.
 
 ### Dial `action` URL Should Not Be the Inbound Handler
 
-When `<Dial action="/voice/my-handler">` is set, the handler fires again after the Dial completes. If the handler creates one-time resources (e.g., Sync documents with unique names), the second invocation produces "Unique name already exists" errors (54302). Use a dedicated Dial-complete handler, or make the resource creation idempotent.
+When `<Dial action="/voice/my-handler">` is set, the handler fires again after Dial completes. One-time resource creation (e.g., Sync documents) produces "Unique name already exists" errors (54302). Use a dedicated Dial-complete handler or make creation idempotent.
 
 ### Deployment Resets Phone Number Webhooks
 
-`twilio serverless:deploy` can reset phone number voice URLs to previous values. Always verify and re-set webhooks after every deployment:
-
-```bash
-twilio phone-numbers:update PNxxxx --voice-url https://your-service-dev.twil.io/voice/your-handler
-```
+`twilio serverless:deploy` can reset phone number voice URLs to previous values. Always verify and re-set after deployment.
 
 ### Conference Recording Captures Hold Music
 
-When using `Record=true` on the Conference Participants API, recording starts from conference creation. If AMD classification takes time before the agent joins, the recording captures minutes of hold music. Transcripts get dominated by `[music]` tags, reducing topic keyword coverage.
+When using `Record=true` on Participants API, recording starts from conference creation. If AMD classification takes time, recording captures minutes of hold music and transcripts get dominated by `[music]` tags.
 
 ### Avoid Duplicate Recordings
 
-Don't combine `--record` CLI flag (or `Record=true` API param) with `<Start><Recording>` TwiML — this creates two recordings (one OutboundAPI 1-channel, one TwiML 2-channel). Pick one method.
+Don't combine `--record` CLI flag (or `Record=true` API param) with `<Start><Recording>` TwiML — creates two recordings (1-channel vs 2-channel). Pick one method.
 
 ### Participants API to Twilio Numbers Invokes the Voice URL
 
-The Participants API does NOT auto-generate conference TwiML. When you add a Twilio number as a participant, that number's voice URL fires and must return conference-joining TwiML. Conference name is NOT passed in the webhook params — use `make_call` with `?ConferenceName=X` query param instead so the handler knows which conference to join.
+The Participants API does NOT auto-generate conference TwiML. When adding a Twilio number as participant, that number's voice URL fires and must return conference-joining TwiML. Conference name is NOT in webhook params — use `make_call` with `?ConferenceName=X` query param instead.
 
 ### `make_call(To=TwilioNumber)` Creates Two Independent TwiML Legs
 
-When `make_call` targets a Twilio number, two separate call legs are created with independent TwiML execution:
-
+When `make_call` targets a Twilio number, two separate call legs execute independently:
 - **Parent leg** (outbound-api): Runs the `Url` parameter's TwiML
 - **Child leg** (inbound): Runs the number's configured voice webhook TwiML
 
-Both execute simultaneously and are bridged together. A single `make_call` produces TWO TwiML documents on TWO call SIDs. This means the `Url` handler and the number's webhook both fire — they don't replace each other.
-
-For conference-based patterns (contact center, sales dialer), call each participant separately with their own `Url` TwiML rather than relying on the bridge from a single call.
+Both execute simultaneously and are bridged. A single `make_call` produces TWO TwiML documents on TWO call SIDs. For conference patterns, call each participant separately with their own `Url` TwiML.
 
 ### Testing Outbound Calls to Twilio Numbers
 
-When calling TO a Twilio number for testing, that number's voice webhook fires for the child leg. If the destination number has no voice URL configured (or it's empty), the call fails silently. Deploy a "stay-on-line" TwiML function (`<Pause length="120"/>`) and configure it as the voice URL on your test destination numbers.
+When calling TO a Twilio number for testing, that number's voice webhook fires for the child leg. If the destination number has no voice URL configured (or it's empty), the call fails silently. Deploy a "stay-on-line" function and configure it as the voice URL on test destination numbers.
 
 ### Pre-E2E: Verify ALL Phone Numbers Have Voice URLs
 
-Before running E2E tests, verify every phone number in the call flow has a voice URL — not just the inbound/tracking numbers, but Dial destinations, agent numbers, and business lines. A number with `voiceUrl: null` causes `<Dial>` to fail immediately with no useful error.
+Before E2E tests, verify every phone number in the call flow has a voice URL — not just inbound/tracking numbers, but Dial destinations, agent numbers, and business lines. A number with `voiceUrl: null` causes `<Dial>` to fail immediately with no useful error.
 
 ## File Naming Conventions
 
-- `*.js` - Public endpoints (no signature validation)
-- `*.protected.js` - Protected endpoints (require valid Twilio signature)
-- `*.private.js` - Private functions (not accessible via HTTP)
-
-## Testing Voice Functions
-
-Tests should use real Twilio APIs. Test TwiML generation by:
-1. Calling the handler with test context/event
-2. Verifying the TwiML string contains expected elements
-3. For integration tests, use Twilio's API to make test calls
+- `*.js` — Public endpoints (no signature validation)
+- `*.protected.js` — Protected endpoints (require valid Twilio signature)
+- `*.private.js` — Private functions (not accessible via HTTP)

@@ -24,10 +24,10 @@ Run regression validation suite after significant codebase changes.
 
 Modes:
   --quick      Phase 1 only: parallel fast checks (~5 min, no LLM)
-  --standard   Phase 1 + chaos validation (~60 min)
-  --full       Phase 1 + 3 parallel headless lanes (~2 hours)
+  --standard   Phase 1 + chaos + SIP Lab E2E (~60 min)
+  --full       Phase 1 + 5 parallel headless lanes (~3 hours)
                Requires .env.lane-b for resource isolation
-  --serial     Phase 1 + headless lanes run sequentially (~3-4 hours)
+  --serial     Phase 1 + headless lanes run sequentially (~5-6 hours)
                No .env.lane-b needed
 
 Options:
@@ -179,22 +179,40 @@ else
 
     case "$MODE" in
         standard)
-            # Chaos only — no Twilio resources needed
+            # Chaos + SIP Lab E2E (lightweight, no headless claude for SIP Lab)
             echo -e "  ${DIM}Lane C: Chaos validation (60 turns)${NC}"
             REGRESSION_REPORT_DIR="$REPORT_DIR" \
                 $HEADLESS_SCRIPT --task chaos-only --max-turns 60 \
                 > "${REPORT_DIR}/lane-c.log" 2>&1
             echo $? > "${REPORT_DIR}/lane-c.exit"
+
+            # Lane E: SIP Lab E2E (pure Jest, no headless claude needed)
+            if [ -f "scripts/run-sip-lab-e2e.sh" ]; then
+                echo -e "  ${DIM}Lane E: SIP Lab E2E (Jest)${NC}"
+                ./scripts/run-sip-lab-e2e.sh \
+                    > "${REPORT_DIR}/lane-e.log" 2>&1
+                echo $? > "${REPORT_DIR}/lane-e.exit"
+            fi
             ;;
 
         full)
-            # Three parallel lanes with resource isolation
+            # Run preflight with SIP Lab for voice lanes
+            echo -e "  ${DIM}Running preflight (deploy + ngrok + agents + SIP Lab)...${NC}"
+            if [ -f "scripts/headless-preflight.sh" ]; then
+                ./scripts/headless-preflight.sh --sip-lab > "${REPORT_DIR}/preflight.log" 2>&1 || true
+                # Re-source env to pick up preflight exports
+                if [ -f ".env" ]; then set -a; source .env; set +a; fi
+            fi
+
+            # Five parallel lanes with resource isolation
             echo -e "  ${DIM}Lane A: Random voice validation (120 turns)${NC}"
             echo -e "  ${DIM}Lane B: Nonvoice validation (120 turns)${NC}"
             echo -e "  ${DIM}Lane C: Chaos validation (60 turns)${NC}"
+            echo -e "  ${DIM}Lane D: Sequential voice UC1-UC10 (250 turns)${NC}"
+            echo -e "  ${DIM}Lane E: SIP Lab E2E (Jest)${NC}"
             echo ""
 
-            # Lane A: voice/sequential on default .env resources
+            # Lane A: voice/random on default .env resources
             REGRESSION_REPORT_DIR="$REPORT_DIR" \
                 $HEADLESS_SCRIPT --task random-validation --max-turns 120 \
                 > "${REPORT_DIR}/lane-a.log" 2>&1 &
@@ -212,20 +230,52 @@ else
                 > "${REPORT_DIR}/lane-c.log" 2>&1 &
             LANE_C_PID=$!
 
+            # Lane D: sequential voice UC1-UC10 (preflight already ran)
+            REGRESSION_REPORT_DIR="$REPORT_DIR" \
+                $HEADLESS_SCRIPT --task sequential-validation --max-turns 250 \
+                > "${REPORT_DIR}/lane-d.log" 2>&1 &
+            LANE_D_PID=$!
+
+            # Lane E: SIP Lab E2E (pure Jest, no headless claude)
+            if [ -f "scripts/run-sip-lab-e2e.sh" ]; then
+                ./scripts/run-sip-lab-e2e.sh \
+                    > "${REPORT_DIR}/lane-e.log" 2>&1 &
+                LANE_E_PID=$!
+            fi
+
             # Wait for all lanes
             echo -e "${DIM}Waiting for all lanes to complete...${NC}"
             wait $LANE_A_PID 2>/dev/null; echo $? > "${REPORT_DIR}/lane-a.exit"
             wait $LANE_B_PID 2>/dev/null; echo $? > "${REPORT_DIR}/lane-b.exit"
             wait $LANE_C_PID 2>/dev/null; echo $? > "${REPORT_DIR}/lane-c.exit"
+            wait $LANE_D_PID 2>/dev/null; echo $? > "${REPORT_DIR}/lane-d.exit"
+            if [ -n "${LANE_E_PID:-}" ]; then
+                wait $LANE_E_PID 2>/dev/null; echo $? > "${REPORT_DIR}/lane-e.exit"
+            fi
             ;;
 
         serial)
-            # Same validation but sequential — no lane-b needed
+            # Run preflight with SIP Lab
+            echo -e "  ${DIM}Running preflight (deploy + ngrok + agents + SIP Lab)...${NC}"
+            if [ -f "scripts/headless-preflight.sh" ]; then
+                ./scripts/headless-preflight.sh --sip-lab > "${REPORT_DIR}/preflight.log" 2>&1 || true
+                if [ -f ".env" ]; then set -a; source .env; set +a; fi
+            fi
+
+            # Sequential — no lane-b needed
             echo -e "  ${DIM}Lane C: Chaos validation (60 turns)${NC}"
             REGRESSION_REPORT_DIR="$REPORT_DIR" \
                 $HEADLESS_SCRIPT --task chaos-only --max-turns 60 \
                 > "${REPORT_DIR}/lane-c.log" 2>&1
             echo $? > "${REPORT_DIR}/lane-c.exit"
+
+            # Lane E: SIP Lab E2E (lightweight, run early)
+            if [ -f "scripts/run-sip-lab-e2e.sh" ]; then
+                echo -e "  ${DIM}Lane E: SIP Lab E2E (Jest)${NC}"
+                ./scripts/run-sip-lab-e2e.sh \
+                    > "${REPORT_DIR}/lane-e.log" 2>&1
+                echo $? > "${REPORT_DIR}/lane-e.exit"
+            fi
 
             echo -e "  ${DIM}Lane B: Nonvoice validation (120 turns)${NC}"
             REGRESSION_REPORT_DIR="$REPORT_DIR" \
@@ -238,6 +288,12 @@ else
                 $HEADLESS_SCRIPT --task random-validation --max-turns 120 \
                 > "${REPORT_DIR}/lane-a.log" 2>&1
             echo $? > "${REPORT_DIR}/lane-a.exit"
+
+            echo -e "  ${DIM}Lane D: Sequential voice UC1-UC10 (250 turns)${NC}"
+            REGRESSION_REPORT_DIR="$REPORT_DIR" \
+                $HEADLESS_SCRIPT --task sequential-validation --max-turns 250 \
+                > "${REPORT_DIR}/lane-d.log" 2>&1
+            echo $? > "${REPORT_DIR}/lane-d.exit"
             ;;
     esac
 
@@ -254,6 +310,8 @@ else
             lane-a) json_result="${REPORT_DIR}/voice-results.json" ;;
             lane-b) json_result="${REPORT_DIR}/nonvoice-results.json" ;;
             lane-c) json_result="${REPORT_DIR}/chaos-results.json" ;;
+            lane-d) json_result="${REPORT_DIR}/sequential-results.json" ;;
+            lane-e) json_result="${REPORT_DIR}/sip-lab-results.json" ;;
         esac
 
         if [ -f "$json_result" ]; then
@@ -393,6 +451,8 @@ SUMMARY_FILE="${REPORT_DIR}/summary.md"
                 lane-a) json_result="voice-results.json" ;;
                 lane-b) json_result="nonvoice-results.json" ;;
                 lane-c) json_result="chaos-results.json" ;;
+                lane-d) json_result="sequential-results.json" ;;
+                lane-e) json_result="sip-lab-results.json" ;;
             esac
             has_json="No"
             [ -f "${REPORT_DIR}/${json_result}" ] && has_json="Yes"

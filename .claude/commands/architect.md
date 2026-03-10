@@ -153,6 +153,25 @@ If unknowns exist, recommend `/prototype` before `/spec`. State what questions t
 
 If no unknowns exist (team has prior experience with all APIs involved), skip to `/spec`.
 
+### Step 3b: Regulatory Conflict Check
+
+When the request mentions **retention**, **recording**, **compliance**, **GDPR**, **HIPAA**, **PCI**, or **SOX**, surface conflicting requirements before proceeding:
+
+| Regulation | Recording Retention | Key Constraint |
+|------------|-------------------|----------------|
+| GDPR | 30 days (default, right to erasure) | Must delete on request; minimize data |
+| SOX | 7 years | Must retain; cannot delete early |
+| HIPAA | 6 years | PHI access controls; BAA required |
+| PCI DSS | Do not store | Never record card numbers; use `<Pay>` |
+
+**If two or more conflicting regulations apply:**
+1. Flag the conflict explicitly in your Architecture Fit Analysis
+2. List the specific contradictions (e.g., "GDPR requires deletion on request, SOX requires 7-year retention")
+3. Recommend the user resolve the conflict before proceeding to `/spec`
+4. Suggest tiered retention (e.g., separate PII-scrubbed transcripts from raw recordings) if applicable
+
+Do NOT silently choose one regulation over another. The user must make the compliance decision.
+
 ### Step 4: Recommend Approach
 
 Provide clear recommendations:

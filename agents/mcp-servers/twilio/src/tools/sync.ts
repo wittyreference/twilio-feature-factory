@@ -186,6 +186,38 @@ export function syncTools(context: TwilioContext) {
     }
   );
 
+  const deleteDocument = createTool(
+    'delete_document',
+    'Delete a Sync document by SID or unique name.',
+    z.object({
+      documentSidOrName: z.string().describe('Document SID (ETxxx) or unique name'),
+      serviceSid: z.string().startsWith('IS').optional().describe('Sync Service SID (uses default if not provided)'),
+    }),
+    async ({ documentSidOrName, serviceSid }) => {
+      const sid = serviceSid || syncServiceSid;
+      if (!sid) {
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
+          }],
+        };
+      }
+
+      await client.sync.v1
+        .services(sid)
+        .documents(documentSidOrName)
+        .remove();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ success: true, deleted: documentSidOrName }, null, 2),
+        }],
+      };
+    }
+  );
+
   // ============================================
   // Sync List Tools
   // ============================================
@@ -440,6 +472,38 @@ export function syncTools(context: TwilioContext) {
     }
   );
 
+  const deleteSyncList = createTool(
+    'delete_sync_list',
+    'Delete a Sync List by SID or unique name.',
+    z.object({
+      listSidOrName: z.string().describe('List SID (ESxxx) or unique name'),
+      serviceSid: z.string().startsWith('IS').optional().describe('Sync Service SID (uses default if not provided)'),
+    }),
+    async ({ listSidOrName, serviceSid }) => {
+      const sid = serviceSid || syncServiceSid;
+      if (!sid) {
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
+          }],
+        };
+      }
+
+      await client.sync.v1
+        .services(sid)
+        .syncLists(listSidOrName)
+        .remove();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ success: true, deleted: listSidOrName }, null, 2),
+        }],
+      };
+    }
+  );
+
   // ============================================
   // Sync Map Tools
   // ============================================
@@ -685,8 +749,8 @@ export function syncTools(context: TwilioContext) {
   );
 
   return [
-    createDocument, updateDocument, getDocument, listDocuments,
-    createSyncList, listSyncLists, addSyncListItem, listSyncListItems, updateSyncListItem, removeSyncListItem,
+    createDocument, updateDocument, getDocument, listDocuments, deleteDocument,
+    createSyncList, listSyncLists, addSyncListItem, listSyncListItems, updateSyncListItem, removeSyncListItem, deleteSyncList,
     createSyncMap, listSyncMaps, addSyncMapItem, getSyncMapItem, updateSyncMapItem, removeSyncMapItem,
   ];
 }

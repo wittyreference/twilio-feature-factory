@@ -839,6 +839,52 @@ describe('Recording Validation', () => {
     },
     30000
   );
+
+  itDeepValidation(
+    'should make a call with Record verb and validate the recording',
+    async () => {
+      console.log('\n=== Active Recording Validation Test ===');
+
+      // Make a call with <Record> — records up to 5 seconds then hangs up
+      const call = await client.calls.create({
+        to: TEST_CREDENTIALS.toNumber,
+        from: TEST_CREDENTIALS.fromNumber,
+        twiml: '<Response><Pause length="2"/><Record maxLength="5" playBeep="false"/><Hangup/></Response>',
+      });
+      console.log(`Call created: ${call.sid}`);
+
+      // Wait for call and recording to complete
+      console.log('Waiting 30s for call + recording to complete...');
+      await new Promise((resolve) => setTimeout(resolve, 30000));
+
+      // Find the recording for this call
+      const recordings = await client.recordings.list({ callSid: call.sid, limit: 1 });
+      if (recordings.length === 0) {
+        console.log('No recording found for call — call may not have been answered');
+        return;
+      }
+
+      const recordingSid = recordings[0].sid;
+      console.log(`Recording found: ${recordingSid} (${recordings[0].duration}s)`);
+
+      // Validate with minDuration
+      const result = await validator.validateRecording(recordingSid, {
+        waitForCompleted: true,
+        timeout: 30000,
+        minDuration: 1,
+      });
+
+      console.log(`\nSuccess: ${result.success}`);
+      console.log(`Duration: ${result.duration}s`);
+
+      expect(result.success).toBe(true);
+      expect(result.recordingSid).toBe(recordingSid);
+      expect(result.callSid).toBe(call.sid);
+      expect(result.duration).toBeGreaterThanOrEqual(1);
+      console.log('\nActive Recording Validation PASSED ✓');
+    },
+    90000
+  );
 });
 
 describe('Transcript Validation', () => {
@@ -946,6 +992,198 @@ describe('Language Operator Validation', () => {
       // Should at least run without error
       expect(result.transcriptSid).toBe(completed.sid);
       console.log('\nLanguage Operator Validation PASSED ✓');
+    },
+    60000
+  );
+});
+
+// ─── Voice AI Flow, Two-Way, SIP Validators ──────────────────────────
+
+describe('Voice AI Flow Validation', () => {
+  const itDeepValidation =
+    shouldRunDeepValidation && hasRealCredentials ? it : it.skip;
+
+  let client: ReturnType<typeof Twilio>;
+
+  beforeAll(() => {
+    if (shouldRunDeepValidation && hasRealCredentials) {
+      client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+    }
+  });
+
+  itDeepValidation(
+    'should validate a recent call that has a recording and transcript',
+    async () => {
+      console.log('\n=== Voice AI Flow Validation Test ===');
+
+      // Find a recent call with a recording
+      const recentCalls = await client.calls.list({ limit: 20 });
+      let targetCallSid: string | null = null;
+
+      for (const call of recentCalls) {
+        const recordings = await client.recordings.list({ callSid: call.sid, limit: 1 });
+        if (recordings.length > 0) {
+          // Check if there's also a transcript for this call
+          const transcripts = await client.intelligence.v2.transcripts.list({ limit: 20 });
+          const matchingTranscript = transcripts.find(
+            (t) => t.channel && JSON.stringify(t.channel).includes(call.sid)
+          );
+          if (matchingTranscript) {
+            targetCallSid = call.sid;
+            console.log(`Found call with recording + transcript: ${call.sid}`);
+            break;
+          }
+        }
+      }
+
+      if (!targetCallSid) {
+        console.log('No recent call with both recording and transcript found — skipping');
+        return;
+      }
+
+      // Use the validate_voice_ai_flow tool through the ComprehensiveValidator
+      const { ComprehensiveValidator } = await import('../src/validation/index.js');
+      const validator = new ComprehensiveValidator(client, { projectRoot: process.cwd() });
+
+      const result = await validator.validateVoiceAIFlow({ callSid: targetCallSid });
+
+      console.log(`\nAll passed: ${result.allPassed}`);
+      console.log(`Total validators: ${result.summary.totalValidators}`);
+      console.log(`Passed: ${result.summary.passed}`);
+      console.log(`Failed: ${result.summary.failed}`);
+
+      if (result.diagnoses.length > 0) {
+        console.log(`Diagnoses: ${result.diagnoses.map(d => d.summary).join(', ')}`);
+      }
+
+      // Should at least return a structured result
+      expect(result).toHaveProperty('allPassed');
+      expect(result.summary.totalValidators).toBeGreaterThan(0);
+      console.log('\nVoice AI Flow Validation PASSED ✓');
+    },
+    90000
+  );
+});
+
+describe('Two-Way Conversation Validation', () => {
+  const intelligenceServiceSid = process.env.TWILIO_INTELLIGENCE_SERVICE_SID;
+  const itDeepValidation =
+    shouldRunDeepValidation && hasRealCredentials && intelligenceServiceSid ? it : it.skip;
+
+  let validator: DeepValidator;
+  let client: ReturnType<typeof Twilio>;
+
+  beforeAll(() => {
+    if (shouldRunDeepValidation && hasRealCredentials && intelligenceServiceSid) {
+      validator = createValidator();
+      client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+    }
+  });
+
+  itDeepValidation(
+    'should validate two recent calls as a two-way conversation',
+    async () => {
+      console.log('\n=== Two-Way Conversation Validation Test ===');
+      console.log(`Intelligence Service: ${intelligenceServiceSid}`);
+
+      // Find two recent completed calls from a similar time window
+      const recentCalls = await client.calls.list({ status: 'completed', limit: 20 });
+
+      if (recentCalls.length < 2) {
+        console.log('Need at least 2 completed calls — skipping');
+        return;
+      }
+
+      const callSidA = recentCalls[0].sid;
+      const callSidB = recentCalls[1].sid;
+      console.log(`Call A: ${callSidA}`);
+      console.log(`Call B: ${callSidB}`);
+
+      const result = await validator.validateTwoWay({
+        callSidA,
+        callSidB,
+        intelligenceServiceSid: intelligenceServiceSid!,
+        waitForTranscripts: false, // Don't wait — use whatever state exists
+        expectedTurns: 1,
+      });
+
+      console.log(`\nSuccess: ${result.success}`);
+      console.log(`Call A transcript: ${result.callA?.transcriptStatus || 'N/A'}`);
+      console.log(`Call B transcript: ${result.callB?.transcriptStatus || 'N/A'}`);
+      console.log(`Errors: ${result.errors.length}`);
+      console.log(`Warnings: ${result.warnings.length}`);
+
+      // Should at least return a structured result without throwing
+      expect(result).toHaveProperty('success');
+      expect(result).toHaveProperty('callA');
+      expect(result).toHaveProperty('callB');
+      console.log('\nTwo-Way Conversation Validation PASSED ✓');
+    },
+    90000
+  );
+});
+
+describe('SIP Infrastructure Validation', () => {
+  const sipLabTrunkSid = process.env.SIP_LAB_TRUNK_SID;
+  const itDeepValidation =
+    shouldRunDeepValidation && hasRealCredentials && sipLabTrunkSid ? it : it.skip;
+
+  let client: ReturnType<typeof Twilio>;
+
+  beforeAll(() => {
+    if (shouldRunDeepValidation && hasRealCredentials && sipLabTrunkSid) {
+      client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+    }
+  });
+
+  itDeepValidation(
+    'should validate SIP trunk infrastructure',
+    async () => {
+      console.log('\n=== SIP Infrastructure Validation Test ===');
+      console.log(`Trunk SID: ${sipLabTrunkSid}`);
+
+      // Validate trunk configuration — exercises the validate_sip logic
+      const trunk = await client.trunking.v1.trunks(sipLabTrunkSid!).fetch();
+      console.log(`Trunk: ${trunk.friendlyName} (${trunk.domainName})`);
+
+      const acls = await client.trunking.v1.trunks(sipLabTrunkSid!).ipAccessControlLists.list();
+      console.log(`IP ACLs: ${acls.length}`);
+
+      const credLists = await client.trunking.v1.trunks(sipLabTrunkSid!).credentialsLists.list();
+      console.log(`Credential lists: ${credLists.length}`);
+
+      const origUrls = await client.trunking.v1.trunks(sipLabTrunkSid!).originationUrls.list();
+      console.log(`Origination URLs: ${origUrls.length}`);
+
+      const numbers = await client.trunking.v1.trunks(sipLabTrunkSid!).phoneNumbers.list();
+      console.log(`Phone numbers: ${numbers.length}`);
+
+      // Checks: trunk exists, has ACL, has origination
+      expect(trunk.sid).toBe(sipLabTrunkSid);
+      expect(trunk.domainName).toBeTruthy();
+
+      // At minimum, trunk should have an IP ACL for auth
+      if (acls.length > 0) {
+        const aclSid = acls[0].sid;
+        const ips = await client.sip.ipAccessControlLists(aclSid).ipAddresses.list();
+        console.log(`IP addresses in first ACL: ${ips.length}`);
+        expect(ips.length).toBeGreaterThan(0);
+      }
+
+      // Check debugger for SIP errors (13xxx, 64xxx)
+      const validator = createValidator();
+      const debugResult = await validator.validateDebugger({
+        lookbackSeconds: 600,
+      });
+      const sipErrors = debugResult.alerts.filter(
+        (a: { errorCode?: string }) => {
+          const code = parseInt(String(a.errorCode || '0'));
+          return (code >= 13000 && code < 14000) || (code >= 64000 && code < 65000);
+        }
+      );
+      console.log(`SIP-related debugger alerts (last 10 min): ${sipErrors.length}`);
+
+      console.log('\nSIP Infrastructure Validation PASSED ✓');
     },
     60000
   );

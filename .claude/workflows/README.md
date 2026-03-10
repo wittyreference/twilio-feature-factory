@@ -172,6 +172,17 @@ Run with: `/team refactor [target]`
 
 Baseline QA and architect work in parallel to establish metrics and plan. After implementation, verification and review run in parallel.
 
+### Team: Validation (Parallel Domain Coverage)
+
+```text
+Phase 1 (Parallel): call-validator ──┬── recording-validator ──┬── taskrouter-validator ──┬── debugger-validator
+Phase 2 (Sequential): Lead aggregates results into unified validation report
+```
+
+Run with: `/team validation [scope]`
+
+Four validators run simultaneously, each focused on one domain (voice/calls, recordings, TaskRouter tasks, debugger sweep). Lead synthesizes findings into a unified pass/fail report. Use after deployments or workflow completions to verify multiple products in parallel.
+
 ## Standalone vs Orchestrated vs Team-Based
 
 All subagents work independently. Choose the approach that fits your workflow:
@@ -250,6 +261,7 @@ Each subagent suggests the next logical step:
 | `/review` (APPROVED) | `/test` for final validation |
 | `/review` (NEEDS_CHANGES) | `/dev` for fixes |
 | `/test` | `/docs` for documentation |
+| `/deploy` | `/team validation` for post-deploy verification |
 
 ## Examples
 

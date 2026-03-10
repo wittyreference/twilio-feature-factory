@@ -160,6 +160,8 @@ export interface RecordingValidationOptions {
   timeout?: number;
   /** Polling interval (ms). Default: 2000 */
   pollInterval?: number;
+  /** Minimum expected duration in seconds. Fail if recording is shorter. */
+  minDuration?: number;
 }
 
 /**
@@ -513,6 +515,8 @@ export interface TaskRouterValidationOptions {
   checkDebugger?: boolean;
   /** Debugger lookback window in seconds. Default: 120 */
   alertLookbackSeconds?: number;
+  /** Flag task as stale if age exceeds this many seconds. Default: 300 */
+  maxAgeSeconds?: number;
 }
 
 /**
@@ -1921,8 +1925,16 @@ export class DeepValidator extends EventEmitter {
         errors.push(`Recording ${status}: ${recording.errorCode || 'unknown error'}`);
       }
 
+      // Check minimum duration if specified
+      if (options.minDuration && recording.duration) {
+        const durationSec = parseInt(recording.duration);
+        if (durationSec < options.minDuration) {
+          errors.push(`Recording duration ${durationSec}s is below minimum ${options.minDuration}s`);
+        }
+      }
+
       const result: RecordingValidationResult = {
-        success: status === 'completed',
+        success: status === 'completed' && errors.length === 0,
         recordingSid,
         callSid: recording.callSid,
         conferenceSid: recording.conferenceSid,
@@ -3212,6 +3224,29 @@ export class DeepValidator extends EventEmitter {
         }
       }
 
+      // Failure source: surface task.reason
+      if (task.reason) {
+        if (task.assignmentStatus === 'canceled') {
+          errors.push(`Task canceled: ${task.reason}`);
+        } else {
+          warnings.push(`Task reason: ${task.reason}`);
+        }
+      }
+
+      // Failure source: age analysis
+      const maxAgeSeconds = options.maxAgeSeconds ?? 300;
+      if (task.age > maxAgeSeconds && task.assignmentStatus === 'pending') {
+        warnings.push(`Task age ${task.age}s exceeds threshold ${maxAgeSeconds}s — may indicate no available workers`);
+      }
+
+      // Failure source: event pattern detection
+      if (options.includeEvents && events.length > 0) {
+        const patterns = this.detectTaskRouterFailurePatterns(events, task.assignmentStatus);
+        for (const p of patterns) {
+          warnings.push(`Pattern: ${p}`);
+        }
+      }
+
       const result: TaskRouterValidationResult = {
         success: errors.length === 0,
         taskSid: task.sid,
@@ -3252,6 +3287,35 @@ export class DeepValidator extends EventEmitter {
       this.emitValidationEvent('task-router', result);
       return result;
     }
+  }
+
+  /**
+   * Detects common TaskRouter failure patterns from event history.
+   */
+  private detectTaskRouterFailurePatterns(
+    events: Array<{ eventType: string; description?: string }>,
+    assignmentStatus: string
+  ): string[] {
+    const patterns: string[] = [];
+    const eventTypes = events.map(e => e.eventType);
+
+    // Pattern: repeated reservation.timeout events — workers may be unavailable
+    const timeoutCount = eventTypes.filter(t => t === 'reservation.timeout').length;
+    if (timeoutCount >= 2) {
+      patterns.push(`${timeoutCount} reservation timeouts — workers may be unavailable or rejecting`);
+    }
+
+    // Pattern: no reservation events on a pending task — no worker matched criteria
+    if (assignmentStatus === 'pending' && !eventTypes.some(t => t.startsWith('reservation.'))) {
+      patterns.push('No reservation events — no worker matched task criteria (check workflow filter expression)');
+    }
+
+    // Pattern: task.canceled without reservation.accepted — task never assigned
+    if (eventTypes.includes('task.canceled') && !eventTypes.includes('reservation.accepted')) {
+      patterns.push('Task canceled without being assigned — check TTL or explicit cancellation logic');
+    }
+
+    return patterns;
   }
 
   private sleep(ms: number): Promise<void> {

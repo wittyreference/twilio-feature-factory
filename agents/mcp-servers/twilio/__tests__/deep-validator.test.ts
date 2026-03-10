@@ -849,6 +849,52 @@ describe('DeepValidator', () => {
       expect(result.status).toBe('error');
       expect(result.errors.length).toBeGreaterThan(0);
     });
+
+    it('should fail when duration is below minDuration', async () => {
+      const client = createMockClient({
+        recordingData: {
+          sid: 'RE123',
+          status: 'completed',
+          callSid: 'CA123',
+          conferenceSid: null,
+          duration: '3',
+          channels: 1,
+          source: 'OutboundAPI',
+          uri: '/2010-04-01/Accounts/AC123/Recordings/RE123.json',
+          errorCode: null,
+        },
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateRecording('RE123', { minDuration: 5 });
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.stringContaining('below minimum')
+      );
+    });
+
+    it('should pass when duration meets minDuration', async () => {
+      const client = createMockClient({
+        recordingData: {
+          sid: 'RE123',
+          status: 'completed',
+          callSid: 'CA123',
+          conferenceSid: null,
+          duration: '10',
+          channels: 1,
+          source: 'OutboundAPI',
+          uri: '/2010-04-01/Accounts/AC123/Recordings/RE123.json',
+          errorCode: null,
+        },
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateRecording('RE123', { minDuration: 5 });
+
+      expect(result.success).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
   });
 
   describe('validateTranscript', () => {
@@ -2097,6 +2143,153 @@ describe('DeepValidator', () => {
 
       expect(result.validationDuration).toBeGreaterThanOrEqual(0);
       expect(typeof result.validationDuration).toBe('number');
+    });
+
+    it('should surface task.reason as error when canceled', async () => {
+      const client = createMockClient({
+        taskData: {
+          sid: 'WT456',
+          assignmentStatus: 'canceled',
+          age: 10,
+          priority: 0,
+          reason: 'TTL expired',
+          taskQueueSid: 'WQ123',
+          workflowSid: 'WW123',
+          attributes: '{"skill":"support"}',
+        },
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT456');
+
+      expect(result.errors).toContainEqual(expect.stringContaining('Task canceled: TTL expired'));
+    });
+
+    it('should surface task.reason as warning when not canceled', async () => {
+      const client = createMockClient({
+        taskData: {
+          sid: 'WT456',
+          assignmentStatus: 'assigned',
+          age: 10,
+          priority: 0,
+          reason: 'escalated',
+          taskQueueSid: 'WQ123',
+          workflowSid: 'WW123',
+          attributes: '{"skill":"support"}',
+        },
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT456');
+
+      expect(result.warnings).toContainEqual(expect.stringContaining('Task reason: escalated'));
+    });
+
+    it('should warn when pending task age exceeds threshold', async () => {
+      const client = createMockClient({
+        taskData: {
+          sid: 'WT456',
+          assignmentStatus: 'pending',
+          age: 600,
+          priority: 0,
+          reason: null,
+          taskQueueSid: 'WQ123',
+          workflowSid: 'WW123',
+          attributes: '{"skill":"support"}',
+        },
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT456', { maxAgeSeconds: 300 });
+
+      expect(result.warnings).toContainEqual(expect.stringContaining('exceeds threshold'));
+      expect(result.warnings).toContainEqual(expect.stringContaining('600s'));
+    });
+
+    it('should not warn on age for non-pending tasks', async () => {
+      const client = createMockClient({
+        taskData: {
+          sid: 'WT456',
+          assignmentStatus: 'assigned',
+          age: 600,
+          priority: 0,
+          reason: null,
+          taskQueueSid: 'WQ123',
+          workflowSid: 'WW123',
+          attributes: '{"skill":"support"}',
+        },
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT456', { maxAgeSeconds: 300 });
+
+      expect(result.warnings.filter(w => w.includes('exceeds threshold'))).toHaveLength(0);
+    });
+
+    it('should detect repeated reservation timeouts', async () => {
+      const client = createMockClient({
+        taskEventsData: [
+          { sid: 'EV001', eventType: 'task.created', description: 'Task created', eventDate: new Date() },
+          { sid: 'EV002', eventType: 'reservation.timeout', description: 'Timeout', eventDate: new Date() },
+          { sid: 'EV003', eventType: 'reservation.timeout', description: 'Timeout', eventDate: new Date() },
+          { sid: 'EV004', eventType: 'reservation.timeout', description: 'Timeout', eventDate: new Date() },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT456', { includeEvents: true });
+
+      expect(result.warnings).toContainEqual(expect.stringContaining('reservation timeouts'));
+      expect(result.warnings).toContainEqual(expect.stringContaining('unavailable'));
+    });
+
+    it('should detect no reservation events for pending task', async () => {
+      const client = createMockClient({
+        taskData: {
+          sid: 'WT456',
+          assignmentStatus: 'pending',
+          age: 60,
+          priority: 0,
+          reason: null,
+          taskQueueSid: 'WQ123',
+          workflowSid: 'WW123',
+          attributes: '{"skill":"support"}',
+        },
+        taskEventsData: [
+          { sid: 'EV001', eventType: 'task.created', description: 'Task created', eventDate: new Date() },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT456', { includeEvents: true });
+
+      expect(result.warnings).toContainEqual(expect.stringContaining('No reservation events'));
+      expect(result.warnings).toContainEqual(expect.stringContaining('workflow filter'));
+    });
+
+    it('should detect canceled without assignment', async () => {
+      const client = createMockClient({
+        taskData: {
+          sid: 'WT456',
+          assignmentStatus: 'canceled',
+          age: 5,
+          priority: 0,
+          reason: 'TTL expired',
+          taskQueueSid: 'WQ123',
+          workflowSid: 'WW123',
+          attributes: '{"skill":"support"}',
+        },
+        taskEventsData: [
+          { sid: 'EV001', eventType: 'task.created', description: 'Task created', eventDate: new Date() },
+          { sid: 'EV002', eventType: 'task.canceled', description: 'Task canceled', eventDate: new Date() },
+        ],
+      });
+      const validator = new DeepValidator(client as never);
+
+      const result = await validator.validateTaskRouter('WS123', 'WT456', { includeEvents: true });
+
+      expect(result.warnings).toContainEqual(expect.stringContaining('canceled without being assigned'));
+      expect(result.warnings).toContainEqual(expect.stringContaining('TTL'));
     });
   });
 });

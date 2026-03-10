@@ -157,12 +157,14 @@ export function validationTools(context: TwilioContext) {
       recordingSid: z.string().describe('Recording SID to validate (RE...)'),
       waitForCompleted: z.boolean().optional().default(true).describe('Wait for recording to complete'),
       timeout: z.number().optional().default(60000).describe('Maximum wait time in ms'),
+      minDuration: z.number().optional().describe('Minimum expected duration in seconds. Fail if recording is shorter.'),
     }),
-    async ({ recordingSid, waitForCompleted, timeout }) => {
+    async ({ recordingSid, waitForCompleted, timeout, minDuration }) => {
       const validator = new DeepValidator(client);
       const result = await validator.validateRecording(recordingSid, {
         waitForCompleted,
         timeout,
+        minDuration,
       });
 
       return {
@@ -362,8 +364,9 @@ export function validationTools(context: TwilioContext) {
       includeEvents: z.boolean().optional().default(false).describe('Include task event history'),
       eventLimit: z.number().optional().default(50).describe('Max events to fetch'),
       checkDebugger: z.boolean().optional().default(false).describe('Check debugger for related alerts'),
+      maxAgeSeconds: z.number().optional().describe('Max acceptable task age in seconds before warning (default 300)'),
     }),
-    async ({ taskSid, workspaceSid, expectedStatus, expectedAttributeKeys, includeReservations, includeEvents, eventLimit, checkDebugger }) => {
+    async ({ taskSid, workspaceSid, expectedStatus, expectedAttributeKeys, includeReservations, includeEvents, eventLimit, checkDebugger, maxAgeSeconds }) => {
       const wsSid = workspaceSid || context.taskrouterWorkspaceSid;
       if (!wsSid) {
         return {
@@ -382,6 +385,7 @@ export function validationTools(context: TwilioContext) {
         includeEvents,
         eventLimit,
         checkDebugger,
+        maxAgeSeconds,
       });
 
       return {

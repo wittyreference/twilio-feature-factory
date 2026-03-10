@@ -19,6 +19,7 @@ Agent Teams (experimental) coordinate multiple Claude Code instances for paralle
 | `bug-fix` | 3 parallel investigators → fix → verify | Debugging |
 | `code-review` | 3 parallel reviewers → cross-challenge | Thorough review |
 | `refactor` | Parallel analysis → implement → parallel verify | Restructuring |
+| `validation` | Parallel domain validators → lead synthesizes | Post-deploy E2E verification |
 
 ## Key Characteristics
 

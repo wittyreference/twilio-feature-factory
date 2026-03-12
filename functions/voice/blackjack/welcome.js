@@ -23,25 +23,25 @@ exports.handler = async (context, event, callback) => {
   // Check for natural blackjack
   if (game.status === 'complete') {
     twiml.say(
-      { voice: 'Polly.Matthew' },
+      { voice: 'Polly.Matthew-Generative' },
       'Welcome to Blackjack! '
     );
 
     if (game.outcome === 'player_blackjack') {
       twiml.say(
-        { voice: 'Polly.Matthew' },
+        { voice: 'Polly.Matthew-Generative' },
         `You were dealt ${playerNarration}. Blackjack! You win!`
       );
     } else if (game.outcome === 'dealer_blackjack') {
       const dealerNarration = engine.narrateHand(game.dealerHand);
       twiml.say(
-        { voice: 'Polly.Matthew' },
+        { voice: 'Polly.Matthew-Generative' },
         `You were dealt ${playerNarration}. ` +
         `The dealer has ${dealerNarration}. Dealer blackjack. Dealer wins.`
       );
     } else {
       twiml.say(
-        { voice: 'Polly.Matthew' },
+        { voice: 'Polly.Matthew-Generative' },
         `You were dealt ${playerNarration}. The dealer also has blackjack. It's a push.`
       );
     }
@@ -52,7 +52,7 @@ exports.handler = async (context, event, callback) => {
 
   // Normal play — announce and gather
   twiml.say(
-    { voice: 'Polly.Matthew' },
+    { voice: 'Polly.Matthew-Generative' },
     'Welcome to Blackjack! Let me deal the cards.'
   );
 
@@ -61,7 +61,7 @@ exports.handler = async (context, event, callback) => {
   const gather = twiml.gather({
     input: 'dtmf speech',
     numDigits: 1,
-    timeout: 8,
+    timeout: 5,
     action: '/voice/blackjack/action',
     method: 'POST',
     speechTimeout: 'auto',
@@ -69,7 +69,7 @@ exports.handler = async (context, event, callback) => {
   });
 
   gather.say(
-    { voice: 'Polly.Matthew' },
+    { voice: 'Polly.Matthew-Generative' },
     `You have ${playerNarration}. ` +
     `The dealer is showing ${dealerUpCard}. ` +
     'Press 1 or say hit for another card. Press 2 or say stand to hold.'
@@ -77,7 +77,7 @@ exports.handler = async (context, event, callback) => {
 
   // No-input fallback
   twiml.say(
-    { voice: 'Polly.Matthew' },
+    { voice: 'Polly.Matthew-Generative' },
     'I did not receive any input. Goodbye.'
   );
 

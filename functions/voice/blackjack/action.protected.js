@@ -16,7 +16,7 @@ exports.handler = async (context, event, callback) => {
 
   if (!game) {
     twiml.say(
-      { voice: 'Polly.Matthew' },
+      { voice: 'Polly.Matthew-Generative' },
       'Sorry, your game was not found. Let me start a new one.'
     );
     twiml.redirect('/voice/blackjack/welcome');
@@ -30,7 +30,7 @@ exports.handler = async (context, event, callback) => {
     const gather = twiml.gather({
       input: 'dtmf speech',
       numDigits: 1,
-      timeout: 8,
+      timeout: 5,
       action: '/voice/blackjack/action',
       method: 'POST',
       speechTimeout: 'auto',
@@ -38,12 +38,12 @@ exports.handler = async (context, event, callback) => {
     });
 
     gather.say(
-      { voice: 'Polly.Matthew' },
+      { voice: 'Polly.Matthew-Generative' },
       'Sorry, I did not understand. Press 1 or say hit for another card. Press 2 or say stand to hold.'
     );
 
     // No-input fallback
-    twiml.say({ voice: 'Polly.Matthew' }, 'No input received. Goodbye.');
+    twiml.say({ voice: 'Polly.Matthew-Generative' }, 'No input received. Goodbye.');
     return callback(null, twiml);
   }
 
@@ -57,7 +57,7 @@ exports.handler = async (context, event, callback) => {
     await sync.updateGameDoc(client, syncServiceSid, callSid, updated);
 
     twiml.say(
-      { voice: 'Polly.Matthew' },
+      { voice: 'Polly.Matthew-Generative' },
       `You stand at ${engine.scoreHand(game.playerHand).total}. Let's see what the dealer has.`
     );
     twiml.redirect('/voice/blackjack/dealer-turn');
@@ -73,7 +73,7 @@ exports.handler = async (context, event, callback) => {
 
   if (updated.status === 'complete' && updated.outcome === 'player_bust') {
     twiml.say(
-      { voice: 'Polly.Matthew' },
+      { voice: 'Polly.Matthew-Generative' },
       `You drew the ${engine.narrateCard(newCard)}. That gives you ${newScore.total}. You busted!`
     );
     twiml.redirect('/voice/blackjack/game-over');
@@ -82,7 +82,7 @@ exports.handler = async (context, event, callback) => {
 
   if (updated.status === 'dealer_turn') {
     twiml.say(
-      { voice: 'Polly.Matthew' },
+      { voice: 'Polly.Matthew-Generative' },
       `You drew the ${engine.narrateCard(newCard)}. That gives you ${newScore.total}! ` +
       "Let's see what the dealer has."
     );
@@ -94,7 +94,7 @@ exports.handler = async (context, event, callback) => {
   const gather = twiml.gather({
     input: 'dtmf speech',
     numDigits: 1,
-    timeout: 8,
+    timeout: 5,
     action: '/voice/blackjack/action',
     method: 'POST',
     speechTimeout: 'auto',
@@ -102,11 +102,11 @@ exports.handler = async (context, event, callback) => {
   });
 
   gather.say(
-    { voice: 'Polly.Matthew' },
+    { voice: 'Polly.Matthew-Generative' },
     `You drew the ${engine.narrateCard(newCard)}, for ${newScore.total}. ` +
     'Press 1 or say hit for another card. Press 2 or say stand to hold.'
   );
 
-  twiml.say({ voice: 'Polly.Matthew' }, 'No input received. Goodbye.');
+  twiml.say({ voice: 'Polly.Matthew-Generative' }, 'No input received. Goodbye.');
   return callback(null, twiml);
 };

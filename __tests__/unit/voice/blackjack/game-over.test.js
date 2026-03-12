@@ -199,6 +199,31 @@ describe('blackjack/game-over handler', () => {
       expect(twiml).toContain('<Redirect>/voice/blackjack/welcome</Redirect>');
     });
 
+    it('replays on speech "deal"', async () => {
+      const event = global.createTestEvent({ CallSid: 'CA123', SpeechResult: 'deal' });
+      await handler(context, event, callback);
+
+      const twiml = callback.mock.calls[0][1].toString();
+      expect(twiml).toContain('<Redirect>/voice/blackjack/welcome</Redirect>');
+    });
+
+    it('replays on speech "play again"', async () => {
+      const event = global.createTestEvent({ CallSid: 'CA123', SpeechResult: 'play again' });
+      await handler(context, event, callback);
+
+      const twiml = callback.mock.calls[0][1].toString();
+      expect(twiml).toContain('<Redirect>/voice/blackjack/welcome</Redirect>');
+    });
+
+    it('quits on speech "quit"', async () => {
+      const event = global.createTestEvent({ CallSid: 'CA123', SpeechResult: 'quit' });
+      await handler(context, event, callback);
+
+      const twiml = callback.mock.calls[0][1].toString().toLowerCase();
+      expect(twiml).toContain('goodbye');
+      expect(twiml).not.toContain('<Gather');
+    });
+
     it('hangs up on digit 2', async () => {
       const event = global.createTestEvent({ CallSid: 'CA123', Digits: '2' });
       await handler(context, event, callback);

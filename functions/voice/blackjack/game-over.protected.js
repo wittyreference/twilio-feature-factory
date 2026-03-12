@@ -1,6 +1,22 @@
 // ABOUTME: Announces the blackjack game result and offers the player a chance to replay.
 // ABOUTME: Reads final game state from Sync, narrates outcome, gathers replay/quit input.
 
+const REPLAY_WORDS = ['deal', 'play again', 'yes', 'again', 'new hand', 'another'];
+const QUIT_WORDS = ['quit', 'no', 'stop', 'goodbye', 'bye'];
+
+function classifyReplayInput(digits, speechResult) {
+  if (digits === '1') { return 'replay'; }
+  if (digits === '2') { return 'quit'; }
+
+  if (speechResult) {
+    const speech = speechResult.toLowerCase().trim();
+    if (REPLAY_WORDS.some((w) => speech.includes(w))) { return 'replay'; }
+    if (QUIT_WORDS.some((w) => speech.includes(w))) { return 'quit'; }
+  }
+
+  return 'unknown';
+}
+
 exports.handler = async (context, event, callback) => {
   const twiml = new Twilio.twiml.VoiceResponse();
   const client = context.getTwilioClient();
@@ -13,7 +29,7 @@ exports.handler = async (context, event, callback) => {
   const game = await sync.fetchGameDoc(client, syncServiceSid, callSid);
 
   if (!game) {
-    twiml.say({ voice: 'Polly.Matthew' }, 'Thanks for playing. Goodbye.');
+    twiml.say({ voice: 'Polly.Matthew-Generative' }, 'Thanks for playing. Goodbye.');
     return callback(null, twiml);
   }
 
@@ -21,14 +37,14 @@ exports.handler = async (context, event, callback) => {
   const dealerScore = engine.scoreHand(game.dealerHand);
 
   // Handle replay input if this is a callback from the gather
-  const replayAction = engine.classifyInput(event.Digits || null, event.SpeechResult || null);
-  if (event.Digits === '1' || (event.SpeechResult && replayAction === 'hit')) {
-    twiml.say({ voice: 'Polly.Matthew' }, 'New hand coming up!');
+  const action = classifyReplayInput(event.Digits || null, event.SpeechResult || null);
+  if (action === 'replay') {
+    twiml.say({ voice: 'Polly.Matthew-Generative' }, 'New hand coming up!');
     twiml.redirect('/voice/blackjack/welcome');
     return callback(null, twiml);
   }
-  if (event.Digits === '2') {
-    twiml.say({ voice: 'Polly.Matthew' }, 'Thanks for playing Blackjack! Goodbye.');
+  if (action === 'quit') {
+    twiml.say({ voice: 'Polly.Matthew-Generative' }, 'Thanks for playing Blackjack! Goodbye.');
     return callback(null, twiml);
   }
 
@@ -46,14 +62,14 @@ exports.handler = async (context, event, callback) => {
   const message = outcomeMessages[game.outcome] || 'Game over.';
 
   twiml.pause({ length: 1 });
-  twiml.say({ voice: 'Polly.Matthew' }, message);
+  twiml.say({ voice: 'Polly.Matthew-Generative' }, message);
   twiml.pause({ length: 1 });
 
   // Offer replay
   const gather = twiml.gather({
     input: 'dtmf speech',
     numDigits: 1,
-    timeout: 5,
+    timeout: 4,
     action: '/voice/blackjack/game-over',
     method: 'POST',
     speechTimeout: 'auto',
@@ -61,11 +77,11 @@ exports.handler = async (context, event, callback) => {
   });
 
   gather.say(
-    { voice: 'Polly.Matthew' },
+    { voice: 'Polly.Matthew-Generative' },
     'Press 1 or say deal to play again. Press 2 or say quit to hang up.'
   );
 
   // No input — hang up gracefully
-  twiml.say({ voice: 'Polly.Matthew' }, 'Thanks for playing Blackjack! Goodbye.');
+  twiml.say({ voice: 'Polly.Matthew-Generative' }, 'Thanks for playing Blackjack! Goodbye.');
   return callback(null, twiml);
 };

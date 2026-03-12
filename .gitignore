@@ -42,8 +42,12 @@ npm-debug.log*
 .claude/logs/
 .claude/logs/plan-archive.log
 
+
 # Newman reports
 newman/
+
+# Validation reports (ephemeral test output)
+**/validation-reports/
 
 # Playwright
 test-results/

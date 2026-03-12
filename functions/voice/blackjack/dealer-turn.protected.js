@@ -16,7 +16,7 @@ exports.handler = async (context, event, callback) => {
 
   if (!game) {
     twiml.say(
-      { voice: 'Polly.Matthew-Generative' },
+      { voice: 'Polly.Amy-Generative' },
       'Sorry, your game was not found. Let me start a new one.'
     );
     twiml.redirect('/voice/blackjack/welcome');
@@ -29,7 +29,7 @@ exports.handler = async (context, event, callback) => {
 
   // Narrate the dealer's turn
   twiml.say(
-    { voice: 'Polly.Matthew-Generative' },
+    { voice: 'Polly.Amy-Generative' },
     `The dealer reveals their hole card: ${engine.narrateCard(game.dealerHand[1])}. ` +
     `The dealer has ${engine.scoreHand(game.dealerHand).total}.`
   );
@@ -39,7 +39,7 @@ exports.handler = async (context, event, callback) => {
   for (const draw of dealerDraws) {
     twiml.pause({ length: 1 });
     twiml.say(
-      { voice: 'Polly.Matthew-Generative' },
+      { voice: 'Polly.Amy-Generative' },
       `The dealer draws the ${engine.narrateCard(draw.card)}, for ${engine.scoreHand(
         updated.dealerHand.slice(0, updated.dealerHand.indexOf(draw.card) + 1)
       ).total}.`
@@ -52,12 +52,12 @@ exports.handler = async (context, event, callback) => {
     twiml.pause({ length: 1 });
     if (dealerScore.total > 21) {
       twiml.say(
-        { voice: 'Polly.Matthew-Generative' },
+        { voice: 'Polly.Amy-Generative' },
         `The dealer busts with ${dealerScore.total}!`
       );
     } else {
       twiml.say(
-        { voice: 'Polly.Matthew-Generative' },
+        { voice: 'Polly.Amy-Generative' },
         `The dealer stands at ${dealerScore.total}.`
       );
     }

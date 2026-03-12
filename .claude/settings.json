@@ -133,6 +133,8 @@
   },
   "env": {
     "MAX_THINKING_TOKENS": "63999",
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  }
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS": "10000"
+  },
+  "includeGitInstructions": false
 }

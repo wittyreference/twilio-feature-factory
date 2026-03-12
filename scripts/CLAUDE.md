@@ -23,6 +23,7 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 | `run-sip-lab-e2e.sh` | `./scripts/run-sip-lab-e2e.sh` | Run SIP Lab E2E tests (PSTN connectivity, recording, transcription) |
 | `generate-postman-collection.js` | `node scripts/generate-postman-collection.js > postman/collection.json` | Generate Newman E2E collection from compact spec (44 requests, 14 folders) |
 | `check-updates.sh` | `./scripts/check-updates.sh` | Check local version against latest GitHub release; cached, session-start integrated |
+| `check-changelog.sh` | `./scripts/check-changelog.sh` | Monitor Claude Code + Agent SDK releases for new features; cross-references against harness config |
 | `update.sh` | `./scripts/update.sh` | Self-contained updater — handles clones, forks, and templates uniformly |
 | `validate-updates.sh` | `./scripts/validate-updates.sh` | Cross-repo validation of check-updates.sh and update.sh across 3 GitHub repos |
 | `env-doctor.sh` | `./scripts/env-doctor.sh` | Detect shell vs .env conflicts, orphaned regional vars, direnv status |

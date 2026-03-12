@@ -1,6 +1,6 @@
 #!/bin/bash
-# ABOUTME: Orchestrates parallel and serial validation runs for regression testing.
-# ABOUTME: Runs safe-to-parallelize checks first, then headless validation lanes.
+# ABOUTME: Orchestrates sequential validation runs for regression testing.
+# ABOUTME: Runs fast checks in parallel, then headless validation lanes one at a time.
 
 set -e
 
@@ -14,44 +14,48 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 # Defaults
-MODE="quick"  # quick | standard | full | serial
+MODE="quick"  # quick | standard | full
+SKIP_PREFLIGHT=false
 
 usage() {
     cat <<'USAGE'
 Usage: run-regression.sh [OPTIONS]
 
 Run regression validation suite after significant codebase changes.
+All headless lanes run SEQUENTIALLY to avoid API rate limit exhaustion.
 
 Modes:
   --quick      Phase 1 only: parallel fast checks (~5 min, no LLM)
-  --standard   Phase 1 + chaos validation (~60 min)
-  --full       Phase 1 + 3 parallel headless lanes (~2 hours)
-               Requires .env.lane-b for resource isolation
-  --serial     Phase 1 + headless lanes run sequentially (~3-4 hours)
-               No .env.lane-b needed
+  --standard   Phase 1 + 6 sequential headless suites (~4-5 hours)
+               Order: sequential → nonvoice → dogfood → smoke → uber → chaos
+  --full       Phase 1 + preflight + SIP Lab + all 6 suites (~5-6 hours)
 
 Options:
-  --help       Show this help message
+  --skip-preflight  Skip preflight in --full mode (if already deployed)
+  --help            Show this help message
 
 Environment:
-  CLAUDE_HEADLESS_ACKNOWLEDGED=true  Required for --standard, --full, --serial
+  CLAUDE_HEADLESS_ACKNOWLEDGED=true  Required for --standard and --full
+
+IMPORTANT: Do NOT run this from inside a Claude Code session.
+           claude -p cannot launch nested inside Claude Code.
+           Run from a regular terminal instead.
 
 Examples:
   ./scripts/run-regression.sh --quick
   CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-regression.sh --standard
   CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-regression.sh --full
-  CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-regression.sh --serial
 USAGE
 }
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --quick)    MODE="quick"; shift ;;
-        --standard) MODE="standard"; shift ;;
-        --full)     MODE="full"; shift ;;
-        --serial)   MODE="serial"; shift ;;
-        --help)     usage; exit 0 ;;
+        --quick)          MODE="quick"; shift ;;
+        --standard)       MODE="standard"; shift ;;
+        --full)           MODE="full"; shift ;;
+        --skip-preflight) SKIP_PREFLIGHT=true; shift ;;
+        --help)           usage; exit 0 ;;
         *)
             echo -e "${RED}Error: Unknown option: $1${NC}" >&2
             usage
@@ -67,6 +71,14 @@ if [ ! -f "package.json" ] || [ ! -d ".claude" ]; then
     exit 1
 fi
 
+# Guard against nested Claude Code sessions
+if [ -n "${CLAUDECODE:-}" ]; then
+    echo -e "${RED}Error: Cannot run headless validation from inside a Claude Code session.${NC}" >&2
+    echo -e "${DIM}claude -p detects the CLAUDECODE env var and refuses to start.${NC}" >&2
+    echo -e "${DIM}Run this script from a regular terminal instead.${NC}" >&2
+    exit 1
+fi
+
 if [ "$MODE" != "quick" ]; then
     if [ "$CLAUDE_HEADLESS_ACKNOWLEDGED" != "true" ]; then
         echo -e "${RED}Error: CLAUDE_HEADLESS_ACKNOWLEDGED=true is required for --${MODE} mode.${NC}" >&2
@@ -76,12 +88,6 @@ if [ "$MODE" != "quick" ]; then
         echo -e "${RED}Error: 'claude' command not found. Required for headless validation.${NC}" >&2
         exit 1
     fi
-fi
-
-if [ "$MODE" = "full" ] && [ ! -f ".env.lane-b" ]; then
-    echo -e "${RED}Error: .env.lane-b not found. Required for --full mode (parallel lane isolation).${NC}" >&2
-    echo -e "${DIM}Use --serial instead, or provision Lane B resources first.${NC}" >&2
-    exit 1
 fi
 
 # --- Setup ---
@@ -100,7 +106,7 @@ echo ""
 START_TIME=$(date +%s)
 
 # ============================================================================
-# PHASE 1: Parallel Fast Checks
+# PHASE 1: Parallel Fast Checks (no LLM, safe to parallelize)
 # ============================================================================
 
 echo -e "${CYAN}Phase 1: Parallel Fast Checks${NC}"
@@ -116,7 +122,7 @@ run_check() {
     echo "$rc" > "$exit_file"
 }
 
-# Launch all fast checks in background
+# Launch all fast checks in background (no LLM calls, safe to parallelize)
 run_check "unit-tests"      "npm test -- --bail"                                        &
 run_check "lint"             "npm run lint"                                               &
 run_check "typecheck"        "cd agents/mcp-servers/twilio && npx tsc --noEmit"          &
@@ -167,99 +173,145 @@ if [ $PHASE1_FAIL -gt 0 ]; then
 fi
 
 # ============================================================================
-# PHASE 2: Headless Validation Lanes
+# PHASE 2: Sequential Headless Validation Lanes (ONE AT A TIME)
 # ============================================================================
+#
+# All headless lanes run sequentially to avoid API rate limit exhaustion.
+# Each lane is a separate claude -p session that consumes API quota.
+# Running them in parallel causes empty responses and wasted turns.
+#
+# Order: sequential → nonvoice → dogfood → smoke → uber → chaos
+# This order front-loads the most valuable (voice) and fastest (nonvoice)
+# suites, then runs progressively less critical ones.
 
 if [ "$MODE" = "quick" ]; then
     echo -e "${DIM}Skipping headless validation (--quick mode).${NC}"
 else
-    echo -e "${CYAN}Phase 2: Headless Validation${NC}"
+    echo -e "${CYAN}Phase 2: Sequential Headless Validation${NC}"
+    echo -e "${DIM}Lanes run one at a time to stay within API rate limits.${NC}"
+    echo ""
 
     HEADLESS_SCRIPT="./scripts/run-headless.sh"
 
-    case "$MODE" in
-        standard)
-            # Chaos only — no Twilio resources needed
-            echo -e "  ${DIM}Lane C: Chaos validation (60 turns)${NC}"
-            REGRESSION_REPORT_DIR="$REPORT_DIR" \
-                $HEADLESS_SCRIPT --task chaos-only --max-turns 60 \
-                > "${REPORT_DIR}/lane-c.log" 2>&1
-            echo $? > "${REPORT_DIR}/lane-c.exit"
-            ;;
+    # --- Preflight (full mode only) ---
+    if [ "$MODE" = "full" ] && [ "$SKIP_PREFLIGHT" = "false" ]; then
+        echo -e "  ${DIM}Preflight: deploy + ngrok + agents + SIP Lab...${NC}"
+        if [ -f "scripts/headless-preflight.sh" ]; then
+            ./scripts/headless-preflight.sh --sip-lab > "${REPORT_DIR}/preflight.log" 2>&1 || true
+            if [ -f ".env" ]; then set -a; source .env; set +a; fi
+        fi
+        echo ""
+    fi
 
-        full)
-            # Three parallel lanes with resource isolation
-            echo -e "  ${DIM}Lane A: Random voice validation (120 turns)${NC}"
-            echo -e "  ${DIM}Lane B: Nonvoice validation (120 turns)${NC}"
-            echo -e "  ${DIM}Lane C: Chaos validation (60 turns)${NC}"
-            echo ""
+    # Helper: run a single headless lane and capture timing
+    run_lane() {
+        local lane_name="$1"
+        local task_name="$2"
+        local max_turns="$3"
+        local lane_start exit_code lane_end lane_dur
 
-            # Lane A: voice/sequential on default .env resources
-            REGRESSION_REPORT_DIR="$REPORT_DIR" \
-                $HEADLESS_SCRIPT --task random-validation --max-turns 120 \
-                > "${REPORT_DIR}/lane-a.log" 2>&1 &
-            LANE_A_PID=$!
+        lane_start=$(date +%s)
+        echo -e "  ${CYAN}[$lane_name]${NC} Starting (${max_turns} turns max)... $(date +%H:%M:%S)"
 
-            # Lane B: nonvoice on .env.lane-b resources
-            REGRESSION_REPORT_DIR="$REPORT_DIR" \
-                $HEADLESS_SCRIPT --task nonvoice-only --env-file .env.lane-b --max-turns 120 \
-                > "${REPORT_DIR}/lane-b.log" 2>&1 &
-            LANE_B_PID=$!
+        exit_code=0
+        REGRESSION_REPORT_DIR="$REPORT_DIR" \
+            $HEADLESS_SCRIPT --task "$task_name" --max-turns "$max_turns" \
+            > "${REPORT_DIR}/lane-${lane_name}.log" 2>&1 || exit_code=$?
+        echo "$exit_code" > "${REPORT_DIR}/lane-${lane_name}.exit"
 
-            # Lane C: chaos (no Twilio resources)
-            REGRESSION_REPORT_DIR="$REPORT_DIR" \
-                $HEADLESS_SCRIPT --task chaos-only --max-turns 60 \
-                > "${REPORT_DIR}/lane-c.log" 2>&1 &
-            LANE_C_PID=$!
+        lane_end=$(date +%s)
+        lane_dur=$(( (lane_end - lane_start) / 60 ))
 
-            # Wait for all lanes
-            echo -e "${DIM}Waiting for all lanes to complete...${NC}"
-            wait $LANE_A_PID 2>/dev/null; echo $? > "${REPORT_DIR}/lane-a.exit"
-            wait $LANE_B_PID 2>/dev/null; echo $? > "${REPORT_DIR}/lane-b.exit"
-            wait $LANE_C_PID 2>/dev/null; echo $? > "${REPORT_DIR}/lane-c.exit"
-            ;;
+        if [ "$exit_code" = "0" ]; then
+            echo -e "  ${GREEN}[$lane_name]${NC} Done (${lane_dur}m)"
+        else
+            echo -e "  ${RED}[$lane_name]${NC} Failed (exit ${exit_code}, ${lane_dur}m)"
+        fi
+    }
 
-        serial)
-            # Same validation but sequential — no lane-b needed
-            echo -e "  ${DIM}Lane C: Chaos validation (60 turns)${NC}"
-            REGRESSION_REPORT_DIR="$REPORT_DIR" \
-                $HEADLESS_SCRIPT --task chaos-only --max-turns 60 \
-                > "${REPORT_DIR}/lane-c.log" 2>&1
-            echo $? > "${REPORT_DIR}/lane-c.exit"
+    # Helper: run a non-headless command as a lane
+    run_script_lane() {
+        local lane_name="$1"
+        local cmd="$2"
+        local lane_start exit_code lane_end lane_dur
 
-            echo -e "  ${DIM}Lane B: Nonvoice validation (120 turns)${NC}"
-            REGRESSION_REPORT_DIR="$REPORT_DIR" \
-                $HEADLESS_SCRIPT --task nonvoice-only --max-turns 120 \
-                > "${REPORT_DIR}/lane-b.log" 2>&1
-            echo $? > "${REPORT_DIR}/lane-b.exit"
+        lane_start=$(date +%s)
+        echo -e "  ${CYAN}[$lane_name]${NC} Starting... $(date +%H:%M:%S)"
 
-            echo -e "  ${DIM}Lane A: Random voice validation (120 turns)${NC}"
-            REGRESSION_REPORT_DIR="$REPORT_DIR" \
-                $HEADLESS_SCRIPT --task random-validation --max-turns 120 \
-                > "${REPORT_DIR}/lane-a.log" 2>&1
-            echo $? > "${REPORT_DIR}/lane-a.exit"
-            ;;
-    esac
+        exit_code=0
+        eval "$cmd" > "${REPORT_DIR}/lane-${lane_name}.log" 2>&1 || exit_code=$?
+        echo "$exit_code" > "${REPORT_DIR}/lane-${lane_name}.exit"
+
+        lane_end=$(date +%s)
+        lane_dur=$(( (lane_end - lane_start) / 60 ))
+
+        if [ "$exit_code" = "0" ]; then
+            echo -e "  ${GREEN}[$lane_name]${NC} Done (${lane_dur}m)"
+        else
+            echo -e "  ${RED}[$lane_name]${NC} Failed (exit ${exit_code}, ${lane_dur}m)"
+        fi
+    }
+
+    # === Lane 1: Sequential Voice Validation (UC1-UC10) ===
+    run_lane "sequential" "sequential-validation" 250
+
+    # === Lane 2: Nonvoice Validation (SMS, Verify, Sync, TaskRouter, Video) ===
+    run_lane "nonvoice" "nonvoice-only" 120
+
+    # === Lane 3: Dogfood Environment ===
+    run_script_lane "dogfood" "./scripts/dogfood-env.sh"
+
+    # === Lane 4: Smoke Test (Feature Factory autonomous) ===
+    if [ -f ".meta/scripts/smoke-test-ff.sh" ]; then
+        # Smoke test needs clean git tree — stash and restore
+        STASH_NEEDED=false
+        DIRTY=$(git status --porcelain 2>/dev/null | grep -v '^ *?.* \.meta/' | wc -l | tr -d ' ')
+        if [ "$DIRTY" -gt 0 ]; then
+            STASH_NEEDED=true
+            git stash --include-untracked -m "regression-suite-smoke-test" 2>/dev/null || true
+        fi
+
+        run_script_lane "smoke" "bash .meta/scripts/smoke-test-ff.sh --no-tee 1"
+
+        if [ "$STASH_NEEDED" = "true" ]; then
+            git stash pop 2>/dev/null || true
+        fi
+    else
+        echo -e "  ${DIM}[smoke] Skipped — .meta/scripts/smoke-test-ff.sh not found${NC}"
+    fi
+
+    # === Lane 5: Uber-Validation ===
+    run_lane "uber" "uber-validation" 120
+
+    # === Lane 6: Chaos Validation ===
+    run_lane "chaos" "chaos-only" 60
+
+    # === Lane E: SIP Lab E2E (pure Jest, no headless claude — fast) ===
+    if [ "$MODE" = "full" ] && [ -f "scripts/run-sip-lab-e2e.sh" ]; then
+        run_script_lane "sip-lab" "./scripts/run-sip-lab-e2e.sh"
+    fi
 
     # Collect Phase 2 results
     PHASE2_RESULTS=""
     for exit_file in "${REPORT_DIR}"/lane-*.exit; do
         [ -f "$exit_file" ] || continue
-        lane=$(basename "$exit_file" .exit)
+        lane=$(basename "$exit_file" .exit | sed 's/lane-//')
         exit_code=$(cat "$exit_file")
 
         # Check for JSON results file (written by headless tasks)
         json_result=""
         case "$lane" in
-            lane-a) json_result="${REPORT_DIR}/voice-results.json" ;;
-            lane-b) json_result="${REPORT_DIR}/nonvoice-results.json" ;;
-            lane-c) json_result="${REPORT_DIR}/chaos-results.json" ;;
+            sequential) json_result="${REPORT_DIR}/sequential-results.json" ;;
+            nonvoice)   json_result="${REPORT_DIR}/nonvoice-results.json" ;;
+            chaos)      json_result="${REPORT_DIR}/chaos-results.json" ;;
+            uber)       json_result="${REPORT_DIR}/uber-results.json" ;;
+            sip-lab)    json_result="${REPORT_DIR}/sip-lab-results.json" ;;
         esac
 
-        if [ -f "$json_result" ]; then
+        if [ -n "$json_result" ] && [ -f "$json_result" ]; then
             PHASE2_RESULTS="${PHASE2_RESULTS}  ${GREEN}DONE${NC}  ${lane} (results captured)\n"
         elif [ "$exit_code" = "0" ]; then
-            PHASE2_RESULTS="${PHASE2_RESULTS}  ${YELLOW}DONE${NC}  ${lane} (no JSON results file)\n"
+            PHASE2_RESULTS="${PHASE2_RESULTS}  ${YELLOW}DONE${NC}  ${lane} (no JSON results)\n"
         else
             PHASE2_RESULTS="${PHASE2_RESULTS}  ${RED}FAIL${NC}  ${lane} (exit ${exit_code})\n"
         fi
@@ -337,16 +389,13 @@ except: pass
     } > "$CONSOLIDATED"
 
     # Append to learnings file (after the header, before existing entries)
-    # Find the line number of the first ## entry
     FIRST_ENTRY=$(grep -n "^## \[" "$LEARNINGS_TARGET" | head -1 | cut -d: -f1)
     if [ -n "$FIRST_ENTRY" ]; then
-        # Insert before the first existing entry
         head -n $((FIRST_ENTRY - 1)) "$LEARNINGS_TARGET" > "${LEARNINGS_TARGET}.tmp"
         cat "$CONSOLIDATED" >> "${LEARNINGS_TARGET}.tmp"
         tail -n +${FIRST_ENTRY} "$LEARNINGS_TARGET" >> "${LEARNINGS_TARGET}.tmp"
         mv "${LEARNINGS_TARGET}.tmp" "$LEARNINGS_TARGET"
     else
-        # No existing entries, just append
         cat "$CONSOLIDATED" >> "$LEARNINGS_TARGET"
     fi
     echo -e "  ${GREEN}Learnings${NC}: ${LEARNINGS_COUNT} lane(s) captured → ${LEARNINGS_TARGET}"
@@ -379,23 +428,25 @@ SUMMARY_FILE="${REPORT_DIR}/summary.md"
 
     if [ "$MODE" != "quick" ]; then
         echo ""
-        echo "## Phase 2: Headless Validation"
+        echo "## Phase 2: Headless Validation (Sequential)"
         echo ""
         echo "| Lane | Status | Results File |"
         echo "|------|--------|-------------|"
 
         for exit_file in "${REPORT_DIR}"/lane-*.exit; do
             [ -f "$exit_file" ] || continue
-            lane=$(basename "$exit_file" .exit)
+            lane=$(basename "$exit_file" .exit | sed 's/lane-//')
             exit_code=$(cat "$exit_file")
             json_result=""
             case "$lane" in
-                lane-a) json_result="voice-results.json" ;;
-                lane-b) json_result="nonvoice-results.json" ;;
-                lane-c) json_result="chaos-results.json" ;;
+                sequential) json_result="sequential-results.json" ;;
+                nonvoice)   json_result="nonvoice-results.json" ;;
+                chaos)      json_result="chaos-results.json" ;;
+                uber)       json_result="uber-results.json" ;;
+                sip-lab)    json_result="sip-lab-results.json" ;;
             esac
             has_json="No"
-            [ -f "${REPORT_DIR}/${json_result}" ] && has_json="Yes"
+            [ -n "$json_result" ] && [ -f "${REPORT_DIR}/${json_result}" ] && has_json="Yes"
             if [ "$exit_code" = "0" ]; then
                 echo "| ${lane} | DONE | ${has_json} |"
             else

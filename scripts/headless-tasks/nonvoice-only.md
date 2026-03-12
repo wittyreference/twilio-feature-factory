@@ -18,6 +18,7 @@ Read environment variables to determine resource configuration:
 python3 -c "
 import os
 vars = ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_PHONE_NUMBER',
+        'TEST_PHONE_NUMBER',
         'TWILIO_SYNC_SERVICE_SID', 'TWILIO_VERIFY_SERVICE_SID',
         'TWILIO_MESSAGING_SERVICE_SID', 'TWILIO_TASKROUTER_WORKSPACE_SID',
         'TWILIO_TASKROUTER_WORKFLOW_SID',
@@ -33,6 +34,14 @@ print('REGRESSION_REPORT_DIR:', os.environ.get('REGRESSION_REPORT_DIR', 'NOT SET
 
 If any required SID is NOT SET, stop and report failure — Lane B resources may not be provisioned.
 
+**CRITICAL**: `TEST_PHONE_NUMBER` MUST be set and MUST be different from `TWILIO_PHONE_NUMBER`. If not set, FAIL immediately — do not skip any checks. Twilio blocks self-send (To=From).
+
+Record the current timestamp for debugger baseline (used by MC3):
+```bash
+python3 -c "from datetime import datetime; print(datetime.utcnow().isoformat() + 'Z')"
+```
+Save this as `RUN_START_TIMESTAMP` — MC3 will use it to filter out pre-existing alerts.
+
 ## Step 1: Deploy
 
 Deploy the existing serverless functions (they include messaging, callbacks, sync handlers):
@@ -45,7 +54,7 @@ Capture the deployment URLs from output. If deployment fails, report failure and
 ## Step 2: Messaging Validation (MC1-MC3)
 
 ### MC1: Send SMS
-Use `mcp__twilio__send_sms` to send a test message from TWILIO_PHONE_NUMBER to TWILIO_PHONE_NUMBER (self-send).
+Use `mcp__twilio__send_sms` to send a test message from TWILIO_PHONE_NUMBER to TEST_PHONE_NUMBER.
 
 **Validate:**
 - Message created successfully (SID returned)
@@ -60,7 +69,7 @@ Use `mcp__twilio__get_messaging_service` with TWILIO_MESSAGING_SERVICE_SID to ve
 - Service has at least one phone number (use `mcp__twilio__list_phone_numbers_in_service`)
 
 ### MC3: Debugger Clean
-Use `mcp__twilio__validate_debugger` with 300-second lookback to confirm no pre-existing alerts.
+Use `mcp__twilio__validate_debugger` with `startDate` set to the `RUN_START_TIMESTAMP` captured in Step 0. This ensures only alerts generated DURING this run are checked — pre-existing historical alerts are ignored.
 
 Record results for each: PASS/FAIL with SIDs and any error messages.
 

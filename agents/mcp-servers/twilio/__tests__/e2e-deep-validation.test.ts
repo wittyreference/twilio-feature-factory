@@ -1066,17 +1066,30 @@ describe('Voice AI Flow Validation', () => {
 });
 
 describe('Two-Way Conversation Validation', () => {
-  const intelligenceServiceSid = process.env.TWILIO_INTELLIGENCE_SERVICE_SID;
-  const itDeepValidation =
-    shouldRunDeepValidation && hasRealCredentials && intelligenceServiceSid ? it : it.skip;
+  let resolvedIntelligenceServiceSid = process.env.TWILIO_INTELLIGENCE_SERVICE_SID || '';
+
+  // Auto-detect Intelligence service if env var not set
+  const itDeepValidation = shouldRunDeepValidation && hasRealCredentials ? it : it.skip;
 
   let validator: DeepValidator;
   let client: ReturnType<typeof Twilio>;
 
-  beforeAll(() => {
-    if (shouldRunDeepValidation && hasRealCredentials && intelligenceServiceSid) {
-      validator = createValidator();
+  beforeAll(async () => {
+    if (shouldRunDeepValidation && hasRealCredentials) {
       client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+      validator = createValidator();
+
+      if (!resolvedIntelligenceServiceSid) {
+        try {
+          const services = await client.intelligence.v2.services.list({ limit: 1 });
+          if (services.length > 0) {
+            resolvedIntelligenceServiceSid = services[0].sid;
+            console.log(`Auto-detected Intelligence service: ${resolvedIntelligenceServiceSid}`);
+          }
+        } catch {
+          // Intelligence API may not be available
+        }
+      }
     }
   });
 
@@ -1084,7 +1097,13 @@ describe('Two-Way Conversation Validation', () => {
     'should validate two recent calls as a two-way conversation',
     async () => {
       console.log('\n=== Two-Way Conversation Validation Test ===');
-      console.log(`Intelligence Service: ${intelligenceServiceSid}`);
+
+      if (!resolvedIntelligenceServiceSid) {
+        throw new Error(
+          'No Voice Intelligence service found. Create one in Console or set TWILIO_INTELLIGENCE_SERVICE_SID'
+        );
+      }
+      console.log(`Intelligence Service: ${resolvedIntelligenceServiceSid}`);
 
       // Find two recent completed calls from a similar time window
       const recentCalls = await client.calls.list({ status: 'completed', limit: 20 });
@@ -1102,7 +1121,7 @@ describe('Two-Way Conversation Validation', () => {
       const result = await validator.validateTwoWay({
         callSidA,
         callSidB,
-        intelligenceServiceSid: intelligenceServiceSid!,
+        intelligenceServiceSid: resolvedIntelligenceServiceSid,
         waitForTranscripts: false, // Don't wait — use whatever state exists
         expectedTurns: 1,
       });
@@ -1124,15 +1143,28 @@ describe('Two-Way Conversation Validation', () => {
 });
 
 describe('SIP Infrastructure Validation', () => {
-  const sipLabTrunkSid = process.env.SIP_LAB_TRUNK_SID;
-  const itDeepValidation =
-    shouldRunDeepValidation && hasRealCredentials && sipLabTrunkSid ? it : it.skip;
+  let resolvedTrunkSid = process.env.SIP_LAB_TRUNK_SID || '';
+
+  // Auto-detect trunk if env var not set
+  const itDeepValidation = shouldRunDeepValidation && hasRealCredentials ? it : it.skip;
 
   let client: ReturnType<typeof Twilio>;
 
-  beforeAll(() => {
-    if (shouldRunDeepValidation && hasRealCredentials && sipLabTrunkSid) {
+  beforeAll(async () => {
+    if (shouldRunDeepValidation && hasRealCredentials) {
       client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+
+      if (!resolvedTrunkSid) {
+        try {
+          const trunks = await client.trunking.v1.trunks.list({ limit: 1 });
+          if (trunks.length > 0) {
+            resolvedTrunkSid = trunks[0].sid;
+            console.log(`Auto-detected SIP trunk: ${resolvedTrunkSid}`);
+          }
+        } catch {
+          // Trunking API may not be available
+        }
+      }
     }
   });
 
@@ -1140,26 +1172,32 @@ describe('SIP Infrastructure Validation', () => {
     'should validate SIP trunk infrastructure',
     async () => {
       console.log('\n=== SIP Infrastructure Validation Test ===');
-      console.log(`Trunk SID: ${sipLabTrunkSid}`);
+
+      if (!resolvedTrunkSid) {
+        throw new Error(
+          'No SIP trunks found. Provision with infrastructure/sip-lab/scripts/setup-sip-lab.js or set SIP_LAB_TRUNK_SID'
+        );
+      }
+      console.log(`Trunk SID: ${resolvedTrunkSid}`);
 
       // Validate trunk configuration — exercises the validate_sip logic
-      const trunk = await client.trunking.v1.trunks(sipLabTrunkSid!).fetch();
+      const trunk = await client.trunking.v1.trunks(resolvedTrunkSid).fetch();
       console.log(`Trunk: ${trunk.friendlyName} (${trunk.domainName})`);
 
-      const acls = await client.trunking.v1.trunks(sipLabTrunkSid!).ipAccessControlLists.list();
+      const acls = await client.trunking.v1.trunks(resolvedTrunkSid).ipAccessControlLists.list();
       console.log(`IP ACLs: ${acls.length}`);
 
-      const credLists = await client.trunking.v1.trunks(sipLabTrunkSid!).credentialsLists.list();
+      const credLists = await client.trunking.v1.trunks(resolvedTrunkSid).credentialsLists.list();
       console.log(`Credential lists: ${credLists.length}`);
 
-      const origUrls = await client.trunking.v1.trunks(sipLabTrunkSid!).originationUrls.list();
+      const origUrls = await client.trunking.v1.trunks(resolvedTrunkSid).originationUrls.list();
       console.log(`Origination URLs: ${origUrls.length}`);
 
-      const numbers = await client.trunking.v1.trunks(sipLabTrunkSid!).phoneNumbers.list();
+      const numbers = await client.trunking.v1.trunks(resolvedTrunkSid).phoneNumbers.list();
       console.log(`Phone numbers: ${numbers.length}`);
 
       // Checks: trunk exists, has ACL, has origination
-      expect(trunk.sid).toBe(sipLabTrunkSid);
+      expect(trunk.sid).toBe(resolvedTrunkSid);
       expect(trunk.domainName).toBeTruthy();
 
       // At minimum, trunk should have an IP ACL for auth
@@ -1386,29 +1424,38 @@ describe('Phone Number Search + Configure Flow', () => {
 });
 
 describe('Proxy Session Lifecycle', () => {
-  const itProxy =
-    shouldRunDeepValidation &&
-    hasRealCredentials &&
-    process.env.TWILIO_PROXY_SERVICE_SID
-      ? it
-      : it.skip;
+  let resolvedProxyServiceSid = process.env.TWILIO_PROXY_SERVICE_SID || '';
+
+  // Auto-detect Proxy service if env var not set
+  const itProxy = shouldRunDeepValidation && hasRealCredentials ? it : it.skip;
 
   let client: ReturnType<typeof Twilio>;
   let testSessionSid: string | undefined;
-  const proxyServiceSid = process.env.TWILIO_PROXY_SERVICE_SID || '';
 
-  beforeAll(() => {
+  beforeAll(async () => {
     if (shouldRunDeepValidation && hasRealCredentials) {
       client = Twilio(TEST_CREDENTIALS.accountSid, TEST_CREDENTIALS.authToken);
+
+      if (!resolvedProxyServiceSid) {
+        try {
+          const services = await client.proxy.v1.services.list({ limit: 1 });
+          if (services.length > 0) {
+            resolvedProxyServiceSid = services[0].sid;
+            console.log(`Auto-detected Proxy service: ${resolvedProxyServiceSid}`);
+          }
+        } catch {
+          // Proxy API may not be available
+        }
+      }
     }
   });
 
   afterAll(async () => {
     // Cleanup: close session if still open
-    if (testSessionSid && proxyServiceSid) {
+    if (testSessionSid && resolvedProxyServiceSid) {
       try {
         await client.proxy.v1
-          .services(proxyServiceSid)
+          .services(resolvedProxyServiceSid)
           .sessions(testSessionSid)
           .update({ status: 'closed' });
       } catch {
@@ -1421,13 +1468,19 @@ describe('Proxy Session Lifecycle', () => {
     'should create, inspect, and close a Proxy session',
     async () => {
       console.log('\n=== Proxy Session Lifecycle Test ===');
-      console.log(`Service: ${proxyServiceSid}`);
+
+      if (!resolvedProxyServiceSid) {
+        throw new Error(
+          'No Proxy services found. Create one in Console or set TWILIO_PROXY_SERVICE_SID'
+        );
+      }
+      console.log(`Service: ${resolvedProxyServiceSid}`);
       const steps: { step: string; success: boolean; details: string }[] = [];
 
       // Step 1: Create session
       console.log('1. Creating proxy session...');
       const session = await client.proxy.v1
-        .services(proxyServiceSid)
+        .services(resolvedProxyServiceSid)
         .sessions.create({
           uniqueName: `e2e-test-${Date.now()}`,
           mode: 'voice-and-message',
@@ -1444,7 +1497,7 @@ describe('Proxy Session Lifecycle', () => {
       // Step 2: Fetch session
       console.log('2. Fetching session details...');
       const fetched = await client.proxy.v1
-        .services(proxyServiceSid)
+        .services(resolvedProxyServiceSid)
         .sessions(session.sid)
         .fetch();
       steps.push({
@@ -1457,7 +1510,7 @@ describe('Proxy Session Lifecycle', () => {
       // Step 3: List sessions (verify ours appears)
       console.log('3. Listing sessions...');
       const sessions = await client.proxy.v1
-        .services(proxyServiceSid)
+        .services(resolvedProxyServiceSid)
         .sessions.list({ limit: 10 });
       const found = sessions.some((s) => s.sid === session.sid);
       steps.push({
@@ -1469,7 +1522,7 @@ describe('Proxy Session Lifecycle', () => {
       // Step 4: Close session
       console.log('4. Closing session...');
       const closed = await client.proxy.v1
-        .services(proxyServiceSid)
+        .services(resolvedProxyServiceSid)
         .sessions(session.sid)
         .update({ status: 'closed' });
       steps.push({
@@ -1482,7 +1535,7 @@ describe('Proxy Session Lifecycle', () => {
       // Step 5: Verify closed
       console.log('5. Verifying closed state...');
       const verified = await client.proxy.v1
-        .services(proxyServiceSid)
+        .services(resolvedProxyServiceSid)
         .sessions(session.sid)
         .fetch();
       steps.push({

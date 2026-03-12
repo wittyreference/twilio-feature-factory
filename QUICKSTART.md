@@ -8,7 +8,7 @@ Get from zero to a working outbound call in under 10 minutes. No webhooks, no ng
 ## Prerequisites
 
 - [Claude Code](https://claude.ai/code) installed
-- A Twilio account with a phone number ([sign up free](https://www.twilio.com/try-twilio))
+- A Twilio account ([sign up free](https://www.twilio.com/try-twilio))
 - Node.js 20 or 22
 
 ## Step 1: Clone and Install
@@ -19,30 +19,15 @@ cd twilio-feature-factory
 npm install
 ```
 
-## Step 2: Configure Credentials
+## Step 2: Run the Setup Wizard
 
 ```bash
-cp .env.example .env
+./scripts/bootstrap.sh
 ```
 
-Edit `.env` with your Twilio credentials:
+This handles everything: checks prerequisites, collects your Twilio credentials, provisions resources, sets up environment isolation, and verifies the MCP server.
 
-```
-TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_AUTH_TOKEN=your_auth_token_here
-TWILIO_PHONE_NUMBER=+15551234567
-```
-
-Find these in your [Twilio Console](https://console.twilio.com/).
-
-**Environment isolation** (recommended): Install [direnv](https://direnv.net/) to prevent credential conflicts:
-
-```bash
-brew install direnv
-echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc
-source ~/.zshrc
-direnv allow
-```
+You'll need your **Account SID** and **Auth Token** from the [Twilio Console](https://console.twilio.com/).
 
 ## Step 3: Make a Call
 

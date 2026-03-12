@@ -22,6 +22,8 @@ PROMPT=""
 PROMPT_FILE=""
 TASK_NAME=""
 CLEAN_SLATE=false
+PREFLIGHT=false
+PREFLIGHT_ARGS=""
 ENV_FILE=".env"
 
 # Resolve a pre-defined task name to its prompt
@@ -57,6 +59,9 @@ resolve_task_prompt() {
         nonvoice-only)
             cat "$(dirname "$0")/headless-tasks/nonvoice-only.md"
             ;;
+        sequential-validation)
+            cat "$(dirname "$0")/headless-tasks/sequential-validation.md"
+            ;;
         *)
             echo ""
             ;;
@@ -76,11 +81,14 @@ Options:
   --task NAME        Use a pre-defined task prompt
   --env-file PATH    Source this env file instead of .env (default: .env)
   --clean            Run validation-reset.sh before starting (clean slate)
+  --preflight        Run headless-preflight.sh before starting (deploy, ngrok, agents)
+  --sip-lab          Enable SIP Lab lifecycle (implies --preflight)
   --list-tasks       List available pre-defined tasks
   --help             Show this help message
 
 Pre-defined tasks: validate, test-fix, lint-fix, typecheck, deploy-dev, e2e-validate,
-                   random-validation, uber-validation, chaos-only, nonvoice-only
+                   random-validation, uber-validation, chaos-only, nonvoice-only,
+                   sequential-validation
 
 Environment:
   CLAUDE_HEADLESS_ACKNOWLEDGED=true  Required. Confirms you accept autonomous risks.
@@ -106,6 +114,7 @@ list_tasks() {
     echo "  random-validation  Random use case build + deploy + deep validation (use --max-turns 120)"
     echo "  chaos-only    Chaos resilience testing — no Twilio API calls (use --max-turns 60)"
     echo "  nonvoice-only Nonvoice validation: SMS, Verify, Sync, TaskRouter (use --max-turns 120)"
+    echo "  sequential-validation  Sequential voice UC1-UC10 incl. PSTN (use --preflight --max-turns 250)"
     echo ""
     echo "Flags:"
     echo "  --clean            Run validation-reset.sh first (deletes deployment, recreates services)"
@@ -137,6 +146,15 @@ while [[ $# -gt 0 ]]; do
             ;;
         --clean)
             CLEAN_SLATE=true
+            shift
+            ;;
+        --preflight)
+            PREFLIGHT=true
+            shift
+            ;;
+        --sip-lab)
+            PREFLIGHT=true
+            PREFLIGHT_ARGS="$PREFLIGHT_ARGS --sip-lab"
             shift
             ;;
         --list-tasks)
@@ -211,6 +229,24 @@ if [ "$CLEAN_SLATE" = true ]; then
         export VALIDATION_CLEAN=true
     else
         echo -e "${RED}Error: validation-reset.sh failed (exit code $?).${NC}" >&2
+        exit 1
+    fi
+    echo ""
+fi
+
+# --- Preflight (optional) ---
+if [ "$PREFLIGHT" = true ]; then
+    echo -e "${CYAN}Running preflight infrastructure setup...${NC}"
+    if ./scripts/headless-preflight.sh $PREFLIGHT_ARGS; then
+        echo -e "${GREEN}Preflight complete.${NC}"
+        # Re-source env in case preflight updated it
+        if [ -f "$ENV_FILE" ]; then
+            set -a
+            source "$ENV_FILE"
+            set +a
+        fi
+    else
+        echo -e "${RED}Error: headless-preflight.sh failed (exit code $?).${NC}" >&2
         exit 1
     fi
     echo ""

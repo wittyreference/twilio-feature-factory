@@ -6,6 +6,8 @@
   "scripts": {
     "postinstall": "cd agents/mcp-servers/twilio && npm install && npm run build",
     "setup": "node scripts/setup.js",
+    "bootstrap": "./scripts/bootstrap.sh",
+    "smoke-test": "./scripts/bootstrap.sh --check-only",
     "test": "jest --testPathPattern='__tests__/(unit|integration)/'",
     "test:watch": "jest --watch --testPathPattern='__tests__/(unit|integration)/'",
     "test:coverage": "jest --coverage --testPathPattern='__tests__/(unit|integration)/'",

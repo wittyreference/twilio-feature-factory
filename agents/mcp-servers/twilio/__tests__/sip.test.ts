@@ -39,8 +39,8 @@ describe('sipTools', () => {
   });
 
   describe('tool structure', () => {
-    it('should return an array of 31 tools', () => {
-      expect(tools).toHaveLength(31);
+    it('should return an array of 40 tools', () => {
+      expect(tools).toHaveLength(40);
     });
 
     it('should have list_sip_ip_access_control_lists tool with correct metadata', () => {
@@ -97,6 +97,17 @@ describe('sipTools', () => {
         'create_sip_credential',
         'update_sip_credential',
         'delete_sip_credential',
+        // SIP Domain Auth: Calls
+        'list_sip_domain_auth_calls_credential_list_mappings',
+        'create_sip_domain_auth_calls_credential_list_mapping',
+        'delete_sip_domain_auth_calls_credential_list_mapping',
+        'list_sip_domain_auth_calls_ip_acl_mappings',
+        'create_sip_domain_auth_calls_ip_acl_mapping',
+        'delete_sip_domain_auth_calls_ip_acl_mapping',
+        // SIP Domain Auth: Registrations
+        'list_sip_domain_auth_registrations_credential_list_mappings',
+        'create_sip_domain_auth_registrations_credential_list_mapping',
+        'delete_sip_domain_auth_registrations_credential_list_mapping',
       ];
 
       const toolNames = tools.map(t => t.name);
@@ -327,6 +338,128 @@ describe('sipTools', () => {
       });
     });
   });
+
+    describe('SIP Domain Auth: Calls credential list mapping schemas', () => {
+      it('list should require domainSid starting with SD', () => {
+        const tool = tools.find(t => t.name === 'list_sip_domain_auth_calls_credential_list_mappings')!;
+
+        const valid = tool.inputSchema.safeParse({ domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' });
+        expect(valid.success).toBe(true);
+
+        const invalid = tool.inputSchema.safeParse({ domainSid: 'XXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' });
+        expect(invalid.success).toBe(false);
+      });
+
+      it('create should require domainSid and credentialListSid', () => {
+        const tool = tools.find(t => t.name === 'create_sip_domain_auth_calls_credential_list_mapping')!;
+
+        const valid = tool.inputSchema.safeParse({
+          domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          credentialListSid: 'CLxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(valid.success).toBe(true);
+
+        const missingCl = tool.inputSchema.safeParse({
+          domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(missingCl.success).toBe(false);
+      });
+
+      it('delete should require domainSid and credentialListSid', () => {
+        const tool = tools.find(t => t.name === 'delete_sip_domain_auth_calls_credential_list_mapping')!;
+
+        const valid = tool.inputSchema.safeParse({
+          domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          credentialListSid: 'CLxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(valid.success).toBe(true);
+
+        const missingDomain = tool.inputSchema.safeParse({
+          credentialListSid: 'CLxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(missingDomain.success).toBe(false);
+      });
+    });
+
+    describe('SIP Domain Auth: Calls IP ACL mapping schemas', () => {
+      it('list should require domainSid starting with SD', () => {
+        const tool = tools.find(t => t.name === 'list_sip_domain_auth_calls_ip_acl_mappings')!;
+
+        const valid = tool.inputSchema.safeParse({ domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' });
+        expect(valid.success).toBe(true);
+
+        const invalid = tool.inputSchema.safeParse({ domainSid: 'TKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' });
+        expect(invalid.success).toBe(false);
+      });
+
+      it('create should require domainSid and ipAccessControlListSid', () => {
+        const tool = tools.find(t => t.name === 'create_sip_domain_auth_calls_ip_acl_mapping')!;
+
+        const valid = tool.inputSchema.safeParse({
+          domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          ipAccessControlListSid: 'ALxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(valid.success).toBe(true);
+
+        const wrongPrefix = tool.inputSchema.safeParse({
+          domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          ipAccessControlListSid: 'CLxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(wrongPrefix.success).toBe(false);
+      });
+
+      it('delete should require domainSid and ipAccessControlListSid', () => {
+        const tool = tools.find(t => t.name === 'delete_sip_domain_auth_calls_ip_acl_mapping')!;
+
+        const valid = tool.inputSchema.safeParse({
+          domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          ipAccessControlListSid: 'ALxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(valid.success).toBe(true);
+      });
+    });
+
+    describe('SIP Domain Auth: Registrations credential list mapping schemas', () => {
+      it('list should require domainSid starting with SD', () => {
+        const tool = tools.find(t => t.name === 'list_sip_domain_auth_registrations_credential_list_mappings')!;
+
+        const valid = tool.inputSchema.safeParse({ domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' });
+        expect(valid.success).toBe(true);
+      });
+
+      it('create should require domainSid and credentialListSid', () => {
+        const tool = tools.find(t => t.name === 'create_sip_domain_auth_registrations_credential_list_mapping')!;
+
+        const valid = tool.inputSchema.safeParse({
+          domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          credentialListSid: 'CLxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(valid.success).toBe(true);
+
+        const missingCl = tool.inputSchema.safeParse({
+          domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(missingCl.success).toBe(false);
+      });
+
+      it('delete should require domainSid and credentialListSid', () => {
+        const tool = tools.find(t => t.name === 'delete_sip_domain_auth_registrations_credential_list_mapping')!;
+
+        const valid = tool.inputSchema.safeParse({
+          domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          credentialListSid: 'CLxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(valid.success).toBe(true);
+      });
+
+      it('should include authType in tool descriptions', () => {
+        const callsTool = tools.find(t => t.name === 'list_sip_domain_auth_calls_credential_list_mappings')!;
+        expect(callsTool.description).toContain('calls');
+
+        const regsTool = tools.find(t => t.name === 'list_sip_domain_auth_registrations_credential_list_mappings')!;
+        expect(regsTool.description).toContain('registration');
+      });
+    });
 
   describe('API integration', () => {
     const itWithCredentials = hasRealCredentials ? it : it.skip;

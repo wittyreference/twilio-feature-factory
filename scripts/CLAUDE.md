@@ -7,7 +7,9 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 
 | Script | Command | Purpose |
 |--------|---------|---------|
-| `setup.js` | `npm run setup` | Interactive setup for provisioning Twilio resources |
+| `bootstrap.sh` | `npm run bootstrap` | Complete post-clone setup wizard (prerequisites, credentials, provisioning, MCP verification) |
+| `setup.js` | `npm run setup` | Interactive setup for provisioning Twilio resources (also called by bootstrap.sh) |
+| `fresh-install-validation.sh` | `./scripts/fresh-install-validation.sh` | Automated test of post-clone onboarding in /tmp (validates bootstrap flow end-to-end) |
 | `enable-autonomous.sh` | `./scripts/enable-autonomous.sh` | Launch Claude Code in autonomous mode (interactive) |
 | `run-headless.sh` | `./scripts/run-headless.sh` | Run Claude Code non-interactively via `claude -p` (CI/CD) |
 | `validation-reset.sh` | `./scripts/validation-reset.sh` | Reset Twilio account to clean state for validation runs |
@@ -27,6 +29,7 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 | `dogfood-env.sh` | `./scripts/dogfood-env.sh` | Simulate new-user onboarding with conflicting shell env vars |
 | `validate-provisioning.sh` | `./scripts/validate-provisioning.sh` | Clean-room provisioning validator — ephemeral resources, full lifecycle, auto-teardown |
 | `run-regression.sh` | `./scripts/run-regression.sh` | Regression validation orchestrator — parallel fast checks + headless validation lanes |
+| `headless-preflight.sh` | `./scripts/headless-preflight.sh` | Pre-flight setup: deploy, ngrok, agent servers, SIP Lab droplet lifecycle |
 | `check-readme-drift.sh` | `./scripts/check-readme-drift.sh` | Detect structural drift between README.md and actual project contents |
 | `api-sync/` | `cd scripts/api-sync && npm run sync` | Automated Twilio API drift detection and coverage analysis |
 
@@ -45,4 +48,4 @@ These issues were discovered across 16 headless sessions and 4 rounds of prompt 
 | **Parallel sessions share working directory** | Multiple `git checkout -b` commands in the same repo — last one wins | All code lands on one branch; acceptable for validation but unexpected |
 | **Wrong prompt file wastes sessions** | `--prompt-file .meta/random-validation.md` (interactive plan) vs `--task random-validation` (headless-optimized) | Always use `--task random-validation` for headless runs |
 | **MCP server needs `.env` sourced** | MCP tools fail with auth errors if env vars aren't exported | `run-headless.sh` must export env vars for MCP tools to work |
-| **Headless validation burns turns on infrastructure** | Setup, deploy, and webhook config consume 30-40% of turn budget before validation starts | Use `--task random-validation` with `--max-turns 120` to leave room |
+| **Headless validation burns turns on infrastructure** | Setup, deploy, and webhook config consume 30-40% of turn budget before validation starts | Use `--preflight` flag to handle deploy/ngrok/agents BEFORE claude launches |

@@ -21,66 +21,37 @@ You also need a **Twilio account**. Sign up free at [twilio.com/try-twilio](http
 
 ## Get set up
 
-Six steps. Each one is a single command (or a quick file edit).
+Three steps.
 
-**1. Clone the repo**
+**1. Clone and install**
 
 ```bash
 git clone https://github.com/wittyreference/twilio-feature-factory.git
 cd twilio-feature-factory
-```
-
-**2. Install dependencies**
-
-```bash
 npm install
 ```
 
-**3. Create your environment file**
+**2. Run the setup wizard**
 
 ```bash
-cp .env.example .env
+./scripts/bootstrap.sh
 ```
 
-**4. Add your Twilio credentials**
+This handles everything in one go:
+- Checks that you have Node.js, Twilio CLI, and other prerequisites
+- Asks for your Twilio credentials (Account SID and Auth Token from [console.twilio.com](https://console.twilio.com/))
+- Configures your phone number (can purchase one for you if needed)
+- Provisions Twilio resources (Sync, Verify, Messaging, TaskRouter)
+- Sets up environment isolation so credentials don't conflict with other projects
+- Verifies the MCP server is built (this is what gives Claude access to Twilio tools)
 
-Open `.env` in any text editor. Find these three lines near the top and replace the placeholder values:
-
-```
-TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_AUTH_TOKEN=your_auth_token_here
-TWILIO_PHONE_NUMBER=+1xxxxxxxxxx
-```
-
-Where to find them:
-- **Account SID** and **Auth Token**: [console.twilio.com](https://console.twilio.com/) — they're right on the dashboard when you log in.
-- **Phone Number**: If you don't have one yet, the setup script in the next step can get one for you.
-
-**5. Run the setup script**
+**3. Verify your setup**
 
 ```bash
-npm run setup
+npm run smoke-test
 ```
 
-This walks you through provisioning Twilio resources (phone number, messaging service, etc.). It only creates what you select — skip anything you don't need yet.
-
-**6. Make your environment variables available**
-
-Claude Code needs your `.env` variables in the shell. The simplest way:
-
-```bash
-set -a && source .env && set +a
-```
-
-Run this once before launching Claude Code each session. (For a permanent solution, install [direnv](https://direnv.net/) — see the README for details.)
-
-**Verify everything works:**
-
-```bash
-npm start
-```
-
-You should see output confirming the Twilio app is running locally. Press `Ctrl+C` to stop it.
+You should see all checks passing. If something's off, the output tells you exactly what to fix.
 
 ## Build your first feature
 

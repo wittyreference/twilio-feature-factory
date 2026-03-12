@@ -157,7 +157,8 @@ class TwilioSetup {
         console.log(`  ${i + 1}. ${num.friendlyName} (${num.locality || 'Unknown'})`);
       });
 
-      const choice = await question('\nSelect a number (1-5) or press Enter for first: ');
+      const autoYes = process.argv.includes('--auto-yes');
+      const choice = autoYes ? '' : await question('\nSelect a number (1-5) or press Enter for first: ');
       const trimmedChoice = choice.trim();
 
       // Default to first option if empty, whitespace, or non-numeric
@@ -463,7 +464,26 @@ class TwilioSetup {
   }
 }
 
-async function selectResources() {
+async function selectResources(autoYes = false) {
+  if (autoYes) {
+    // Auto-select all resources
+    const selected = {};
+    for (const [key, resource] of Object.entries(RESOURCES)) {
+      if (resource.parent) continue;
+      selected[key] = true;
+      if (resource.children) {
+        for (const childKey of resource.children) {
+          selected[childKey] = true;
+        }
+      }
+    }
+    log('\nAuto-selecting all resources (--auto-yes):\n', 'bright');
+    for (const [key, val] of Object.entries(selected)) {
+      if (val) console.log(`  ✓ ${RESOURCES[key].name}`);
+    }
+    return selected;
+  }
+
   log('\nWhich resources would you like to provision?\n', 'bright');
 
   const selected = {};
@@ -486,6 +506,8 @@ async function selectResources() {
 }
 
 async function main() {
+  const autoYes = process.argv.includes('--auto-yes');
+
   log('\n╔════════════════════════════════════════════════════════════╗', 'cyan');
   log('║         Twilio Agent Factory - Auto Setup                  ║', 'cyan');
   log('╚════════════════════════════════════════════════════════════╝\n', 'cyan');
@@ -504,25 +526,39 @@ async function main() {
     authToken = process.env.TWILIO_AUTH_TOKEN;
   }
 
-  // Prompt for credentials if not set
+  // Prompt for credentials if not set (skip prompts in auto-yes mode)
   if (!accountSid || accountSid.startsWith('ACxxxx')) {
+    if (autoYes) {
+      logError('TWILIO_ACCOUNT_SID not set. Cannot run in --auto-yes mode without credentials.');
+      rl.close();
+      process.exit(1);
+    }
     log('Enter your Twilio credentials (found at https://console.twilio.com/):\n', 'yellow');
     accountSid = await question('Account SID: ');
   } else {
     log(`Using existing Account SID: ${accountSid.substring(0, 10)}...`, 'green');
-    const useExisting = await confirmChoice('Use this Account SID?', true);
-    if (!useExisting) {
-      accountSid = await question('Account SID: ');
+    if (!autoYes) {
+      const useExisting = await confirmChoice('Use this Account SID?', true);
+      if (!useExisting) {
+        accountSid = await question('Account SID: ');
+      }
     }
   }
 
   if (!authToken || authToken === 'your_auth_token_here') {
+    if (autoYes) {
+      logError('TWILIO_AUTH_TOKEN not set. Cannot run in --auto-yes mode without credentials.');
+      rl.close();
+      process.exit(1);
+    }
     authToken = await questionHidden('Auth Token: ');
   } else {
     log('Using existing Auth Token from .env', 'green');
-    const useExisting = await confirmChoice('Use this Auth Token?', true);
-    if (!useExisting) {
-      authToken = await questionHidden('Auth Token: ');
+    if (!autoYes) {
+      const useExisting = await confirmChoice('Use this Auth Token?', true);
+      if (!useExisting) {
+        authToken = await questionHidden('Auth Token: ');
+      }
     }
   }
 
@@ -544,29 +580,31 @@ async function main() {
   setup.envUpdates.TWILIO_AUTH_TOKEN = authToken;
 
   // Select resources to provision
-  const selectedResources = await selectResources();
+  const selectedResources = await selectResources(autoYes);
 
-  // Confirm selections
-  log('\nResources to provision:', 'bright');
-  let hasSelections = false;
-  for (const [key, selected] of Object.entries(selectedResources)) {
-    if (selected) {
-      console.log(`  ✓ ${RESOURCES[key].name}`);
-      hasSelections = true;
+  // Confirm selections (skip in auto-yes mode)
+  if (!autoYes) {
+    log('\nResources to provision:', 'bright');
+    let hasSelections = false;
+    for (const [key, selected] of Object.entries(selectedResources)) {
+      if (selected) {
+        console.log(`  ✓ ${RESOURCES[key].name}`);
+        hasSelections = true;
+      }
     }
-  }
 
-  if (!hasSelections) {
-    log('\nNo resources selected. Exiting.', 'yellow');
-    rl.close();
-    process.exit(0);
-  }
+    if (!hasSelections) {
+      log('\nNo resources selected. Exiting.', 'yellow');
+      rl.close();
+      process.exit(0);
+    }
 
-  const proceed = await confirmChoice('\nProceed with provisioning?', true);
-  if (!proceed) {
-    log('Setup cancelled.', 'yellow');
-    rl.close();
-    process.exit(0);
+    const proceed = await confirmChoice('\nProceed with provisioning?', true);
+    if (!proceed) {
+      log('Setup cancelled.', 'yellow');
+      rl.close();
+      process.exit(0);
+    }
   }
 
   log('\n' + '═'.repeat(60) + '\n', 'cyan');

@@ -15,6 +15,8 @@ Four validation planes, each testing a different dimension:
 
 **CRITICAL**: All planes run in `/tmp/` directories. The root working tree is NEVER modified. No test files, no built functions, no deployed artifacts, no branch pollution. Findings and reports are written back to `.meta/` in the root repo only.
 
+**CWD GUARD**: Shell working directory resets to the root repo after bash operations like `npm install`, `git clone`, and other commands. You MUST `cd` to the absolute `/tmp/uber-val-RUNID/plane-X/` path before EVERY bash command that reads or writes files. Never use relative paths — always use the full `/tmp/uber-val-RUNID/...` absolute path. If you see yourself writing to `.meta/uber-val-*` or any path under the root repo that isn't `.meta/uber-validation-*.json` or `.meta/uber-validation-reports/`, STOP — your cwd has drifted.
+
 ## Arguments
 
 <user_request>

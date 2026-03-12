@@ -181,6 +181,7 @@ Rules that prevent real debugging time loss. Loaded contextually via `.claude/ru
 
 # Session discipline
 
+- **Ephemeral branch guard**: Before committing, check the current branch. If it matches `validation-*`, `headless-*`, `uber-val-*`, or `fresh-install-*`, **stop and ask the user** whether to switch to main first. The pre-commit hook warns about this, but you MUST treat that warning as actionable — do not proceed without user confirmation. Feature work should land on main, not on leftover validation branches.
 - Prioritize the pipeline over ad-hoc implementation. For tasks that create new functions, always invoke `/orchestrate` or run pipeline phases sequentially. Ad-hoc coding (skipping architect/spec) is only appropriate for bug fixes and small edits to existing files.
 - Do not convert lazy/conditional `require()` calls to static `import` statements without verifying the conditional logic still works. Node.js conditional requires exist for a reason (optional dependencies, environment-specific loading).
 - Run the full relevant test suite before presenting work as complete. A passing subset is not sufficient — regressions in unrelated tests still need to be caught.

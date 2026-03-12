@@ -55,6 +55,28 @@ if echo "$COMMAND" | grep -qE "^git\s+commit"; then
     source "$SCRIPT_DIR/_meta-mode.sh"
 
     # ============================================
+    # EPHEMERAL BRANCH WARNING
+    # ============================================
+    # Warn when committing to branches that look like validation/headless runs.
+    # These branches should not accumulate feature work — commit to main instead.
+    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+    if echo "$CURRENT_BRANCH" | grep -qE "^(validation-|headless-|uber-val-|fresh-install-)"; then
+        echo "" >&2
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+        echo "⚠️  EPHEMERAL BRANCH: $CURRENT_BRANCH" >&2
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+        echo "" >&2
+        echo "You are committing to what looks like a validation/test branch." >&2
+        echo "If this is feature work, switch to main first:" >&2
+        echo "" >&2
+        echo "  git stash && git checkout main && git stash pop" >&2
+        echo "" >&2
+        echo "If this commit is intentionally on this branch, proceed." >&2
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+        echo "" >&2
+    fi
+
+    # ============================================
     # META REFERENCE LEAKAGE WARNING
     # ============================================
     # Warn if staged files contain .meta/ references (potential leakage)

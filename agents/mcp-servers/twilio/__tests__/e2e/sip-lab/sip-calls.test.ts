@@ -1,7 +1,7 @@
 // ABOUTME: E2E tests for real SIP calls through Elastic SIP Trunking and PV SIP Domains.
 // ABOUTME: Requires running Asterisk PBX on DigitalOcean droplet and provisioned Twilio SIP resources.
 
-import { voiceTools, sipTools, validationTools, TwilioContext } from '../../../src/index';
+import { voiceTools, sipTools, intelligenceTools, validationTools, TwilioContext } from '../../../src/index';
 import Twilio from 'twilio';
 import { z } from 'zod';
 
@@ -95,6 +95,7 @@ async function pollUntil<T>(
 describeSipLab('SIP Lab E2E — Real calls with deep MCP validation', () => {
   let voice: Tool[];
   let sip: Tool[];
+  let intelligence: Tool[];
   let validation: Tool[];
   const testStartTime = new Date();
 
@@ -102,27 +103,44 @@ describeSipLab('SIP Lab E2E — Real calls with deep MCP validation', () => {
     const ctx = createTestContext();
     voice = voiceTools(ctx) as Tool[];
     sip = sipTools(ctx) as Tool[];
+    intelligence = intelligenceTools(ctx) as Tool[];
     validation = validationTools(ctx) as Tool[];
   });
 
   // =========================================================================
   // Test A: Elastic SIP Trunk — PSTN call → SIP Trunk → Asterisk PBX
+  //         with recording + Voice Intelligence transcription
   // =========================================================================
 
-  describe('Test A: Elastic SIP Trunk termination (PSTN→Trunk→PBX)', () => {
+  describe('Test A: Elastic SIP Trunk termination (PSTN→Trunk→PBX) with recording', () => {
     let callSid: string;
+    let recordingSid: string | null = null;
+    let transcriptSid: string | null = null;
+    let intelligenceServiceSid: string | null = null;
 
-    test('places outbound call to trunk number via make_call', async () => {
+    afterAll(async () => {
+      // Clean up recordings and transcripts to avoid accumulation
+      const client = Twilio(ENV.accountSid, ENV.authToken);
+      if (recordingSid) {
+        await client.recordings(recordingSid).remove().catch(() => {});
+      }
+      if (transcriptSid) {
+        await client.intelligence.v2.transcripts(transcriptSid).remove().catch(() => {});
+      }
+    }, 15000);
+
+    test('places outbound call to trunk number with recording enabled', async () => {
       const makeCall = findTool(voice, 'make_call');
       const result = await callTool(makeCall, {
         to: ENV.trunkNumber,
         from: ENV.fromNumber,
         // Pause keeps parent leg alive while Asterisk answers + plays audio
         twiml: '<Response><Pause length="20"/></Response>',
+        record: true,
+        recordingChannels: 'dual',
       });
 
       expect(result.success).toBe(true);
-      // make_call returns { sid } not { callSid }
       expect(result.sid).toMatch(/^CA/);
       callSid = result.sid as string;
     }, 15000);
@@ -153,20 +171,97 @@ describeSipLab('SIP Lab E2E — Real calls with deep MCP validation', () => {
       const result = await callTool(validateCall, {
         callSid,
         minDuration: 3,
-        waitForTerminal: false, // already completed
+        waitForTerminal: false,
+        requireRecording: true,
       });
 
       expect(result.success).toBe(true);
-      // validate_call returns { primaryStatus, resourceSid }
       expect(result.primaryStatus).toBe('completed');
     }, 30000);
+
+    test('recording exists and completes with valid duration', async () => {
+      expect(callSid).toBeDefined();
+
+      // Discover recording from the call (created by record: true on make_call)
+      const client = Twilio(ENV.accountSid, ENV.authToken);
+      const recordings = await pollUntil(
+        async () => {
+          const recs = await client.calls(callSid).recordings.list();
+          if (recs.length === 0) throw new Error('No recordings found yet');
+          return recs;
+        },
+        { maxAttempts: 10, delayMs: 3000, label: 'recording discovery' },
+      );
+
+      recordingSid = recordings[0].sid;
+      expect(recordingSid).toMatch(/^RE/);
+
+      const validateRecording = findTool(validation, 'validate_recording');
+      const result = await callTool(validateRecording, {
+        recordingSid,
+        waitForCompleted: true,
+        timeout: 60000,
+        minDuration: 3,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.status).toBe('completed');
+    }, 90000);
+
+    test('discovers Voice Intelligence service', async () => {
+      const listServices = findTool(intelligence, 'list_intelligence_services');
+      const result = await callTool(listServices, { limit: 1 });
+
+      if (result.success && (result.count as number) > 0) {
+        const services = result.services as Array<{ sid: string }>;
+        intelligenceServiceSid = services[0].sid;
+      } else {
+        console.log('No Voice Intelligence service available — transcript tests will be skipped');
+      }
+    }, 15000);
+
+    test('creates Voice Intelligence transcript from recording', async () => {
+      if (!intelligenceServiceSid || !recordingSid) {
+        console.log('Skipping — no Intelligence service or recording');
+        return;
+      }
+
+      const createTranscript = findTool(intelligence, 'create_transcript');
+      const result = await callTool(createTranscript, {
+        serviceSid: intelligenceServiceSid,
+        sourceSid: recordingSid,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.transcriptSid).toMatch(/^GT/);
+      transcriptSid = result.transcriptSid as string;
+    }, 30000);
+
+    test('transcript completes', async () => {
+      if (!transcriptSid) {
+        console.log('Skipping — no transcript to validate');
+        return;
+      }
+
+      const validateTranscript = findTool(validation, 'validate_transcript');
+      const result = await callTool(validateTranscript, {
+        transcriptSid,
+        waitForCompleted: true,
+        timeout: 120000,
+      });
+
+      // Transcript may or may not succeed — Asterisk plays music (careless-whisper)
+      // which may not produce speech. Completion with any status validates the path.
+      expect(result.status).toBeDefined();
+      console.log(`Transcript ${transcriptSid}: status=${result.status}`);
+    }, 150000);
   });
 
   // =========================================================================
-  // Test B: PV SIP Domain — PBX → SIP Domain → TwiML webhook
+  // Test B: PV SIP Domain — API → SIP Domain → TwiML webhook
   // =========================================================================
 
-  describe('Test B: PV SIP Domain (PBX→SIP Domain→TwiML)', () => {
+  describe('Test B: PV SIP Domain (API→SIP Domain→TwiML)', () => {
     let domainSid: string | null = null;
     let aclMappingSid: string | null = null;
     let callSid: string | null = null;
@@ -227,10 +322,9 @@ describeSipLab('SIP Lab E2E — Real calls with deep MCP validation', () => {
 
       // Make an API call that dials a SIP URI on the ephemeral domain.
       // This tests the SIP Domain voiceUrl + IP ACL auth path from Twilio's side.
-      // The domain's voiceUrl (/voice/incoming-call) returns TwiML to handle the call.
       const makeCall = findTool(voice, 'make_call');
       const result = await callTool(makeCall, {
-        to: ENV.trunkNumber, // Valid number for caller ID
+        to: ENV.trunkNumber,
         from: ENV.fromNumber,
         twiml: `<Response><Dial timeout="10"><Sip>sip:test@${domainLabel}.sip.twilio.com</Sip></Dial></Response>`,
       });
@@ -251,8 +345,6 @@ describeSipLab('SIP Lab E2E — Real calls with deep MCP validation', () => {
         { maxAttempts: 10, delayMs: 3000, label: 'SIP Domain call completion' },
       );
 
-      // The call may complete or get no-answer depending on domain config
-      // Success means the SIP Domain was reachable and processed the INVITE
       callSid = result.sid as string;
       expect(finalCall.status).toBeDefined();
     }, 60000);
@@ -287,7 +379,7 @@ describeSipLab('SIP Lab E2E — Real calls with deep MCP validation', () => {
       const makeCall = findTool(voice, 'make_call');
       // Dial the echo test extension (600) on Asterisk via SIP
       const result = await callTool(makeCall, {
-        to: ENV.trunkNumber, // Route through a valid number
+        to: ENV.trunkNumber,
         from: ENV.fromNumber,
         twiml: `<Response><Dial timeout="15"><Sip>sip:600@${ENV.dropletIp}:5060</Sip></Dial></Response>`,
       });
@@ -322,12 +414,10 @@ describeSipLab('SIP Lab E2E — Real calls with deep MCP validation', () => {
       const validateCall = findTool(validation, 'validate_call');
       const result = await callTool(validateCall, {
         callSid,
-        minDuration: 0, // echo test may be short
+        minDuration: 0,
         waitForTerminal: false,
       });
 
-      // Call may or may not fully connect depending on PBX NAT/firewall
-      // The important thing is validate_call returns data without error
       expect(result.resourceSid).toBe(callSid);
       expect(result.primaryStatus).toBeDefined();
     }, 30000);
@@ -350,7 +440,6 @@ describeSipLab('SIP Lab E2E — Real calls with deep MCP validation', () => {
       expect(result.success).toBe(true);
       expect(result.resourceType).toBe('sip');
 
-      // Verify individual checks
       const checks = result.checks as Record<string, { passed: boolean; message: string }>;
       expect(checks.trunk.passed).toBe(true);
       expect(checks.trunkIpAcl.passed).toBe(true);
@@ -360,7 +449,6 @@ describeSipLab('SIP Lab E2E — Real calls with deep MCP validation', () => {
       expect(checks.trunkPhoneNumbers.passed).toBe(true);
       expect(checks.debugger.passed).toBe(true);
 
-      // Verify no errors or warnings
       expect(result.errors).toEqual([]);
       expect(result.warnings).toEqual([]);
     }, 30000);
@@ -374,7 +462,6 @@ describeSipLab('SIP Lab E2E — Real calls with deep MCP validation', () => {
     test('no SIP errors in debugger since test start', async () => {
       const validateDebugger = findTool(validation, 'validate_debugger');
 
-      // Calculate lookback from test start
       const elapsedSeconds = Math.ceil((Date.now() - testStartTime.getTime()) / 1000) + 60;
 
       const result = await callTool(validateDebugger, {
@@ -382,7 +469,6 @@ describeSipLab('SIP Lab E2E — Real calls with deep MCP validation', () => {
         logLevel: 'error',
       });
 
-      // validate_debugger returns { success, totalAlerts, errorAlerts, warningAlerts, alerts }
       // Filter for SIP-specific errors only — other errors are outside our scope
       const alerts = (result.alerts || []) as Array<{ errorCode: string; alertText: string }>;
       const sipErrors = alerts.filter(a => {

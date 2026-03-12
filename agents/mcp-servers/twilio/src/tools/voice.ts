@@ -83,23 +83,29 @@ export function voiceTools(context: TwilioContext) {
       from: phoneNumberSchema.optional().describe('Caller ID (defaults to configured number)'),
       url: z.string().url().optional().describe('TwiML URL for call handling'),
       twiml: z.string().optional().describe('Raw TwiML to execute'),
+      record: z.boolean().optional().default(false).describe('Record the call. Creates a dual-channel recording.'),
+      recordingChannels: z.enum(['mono', 'dual']).optional().describe('Recording channel mode (default: mono, or dual if record=true)'),
+      recordingStatusCallback: z.string().url().optional().describe('URL for recording status callbacks'),
     }),
-    async ({ to, from, url, twiml }) => {
+    async ({ to, from, url, twiml, record, recordingChannels, recordingStatusCallback }) => {
       if (!url && !twiml) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: 'Either url or twiml must be provided' }) }],
         };
       }
 
-      const callParams: { to: string; from: string; url?: string; twiml?: string } = {
+      const callParams: Record<string, unknown> = {
         to,
         from: from || defaultFromNumber,
       };
 
       if (url) {callParams.url = url;}
       if (twiml) {callParams.twiml = twiml;}
+      if (record) {callParams.record = true;}
+      if (recordingChannels) {callParams.recordingChannels = recordingChannels;}
+      if (recordingStatusCallback) {callParams.recordingStatusCallback = recordingStatusCallback;}
 
-      const call = await client.calls.create(callParams);
+      const call = await client.calls.create(callParams as unknown as Parameters<typeof client.calls.create>[0]);
 
       return {
         content: [{

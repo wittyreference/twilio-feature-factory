@@ -352,6 +352,52 @@ describe('trunkingTools', () => {
     );
 
     itWithCredentials(
+      'list_trunk_ip_access_control_lists should return ACLs for a trunk',
+      async () => {
+        const listTrunksTool = tools.find(t => t.name === 'list_sip_trunks')!;
+        const listAclsTool = tools.find(t => t.name === 'list_trunk_ip_access_control_lists')!;
+
+        const trunksResult = await listTrunksTool.handler({ limit: 1 });
+        const trunksResponse = JSON.parse(trunksResult.content[0].text);
+
+        if (trunksResponse.count > 0) {
+          const trunkSid = trunksResponse.trunks[0].sid;
+
+          const aclsResult = await listAclsTool.handler({ trunkSid, limit: 10 });
+          const aclsResponse = JSON.parse(aclsResult.content[0].text);
+
+          expect(aclsResponse.success).toBe(true);
+          expect(aclsResponse.count).toBeGreaterThanOrEqual(0);
+          expect(Array.isArray(aclsResponse.ipAccessControlLists)).toBe(true);
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
+      'list_trunk_credential_lists should return credential lists for a trunk',
+      async () => {
+        const listTrunksTool = tools.find(t => t.name === 'list_sip_trunks')!;
+        const listClsTool = tools.find(t => t.name === 'list_trunk_credential_lists')!;
+
+        const trunksResult = await listTrunksTool.handler({ limit: 1 });
+        const trunksResponse = JSON.parse(trunksResult.content[0].text);
+
+        if (trunksResponse.count > 0) {
+          const trunkSid = trunksResponse.trunks[0].sid;
+
+          const clsResult = await listClsTool.handler({ trunkSid, limit: 10 });
+          const clsResponse = JSON.parse(clsResult.content[0].text);
+
+          expect(clsResponse.success).toBe(true);
+          expect(clsResponse.count).toBeGreaterThanOrEqual(0);
+          expect(Array.isArray(clsResponse.credentialLists)).toBe(true);
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
       'list_trunk_phone_numbers should return phone numbers for a trunk',
       async () => {
         const listTrunksTool = tools.find(t => t.name === 'list_sip_trunks')!;

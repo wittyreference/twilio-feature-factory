@@ -77,26 +77,44 @@ describe('sipTools', () => {
 
     it('should have all expected tool names', () => {
       const expectedNames = [
+        // IP Access Control Lists
         'list_sip_ip_access_control_lists',
         'get_sip_ip_access_control_list',
         'create_sip_ip_access_control_list',
         'update_sip_ip_access_control_list',
         'delete_sip_ip_access_control_list',
+        // IP Addresses
         'list_sip_ip_addresses',
         'get_sip_ip_address',
         'create_sip_ip_address',
         'update_sip_ip_address',
         'delete_sip_ip_address',
+        // Credential Lists
         'list_sip_credential_lists',
         'get_sip_credential_list',
         'create_sip_credential_list',
         'update_sip_credential_list',
         'delete_sip_credential_list',
+        // Credentials
         'list_sip_credentials',
         'get_sip_credential',
         'create_sip_credential',
         'update_sip_credential',
         'delete_sip_credential',
+        // SIP Domains (Programmable Voice)
+        'list_sip_domains',
+        'get_sip_domain',
+        'create_sip_domain',
+        'update_sip_domain',
+        'delete_sip_domain',
+        // Legacy domain-level IP ACL mappings
+        'list_sip_domain_ip_acl_mappings',
+        'create_sip_domain_ip_acl_mapping',
+        'delete_sip_domain_ip_acl_mapping',
+        // Legacy domain-level credential list mappings
+        'list_sip_domain_credential_list_mappings',
+        'create_sip_domain_credential_list_mapping',
+        'delete_sip_domain_credential_list_mapping',
         // SIP Domain Auth: Calls
         'list_sip_domain_auth_calls_credential_list_mappings',
         'create_sip_domain_auth_calls_credential_list_mapping',
@@ -339,6 +357,116 @@ describe('sipTools', () => {
     });
   });
 
+    describe('create_sip_domain schema', () => {
+      let schema: z.ZodType;
+
+      beforeAll(() => {
+        const tool = tools.find(t => t.name === 'create_sip_domain');
+        schema = tool!.inputSchema;
+      });
+
+      it('should require friendlyName and domainName', () => {
+        const valid = schema.safeParse({
+          friendlyName: 'Test Domain',
+          domainName: 'test-domain.sip.twilio.com',
+        });
+        expect(valid.success).toBe(true);
+
+        const missingDomain = schema.safeParse({ friendlyName: 'Test' });
+        expect(missingDomain.success).toBe(false);
+
+        const missingName = schema.safeParse({ domainName: 'test.sip.twilio.com' });
+        expect(missingName.success).toBe(false);
+      });
+
+      it('should have default voiceMethod of POST', () => {
+        const result = schema.safeParse({
+          friendlyName: 'Test Domain',
+          domainName: 'test-domain.sip.twilio.com',
+        });
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.voiceMethod).toBe('POST');
+        }
+      });
+
+      it('should validate voiceMethod enum', () => {
+        const valid = schema.safeParse({
+          friendlyName: 'Test',
+          domainName: 'test.sip.twilio.com',
+          voiceMethod: 'GET',
+        });
+        expect(valid.success).toBe(true);
+
+        const invalid = schema.safeParse({
+          friendlyName: 'Test',
+          domainName: 'test.sip.twilio.com',
+          voiceMethod: 'PUT',
+        });
+        expect(invalid.success).toBe(false);
+      });
+    });
+
+    describe('get_sip_domain schema', () => {
+      it('should require domainSid starting with SD', () => {
+        const tool = tools.find(t => t.name === 'get_sip_domain')!;
+
+        const valid = tool.inputSchema.safeParse({ domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' });
+        expect(valid.success).toBe(true);
+
+        const invalid = tool.inputSchema.safeParse({ domainSid: 'TKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' });
+        expect(invalid.success).toBe(false);
+      });
+    });
+
+    describe('update_sip_domain schema', () => {
+      it('should require domainSid, all other fields optional', () => {
+        const tool = tools.find(t => t.name === 'update_sip_domain')!;
+
+        const valid = tool.inputSchema.safeParse({ domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' });
+        expect(valid.success).toBe(true);
+
+        const invalid = tool.inputSchema.safeParse({});
+        expect(invalid.success).toBe(false);
+      });
+    });
+
+    describe('create_sip_domain_ip_acl_mapping schema', () => {
+      it('should require domainSid (SD) and ipAccessControlListSid (AL)', () => {
+        const tool = tools.find(t => t.name === 'create_sip_domain_ip_acl_mapping')!;
+
+        const valid = tool.inputSchema.safeParse({
+          domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          ipAccessControlListSid: 'ALxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(valid.success).toBe(true);
+
+        const wrongPrefix = tool.inputSchema.safeParse({
+          domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          ipAccessControlListSid: 'CLxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(wrongPrefix.success).toBe(false);
+      });
+    });
+
+    describe('create_sip_domain_credential_list_mapping schema', () => {
+      it('should require domainSid (SD) and credentialListSid (CL)', () => {
+        const tool = tools.find(t => t.name === 'create_sip_domain_credential_list_mapping')!;
+
+        const valid = tool.inputSchema.safeParse({
+          domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          credentialListSid: 'CLxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(valid.success).toBe(true);
+
+        const wrongPrefix = tool.inputSchema.safeParse({
+          domainSid: 'SDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          credentialListSid: 'ALxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        });
+        expect(wrongPrefix.success).toBe(false);
+      });
+    });
+
     describe('SIP Domain Auth: Calls credential list mapping schemas', () => {
       it('list should require domainSid starting with SD', () => {
         const tool = tools.find(t => t.name === 'list_sip_domain_auth_calls_credential_list_mappings')!;
@@ -514,6 +642,68 @@ describe('sipTools', () => {
           expect(getResponse.success).toBe(true);
           expect(getResponse.sid).toBe(aclSid);
           expect(getResponse.friendlyName).toBeDefined();
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
+      'list_sip_domains should return domains list',
+      async () => {
+        const tool = tools.find(t => t.name === 'list_sip_domains')!;
+
+        const result = await tool.handler({ limit: 5 });
+
+        expect(result.content).toHaveLength(1);
+        const response = JSON.parse(result.content[0].text);
+        expect(response.success).toBe(true);
+        expect(response.count).toBeGreaterThanOrEqual(0);
+        expect(Array.isArray(response.sipDomains)).toBe(true);
+      },
+      15000
+    );
+
+    itWithCredentials(
+      'get_sip_domain should return domain details when domains exist',
+      async () => {
+        const listTool = tools.find(t => t.name === 'list_sip_domains')!;
+        const getTool = tools.find(t => t.name === 'get_sip_domain')!;
+
+        const listResult = await listTool.handler({ limit: 1 });
+        const listResponse = JSON.parse(listResult.content[0].text);
+
+        if (listResponse.count > 0) {
+          const domainSid = listResponse.sipDomains[0].sid;
+
+          const getResult = await getTool.handler({ domainSid });
+          const getResponse = JSON.parse(getResult.content[0].text);
+
+          expect(getResponse.success).toBe(true);
+          expect(getResponse.sid).toBe(domainSid);
+          expect(getResponse.domainName).toBeDefined();
+        }
+      },
+      20000
+    );
+
+    itWithCredentials(
+      'list_sip_credentials should return credentials for a credential list',
+      async () => {
+        const listClTool = tools.find(t => t.name === 'list_sip_credential_lists')!;
+        const listCredsTool = tools.find(t => t.name === 'list_sip_credentials')!;
+
+        const clResult = await listClTool.handler({ limit: 1 });
+        const clResponse = JSON.parse(clResult.content[0].text);
+
+        if (clResponse.count > 0) {
+          const credentialListSid = clResponse.credentialLists[0].sid;
+
+          const credsResult = await listCredsTool.handler({ credentialListSid, limit: 10 });
+          const credsResponse = JSON.parse(credsResult.content[0].text);
+
+          expect(credsResponse.success).toBe(true);
+          expect(credsResponse.count).toBeGreaterThanOrEqual(0);
+          expect(Array.isArray(credsResponse.credentials)).toBe(true);
         }
       },
       20000

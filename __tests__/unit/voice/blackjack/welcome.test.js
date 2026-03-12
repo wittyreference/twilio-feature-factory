@@ -6,7 +6,6 @@ const path = require('path');
 
 global.Twilio = Twilio;
 
-// Mock Runtime.getFunctions to load actual private helpers
 global.Runtime = {
   getFunctions: () => ({
     'helpers/blackjack-engine': {
@@ -18,19 +17,43 @@ global.Runtime = {
   }),
 };
 
-// Mock the sync module
 jest.mock('../../../../functions/helpers/blackjack-sync.private', () => ({
   createGameDoc: jest.fn().mockResolvedValue({}),
   fetchGameDoc: jest.fn(),
   updateGameDoc: jest.fn().mockResolvedValue({}),
 }));
 
+const engine = require('../../../../functions/helpers/blackjack-engine.private');
 const { handler } = require('../../../../functions/voice/blackjack/welcome');
 const sync = require('../../../../functions/helpers/blackjack-sync.private');
+
+// Deterministic game state for tests that need the normal (non-blackjack) flow
+function makeNormalGame() {
+  return {
+    gameId: 'bj-test-123',
+    callSid: 'CA123',
+    deck: engine.createDeck().slice(4),
+    playerHand: [
+      { rank: '7', suit: 'hearts' },
+      { rank: '9', suit: 'clubs' },
+    ],
+    dealerHand: [
+      { rank: 'K', suit: 'spades' },
+      { rank: '6', suit: 'diamonds' },
+    ],
+    dealerHoleRevealed: false,
+    status: 'player_turn',
+    outcome: null,
+    moves: [{ action: 'deal', timestamp: new Date().toISOString(), detail: 'test deal' }],
+    startTime: new Date().toISOString(),
+    endTime: null,
+  };
+}
 
 describe('blackjack/welcome handler', () => {
   let context;
   let callback;
+  let createGameSpy;
 
   beforeEach(() => {
     context = {
@@ -40,6 +63,12 @@ describe('blackjack/welcome handler', () => {
     };
     callback = jest.fn();
     jest.clearAllMocks();
+    // Default: return a non-blackjack game for deterministic tests
+    createGameSpy = jest.spyOn(engine, 'createGame').mockReturnValue(makeNormalGame());
+  });
+
+  afterEach(() => {
+    createGameSpy.mockRestore();
   });
 
   it('creates a Sync document for the game', async () => {
@@ -52,7 +81,7 @@ describe('blackjack/welcome handler', () => {
       'CA123',
       expect.objectContaining({
         callSid: 'CA123',
-        status: expect.any(String),
+        status: 'player_turn',
       })
     );
   });
@@ -82,7 +111,6 @@ describe('blackjack/welcome handler', () => {
     await handler(context, event, callback);
 
     const twiml = callback.mock.calls[0][1].toString().toLowerCase();
-    // Should mention cards and dealer
     expect(twiml).toContain('you have');
     expect(twiml).toContain('dealer');
   });
@@ -93,5 +121,47 @@ describe('blackjack/welcome handler', () => {
 
     const twiml = callback.mock.calls[0][1].toString().toLowerCase();
     expect(twiml).toContain('did not receive');
+  });
+
+  describe('natural blackjack', () => {
+    it('redirects to game-over on player blackjack', async () => {
+      createGameSpy.mockReturnValue({
+        ...makeNormalGame(),
+        playerHand: [
+          { rank: 'A', suit: 'spades' },
+          { rank: 'K', suit: 'hearts' },
+        ],
+        status: 'complete',
+        outcome: 'player_blackjack',
+        dealerHoleRevealed: true,
+      });
+
+      const event = global.createTestEvent({ CallSid: 'CA123' });
+      await handler(context, event, callback);
+
+      const twiml = callback.mock.calls[0][1].toString();
+      expect(twiml).toContain('Blackjack');
+      expect(twiml).toContain('<Redirect>/voice/blackjack/game-over</Redirect>');
+    });
+
+    it('redirects to game-over on dealer blackjack', async () => {
+      createGameSpy.mockReturnValue({
+        ...makeNormalGame(),
+        dealerHand: [
+          { rank: 'A', suit: 'clubs' },
+          { rank: 'Q', suit: 'diamonds' },
+        ],
+        status: 'complete',
+        outcome: 'dealer_blackjack',
+        dealerHoleRevealed: true,
+      });
+
+      const event = global.createTestEvent({ CallSid: 'CA123' });
+      await handler(context, event, callback);
+
+      const twiml = callback.mock.calls[0][1].toString().toLowerCase();
+      expect(twiml).toContain('dealer blackjack');
+      expect(twiml).toContain('<redirect>/voice/blackjack/game-over</redirect>');
+    });
   });
 });

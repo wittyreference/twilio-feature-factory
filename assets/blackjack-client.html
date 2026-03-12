@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blackjack — Twilio Feature Factory</title>
+  <!--
+    ABOUTME: Browser-based Voice SDK softphone themed for blackjack demo.
+    ABOUTME: Connects to the blackjack game via Voice SDK, provides HIT/STAND DTMF buttons.
+  -->
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #1a472a;
+      color: #e8e8e8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+    }
+    h1 { font-size: 28px; margin-bottom: 4px; color: #ffd700; }
+    .subtitle { font-size: 13px; color: #8fbc8f; margin-bottom: 20px; }
+    .status-bar {
+      padding: 8px 20px; border-radius: 20px; font-weight: 600;
+      font-size: 13px; margin-bottom: 16px; text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .status-bar.offline { background: #4a1a1a; color: #ff6b6b; }
+    .status-bar.registering { background: #4a3a1a; color: #ffd700; }
+    .status-bar.registered { background: #1a4a2a; color: #69db7c; }
+    .status-bar.connecting { background: #4a3a1a; color: #ffd700; }
+    .status-bar.connected { background: #1a4a2a; color: #69db7c; }
+    .status-bar.disconnected { background: #333; color: #999; }
+    .felt {
+      background: #2d5a3d;
+      border: 3px solid #1a3a24;
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .info-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px; }
+    .info-row strong { color: #8fbc8f; }
+    .info-row span { font-family: monospace; color: #ddd; }
+    .controls { display: flex; gap: 12px; margin: 20px 0; justify-content: center; }
+    .btn {
+      padding: 14px 32px; border: none; border-radius: 8px; font-size: 16px;
+      font-weight: 700; cursor: pointer; transition: all 0.15s;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-call { background: #2b8a3e; color: white; }
+    .btn-call:hover:not(:disabled) { background: #37b24d; }
+    .btn-hangup { background: #c92a2a; color: white; }
+    .btn-hangup:hover:not(:disabled) { background: #e03131; }
+    .game-controls { display: flex; gap: 16px; margin: 20px 0; justify-content: center; }
+    .btn-game {
+      padding: 20px 40px; border: 2px solid; border-radius: 12px; font-size: 20px;
+      font-weight: 700; cursor: pointer; transition: all 0.15s;
+      min-width: 140px; text-align: center;
+    }
+    .btn-game:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-hit { background: #1864ab; border-color: #1971c2; color: white; }
+    .btn-hit:hover:not(:disabled) { background: #1971c2; transform: scale(1.03); }
+    .btn-stand { background: #862e9c; border-color: #9c36b5; color: white; }
+    .btn-stand:hover:not(:disabled) { background: #9c36b5; transform: scale(1.03); }
+    .btn-hint { display: block; font-size: 11px; font-weight: 400; opacity: 0.7; margin-top: 4px; }
+    #error { color: #ff6b6b; font-size: 13px; margin: 8px 0; min-height: 18px; }
+    #log {
+      background: #0d1f13; border: 1px solid #1a3a24; border-radius: 8px;
+      padding: 12px; margin-top: 16px; height: 180px; overflow-y: auto;
+      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px;
+      line-height: 1.6; color: #69db7c; white-space: pre-wrap;
+    }
+    .log-label { font-size: 12px; color: #8fbc8f; margin-top: 16px; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Blackjack</h1>
+  <div class="subtitle">Twilio Feature Factory Demo</div>
+  <div id="status" class="status-bar offline">offline</div>
+  <div class="felt">
+    <div class="info-row">
+      <strong>Identity</strong> <span id="identity">—</span>
+    </div>
+    <div class="info-row">
+      <strong>Call SID</strong> <span id="call-sid">—</span>
+    </div>
+    <div id="error"></div>
+    <div class="controls">
+      <button id="btn-call" class="btn btn-call" disabled>Call Dealer</button>
+      <button id="btn-hangup" class="btn btn-hangup" disabled>Hang Up</button>
+    </div>
+    <div class="game-controls">
+      <button id="btn-hit" class="btn-game btn-hit" disabled>
+        HIT<span class="btn-hint">Press 1</span>
+      </button>
+      <button id="btn-stand" class="btn-game btn-stand" disabled>
+        STAND<span class="btn-hint">Press 2</span>
+      </button>
+    </div>
+    <div class="log-label">Event Log</div>
+    <div id="log"></div>
+  </div>
+  <script src="/sdk/twilio.min.js"></script>
+  <script>
+    const statusEl = document.getElementById('status');
+    const identityEl = document.getElementById('identity');
+    const callSidEl = document.getElementById('call-sid');
+    const errorEl = document.getElementById('error');
+    const logEl = document.getElementById('log');
+    const btnCall = document.getElementById('btn-call');
+    const btnHangup = document.getElementById('btn-hangup');
+    const btnHit = document.getElementById('btn-hit');
+    const btnStand = document.getElementById('btn-stand');
+
+    let device = null;
+    let activeCall = null;
+
+    function setStatus(s) {
+      statusEl.textContent = s;
+      statusEl.className = 'status-bar ' + s;
+    }
+
+    function log(msg) {
+      const ts = new Date().toISOString().split('T')[1].slice(0, 12);
+      logEl.textContent += ts + ' ' + msg + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function setGameButtons(on) { btnHit.disabled = !on; btnStand.disabled = !on; }
+
+    function bindCallEvents(call) {
+      call.on('accept', () => {
+        setStatus('connected');
+        callSidEl.textContent = call.parameters.CallSid || '—';
+        log('Connected — SID: ' + (call.parameters.CallSid || '?'));
+        setGameButtons(true);
+      });
+      call.on('disconnect', () => {
+        setStatus('disconnected');
+        log('Disconnected');
+        activeCall = null;
+        btnHangup.disabled = true; btnCall.disabled = false;
+        setGameButtons(false); callSidEl.textContent = '—';
+      });
+      call.on('cancel', () => {
+        setStatus('registered'); log('Cancelled');
+        activeCall = null; btnHangup.disabled = true; btnCall.disabled = false;
+        setGameButtons(false);
+      });
+      call.on('error', (e) => {
+        errorEl.textContent = e.message || 'Call error';
+        log('Error: ' + (e.message || JSON.stringify(e)));
+      });
+    }
+
+    btnHit.addEventListener('click', () => {
+      if (!activeCall) return;
+      activeCall.sendDigits('1'); log('DTMF: 1 (HIT)');
+    });
+    btnStand.addEventListener('click', () => {
+      if (!activeCall) return;
+      activeCall.sendDigits('2'); log('DTMF: 2 (STAND)');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (!activeCall) return;
+      if (e.key === '1' || e.key.toLowerCase() === 'h') { activeCall.sendDigits('1'); log('DTMF: 1 (HIT) [key]'); }
+      else if (e.key === '2' || e.key.toLowerCase() === 's') { activeCall.sendDigits('2'); log('DTMF: 2 (STAND) [key]'); }
+    });
+
+    async function init() {
+      try {
+        setStatus('registering'); log('Fetching token...');
+        const url = window.TOKEN_URL || '/api/token';
+        const resp = await fetch(url + '?identity=blackjack-player');
+        if (!resp.ok) throw new Error('Token: ' + resp.status);
+        const data = await resp.json();
+        identityEl.textContent = data.identity;
+        log('Token OK: ' + data.identity);
+
+        device = new Twilio.Device(data.token, { codecPreferences: ['opus', 'pcmu'], logLevel: 'warn' });
+        device.on('registered', () => { setStatus('registered'); btnCall.disabled = false; log('Ready'); });
+        device.on('error', (e) => { errorEl.textContent = e.message; log('Device error: ' + e.message); });
+        await device.register();
+      } catch (e) {
+        setStatus('offline'); errorEl.textContent = e.message; log('Init error: ' + e.message);
+      }
+    }
+
+    btnCall.addEventListener('click', async () => {
+      if (!device) return;
+      errorEl.textContent = ''; setStatus('connecting'); log('Dialing...');
+      try {
+        activeCall = await device.connect({ params: { To: 'game:blackjack' } });
+        btnCall.disabled = true; btnHangup.disabled = false;
+        bindCallEvents(activeCall);
+      } catch (e) {
+        errorEl.textContent = e.message; log('Error: ' + e.message); setStatus('registered');
+      }
+    });
+
+    btnHangup.addEventListener('click', () => {
+      if (activeCall) activeCall.disconnect();
+      if (device) device.disconnectAll();
+      log('Hangup');
+    });
+
+    init();
+  </script>
+</body>
+</html>

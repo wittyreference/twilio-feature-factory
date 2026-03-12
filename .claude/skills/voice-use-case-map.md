@@ -14,7 +14,7 @@ Definitive per-use-case product mapping for Twilio Voice. Load this skill when r
 | 6 | AI Agents (Media Streams) | `<Connect><Stream>`, Recording | Raw audio WebSocket, bring-your-own STT/TTS | Yes — raw audio format, STT/TTS integration |
 | 7 | Sales Dialer | Conference, AMD, Recording, Participants API | Parallel/power dialing | Yes — AMD + parallel dial timing |
 | 8 | Call Tracking | Voice API, Say (whisper), Dial, Recording, Sync | Campaign attribution + forwarding | No — well-understood APIs |
-| 9 | PSTN Connectivity | SIP Trunking, BYOC | Carrier interconnect (not prototyped) | Yes — SIP registration, TLS, E.164 dialplan |
+| 9 | PSTN Connectivity | Elastic SIP Trunking (primary), BYOC | Carrier interconnect (Elastic SIP Trunking validated in SIP Lab, SIP Interface Phase C TODO) | Yes — SIP registration (SIP Interface only), TLS, E.164 dialplan |
 | 10 | AI/ML Transcription | Voice Intelligence, Language Operators | Post-call analysis of recordings | Yes — `source_sid` vs `media_url`, operator config |
 
 **Complements:** `.claude/skills/voice.md` (decision frameworks), `functions/conversation-relay/CLAUDE.md` (ConversationRelay protocol details).
@@ -33,7 +33,7 @@ Products are organized into five categories matching the source grid:
 |----------|---------------|
 | **Software Tools** | Development and orchestration platforms (Studio, Functions, TaskRouter, etc.) |
 | **Core Services** | TwiML verbs and voice-specific services (Say, Gather, Conference, Recording, etc.) |
-| **Connectivity** | How calls enter/exit the Twilio platform (PSTN, SIP, Voice SDKs, BYOC, etc.) |
+| **Connectivity** | How calls enter/exit the Twilio platform (PSTN, SIP Interface/Programmable SIP, Elastic SIP Trunking, Voice SDKs, BYOC, etc.) |
 | **Features** | Capabilities that enhance calls (AMD, Branded Calling, SHAKEN/STIR, compliance, etc.) |
 | **Non-Voice Products** | Adjacent Twilio products used alongside voice (Flex, Phone Numbers, etc.) |
 
@@ -85,7 +85,8 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 | Product | Notif | IVR | InCC | OutCC | AI-B | AI-3P | Sales | Track | PSTN | Trans |
 |---------|:-----:|:---:|:----:|:-----:|:----:|:-----:|:-----:|:-----:|:----:|:-----:|
 | Voice SDKs | | X | X | X | X | X | X | X | | |
-| SIP | | X | X | X | X | X | | | X | X |
+| SIP Interface | | X | X | X | X | X | | | | X |
+| Elastic SIP Trunking | | | | | | | | | X | |
 | PSTN | X | X | X | X | X | X | X | X | X | X |
 | BYOC | | X | X | X | X | X | X | | X | X |
 | Interconnect | | X | X | X | | | | | X | X |
@@ -259,7 +260,7 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 - **Voice SDKs**: Enable web-based or mobile-app self-service. Callers interact with the IVR from a browser or app instead of dialing a phone number. Useful for in-app support flows.
 
-- **SIP**: Accept calls from SIP-based phone systems into the IVR. Common when the IVR sits behind an existing enterprise PBX.
+- **SIP Interface (Programmable SIP)**: Accept calls from SIP-based phone systems into the IVR via a SIP Domain. Common when the IVR sits behind an existing enterprise PBX. The SIP leg is cheaper than PSTN ($0.004/min) since Twilio communicates directly with authenticated SIP infrastructure.
 
 - **PSTN**: Standard inbound path — callers dial a phone number and reach the IVR.
 
@@ -362,7 +363,7 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 - **Voice SDKs**: Agent softphones built into web or mobile apps. JavaScript SDK for browser-based agent desktops, iOS/Android SDKs for mobile agents. The primary way agents connect to calls in modern contact centers.
 
-- **SIP**: Connect to existing SIP-based agent phones or PBX systems. Use when agents have hardware SIP phones or the contact center integrates with existing telephony infrastructure.
+- **SIP Interface (Programmable SIP)**: Connect to existing SIP-based agent phones or PBX systems via SIP Domains. Use when agents have hardware SIP phones or the contact center integrates with existing telephony infrastructure. Supports SIP Registration for agent desk phones and softphones.
 
 - **PSTN**: Inbound path for customer calls. Also used for agent connections when agents use traditional phones instead of softphones.
 
@@ -506,7 +507,7 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 ### Connectivity
 
-*Identical to Inbound Contact Center.* Voice SDKs for agent softphones, SIP for hardware phones, PSTN for customer connections, BYOC for existing numbers, Interconnect for dedicated connectivity, WhatsApp for omnichannel.
+*Identical to Inbound Contact Center.* Voice SDKs for agent softphones, SIP Interface (Programmable SIP) for hardware phones, PSTN for customer connections, BYOC for existing numbers, Interconnect for dedicated connectivity, WhatsApp for omnichannel.
 
 ### Features
 
@@ -592,7 +593,7 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 - **Voice SDKs**: AI agents accessible from web or mobile apps. Callers interact with the AI agent through an in-app experience rather than dialing a phone number.
 
-- **SIP**: Route calls from existing SIP infrastructure to AI agents. Common in enterprise environments where the AI agent replaces or augments an existing IVR behind a PBX.
+- **SIP Interface (Programmable SIP)**: Route calls from existing SIP infrastructure to AI agents via SIP Domains. Common in enterprise environments where the AI agent replaces or augments an existing IVR behind a PBX.
 
 - **PSTN**: Standard inbound/outbound path for AI agent calls.
 
@@ -654,7 +655,7 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 - **Voice SDKs**: Callers access your AI agent from web or mobile apps.
 
-- **SIP**: Route calls from existing phone systems to your AI platform via Twilio.
+- **SIP Interface (Programmable SIP)**: Route calls from existing phone systems to your AI platform via Twilio SIP Domains.
 
 - **PSTN**: Standard telephony path for AI agent calls.
 
@@ -718,7 +719,7 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 - **Voice SDKs**: Salesperson softphones in the browser or CRM application. The most common connectivity method for modern sales teams.
 
-- **SIP**: Connect to existing SIP-based sales floor phone systems.
+- **SIP Interface (Programmable SIP)**: Connect to existing SIP-based sales floor phone systems via SIP Domains.
 
 - **PSTN**: Outbound path to prospects and inbound path for callbacks.
 
@@ -807,7 +808,7 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 ## Use Case 9: PSTN Connectivity
 
-**Summary:** Elastic SIP Trunking for organizations with existing SIP infrastructure that need PSTN access. This use case **bypasses Programmable Voice entirely** — no TwiML, no AMD, no custom call flows. Pure connectivity between SIP and PSTN.
+**Summary:** Elastic SIP Trunking for organizations with existing SIP infrastructure that need a PSTN conduit. This use case **bypasses Programmable Voice entirely** — no TwiML, no AMD, no custom call flows. Pure connectivity between SIP and PSTN. Customers choose Elastic SIP Trunking over SIP Interface (Programmable SIP) primarily for cost: trunking is at least $0.004/min cheaper because it skips PV infrastructure. If the customer needs TwiML or API control over call flows, they should use SIP Interface instead (see Connectivity sections of other use cases).
 
 ### Software Tools
 
@@ -825,11 +826,11 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 ### Connectivity
 
-- **SIP**: The customer's SIP infrastructure (PBX, SBC, UCaaS) connects to Twilio's SIP Trunking endpoints. This is the primary connectivity method.
+- **Elastic SIP Trunking**: The customer's SIP infrastructure (PBX, SBC, UCaaS) connects to Twilio's SIP Trunking endpoints. This is the primary connectivity method for the PSTN Connectivity use case. Calls bypass Programmable Voice — the trunk is a pure PSTN conduit.
 
 - **PSTN**: The outbound/inbound path to the telephone network. Elastic SIP Trunking provides PSTN access for SIP-based systems.
 
-- **BYOC**: Customers bring their own carrier contracts and route through Twilio's SIP Trunking for number management and failover.
+- **BYOC**: Customers bring their own carrier and phone numbers. BYOC is technically a type of SIP Interface (Programmable SIP), but in the PSTN Connectivity use case it's used primarily for number management and failover rather than PV features.
 
 - **Interconnect**: Dedicated private connectivity between the customer's data center and Twilio's SIP Trunking infrastructure. Essential for large deployments requiring guaranteed latency and bandwidth.
 
@@ -842,7 +843,7 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 - **Secure Media**: SRTP encryption for media streams traversing the trunk. Required for regulatory compliance in many industries.
 
-- **SIP Registration**: Allow the customer's SIP endpoints to register with Twilio's trunk for dynamic endpoint management.
+- **SIP Registration**: Not available with Elastic SIP Trunking (INVITE-only). SIP Registration is a SIP Interface (Programmable SIP) feature — see other use cases. Included here for completeness if the customer has a hybrid setup with both trunking and SIP Interface.
 
 - **SIP Header Manipulation**: Modify SIP headers on trunk traffic for routing, billing, and interoperability between the customer's SIP infrastructure and the PSTN.
 
@@ -896,7 +897,7 @@ Products as rows, use cases as columns. `X` = highlighted in source, `(†)` = b
 
 ### Connectivity
 
-- **SIP**: Ingest calls from SIP infrastructure for transcription. Common in enterprise environments where calls from the PBX need to be transcribed.
+- **SIP Interface (Programmable SIP)**: Ingest calls from SIP infrastructure for transcription via SIP Domains. Common in enterprise environments where calls from the PBX need to be transcribed.
 
 - **PSTN**: Standard telephony calls that get recorded and transcribed.
 
@@ -1050,7 +1051,8 @@ When users describe features using non-Twilio terminology (common when migrating
 | Bandwidth `<SpeakSentence>` | `<Say>` | |
 | Bandwidth `<Transfer>` | `<Dial>` | |
 | Plivo XML | TwiML | Similar verb-based approach |
-| Generic "SIP trunk" | Elastic SIP Trunking or BYOC | |
+| Generic "SIP trunk" | Elastic SIP Trunking (PSTN conduit) or SIP Interface (Programmable SIP) — ask which they need | |
+| Generic "SIP domain" | SIP Interface / Programmable SIP (NOT Elastic SIP Trunking) | |
 | Generic "CPaaS" | Twilio (the platform itself) | |
 
 ---

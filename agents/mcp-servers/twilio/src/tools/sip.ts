@@ -889,6 +889,270 @@ export function sipTools(context: TwilioContext) {
     }
   );
 
+  // ============ SIP Domain Auth: Calls — Credential List Mappings ============
+
+  const listSipDomainAuthCallsCredentialListMappings = createTool(
+    'list_sip_domain_auth_calls_credential_list_mappings',
+    'List credential lists authorized for inbound SIP calls to this domain. Separate from registration auth — this controls who can CALL, not who can REGISTER.',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID'),
+      limit: z.number().min(1).max(100).default(20).describe('Maximum mappings to return'),
+    }),
+    async ({ domainSid, limit }) => {
+      const mappings = await client.sip.domains(domainSid)
+        .auth.calls.credentialListMappings.list({ limit });
+
+      const result = mappings.map(m => ({
+        sid: m.sid,
+        friendlyName: m.friendlyName,
+        dateCreated: m.dateCreated,
+        dateUpdated: m.dateUpdated,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            count: result.length,
+            domainSid,
+            authType: 'calls',
+            credentialListMappings: result,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const createSipDomainAuthCallsCredentialListMapping = createTool(
+    'create_sip_domain_auth_calls_credential_list_mapping',
+    'Authorize a credential list for inbound SIP calls to this domain. Endpoints authenticating with credentials from this list can make calls through the domain.',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID'),
+      credentialListSid: z.string().startsWith('CL').describe('Credential List SID to authorize for calls'),
+    }),
+    async ({ domainSid, credentialListSid }) => {
+      const mapping = await client.sip.domains(domainSid)
+        .auth.calls.credentialListMappings.create({ credentialListSid });
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: mapping.sid,
+            domainSid,
+            authType: 'calls',
+            friendlyName: mapping.friendlyName,
+            dateCreated: mapping.dateCreated,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const deleteSipDomainAuthCallsCredentialListMapping = createTool(
+    'delete_sip_domain_auth_calls_credential_list_mapping',
+    'Remove a credential list from the call authorization for this SIP domain.',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID'),
+      credentialListSid: z.string().startsWith('CL').describe('Credential List SID to remove'),
+    }),
+    async ({ domainSid, credentialListSid }) => {
+      await client.sip.domains(domainSid)
+        .auth.calls.credentialListMappings(credentialListSid).remove();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            deleted: true,
+            domainSid,
+            authType: 'calls',
+            credentialListSid,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  // ============ SIP Domain Auth: Calls — IP ACL Mappings ============
+
+  const listSipDomainAuthCallsIpAclMappings = createTool(
+    'list_sip_domain_auth_calls_ip_acl_mappings',
+    'List IP ACLs authorized for inbound SIP calls to this domain. Only IPs in these ACLs can send SIP INVITEs to make calls through the domain.',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID'),
+      limit: z.number().min(1).max(100).default(20).describe('Maximum mappings to return'),
+    }),
+    async ({ domainSid, limit }) => {
+      const mappings = await client.sip.domains(domainSid)
+        .auth.calls.ipAccessControlListMappings.list({ limit });
+
+      const result = mappings.map(m => ({
+        sid: m.sid,
+        friendlyName: m.friendlyName,
+        dateCreated: m.dateCreated,
+        dateUpdated: m.dateUpdated,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            count: result.length,
+            domainSid,
+            authType: 'calls',
+            ipAccessControlListMappings: result,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const createSipDomainAuthCallsIpAclMapping = createTool(
+    'create_sip_domain_auth_calls_ip_acl_mapping',
+    'Authorize an IP ACL for inbound SIP calls to this domain. Only IPs in the ACL can send SIP INVITEs to make calls.',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID'),
+      ipAccessControlListSid: z.string().startsWith('AL').describe('IP ACL SID to authorize for calls'),
+    }),
+    async ({ domainSid, ipAccessControlListSid }) => {
+      const mapping = await client.sip.domains(domainSid)
+        .auth.calls.ipAccessControlListMappings.create({ ipAccessControlListSid });
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: mapping.sid,
+            domainSid,
+            authType: 'calls',
+            friendlyName: mapping.friendlyName,
+            dateCreated: mapping.dateCreated,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const deleteSipDomainAuthCallsIpAclMapping = createTool(
+    'delete_sip_domain_auth_calls_ip_acl_mapping',
+    'Remove an IP ACL from the call authorization for this SIP domain.',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID'),
+      ipAccessControlListSid: z.string().startsWith('AL').describe('IP ACL SID to remove'),
+    }),
+    async ({ domainSid, ipAccessControlListSid }) => {
+      await client.sip.domains(domainSid)
+        .auth.calls.ipAccessControlListMappings(ipAccessControlListSid).remove();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            deleted: true,
+            domainSid,
+            authType: 'calls',
+            ipAccessControlListSid,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  // ============ SIP Domain Auth: Registrations — Credential List Mappings ============
+
+  const listSipDomainAuthRegistrationsCredentialListMappings = createTool(
+    'list_sip_domain_auth_registrations_credential_list_mappings',
+    'List credential lists authorized for SIP registration to this domain. Controls who can REGISTER SIP endpoints (desk phones, softphones) — separate from call auth.',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID'),
+      limit: z.number().min(1).max(100).default(20).describe('Maximum mappings to return'),
+    }),
+    async ({ domainSid, limit }) => {
+      const mappings = await client.sip.domains(domainSid)
+        .auth.registrations.credentialListMappings.list({ limit });
+
+      const result = mappings.map(m => ({
+        sid: m.sid,
+        friendlyName: m.friendlyName,
+        dateCreated: m.dateCreated,
+        dateUpdated: m.dateUpdated,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            count: result.length,
+            domainSid,
+            authType: 'registrations',
+            credentialListMappings: result,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const createSipDomainAuthRegistrationsCredentialListMapping = createTool(
+    'create_sip_domain_auth_registrations_credential_list_mapping',
+    'Authorize a credential list for SIP registration to this domain. Endpoints with credentials from this list can register (e.g., agent desk phones, Linphone softphones).',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID'),
+      credentialListSid: z.string().startsWith('CL').describe('Credential List SID to authorize for registrations'),
+    }),
+    async ({ domainSid, credentialListSid }) => {
+      const mapping = await client.sip.domains(domainSid)
+        .auth.registrations.credentialListMappings.create({ credentialListSid });
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: mapping.sid,
+            domainSid,
+            authType: 'registrations',
+            friendlyName: mapping.friendlyName,
+            dateCreated: mapping.dateCreated,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const deleteSipDomainAuthRegistrationsCredentialListMapping = createTool(
+    'delete_sip_domain_auth_registrations_credential_list_mapping',
+    'Remove a credential list from the registration authorization for this SIP domain.',
+    z.object({
+      domainSid: z.string().startsWith('SD').describe('SIP Domain SID'),
+      credentialListSid: z.string().startsWith('CL').describe('Credential List SID to remove'),
+    }),
+    async ({ domainSid, credentialListSid }) => {
+      await client.sip.domains(domainSid)
+        .auth.registrations.credentialListMappings(credentialListSid).remove();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            deleted: true,
+            domainSid,
+            authType: 'registrations',
+            credentialListSid,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
   return [
     listIpAccessControlLists,
     getIpAccessControlList,
@@ -910,17 +1174,29 @@ export function sipTools(context: TwilioContext) {
     createCredential,
     updateCredential,
     deleteCredential,
-    // SIP Domains (Programmable Voice)
+    // SIP Domains (Programmable Voice / SIP Interface)
     listSipDomains,
     getSipDomain,
     createSipDomain,
     updateSipDomain,
     deleteSipDomain,
+    // Legacy top-level domain mappings (backwards compatibility)
     listSipDomainIpAclMappings,
     createSipDomainIpAclMapping,
     deleteSipDomainIpAclMapping,
     listSipDomainCredentialListMappings,
     createSipDomainCredentialListMapping,
     deleteSipDomainCredentialListMapping,
+    // Auth: Calls — credential and IP ACL auth for inbound SIP calls
+    listSipDomainAuthCallsCredentialListMappings,
+    createSipDomainAuthCallsCredentialListMapping,
+    deleteSipDomainAuthCallsCredentialListMapping,
+    listSipDomainAuthCallsIpAclMappings,
+    createSipDomainAuthCallsIpAclMapping,
+    deleteSipDomainAuthCallsIpAclMapping,
+    // Auth: Registrations — credential auth for SIP endpoint registration
+    listSipDomainAuthRegistrationsCredentialListMappings,
+    createSipDomainAuthRegistrationsCredentialListMapping,
+    deleteSipDomainAuthRegistrationsCredentialListMapping,
   ];
 }

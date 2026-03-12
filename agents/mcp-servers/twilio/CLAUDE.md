@@ -1,4 +1,4 @@
-// ABOUTME: Twilio MCP server that exposes 342 tools for Claude agents.
+// ABOUTME: Twilio MCP server that exposes 351 tools for Claude agents.
 // ABOUTME: Provides standardized access to all Twilio APIs via Model Context Protocol.
 
 # Twilio MCP Server
@@ -11,7 +11,7 @@ This directory contains the Model Context Protocol (MCP) server that exposes Twi
 
 The Twilio MCP Server enables Claude agents to interact with real Twilio infrastructure through standardized tools.
 
-## Supported Domains (342 tools across 28 modules)
+## Supported Domains (351 tools across 28 modules)
 
 - **Messaging**: 4 tools for SMS/MMS operations
 - **Voice**: 32 tools for calls, conferences, recordings, insights, transcription, queues
@@ -33,7 +33,7 @@ The Twilio MCP Server enables Claude agents to interact with real Twilio infrast
 - **Voice Config**: 14 tools (P2) for BYOC and dialing permissions
 - **Regulatory**: 16 tools (P2) for bundles and compliance
 - **Media**: 10 tools (P2) for video recordings and compositions
-- **SIP**: 31 tools (P3) for IP ACLs, credentials, SIP Domains
+- **SIP**: 40 tools (P3) for IP ACLs, credentials, SIP Domains, Domain Auth (calls + registrations)
 - **Trunking**: 20 tools (P3) for Elastic SIP Trunks
 - **Accounts**: 13 tools (P3) for subaccounts and usage
 - **IAM**: 8 tools (P3) for API keys
@@ -112,12 +112,12 @@ Tools are organized into priority tiers. Default loads P0 + validation (~110 too
 | P0 | 96 | Messaging, Voice, Phone Numbers, Verify, Payments, Sync, TaskRouter, Debugger |
 | P1 | 40 | Lookups, Studio, Messaging Services, Serverless |
 | P2 | 97 | Intelligence, Video, Proxy, TrustHub, Content, Voice Config, Regulatory, Media |
-| P3 | 95 | SIP, Trunking, Accounts, IAM, Pricing, Notify, Addresses |
+| P3 | 104 | SIP, Trunking, Accounts, IAM, Pricing, Notify, Addresses |
 | validation | 14 | Deep validation beyond HTTP 200 |
 
 Configure via `toolTiers` in `TwilioMcpServerConfig`:
 - Default: `['P0', 'validation']` — 110 tools
-- All tools: `['all']` — 342 tools
+- All tools: `['all']` — 351 tools
 - Custom: `['P0', 'P1', 'validation']` — 150 tools
 
 ## Quick Usage
@@ -129,7 +129,7 @@ import { query } from '@anthropic-ai/claude-agent-sdk';
 // Default: P0 + validation (110 tools)
 const twilioServer = createTwilioMcpServer();
 
-// Or load all tiers (342 tools)
+// Or load all tiers (351 tools)
 const fullServer = createTwilioMcpServer({ toolTiers: ['all'] });
 
 for await (const message of query({

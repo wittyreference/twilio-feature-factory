@@ -1,6 +1,6 @@
 # SIP Lab — Local PBX for Twilio SIP Testing
 
-Dockerized Asterisk PBX on a hardened DigitalOcean droplet for testing Twilio Elastic SIP Trunking and Programmable Voice SIP Domains with real SIP/RTP traffic.
+Dockerized Asterisk PBX on a hardened DigitalOcean droplet for testing Twilio Elastic SIP Trunking (pure PSTN conduit) and SIP Interface/Programmable SIP (SIP Domains with full PV capabilities) with real SIP/RTP traffic.
 
 ## Quick Start
 
@@ -94,9 +94,27 @@ Asterisk sends SIP INVITE to `{trunk}.pstn.twilio.com` with digest auth.
 docker exec sip-lab-asterisk asterisk -rx "channel originate PJSIP/+1NXXNXXXXXX@twilio-trunk application Playback tt-weasels"
 ```
 
-### Phase C: SIP Domains (Programmable Voice)
+### Phase C: SIP Interface / Programmable SIP (SIP Domains)
 
-SIP UA registers to Twilio SIP Domain. Requires additional MCP tools (see below).
+Test SIP Interface connectivity — connecting the PBX to Programmable Voice via a SIP Domain. Unlike Elastic SIP Trunking (Phase A/B), calls through a SIP Domain get full PV capabilities (TwiML, APIs, conferencing, recording, etc.).
+
+**Inbound (PBX → SIP Domain → TwiML):**
+1. Create a SIP Domain with a voiceUrl pointing to a TwiML handler
+2. Associate IP ACL and/or Credential List with the domain
+3. Configure Asterisk to send SIP INVITEs to `mylab.sip.twilio.com`
+4. Verify call hits the voiceUrl and TwiML executes
+
+**Outbound (TwiML → `<Dial><Sip>` → PBX):**
+1. Create a TwiML handler that returns `<Dial><Sip>sip:ext@{PBX_IP}:5060</Sip></Dial>`
+2. Initiate an API call to the TwiML handler
+3. Verify Twilio sends SIP INVITE to Asterisk and call connects
+
+**SIP Registration:**
+1. Configure a SIP credential for a "user" (e.g., agent extension)
+2. Register from a SIP client (Linphone, Asterisk as UA) to the SIP Domain
+3. Dial the registered user via `<Dial><Sip>sip:user@mylab.sip.twilio.com</Sip></Dial>`
+
+**Status: TODO** — Phase A/B (Elastic SIP Trunking) complete and validated. Phase C needs implementation.
 
 ### Phase D: Full PSTN Connectivity Validation (automated)
 

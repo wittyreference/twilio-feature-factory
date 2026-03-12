@@ -2,6 +2,16 @@
 
 Cross-cutting gotchas discovered through real debugging sessions. Domain-specific gotchas live in their respective CLAUDE.md files; these are the ones that span multiple domains or have no single home.
 
+## SIP Connectivity Taxonomy
+
+- **SIP Interface ≠ Elastic SIP Trunking** — These are distinct products. SIP Interface (also called SIP Domains, Programmable SIP) connects SIP infrastructure to Programmable Voice with full TwiML/API access. Elastic SIP Trunking is a pure PSTN conduit that bypasses PV entirely. BYOC is a type of SIP Interface for non-ported carrier numbers. The decision is: need TwiML? → SIP Interface. Just need cheap PSTN pipe? → Elastic SIP Trunking.
+
+- **IP ACLs and Credential Lists are account-level resources** — They are NOT subresources of trunks or domains. They can be shared between SIP Domains and SIP Trunks. Up to 1000 of each per account.
+
+- **SIP Registration is SIP Interface only** — Elastic SIP Trunking is INVITE-only. No registration required or supported. SIP Registration is for PV SIP use cases (agent desk phones, softphone apps).
+
+- **Phone number can only be trunk OR PV, not both** — Assigning a number to a SIP trunk removes its voice webhook. They are mutually exclusive on a per-number basis. SIP Interface and Elastic SIP Trunking can coexist on the same account for different numbers.
+
 ## CLI Profile and .env Independence
 
 - **CLI profile and `.env` are independent auth sources** — The Twilio CLI profile can point to the main account while `.env` has a subaccount SID, or vice versa. They do not share state. Always check both before operations: `twilio profiles:list` for CLI context, and `.env` contents for SDK/serverless context. Deploying with one profile while `.env` targets a different account causes silent misrouting.

@@ -37,8 +37,12 @@ const SYNC_SID = 'IS1234567890';
 
 describe('blackjack-sync', () => {
   describe('createGameDoc', () => {
-    it('creates a document with correct name and TTL', async () => {
-      const { client, mockCreate } = makeMockClient();
+    it('creates a document when it does not exist (20404 on update)', async () => {
+      const notFoundError = new Error('Not found');
+      notFoundError.code = 20404;
+      // Update fails with 20404, then create succeeds
+      const { client, mockCreate, mockUpdate } = makeMockClient({ fetchError: notFoundError });
+      mockUpdate.mockRejectedValueOnce(notFoundError);
       const gameState = { gameId: 'bj-123', status: 'player_turn' };
 
       await createGameDoc(client, SYNC_SID, 'CAxxx', gameState);
@@ -56,19 +60,19 @@ describe('blackjack-sync', () => {
       expect(result).toBeNull();
     });
 
-    it('overwrites on 54302 (duplicate name)', async () => {
-      const dupError = new Error('Unique name already exists');
-      dupError.code = 54302;
-      const { client, mockUpdate } = makeMockClient({ createError: dupError });
+    it('overwrites existing document on replay (update succeeds)', async () => {
+      const { client, mockUpdate, mockCreate } = makeMockClient();
 
       await createGameDoc(client, SYNC_SID, 'CAxxx', { status: 'player_turn' });
       expect(mockUpdate).toHaveBeenCalledWith({ data: { status: 'player_turn' } });
+      expect(mockCreate).not.toHaveBeenCalled();
     });
 
-    it('throws on unexpected errors', async () => {
+    it('throws on unexpected update errors', async () => {
       const unexpectedError = new Error('Network error');
       unexpectedError.code = 500;
-      const { client } = makeMockClient({ createError: unexpectedError });
+      const { client, mockUpdate } = makeMockClient();
+      mockUpdate.mockRejectedValueOnce(unexpectedError);
 
       await expect(createGameDoc(client, SYNC_SID, 'CAxxx', {})).rejects.toThrow('Network error');
     });

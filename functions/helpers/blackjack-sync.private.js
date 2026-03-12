@@ -2,8 +2,8 @@
 // ABOUTME: Wraps Twilio Sync Document CRUD with error handling and graceful degradation.
 
 /**
- * Creates a Sync document for a new blackjack game.
- * If a document already exists (replay), it overwrites with an update.
+ * Creates or overwrites a Sync document for a blackjack game.
+ * Uses update-first pattern: handles replay (same CallSid) without error code ambiguity.
  */
 async function createGameDoc(client, syncServiceSid, callSid, gameState) {
   if (!syncServiceSid) {
@@ -13,31 +13,33 @@ async function createGameDoc(client, syncServiceSid, callSid, gameState) {
 
   const documentName = `blackjack-${callSid}`;
 
+  // Try update first (handles replay — same CallSid, doc already exists)
   try {
     const doc = await client.sync.v1
       .services(syncServiceSid)
-      .documents.create({
-        uniqueName: documentName,
-        data: gameState,
-        ttl: 86400,
-      });
+      .documents(documentName)
+      .update({ data: gameState });
 
-    console.log(`Created Sync document ${documentName}`);
+    console.log(`Overwrote existing Sync document ${documentName}`);
     return doc;
-  } catch (error) {
-    if (error.code === 54302) {
-      // Document already exists (replay scenario) — overwrite
-      const doc = await client.sync.v1
-        .services(syncServiceSid)
-        .documents(documentName)
-        .update({ data: gameState });
-
-      console.log(`Overwrote existing Sync document ${documentName}`);
-      return doc;
+  } catch (updateError) {
+    if (updateError.code !== 20404) {
+      console.log(`Error updating Sync document: ${updateError.message}`);
+      throw updateError;
     }
-    console.log(`Error creating Sync document: ${error.message}`);
-    throw error;
   }
+
+  // Document doesn't exist yet — create it
+  const doc = await client.sync.v1
+    .services(syncServiceSid)
+    .documents.create({
+      uniqueName: documentName,
+      data: gameState,
+      ttl: 86400,
+    });
+
+  console.log(`Created Sync document ${documentName}`);
+  return doc;
 }
 
 /**

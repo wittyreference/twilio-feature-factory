@@ -182,7 +182,7 @@ process_mapping() {
   fi
 
   # Check for AI-required adaptations
-  if echo "$adaptation" | grep -qE 'generalize-role|generalize-agents|generalize-names'; then
+  if echo "$adaptation" | grep -qE 'generalize-role|generalize-agents|generalize-names|rewrite-meta-conditional'; then
     AI_NEEDED+=("$factory_path → $plugin_path [$adaptation]")
     SKIPPED=$((SKIPPED + 1))
     return

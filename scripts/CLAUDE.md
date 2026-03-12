@@ -15,6 +15,8 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 | `validation-reset.sh` | `./scripts/validation-reset.sh` | Reset Twilio account to clean state for validation runs |
 | `check-claude-doc-drift.sh` | `./scripts/check-claude-doc-drift.sh` | Compare actual files vs CLAUDE.md inventories; exit 1 on drift |
 | `plugin-drift-check.sh` | `./scripts/plugin-drift-check.sh` | Detect drift between factory source and plugin distribution |
+| `plugin-sync-deterministic.sh` | `./scripts/plugin-sync-deterministic.sh` | Apply mechanical sync adaptations from factory to plugin staging |
+| `plugin-sync-coverage.sh` | `./scripts/plugin-sync-coverage.sh` | Compare files on disk against sync map; report coverage gaps |
 | `validate-meta-separation.sh` | `./scripts/validate-meta-separation.sh` | Verify `.meta/` files stay separated from shipped paths |
 | `verify-shipping-ready.sh` | `./scripts/verify-shipping-ready.sh` | Pre-ship checklist: no meta refs, clean exports, doc links valid |
 | `demo.sh` | `npm run demo` | One-command demo launcher with ngrok, env verification, URL banner |

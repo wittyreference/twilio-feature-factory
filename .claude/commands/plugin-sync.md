@@ -4,6 +4,16 @@ Detect and reconcile drift between factory source files and the twilio-claude-pl
 
 ## Workflow
 
+### 0. Coverage audit
+
+Run the coverage audit to identify files not yet in the sync map:
+
+```bash
+scripts/plugin-sync-coverage.sh
+```
+
+If uncovered files are found, present them to the user for triage (map or exclude) before proceeding with drift sync. Add new entries to `.claude/plugin-sync-map.json` accordingly.
+
 ### 1. Run drift detection
 
 Run the drift detection script to identify which factory files have changed since the last plugin sync:
@@ -48,6 +58,7 @@ For each drifted file, in order from minimal to complex:
 - `strip-auto-clear` — Remove auto-clear pending actions section
 - `strip-compact` — Remove compact-pending marker detection
 - `strip-team-refs` — Remove `/team` references and Agent Teams mentions
+- `rewrite-meta-conditional` — AI rewrites `.meta` conditional blocks for plugin context (removes meta-mode routing, replaces `.meta` paths with plugin equivalents)
 - `generalize-agents` — Replace factory-specific agent names with generic terms
 - `generalize-role` — Rewrite from factory command to portable agent perspective
 - `extract-invariants` — Extract only the Architectural Invariants section

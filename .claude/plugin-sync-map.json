@@ -3,7 +3,7 @@
   "mappings": {
     "skills": [
       { "factory": ".claude/skills/context-hub.md", "plugin": "skills/context-hub/SKILL.md", "adaptation": "frontmatter" },
-      { "factory": ".claude/skills/context-engineering.md", "plugin": "skills/context-engineering/SKILL.md", "adaptation": "frontmatter" },
+      { "factory": ".claude/skills/context-engineering.md", "plugin": "skills/context-engineering/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": ".claude/skills/deep-validation.md", "plugin": "skills/deep-validation/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": ".claude/skills/memory-systems.md", "plugin": "skills/memory-systems/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/skills/multi-agent-patterns.md", "plugin": "skills/multi-agent-patterns/SKILL.md", "adaptation": "frontmatter" },
@@ -15,6 +15,7 @@
       { "factory": ".claude/skills/compliance-regulatory.md", "plugin": "skills/compliance-regulatory/SKILL.md", "adaptation": "frontmatter" },
       { "factory": ".claude/skills/payments.md", "plugin": "skills/payments/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": ".claude/skills/env-doctor.md", "plugin": "skills/env-doctor/SKILL.md", "adaptation": "frontmatter" },
+      { "factory": ".claude/skills/media-streams.md", "plugin": "skills/media-streams/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": "functions/voice/CLAUDE.md", "plugin": "skills/voice/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": "functions/messaging/CLAUDE.md", "plugin": "skills/messaging/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": "functions/verify/CLAUDE.md", "plugin": "skills/verify/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
@@ -25,6 +26,13 @@
       { "factory": "functions/pay/CLAUDE.md", "plugin": "skills/pay/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": "functions/proxy/CLAUDE.md", "plugin": "skills/proxy/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": "functions/phone-numbers/CLAUDE.md", "plugin": "skills/phone-numbers/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/callbacks/CLAUDE.md", "plugin": "skills/callbacks/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/voice/REFERENCE.md", "plugin": "skills/voice-reference/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/conversation-relay/REFERENCE.md", "plugin": "skills/conversation-relay-reference/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/messaging-services/REFERENCE.md", "plugin": "skills/messaging-services-reference/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/sync/REFERENCE.md", "plugin": "skills/sync-reference/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/taskrouter/REFERENCE.md", "plugin": "skills/taskrouter-reference/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
+      { "factory": "functions/verify/REFERENCE.md", "plugin": "skills/verify-reference/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": ".claude/references/twilio-cli.md", "plugin": "skills/twilio-cli/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" },
       { "factory": ".claude/rules/serverless-invariants.md", "plugin": "skills/twilio-invariants/SKILL.md", "adaptation": "frontmatter,merge-invariant-rules", "additional_sources": [".claude/rules/environment-invariants.md", ".claude/rules/voice-protocol-invariants.md"] },
       { "factory": ".claude/references/brainstorm.md", "plugin": "skills/brainstorm/SKILL.md", "adaptation": "frontmatter" },
@@ -33,7 +41,7 @@
       { "factory": ".claude/workflows/README.md", "plugin": "skills/workflows/SKILL.md", "adaptation": "frontmatter,strip-factory-paths" }
     ],
     "commands": [
-      { "factory": ".claude/commands/commit.md", "plugin": "commands/commit.md", "adaptation": "strip-factory-paths" },
+      { "factory": ".claude/commands/commit.md", "plugin": "commands/commit.md", "adaptation": "rewrite-meta-conditional" },
       { "factory": ".claude/commands/context.md", "plugin": "commands/context.md", "adaptation": "strip-factory-paths" },
       { "factory": ".claude/commands/deploy.md", "plugin": "commands/deploy.md", "adaptation": "strip-factory-paths" },
       { "factory": ".claude/commands/preflight.md", "plugin": "commands/preflight.md", "adaptation": "strip-factory-paths" },
@@ -42,8 +50,9 @@
       { "factory": ".claude/commands/twilio-docs.md", "plugin": "commands/twilio-docs.md", "adaptation": "minimal" },
       { "factory": ".claude/commands/twilio-logs.md", "plugin": "commands/twilio-logs.md", "adaptation": "minimal" },
       { "factory": ".claude/commands/validate.md", "plugin": "commands/validate.md", "adaptation": "strip-factory-paths" },
-      { "factory": ".claude/commands/wrap-up.md", "plugin": "commands/wrap-up.md", "adaptation": "strip-factory-paths,strip-meta-mode" },
-      { "factory": ".claude/commands/learn.md", "plugin": "commands/learn.md", "adaptation": "strip-factory-paths" }
+      { "factory": ".claude/commands/wrap-up.md", "plugin": "commands/wrap-up.md", "adaptation": "rewrite-meta-conditional,strip-flywheel" },
+      { "factory": ".claude/commands/learn.md", "plugin": "commands/learn.md", "adaptation": "rewrite-meta-conditional" },
+      { "factory": ".claude/commands/prototype.md", "plugin": "commands/prototype.md", "adaptation": "strip-factory-paths" }
     ],
     "hooks": [
       { "factory": ".claude/hooks/pre-write-validate.sh", "plugin": "hooks/pre-write-validate.sh", "adaptation": "strip-meta-mode" },
@@ -84,13 +93,14 @@
       ".claude/commands/plugin-sync.md",
       ".claude/commands/ff-sync.md",
       ".claude/commands/uber-validation.md",
-      ".claude/commands/recall.md"
+      ".claude/commands/recall.md",
+      ".claude/commands/check-updates.md"
     ],
     "hooks": [
       ".claude/hooks/_meta-mode.sh",
       ".claude/hooks/archive-plan.sh",
       ".claude/hooks/flywheel-doc-check.sh",
-      ".claude/hooks/flywheel-session-summary.sh",
+      ".claude/hooks/generate-learning-exercises.sh",
       ".claude/hooks/post-compact-summary.sh",
       ".claude/hooks/pre-compact.sh",
       ".claude/hooks/session-start-log.sh",
@@ -113,15 +123,23 @@
       "agents/mcp-servers/",
       "agents/feature-factory/",
       "agents/voice-ai-builder/",
+      "agents/doc-generator/",
       ".mcp.json",
       "infrastructure/sip-lab/",
-      "functions/helpers/CLAUDE.md"
+      "functions/helpers/CLAUDE.md",
+      "agents/mcp-servers/twilio/REFERENCE.md",
+      "agents/mcp-servers/twilio/src/validation/REFERENCE.md",
+      "agents/feature-factory/REFERENCE.md",
+      "agents/doc-generator/REFERENCE.md",
+      "scripts/REFERENCE.md"
     ],
     "scripts": [
       "scripts/verify-shipping-ready.sh",
       "scripts/validate-meta-separation.sh",
       "scripts/check-claude-doc-drift.sh",
       "scripts/plugin-drift-check.sh",
+      "scripts/plugin-sync-deterministic.sh",
+      "scripts/plugin-sync-coverage.sh",
       "scripts/enable-autonomous.sh",
       "scripts/dogfood-env.sh",
       "scripts/run-headless.sh",
@@ -129,7 +147,22 @@
       "scripts/generate-postman-collection.js",
       "scripts/validation-reset.sh",
       "scripts/demo.sh",
-      "scripts/check-demo-health.sh"
+      "scripts/check-demo-health.sh",
+      "scripts/bootstrap.sh",
+      "scripts/check-changelog.sh",
+      "scripts/check-readme-drift.sh",
+      "scripts/context-audit.sh",
+      "scripts/count-mcp-tools.sh",
+      "scripts/count-tests.sh",
+      "scripts/fresh-install-validation.sh",
+      "scripts/headless-preflight.sh",
+      "scripts/repo-map.sh",
+      "scripts/run-regression.sh",
+      "scripts/run-sip-lab-e2e.sh",
+      "scripts/validate-provisioning.sh",
+      "scripts/validate-updates.sh",
+      "scripts/check-updates.sh",
+      "scripts/update.sh"
     ]
   },
   "adaptation_types": {
@@ -142,6 +175,7 @@
     "strip-auto-clear": "Remove auto-clear pending actions section from pre-commit flow",
     "strip-compact": "Remove compact-pending marker detection and processing",
     "strip-team-refs": "Remove /team references and Agent Teams mentions",
+    "rewrite-meta-conditional": "AI rewrites .meta conditional blocks for plugin context (removes meta-mode routing, replaces .meta paths with plugin equivalents)",
     "generalize-agents": "Replace factory-specific agent names with generic terms",
     "generalize-role": "Rewrite from factory command perspective to portable agent perspective",
     "generalize-names": "Replace hardcoded project names with dynamic values (e.g., path.basename(cwd))",

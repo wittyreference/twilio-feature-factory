@@ -52,7 +52,7 @@
     "dotenv": "^17.3.1",
     "eslint": "^9.39.3",
     "express": "^5.2.1",
-    "globals": "^16.0.0",
+    "globals": "^17.4.0",
     "jest": "^29.7.0",
     "newman": "^6.1.0",
     "twilio-run": "^5.0.0",

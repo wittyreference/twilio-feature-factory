@@ -13,7 +13,7 @@ function makeMockClient({ fetchData = null, fetchError = null, createError = nul
     : jest.fn().mockResolvedValue({ data: {} });
   const mockRemove = jest.fn().mockResolvedValue();
 
-  const documentsChain = jest.fn((name) => ({
+  const documentsChain = jest.fn((_name) => ({
     fetch: mockFetch,
     update: mockUpdate,
     remove: mockRemove,

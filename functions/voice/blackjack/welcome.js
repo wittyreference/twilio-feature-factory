@@ -17,7 +17,6 @@ exports.handler = async (context, event, callback) => {
   // Persist to Sync
   await sync.createGameDoc(client, syncServiceSid, callSid, game);
 
-  const playerScore = engine.scoreHand(game.playerHand);
   const dealerUpCard = engine.narrateCard(game.dealerHand[0]);
   const playerNarration = engine.narrateHand(game.playerHand);
 

@@ -199,7 +199,7 @@ function playerHit(game) {
  * Returns a new state object (does not mutate original).
  */
 function dealerPlay(game) {
-  let state = { ...game, dealerHoleRevealed: true, moves: [...game.moves] };
+  const state = { ...game, dealerHoleRevealed: true, moves: [...game.moves] };
   let deck = [...game.deck];
   let dealerHand = [...game.dealerHand];
 
@@ -245,15 +245,15 @@ function determineOutcome(game) {
   const playerBJ = game.playerHand.length === 2 && playerScore.total === 21;
   const dealerBJ = game.dealerHand.length === 2 && dealerScore.total === 21;
 
-  if (playerBJ && dealerBJ) return 'push';
-  if (playerBJ) return 'player_blackjack';
-  if (dealerBJ) return 'dealer_blackjack';
+  if (playerBJ && dealerBJ) {return 'push';}
+  if (playerBJ) {return 'player_blackjack';}
+  if (dealerBJ) {return 'dealer_blackjack';}
 
-  if (playerScore.total > 21) return 'player_bust';
-  if (dealerScore.total > 21) return 'dealer_bust';
+  if (playerScore.total > 21) {return 'player_bust';}
+  if (dealerScore.total > 21) {return 'dealer_bust';}
 
-  if (playerScore.total > dealerScore.total) return 'player_wins';
-  if (dealerScore.total > playerScore.total) return 'dealer_wins';
+  if (playerScore.total > dealerScore.total) {return 'player_wins';}
+  if (dealerScore.total > playerScore.total) {return 'dealer_wins';}
   return 'push';
 }
 
@@ -262,13 +262,13 @@ function determineOutcome(game) {
  * Returns 'hit', 'stand', or 'unknown'.
  */
 function classifyInput(digits, speechResult) {
-  if (digits === '1') return 'hit';
-  if (digits === '2') return 'stand';
+  if (digits === '1') {return 'hit';}
+  if (digits === '2') {return 'stand';}
 
   if (speechResult) {
     const speech = speechResult.toLowerCase().trim();
-    if (HIT_WORDS.some((w) => speech.includes(w))) return 'hit';
-    if (STAND_WORDS.some((w) => speech.includes(w))) return 'stand';
+    if (HIT_WORDS.some((w) => speech.includes(w))) {return 'hit';}
+    if (STAND_WORDS.some((w) => speech.includes(w))) {return 'stand';}
   }
 
   return 'unknown';

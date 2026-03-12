@@ -7,7 +7,9 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 
 | Script | Command | Purpose |
 |--------|---------|---------|
-| `setup.js` | `npm run setup` | Interactive setup for provisioning Twilio resources |
+| `bootstrap.sh` | `npm run bootstrap` | Complete post-clone setup wizard (prerequisites, credentials, provisioning, MCP verification) |
+| `setup.js` | `npm run setup` | Interactive setup for provisioning Twilio resources (also called by bootstrap.sh) |
+| `fresh-install-validation.sh` | `./scripts/fresh-install-validation.sh` | Automated test of post-clone onboarding in /tmp (validates bootstrap flow end-to-end) |
 | `enable-autonomous.sh` | `./scripts/enable-autonomous.sh` | Launch Claude Code in autonomous mode (interactive) |
 | `run-headless.sh` | `./scripts/run-headless.sh` | Run Claude Code non-interactively via `claude -p` (CI/CD) |
 | `validation-reset.sh` | `./scripts/validation-reset.sh` | Reset Twilio account to clean state for validation runs |

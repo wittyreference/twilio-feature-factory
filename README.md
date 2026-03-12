@@ -76,80 +76,42 @@ During execution, Claude Code's development pipeline has access to:
 
 ## Quick Start
 
-1. **Clone the repository**
+1. **Clone and install**
 
    ```bash
    git clone https://github.com/wittyreference/twilio-feature-factory.git
    cd twilio-feature-factory
-   ```
-
-2. **Install dependencies**
-
-   ```bash
    npm install
    ```
 
-3. **Configure environment**
+2. **Run the setup wizard**
 
    ```bash
-   cp .env.example .env
+   ./scripts/bootstrap.sh
    ```
 
-   Add your Twilio credentials to `.env`:
-   - `TWILIO_ACCOUNT_SID`
-   - `TWILIO_AUTH_TOKEN`
-   - `TWILIO_PHONE_NUMBER`
+   This checks prerequisites, configures your Twilio credentials, provisions resources (Sync, Verify, Messaging, TaskRouter), verifies the MCP server is built, and sets up environment isolation — everything in one step.
 
-   > **If you already have Twilio env vars in your shell** (from `.zshrc`, another project, or Twilio CLI), they will silently override your `.env` values and cause auth failures. Step 4 prevents this. If you hit unexpected 401 errors, run `./scripts/env-doctor.sh` to diagnose.
+   You'll need your **Account SID** and **Auth Token** from the [Twilio Console](https://console.twilio.com/).
 
-4. **Set up environment isolation** (strongly recommended)
-
-   This project ships an `.envrc` that provides clean environment isolation — it unsets any inherited Twilio vars from your shell before loading your `.env`. Install [direnv](https://direnv.net/) to activate it:
+3. **Open Claude Code** (must be a fresh launch after setup)
 
    ```bash
-   brew install direnv
-   echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc  # or ~/.bashrc for bash
-   source ~/.zshrc
-   direnv allow
+   claude
    ```
 
-   This automatically unsets any inherited Twilio env vars and loads your `.env` whenever you `cd` into the project. Without direnv, conflicting shell variables from other projects or your shell profile will cause auth failures.
-
-   **Alternative** (no install required):
-   ```bash
-   # Unset potentially conflicting vars, then load .env
-   unset TWILIO_ACCOUNT_SID TWILIO_AUTH_TOKEN TWILIO_API_KEY TWILIO_API_SECRET \
-         TWILIO_REGION TWILIO_EDGE TWILIO_PHONE_NUMBER
-   set -a && source .env && set +a
-   ```
-   Run this before launching Claude Code each session.
-
-5. **Verify environment** (optional)
-
-   ```bash
-   ./scripts/env-doctor.sh
-   ```
-
-   Checks for conflicts between your shell environment and `.env` file. Also runs automatically before `npm start`.
-
-6. **Start development server**
-
-   ```bash
-   npm start
-   ```
-
-7. **Build your first app**
-
-   In Claude Code, start by referencing the brainstorm template:
+4. **Make your first call**
 
    ```
-   "Using .claude/references/brainstorm.md, help me brainstorm
-   a voice IVR that routes callers to sales or support"
+   Make an outbound call to +1XXXXXXXXXX saying
+   "Hello from the Feature Factory! Your setup is working."
    ```
 
-   Claude Code will help you develop the concept, then enter plan mode to create the implementation plan. Once approved, the supervised pipeline builds it with approval gates at each phase.
+   No deployment needed — Claude uses the MCP server to call the Twilio API directly.
 
-   See [WALKTHROUGH.md](WALKTHROUGH.md) for a detailed guided tutorial.
+See [user-guide.md](user-guide.md) for a detailed plain-language guide, or [WALKTHROUGH.md](WALKTHROUGH.md) for a full 30-minute tutorial.
+
+> **Quick environment check**: Run `npm run smoke-test` anytime to verify your setup is healthy.
 
 ## Available Tools
 
@@ -389,7 +351,8 @@ See `.meta/sequential-validation.md` for the full validation procedure.
 
 ## Resources
 
-- [QUICKSTART.md](QUICKSTART.md) - Make your first call in 10 minutes (start here!)
+- [user-guide.md](user-guide.md) - Plain-language setup and usage guide (start here!)
+- [QUICKSTART.md](QUICKSTART.md) - Make your first call in 10 minutes
 - [WALKTHROUGH.md](WALKTHROUGH.md) - Build a Voice AI Assistant (30-minute guided tutorial)
 - [CLAUDE.md](CLAUDE.md) - Project standards and conventions
 - [agents/README.md](agents/README.md) - Agent architecture details

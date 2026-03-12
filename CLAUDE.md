@@ -53,9 +53,18 @@ The hooks in `.claude/hooks/` auto-detect the environment. Claude must also foll
 
 **NEVER rename or move `.meta/` to bypass hook enforcement.** If a hook is blocking legitimate work, fix the hook in a separate session. Renaming `.meta/` disables all meta-mode routing and leaves session state in the wrong locations.
 
-## MCP Validation Tools (USE THESE!)
+## MCP Server & Tool Discovery
 
-**IMPORTANT**: Use MCP validation tools instead of CLI commands for Twilio validation. They provide deep validation beyond HTTP 200 — automatic polling, content quality checks, forbidden pattern detection, and unified error reporting.
+The project embeds an MCP server at `agents/mcp-servers/twilio/` with 342 Twilio API tools. It is auto-discovered by Claude Code via `.mcp.json` at the project root — no manual registration needed.
+
+- **Tool reference**: `agents/mcp-servers/twilio/REFERENCE.md` — full inventory organized by domain and priority tier
+- **Finding the right tool**: See `.claude/rules/self-service.md` for the SID-first lookup hierarchy
+- **If tools aren't available**: Verify `agents/mcp-servers/twilio/dist/serve.js` exists. If missing, rebuild: `cd agents/mcp-servers/twilio && npm install && npm run build`
+- **After changing `.env` credentials**: Exit and relaunch Claude Code so the MCP server picks up the new values
+
+### MCP Validation Tools (USE THESE!)
+
+Use MCP validation tools instead of CLI commands for Twilio validation. They provide deep validation beyond HTTP 200 — automatic polling, content quality checks, forbidden pattern detection, and unified error reporting.
 
 Available tools: `validate_call`, `validate_message`, `validate_recording`, `validate_transcript`, `validate_debugger`, `validate_voice_ai_flow`, `validate_two_way`, `validate_language_operator`. See `agents/mcp-servers/twilio/src/tools/validation.ts` for full documentation.
 

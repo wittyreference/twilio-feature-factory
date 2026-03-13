@@ -129,8 +129,17 @@ Add between the `client:` and fallback `else` blocks in `functions/voice/sdk-han
 
 ## Browser Client: `assets/blackjack-client.html`
 
-Green felt casino theme. Voice SDK 2.x loaded from `/sdk/twilio.min.js`.
+Polished casino theme — think French Riviera, not GeoCities. Voice SDK 2.x loaded from `/sdk/twilio.min.js`.
 
+**Visual design:**
+- Dark green felt background (`#1a472a`), gold title (`#ffd700`), muted sage accents (`#8fbc8f`)
+- Felt-textured card area (`#2d5a3d`) with inset shadow and rounded corners
+- Pill-shaped status bar that changes color by state (red=offline, yellow=connecting, green=ready/connected)
+- Large game buttons: HIT in blue (`#1864ab`), STAND in purple (`#862e9c`), with hover scale effect
+- Call button in green, switches to red "Hang Up" when connected
+- Dark terminal-style event log (`#0d1f13`) with monospace font and green text (`#69db7c`)
+
+**Functionality:**
 - "Call Dealer" button → `device.connect({ params: { To: 'game:blackjack' } })`
 - HIT button → `activeCall.sendDigits('1')`
 - STAND button → `activeCall.sendDigits('2')`

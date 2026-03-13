@@ -64,16 +64,11 @@ rmdir functions/voice/blackjack 2>/dev/null || true
 rm -rf __tests__/unit/voice/blackjack/
 
 # Revert sdk-handler.js to remove game: routing
-# Use node for reliable multi-line replacement (sed is too fragile for this)
+# The game: block is lines 22-24 in the current file
 HANDLER="functions/voice/sdk-handler.js"
 if grep -q "game:" "$HANDLER" 2>/dev/null; then
-    node -e "
-      const fs = require('fs');
-      let src = fs.readFileSync('$HANDLER', 'utf8');
-      // Remove the 2-line game: block, preserving the } else { that follows
-      src = src.replace(/  \} else if \(to\.startsWith\('game:'\)\) \{\n.*twiml\.redirect.*\n/m, '');
-      fs.writeFileSync('$HANDLER', src);
-    "
+    # Use sed to remove the game: routing block (3 lines)
+    sed -i '' '/else if (to\.startsWith.*game:/,/^  }$/d' "$HANDLER"
     echo -e "  ${GREEN}✓${NC} Removed game: routing from sdk-handler.js"
 else
     echo -e "  ${YELLOW}⚠${NC} No game: routing found in sdk-handler.js (already clean)"

@@ -97,4 +97,15 @@ describe('voice/sdk-handler', () => {
     });
   });
 
+  describe('game routing', () => {
+    it('should redirect to blackjack welcome when To starts with game:', async () => {
+      event.To = 'game:blackjack';
+      await handler(context, event, callback);
+
+      const [error, response] = callback.mock.calls[0];
+      expect(error).toBeNull();
+      const twiml = response.toString();
+      expect(twiml).toContain('<Redirect>/voice/blackjack/welcome</Redirect>');
+    });
+  });
 });

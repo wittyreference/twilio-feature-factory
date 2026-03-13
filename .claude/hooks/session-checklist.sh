@@ -93,7 +93,20 @@ if [[ -f "$MEMORY_FILE" ]]; then
     fi
 fi
 
-# --- 10. README drift check ---
+# --- 10. Architect summary drift check ---
+ARCHITECT_METRICS="$PROJECT_ROOT/scripts/architect-metrics.sh"
+ARCHITECT_SNAPSHOT="$PROJECT_ROOT/.meta/architect-metrics.json"
+if [[ -x "$ARCHITECT_METRICS" ]] && [[ -f "$ARCHITECT_SNAPSHOT" ]]; then
+    DRIFT_OUTPUT=$("$ARCHITECT_METRICS" --diff "$ARCHITECT_SNAPSHOT" 2>/dev/null) && DRIFT_RC=0 || DRIFT_RC=$?
+    if [[ $DRIFT_RC -ne 0 ]]; then
+        DRIFT_ITEMS=$(echo "$DRIFT_OUTPUT" | grep '^ *-' | sed 's/^ *- //' | paste -sd', ' -)
+        if [[ -n "$DRIFT_ITEMS" ]]; then
+            ITEMS+=("ARCHITECT: Summary drift detected ($DRIFT_ITEMS) — update .meta/old-analysis/2026-02-20-ARCHITECT_SUMMARY.md")
+        fi
+    fi
+fi
+
+# --- 11. README drift check ---
 README_DRIFT_SCRIPT="$PROJECT_ROOT/scripts/check-readme-drift.sh"
 if [[ -x "$README_DRIFT_SCRIPT" ]]; then
     DRIFT_OUTPUT=$("$README_DRIFT_SCRIPT" --quiet 2>/dev/null) || true

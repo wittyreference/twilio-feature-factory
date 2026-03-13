@@ -169,12 +169,12 @@ case "${1:-}" in
     echo "$JSON"
     ;;
   --snapshot)
-    SNAPSHOT_FILE="${2:-$REPO_ROOT/.meta/architect-metrics.json}"
+    SNAPSHOT_FILE="${2:-$REPO_ROOT/architect-metrics.json}"
     echo "$JSON" > "$SNAPSHOT_FILE"
     echo "Snapshot saved to $SNAPSHOT_FILE"
     ;;
   --diff)
-    SNAPSHOT_FILE="${2:-$REPO_ROOT/.meta/architect-metrics.json}"
+    SNAPSHOT_FILE="${2:-$REPO_ROOT/architect-metrics.json}"
     if [[ ! -f "$SNAPSHOT_FILE" ]]; then
       echo "No snapshot found at $SNAPSHOT_FILE — run with --snapshot first" >&2
       exit 1

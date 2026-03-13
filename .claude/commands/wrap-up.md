@@ -168,6 +168,28 @@ If plans are not being archived after plan mode exits, verify the `archive-plan.
 
 Report any issues in the summary. Skip if both are healthy.
 
+### 7b. Architect Summary Drift Check (meta mode only)
+
+If in meta-development mode, check whether the architect summary's quantitative claims have drifted from reality:
+
+```bash
+SNAPSHOT_PATH="$([ -d .meta ] && echo .meta/architect-metrics.json || echo architect-metrics.json)"
+./scripts/architect-metrics.sh --diff "$SNAPSHOT_PATH"
+```
+
+If drift is detected (exit code 1), the output lists specific deltas (e.g., `functions: 73 → 78`). Handle it:
+
+1. Read the current architect summary (find it via `ls .meta/old-analysis/*ARCHITECT*`)
+2. Update every section where the drifted metrics appear — counts in prose, tables, the file map appendix, and domain breakdowns. Don't just find-and-replace numbers; check if new domains, tools, or capabilities need prose additions too.
+3. After updating, refresh the baseline snapshot:
+   ```bash
+   ./scripts/architect-metrics.sh --snapshot "$SNAPSHOT_PATH"
+   ```
+
+If no drift is detected, skip silently. Don't mention it in the summary.
+
+**The snapshot refresh is the critical step** — without it, the session-checklist will keep warning about the same drift every session.
+
 ### 8. Clear Pending Actions
 
 After addressing flywheel suggestions, clear the pending actions file:

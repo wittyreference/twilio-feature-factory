@@ -93,15 +93,17 @@ if [[ -f "$MEMORY_FILE" ]]; then
     fi
 fi
 
-# --- 10. Architect summary drift check ---
+# --- 10. Architect summary drift check (meta mode only) ---
 ARCHITECT_METRICS="$PROJECT_ROOT/scripts/architect-metrics.sh"
-ARCHITECT_SNAPSHOT="$PROJECT_ROOT/.meta/architect-metrics.json"
-if [[ -x "$ARCHITECT_METRICS" ]] && [[ -f "$ARCHITECT_SNAPSHOT" ]]; then
-    DRIFT_OUTPUT=$("$ARCHITECT_METRICS" --diff "$ARCHITECT_SNAPSHOT" 2>/dev/null) && DRIFT_RC=0 || DRIFT_RC=$?
-    if [[ $DRIFT_RC -ne 0 ]]; then
-        DRIFT_ITEMS=$(echo "$DRIFT_OUTPUT" | grep '^ *-' | sed 's/^ *- //' | paste -sd', ' -)
-        if [[ -n "$DRIFT_ITEMS" ]]; then
-            ITEMS+=("ARCHITECT: Summary drift detected ($DRIFT_ITEMS) — update .meta/old-analysis/2026-02-20-ARCHITECT_SUMMARY.md")
+if [[ "$CLAUDE_META_MODE" == "true" ]] && [[ -x "$ARCHITECT_METRICS" ]]; then
+    ARCHITECT_SNAPSHOT="$CLAUDE_META_DIR/architect-metrics.json"
+    if [[ -f "$ARCHITECT_SNAPSHOT" ]]; then
+        DRIFT_OUTPUT=$("$ARCHITECT_METRICS" --diff "$ARCHITECT_SNAPSHOT" 2>/dev/null) && DRIFT_RC=0 || DRIFT_RC=$?
+        if [[ $DRIFT_RC -ne 0 ]]; then
+            DRIFT_ITEMS=$(echo "$DRIFT_OUTPUT" | grep '^ *-' | sed 's/^ *- //' | paste -sd', ' -)
+            if [[ -n "$DRIFT_ITEMS" ]]; then
+                ITEMS+=("ARCHITECT: Summary drift ($DRIFT_ITEMS) — /wrap-up will handle it")
+            fi
         fi
     fi
 fi

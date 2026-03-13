@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice SDK — Twilio Feature Factory</title>
+  <!--
+    ABOUTME: General-purpose browser softphone for Twilio Voice SDK.
+    ABOUTME: Supports dialing PSTN numbers, SDK clients, and displays call quality metrics.
+  -->
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0f1923;
+      color: #e8e8e8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+    }
+    h1 { font-size: 28px; margin-bottom: 4px; color: #4fc3f7; }
+    .subtitle { font-size: 13px; color: #78909c; margin-bottom: 20px; }
+    .status-bar {
+      padding: 8px 20px; border-radius: 20px; font-weight: 600;
+      font-size: 13px; margin-bottom: 16px; text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .status-bar.offline { background: #4a1a1a; color: #ff6b6b; }
+    .status-bar.registering { background: #4a3a1a; color: #ffd700; }
+    .status-bar.registered { background: #1a3a2a; color: #69db7c; }
+    .status-bar.connecting { background: #4a3a1a; color: #ffd700; }
+    .status-bar.connected { background: #1a3a2a; color: #69db7c; }
+    .status-bar.disconnected { background: #333; color: #999; }
+    .panel {
+      background: #1a2733;
+      border: 1px solid #263238;
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+    }
+    .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; }
+    .info-row strong { color: #78909c; }
+    .info-row span { font-family: monospace; color: #ddd; }
+    label { display: block; font-size: 13px; color: #78909c; margin-bottom: 6px; font-weight: 600; }
+    .input-group { margin: 16px 0; }
+    input[type="text"] {
+      width: 100%; padding: 12px 14px; border: 1px solid #37474f; border-radius: 8px;
+      background: #0f1923; color: #e8e8e8; font-size: 16px; font-family: monospace;
+      outline: none;
+    }
+    input[type="text"]:focus { border-color: #4fc3f7; }
+    .quick-dial { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .quick-dial button {
+      padding: 6px 12px; border: 1px solid #37474f; border-radius: 6px;
+      background: #1e3040; color: #b0bec5; font-size: 12px; cursor: pointer;
+    }
+    .quick-dial button:hover { background: #263d50; border-color: #4fc3f7; color: #e8e8e8; }
+    #error { color: #ff6b6b; font-size: 13px; margin: 8px 0; min-height: 18px; }
+    .controls { display: flex; gap: 12px; margin: 20px 0; justify-content: center; }
+    .btn {
+      padding: 14px 36px; border: none; border-radius: 8px; font-size: 16px;
+      font-weight: 700; cursor: pointer; transition: all 0.15s;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-call { background: #2b8a3e; color: white; }
+    .btn-call:hover:not(:disabled) { background: #37b24d; }
+    .btn-hangup { background: #c92a2a; color: white; }
+    .btn-hangup:hover:not(:disabled) { background: #e03131; }
+    .log-label { font-size: 12px; color: #78909c; margin-top: 16px; margin-bottom: 4px; }
+    #log {
+      background: #0d1117; border: 1px solid #263238; border-radius: 8px;
+      padding: 12px; margin-top: 4px; height: 200px; overflow-y: auto;
+      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px;
+      line-height: 1.6; color: #4fc3f7; white-space: pre-wrap;
+    }
+    .timer { font-size: 24px; font-family: monospace; text-align: center; margin: 8px 0; color: #78909c; }
+  </style>
+</head>
+<body>
+  <h1>Voice SDK</h1>
+  <div class="subtitle">Twilio Feature Factory — General Softphone</div>
+  <div id="status" class="status-bar offline">offline</div>
+  <div class="panel">
+    <div class="info-row">
+      <strong>Identity</strong> <span id="identity">—</span>
+    </div>
+    <div class="info-row">
+      <strong>Call SID</strong> <span id="call-sid">—</span>
+    </div>
+    <div class="timer" id="timer"></div>
+    <div class="input-group">
+      <label for="to-input">Destination</label>
+      <input type="text" id="to-input" placeholder="+1NXXNXXXXXX or client:name" />
+      <div class="quick-dial">
+        <button data-to="+12293635283">PBX (Trunk)</button>
+        <button data-to="+12069666002">Main Number</button>
+      </div>
+    </div>
+    <div id="error"></div>
+    <div class="controls">
+      <button id="btn-call" class="btn btn-call" disabled>Call</button>
+      <button id="btn-hangup" class="btn btn-hangup" disabled>Hang Up</button>
+    </div>
+    <div class="log-label">Event Log</div>
+    <div id="log"></div>
+  </div>
+  <script src="/sdk/twilio.min.js"></script>
+  <script>
+    const statusEl = document.getElementById('status');
+    const identityEl = document.getElementById('identity');
+    const callSidEl = document.getElementById('call-sid');
+    const errorEl = document.getElementById('error');
+    const logEl = document.getElementById('log');
+    const timerEl = document.getElementById('timer');
+    const toInput = document.getElementById('to-input');
+    const btnCall = document.getElementById('btn-call');
+    const btnHangup = document.getElementById('btn-hangup');
+
+    let device = null;
+    let activeCall = null;
+    let timerInterval = null;
+    let callStart = null;
+
+    function setStatus(s) {
+      statusEl.textContent = s;
+      statusEl.className = 'status-bar ' + s;
+    }
+
+    function log(msg) {
+      const ts = new Date().toISOString().split('T')[1].slice(0, 12);
+      logEl.textContent += ts + ' ' + msg + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function startTimer() {
+      callStart = Date.now();
+      timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - callStart) / 1000);
+        const min = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const sec = String(elapsed % 60).padStart(2, '0');
+        timerEl.textContent = min + ':' + sec;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      callStart = null;
+    }
+
+    // Quick-dial buttons
+    document.querySelectorAll('.quick-dial button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        toInput.value = btn.dataset.to;
+        toInput.focus();
+      });
+    });
+
+    function bindCallEvents(call) {
+      call.on('accept', () => {
+        setStatus('connected');
+        callSidEl.textContent = call.parameters.CallSid || '—';
+        log('Connected — SID: ' + (call.parameters.CallSid || '?'));
+        startTimer();
+      });
+      call.on('disconnect', () => {
+        setStatus('registered');
+        log('Disconnected');
+        stopTimer();
+        activeCall = null;
+        btnHangup.disabled = true; btnCall.disabled = false;
+        callSidEl.textContent = '—';
+      });
+      call.on('cancel', () => {
+        setStatus('registered'); log('Cancelled');
+        stopTimer();
+        activeCall = null; btnHangup.disabled = true; btnCall.disabled = false;
+      });
+      call.on('error', (e) => {
+        errorEl.textContent = e.message || 'Call error';
+        log('Error: ' + (e.message || JSON.stringify(e)));
+      });
+    }
+
+    async function init() {
+      try {
+        setStatus('registering'); log('Fetching token...');
+        const url = window.TOKEN_URL || '/api/token';
+        const resp = await fetch(url + '?identity=sdk-user');
+        if (!resp.ok) throw new Error('Token: ' + resp.status);
+        const data = await resp.json();
+        identityEl.textContent = data.identity;
+        log('Token OK: ' + data.identity);
+
+        device = new Twilio.Device(data.token, { codecPreferences: ['opus', 'pcmu'], logLevel: 'warn' });
+        device.on('registered', () => { setStatus('registered'); btnCall.disabled = false; log('Ready'); });
+        device.on('error', (e) => { errorEl.textContent = e.message; log('Device error: ' + e.message); });
+
+        // Handle incoming calls
+        device.on('incoming', (call) => {
+          log('Incoming call from: ' + call.parameters.From);
+          call.accept();
+          activeCall = call;
+          btnCall.disabled = true; btnHangup.disabled = false;
+          bindCallEvents(call);
+        });
+
+        await device.register();
+      } catch (e) {
+        setStatus('offline'); errorEl.textContent = e.message; log('Init error: ' + e.message);
+      }
+    }
+
+    btnCall.addEventListener('click', async () => {
+      if (!device) return;
+      const to = toInput.value.trim();
+      if (!to) { errorEl.textContent = 'Enter a destination'; return; }
+      errorEl.textContent = ''; setStatus('connecting'); log('Dialing ' + to + '...');
+      try {
+        activeCall = await device.connect({ params: { To: to } });
+        btnCall.disabled = true; btnHangup.disabled = false;
+        bindCallEvents(activeCall);
+      } catch (e) {
+        errorEl.textContent = e.message; log('Error: ' + e.message); setStatus('registered');
+      }
+    });
+
+    btnHangup.addEventListener('click', () => {
+      if (activeCall) activeCall.disconnect();
+      if (device) device.disconnectAll();
+      log('Hangup');
+    });
+
+    // Enter key dials
+    toInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !btnCall.disabled) btnCall.click();
+    });
+
+    init();
+  </script>
+</body>
+</html>

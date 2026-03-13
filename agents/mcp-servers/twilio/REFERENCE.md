@@ -1,5 +1,5 @@
 // ABOUTME: Complete tool inventory and API reference for the Twilio MCP server.
-// ABOUTME: Detailed parameters, examples, and domain-specific patterns for all 339 tools.
+// ABOUTME: Detailed parameters, examples, and domain-specific patterns for all 351 tools.
 
 # Twilio MCP Server — Complete Reference
 
@@ -42,7 +42,7 @@ This document contains the complete tool inventory, usage examples, and API refe
 
 ## Tool Inventory by Domain
 
-The Twilio MCP Server exposes **339 tools across 28 modules** covering:
+The Twilio MCP Server exposes **351 tools across 28 modules** covering:
 
 - **Messaging**: SMS/MMS, messaging services, content templates, notifications
 - **Voice**: Call management, conferences, recordings, media streams, Voice Insights, transcriptions, call queues, BYOC trunks, SIP trunking
@@ -70,7 +70,7 @@ for await (const message of query({
   prompt: "Send an SMS to +15551234567 saying 'Hello from Claude!'",
   options: {
     mcpServers: { twilio: twilioServer },
-    allowedTools: ['mcp__twilio__messaging_send_sms']
+    allowedTools: ['mcp__twilio__send_sms']
   }
 })) {
   // Agent autonomously sends the SMS
@@ -190,7 +190,7 @@ for await (const message of query({
 
 ## Sync Tools
 
-**Sync tools: 16 tools** for real-time state synchronization using Documents, Lists, and Maps.
+**Sync tools: 18 tools** for real-time state synchronization using Documents, Lists, and Maps.
 
 | Tool | Description |
 |------|-------------|
@@ -198,8 +198,10 @@ for await (const message of query({
 | `update_document` | Update document data |
 | `get_document` | Retrieve document |
 | `list_documents` | List all documents |
+| `delete_document` | Delete a Sync document |
 | `create_sync_list` | Create ordered list for event logs, history |
 | `list_sync_lists` | List all Sync Lists |
+| `delete_sync_list` | Delete a Sync List |
 | `add_sync_list_item` | Append entry to a list |
 | `list_sync_list_items` | Read list entries with ordering |
 | `update_sync_list_item` | Update entry by index |
@@ -338,7 +340,7 @@ for await (const message of query({
 
 ## Intelligence Tools (P2)
 
-**Intelligence tools: 8 tools** for Voice Intelligence transcripts and analysis.
+**Intelligence tools: 9 tools** for Voice Intelligence transcripts and analysis.
 
 **Note:** Intelligence Services must be created in the Twilio Console. There is no API for service creation (as of February 2026). Go to Console → Voice → Voice Intelligence to create a service before using these tools.
 
@@ -352,6 +354,7 @@ for await (const message of query({
 | `list_sentences` | List sentences in transcript |
 | `list_operator_results` | List operator analysis results |
 | `get_transcript_media` | Get transcript media URL |
+| `create_transcript` | Create transcript from recording |
 
 ---
 
@@ -508,7 +511,7 @@ for await (const message of query({
 
 ## SIP Tools (P3)
 
-**SIP tools: 31 tools** for IP Access Control Lists, credentials, and SIP Domains.
+**SIP tools: 40 tools** for IP Access Control Lists, credentials, SIP Domains, and Domain Auth (calls + registrations).
 
 | Tool | Description |
 |------|-------------|
@@ -543,6 +546,15 @@ for await (const message of query({
 | `list_sip_domain_credential_list_mappings` | List credential lists on a SIP Domain |
 | `create_sip_domain_credential_list_mapping` | Associate credential list with SIP Domain |
 | `delete_sip_domain_credential_list_mapping` | Remove credential list from SIP Domain |
+| `list_sip_domain_auth_calls_credential_list_mappings` | List credential lists authorized for inbound SIP calls |
+| `create_sip_domain_auth_calls_credential_list_mapping` | Authorize credential list for SIP calls |
+| `delete_sip_domain_auth_calls_credential_list_mapping` | Remove credential list from call auth |
+| `list_sip_domain_auth_calls_ip_acl_mappings` | List IP ACLs authorized for inbound SIP calls |
+| `create_sip_domain_auth_calls_ip_acl_mapping` | Authorize IP ACL for SIP calls |
+| `delete_sip_domain_auth_calls_ip_acl_mapping` | Remove IP ACL from call auth |
+| `list_sip_domain_auth_registrations_credential_list_mappings` | List credential lists for SIP registration auth |
+| `create_sip_domain_auth_registrations_credential_list_mapping` | Authorize credential list for SIP registration |
+| `delete_sip_domain_auth_registrations_credential_list_mapping` | Remove credential list from registration auth |
 
 ---
 
@@ -666,7 +678,7 @@ for await (const message of query({
 
 ## Validation Tools
 
-**Validation tools: 13 tools** providing deep validation beyond HTTP 200 OK to verify actual operation success. See [Deep Validation Skill](/.claude/skills/deep-validation.md) for patterns.
+**Validation tools: 14 tools** providing deep validation beyond HTTP 200 OK to verify actual operation success. See [Deep Validation Skill](/.claude/skills/deep-validation.md) for patterns.
 
 | Tool | Description |
 |------|-------------|
@@ -683,6 +695,7 @@ for await (const message of query({
 | `validate_sync_map` | Sync Map keys and values validation |
 | `validate_task` | TaskRouter task status, attributes, events validation |
 | `validate_video_room` | Video room validation with participants, tracks, transcription, recording, composition |
+| `validate_sip` | SIP infrastructure validation (trunk + domain checks) |
 
 ### Video Room Validation Checks
 
@@ -694,6 +707,20 @@ The `validate_video_room` tool checks:
 - Transcription status (Healthcare use case)
 - Recording status per participant (Professional/Proctoring use case)
 - Composition status and media accessibility (Professional use case)
+
+---
+
+## Response Shape Gotchas
+
+Tool responses embed JSON in `content[0].text`. The shapes vary by tool category:
+
+| Tool | Key Fields | Notes |
+|------|-----------|-------|
+| `make_call` | `{ sid }` | Call SID as `sid`, not `callSid` |
+| `validate_call` | `{ primaryStatus, resourceSid }` | Different shape from other `validate_*` tools |
+| `validate_recording` / `validate_transcript` | `{ status }` | Uses `status`, not `primaryStatus` |
+| `validate_debugger` | `{ totalAlerts, errorAlerts, warningAlerts, alerts[] }` | Array of alert objects |
+| `validate_transcript` | Takes `transcriptSid` (GT...) | Not `recordingSid` — different param name |
 
 ---
 

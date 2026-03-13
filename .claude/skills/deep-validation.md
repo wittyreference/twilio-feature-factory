@@ -277,6 +277,11 @@ const alerts = await client.monitor.alerts.list({
 | `validate_two_way` | Two-way conversation validation |
 | `validate_language_operator` | Language Operator results validation |
 | `validate_video_room` | Video room validation with participants, tracks, transcription, recording, composition |
+| `validate_sync_document` | Sync Document data structure validation |
+| `validate_sync_list` | Sync List item count and structure validation |
+| `validate_sync_map` | Sync Map keys and values validation |
+| `validate_task` | TaskRouter task deep validation |
+| `validate_sip` | SIP infrastructure validation |
 
 ### Using MCP Tools (Claude Code)
 

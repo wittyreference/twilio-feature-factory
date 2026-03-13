@@ -1,5 +1,5 @@
 // ABOUTME: Twilio Sync tools for real-time state synchronization.
-// ABOUTME: Provides tools for Documents, Lists, and Maps (16 tools total).
+// ABOUTME: Provides tools for Documents, Lists, and Maps (18 tools total).
 
 import { z } from 'zod';
 import type { TwilioContext } from '../index.js';

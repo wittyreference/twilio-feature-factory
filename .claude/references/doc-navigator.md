@@ -5,7 +5,7 @@
 | Project-wide standards | [CLAUDE.md](/CLAUDE.md) |
 | Architectural decisions | [DESIGN_DECISIONS.md](/DESIGN_DECISIONS.md) |
 | MCP server patterns | [agents/mcp-servers/twilio/CLAUDE.md](/agents/mcp-servers/twilio/CLAUDE.md) |
-| MCP tool inventory (339 tools) | [agents/mcp-servers/twilio/REFERENCE.md](/agents/mcp-servers/twilio/REFERENCE.md) |
+| MCP tool inventory (351 tools) | [agents/mcp-servers/twilio/REFERENCE.md](/agents/mcp-servers/twilio/REFERENCE.md) |
 | Tool boundaries | [.claude/references/tool-boundaries.md](/.claude/references/tool-boundaries.md) |
 | Voice/TwiML patterns | [functions/voice/CLAUDE.md](/functions/voice/CLAUDE.md) |
 | Voice reference (verb options, conference API, patterns) | [functions/voice/REFERENCE.md](/functions/voice/REFERENCE.md) |
@@ -32,8 +32,8 @@
 | Compliance & regulatory | `.claude/skills/compliance-regulatory.md` (load on demand) |
 | Media Streams (raw audio) | `.claude/skills/media-streams.md` (load on demand) |
 | Payments guide | `.claude/skills/payments.md` (load on demand) |
-| Deep validation | [agents/mcp-servers/twilio/src/validation/CLAUDE.md](/agents/mcp-servers/twilio/src/validation/CLAUDE.md) |
-| Validation reference (method API, interfaces, integration) | [agents/mcp-servers/twilio/src/validation/REFERENCE.md](/agents/mcp-servers/twilio/src/validation/REFERENCE.md) |
+| Deep validation (DeepValidator class API) | [agents/mcp-servers/twilio/src/validation/CLAUDE.md](/agents/mcp-servers/twilio/src/validation/CLAUDE.md) |
+| Validation internals (methods, interfaces) | [agents/mcp-servers/twilio/src/validation/REFERENCE.md](/agents/mcp-servers/twilio/src/validation/REFERENCE.md) |
 | Autonomous worker | [agents/feature-factory/CLAUDE.md](/agents/feature-factory/CLAUDE.md#autonomous-worker) |
 | Feature factory reference (workflows, autonomous, sandbox) | [agents/feature-factory/REFERENCE.md](/agents/feature-factory/REFERENCE.md) |
 | Doc generator | [agents/doc-generator/CLAUDE.md](/agents/doc-generator/CLAUDE.md) |

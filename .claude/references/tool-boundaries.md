@@ -16,6 +16,19 @@ This document defines the architectural boundaries between MCP Server, Twilio CL
 
 ---
 
+## Dual Tool Registration
+
+In this project, Twilio tools appear twice in Claude Code sessions:
+
+1. **`mcp__twilio__<name>`** — Project MCP server (via `.mcp.json`). Uses project `.env` credentials.
+2. **`mcp__plugin_twilio-claude-plugin_twilio__<name>`** — Official Twilio plugin (via `~/.claude/settings.json`).
+
+**Always prefer `mcp__twilio__` (the shorter prefix).** It uses the project's configured credentials and matches the deployed account. The plugin uses its own credential config which may differ.
+
+To disable the plugin entirely: set `"twilio-claude-plugin@twilio-claude-plugin": false` in `~/.claude/settings.json` under `enabledPlugins`.
+
+---
+
 ## The Golden Rules
 
 1. **MCP = Data Operations**: Query, send, create records. Never deploy or delete infrastructure.
@@ -175,7 +188,7 @@ Operations requiring explicit human approval before execution.
 | Deploy to production | CLI: `serverless:deploy --environment production` | Production infrastructure change |
 | Purchase phone number | CLI: `phone-numbers:buy:*` | Financial commitment |
 | Rollback deployment | CLI: `serverless:activate` | Production impact |
-| Delete Sync documents | MCP: (not implemented) | Data loss potential |
+| Delete Sync documents | MCP: `delete_document` | Data loss potential |
 
 ### Tier 4: Prohibited (Never Autonomous)
 

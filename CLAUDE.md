@@ -55,7 +55,7 @@ The hooks in `.claude/hooks/` auto-detect the environment. Claude must also foll
 
 ## MCP Server & Tool Discovery
 
-The project embeds an MCP server at `agents/mcp-servers/twilio/` with 342 Twilio API tools. It is auto-discovered by Claude Code via `.mcp.json` at the project root — no manual registration needed.
+The project embeds an MCP server at `agents/mcp-servers/twilio/` with 351 Twilio API tools. It is auto-discovered by Claude Code via `.mcp.json` at the project root — no manual registration needed.
 
 - **Tool reference**: `agents/mcp-servers/twilio/REFERENCE.md` — full inventory organized by domain and priority tier
 - **Finding the right tool**: See `.claude/rules/self-service.md` for the SID-first lookup hierarchy
@@ -66,7 +66,11 @@ The project embeds an MCP server at `agents/mcp-servers/twilio/` with 342 Twilio
 
 Use MCP validation tools instead of CLI commands for Twilio validation. They provide deep validation beyond HTTP 200 — automatic polling, content quality checks, forbidden pattern detection, and unified error reporting.
 
-Available tools: `validate_call`, `validate_message`, `validate_recording`, `validate_transcript`, `validate_debugger`, `validate_voice_ai_flow`, `validate_two_way`, `validate_language_operator`. See `agents/mcp-servers/twilio/src/tools/validation.ts` for full documentation.
+Available tools: `validate_call`, `validate_message`, `validate_recording`, `validate_transcript`, `validate_debugger`, `validate_voice_ai_flow`, `validate_two_way`, `validate_language_operator`, `validate_sync_document`, `validate_sync_list`, `validate_sync_map`, `validate_task`, `validate_sip`, `validate_video_room`. See `agents/mcp-servers/twilio/src/tools/validation.ts` for full documentation.
+
+### Tool Tiers & Deferred Loading
+
+By default, only P0 + validation tools (~110) are fully loaded. P2/P3 tools appear in `<available-deferred-tools>` but require schema hydration via `ToolSearch` before calling (e.g., `ToolSearch("select:create_sip_domain")`).
 
 ## Agent Teams
 

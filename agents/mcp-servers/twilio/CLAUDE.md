@@ -80,9 +80,9 @@ src/
 
 ## Tool Naming Convention
 
-All tools follow the pattern: `twilio_<domain>_<action>`
+Tools use flat action names: `send_sms`, `make_call`, `create_document`, `validate_call`.
 
-Examples: `twilio_messaging_send_sms`, `twilio_voice_get_call_logs`, `twilio_sync_create_document`
+At runtime in Claude Code, the MCP framework adds a namespace prefix: `mcp__twilio__<tool_name>` (e.g., `mcp__twilio__send_sms`). Tool source code and documentation use the short form.
 
 ## Environment Variables
 
@@ -136,7 +136,7 @@ for await (const message of query({
   prompt: "Send an SMS to +15551234567 saying 'Hello from Claude!'",
   options: {
     mcpServers: { twilio: twilioServer },
-    allowedTools: ['mcp__twilio__messaging_send_sms']
+    allowedTools: ['mcp__twilio__send_sms']
   }
 })) {
   // Agent sends the SMS

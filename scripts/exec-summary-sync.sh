@@ -1,14 +1,16 @@
 #!/bin/bash
-# ABOUTME: Stop hook that detects drift between the executive summary and actual codebase metrics.
-# ABOUTME: Auto-updates numeric claims and flags structural changes (new domains not in prose).
+# ABOUTME: Syncs executive summary metrics with actual codebase state.
+# ABOUTME: Called by /wrap-up in meta-mode. Auto-updates numeric claims, flags new domains.
 
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/_meta-mode.sh"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$PROJECT_ROOT/.claude/hooks/_meta-mode.sh"
 
 # Only runs in meta-mode (exec summary is a meta-only artifact)
 if [ "$CLAUDE_META_MODE" != "true" ]; then
+    echo "Skipped: not in meta-mode (.meta/ not found)" >&2
     exit 0
 fi
 

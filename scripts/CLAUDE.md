@@ -35,6 +35,7 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 | `headless-preflight.sh` | `./scripts/headless-preflight.sh` | Pre-flight setup: deploy, ngrok, agent servers, SIP Lab droplet lifecycle |
 | `check-readme-drift.sh` | `./scripts/check-readme-drift.sh` | Detect structural drift between README.md and actual project contents |
 | `architect-metrics.sh` | `./scripts/architect-metrics.sh [--json\|--snapshot\|--diff]` | Collect codebase metrics for architect summary drift detection; session-checklist integrated |
+| `exec-summary-sync.sh` | `./scripts/exec-summary-sync.sh` | Sync executive summary metrics with codebase state; meta-mode only, called by /wrap-up |
 | `api-sync/` | `cd scripts/api-sync && npm run sync` | Automated Twilio API drift detection and coverage analysis |
 
 ## Headless Gotchas

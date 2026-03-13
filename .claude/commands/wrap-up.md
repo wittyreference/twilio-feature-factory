@@ -190,6 +190,18 @@ If no drift is detected, skip silently. Don't mention it in the summary.
 
 **The snapshot refresh is the critical step** — without it, the session-checklist will keep warning about the same drift every session.
 
+### 7c. Executive Summary Drift Check (meta mode only)
+
+If in meta-development mode, sync the executive summary's quantitative claims with reality:
+
+```bash
+./scripts/exec-summary-sync.sh
+```
+
+The script counts functions, domains, access levels, MCP tools/modules, hooks, skills, design decisions, validation tools, and the npm version — then auto-updates any numbers that have drifted. It also flags new function domains not mentioned in the prose (those need manual additions).
+
+If the script reports changes, review the diff and include the exec summary update context in the session learnings. If no drift, skip silently.
+
 ### 8. Clear Pending Actions
 
 After addressing flywheel suggestions, clear the pending actions file:

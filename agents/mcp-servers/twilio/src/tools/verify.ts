@@ -8,7 +8,7 @@ function createTool<T extends z.ZodType>(
   name: string,
   description: string,
   schema: T,
-  handler: (params: z.infer<T>) => Promise<{ content: Array<{ type: 'text'; text: string }> }>
+  handler: (params: z.infer<T>) => Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }>
 ) {
   return { name, description, inputSchema: schema, handler };
 }
@@ -35,6 +35,7 @@ export function verifyTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Verify Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -75,6 +76,7 @@ export function verifyTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Verify Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -114,6 +116,7 @@ export function verifyTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Verify Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 

@@ -9,7 +9,7 @@ function createTool<T extends z.ZodType>(
   name: string,
   description: string,
   schema: T,
-  handler: (params: z.infer<T>) => Promise<{ content: Array<{ type: 'text'; text: string }> }>
+  handler: (params: z.infer<T>) => Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }>
 ) {
   return { name, description, inputSchema: schema, handler };
 }
@@ -374,6 +374,7 @@ export function validationTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, errors: ['No workspace SID provided and TWILIO_TASKROUTER_WORKSPACE_SID not set'] }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -636,6 +637,7 @@ export function validationTools(context: TwilioContext) {
               duration: Date.now() - startTime,
             }, null, 2),
           }],
+          isError: true,
         };
       }
 

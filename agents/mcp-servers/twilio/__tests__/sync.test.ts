@@ -42,8 +42,8 @@ describe('syncTools', () => {
   });
 
   describe('tool structure', () => {
-    it('should return an array of 16 tools', () => {
-      expect(tools).toHaveLength(16);
+    it('should return an array of 18 tools', () => {
+      expect(tools).toHaveLength(18);
     });
 
     it('should have create_document tool with correct metadata', () => {

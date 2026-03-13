@@ -8,7 +8,7 @@ function createTool<T extends z.ZodType>(
   name: string,
   description: string,
   schema: T,
-  handler: (params: z.infer<T>) => Promise<{ content: Array<{ type: 'text'; text: string }> }>
+  handler: (params: z.infer<T>) => Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }>
 ) {
   return { name, description, inputSchema: schema, handler };
 }
@@ -475,6 +475,7 @@ export function accountsTools(context: TwilioContext) {
               error: message,
             }, null, 2),
           }],
+          isError: true,
         };
       }
     }

@@ -13,7 +13,7 @@ function createTool<T extends z.ZodType>(
   name: string,
   description: string,
   schema: T,
-  handler: (params: z.infer<T>) => Promise<{ content: Array<{ type: 'text'; text: string }> }>
+  handler: (params: z.infer<T>) => Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }>
 ) {
   return { name, description, inputSchema: schema, handler };
 }
@@ -91,6 +91,7 @@ export function voiceTools(context: TwilioContext) {
       if (!url && !twiml) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: 'Either url or twiml must be provided' }) }],
+          isError: true,
         };
       }
 
@@ -509,6 +510,7 @@ export function voiceTools(context: TwilioContext) {
       if (!status && !url && !twiml) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: 'At least one of status, url, or twiml must be provided' }) }],
+          isError: true,
         };
       }
 

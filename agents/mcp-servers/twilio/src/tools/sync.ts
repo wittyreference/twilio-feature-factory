@@ -8,7 +8,7 @@ function createTool<T extends z.ZodType>(
   name: string,
   description: string,
   schema: T,
-  handler: (params: z.infer<T>) => Promise<{ content: Array<{ type: 'text'; text: string }> }>
+  handler: (params: z.infer<T>) => Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }>
 ) {
   return { name, description, inputSchema: schema, handler };
 }
@@ -40,6 +40,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -81,6 +82,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -123,6 +125,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -164,6 +167,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -201,6 +205,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -238,6 +243,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -277,6 +283,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -316,6 +323,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -360,6 +368,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -412,6 +421,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -454,6 +464,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -487,6 +498,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -524,6 +536,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -563,6 +576,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -603,6 +617,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -645,6 +660,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -688,6 +704,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 
@@ -730,6 +747,7 @@ export function syncTools(context: TwilioContext) {
             type: 'text' as const,
             text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2),
           }],
+          isError: true,
         };
       }
 

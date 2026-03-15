@@ -1643,7 +1643,49 @@ The `.meta/` directory contains session-specific state: learnings, pending actio
 
 ### Status
 
-**Accepted** - 2026-03-09
+**Accepted** - 2026-03-09. Evolved by D37 (symlink overlay implementation).
+
+---
+
+## Decision 37: Three-Repo Architecture with Symlink Overlay
+
+### Context
+
+The project grew to encompass four distinct products (feature factory, MCP server, Claude plugin, development workshop), but the development environment (`.meta/`) held 17MB of plans, analysis, and learnings with zero version control. Plugin sync scripts and validation tooling lived in the factory's `scripts/` directory despite being development-only operations that should never ship to end users.
+
+D36 established `.meta/` as single-developer session state. This decision evolves the implementation while preserving that principle.
+
+### Decision
+
+**Three repos (`twilio-feature-factory`, `factory-workshop`, `twilio-claude-plugin`) connected by a single symlink: `.meta/ → ../factory-workshop`.**
+
+The workshop is a private GitHub repo containing all development-only artifacts: plans, learnings, analysis, plugin sync scripts, sync map, meta-validation scripts. The symlink is gitignored and persistent. All existing meta-mode detection (`[[ -d "$PROJECT_ROOT/.meta" ]]`) works unchanged because bash's `-d` follows symlinks.
+
+### Rationale
+
+1. **Version control for intellectual property**: 161+ archived plans, learnings archive, analysis docs now have full git history
+2. **Zero hook refactoring**: Meta-mode detection follows symlinks — literally nothing changed in hook code
+3. **Clean shipping boundary**: Development-only scripts (plugin-sync, meta-validation, shipping-readiness) live in the workshop, not the factory's `scripts/` directory
+4. **Disaster recovery**: One-command restore (`ln -s ../factory-workshop .meta`), session-start hook warns if symlink is missing
+
+### Alternatives Considered
+
+- **Full disaggregation (5+ repos)**: 5 PRs for cross-cutting changes, 5 CI configs. Overhead scales linearly while developer count stays at 1
+- **npm workspaces monorepo**: Twilio CLI expects `functions/` at repo root. Claude Code expects `.claude/` at repo root. Workspaces don't solve the actual pain (`.meta/` version control, plugin sync)
+- **Git submodules**: Plugin uses *adapted* copies (frontmatter, path stripping), not exact copies. Submodules provide exact copies
+- **Branch-based .meta**: Hooks need `.meta/` physically inside the working tree for path resolution. `git worktree` puts it in a separate checkout
+- **Dual hook sets (stripped + full)**: Doubles hook maintenance for zero user-facing benefit. The `source _meta-mode.sh` call is harmless dead code for end users
+
+### Consequences
+
+- Workshop scripts must use `git rev-parse --show-toplevel` for project root (not `SCRIPT_DIR/..`) because `BASH_SOURCE[0]` resolves through the symlink
+- `git check-ignore .meta` requires no trailing slash (symlink edge case)
+- Workshop changes need separate commits: `cd .meta && git add -A && git commit`
+- Plugin sync map is canonical in workshop (`.meta/sync-map.json`), not factory
+
+### Status
+
+**Accepted** - 2026-03-15
 
 ---
 
@@ -1726,3 +1768,4 @@ The `.meta/` directory contains session-specific state: learnings, pending actio
 | 2026-03-06 | D34 | Accord-informed pipeline evolution: /prototype phase, LLM velocity trap naming, collaboration reframe |
 | 2026-03-07 | D35 | Clean-room provisioning validation: 14-test ephemeral lifecycle script, ~$0.07/run |
 | 2026-03-09 | D36 | .meta/ documented as intentionally single-developer, gitignored session state |
+| 2026-03-15 | D37 | Three-repo architecture with symlink overlay (.meta/ → factory-workshop). Evolves D36 |

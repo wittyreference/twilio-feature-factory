@@ -79,6 +79,11 @@ if [ -f "$SESSION_DIR/.session-start" ]; then
     fi
 fi
 
+# 1b. Workshop symlink health check
+if [ ! -d "$PROJECT_ROOT/.meta" ] && [ -d "$PROJECT_ROOT/../factory-workshop" ]; then
+    echo "WARNING: factory-workshop exists but .meta symlink is missing. Restore with: ln -s ../factory-workshop .meta" >&2
+fi
+
 # 2. .env file check
 if [ -f "$PROJECT_ROOT/.env" ]; then
     MISSING_VARS=""

@@ -9,28 +9,28 @@ Detect and reconcile drift between factory source files and the twilio-claude-pl
 Run the coverage audit to identify files not yet in the sync map:
 
 ```bash
-scripts/plugin-sync-coverage.sh
+.meta/scripts/plugin-sync-coverage.sh
 ```
 
-If uncovered files are found, present them to the user for triage (map or exclude) before proceeding with drift sync. Add new entries to `.claude/plugin-sync-map.json` accordingly.
+If uncovered files are found, present them to the user for triage (map or exclude) before proceeding with drift sync. Add new entries to `.meta/sync-map.json` accordingly.
 
 ### 1. Run drift detection
 
 Run the drift detection script to identify which factory files have changed since the last plugin sync:
 
 ```bash
-scripts/plugin-drift-check.sh --report
+.meta/scripts/plugin-drift-check.sh --report
 ```
 
 If no drift is detected, report that and stop.
 
 ### 2. Verify plugin repo is accessible
 
-Check that the plugin repo exists at the path specified in `.claude/plugin-sync-map.json` (`plugin_repo` field). Read the sync map to get the path. If the plugin repo is not found, report the error and stop.
+Check that the plugin repo exists at the path specified in `.meta/sync-map.json` (`plugin_repo` field). Read the sync map to get the path. If the plugin repo is not found, report the error and stop.
 
 ### 3. Group drifted files by adaptation complexity
 
-Read `.claude/plugin-sync-map.json` and categorize drifted files into three groups:
+Read `.meta/sync-map.json` and categorize drifted files into three groups:
 - **Minimal**: adaptation is `minimal` or `frontmatter` only — near-identical copies
 - **Strip**: adaptation involves `strip-*` operations — mechanical removals
 - **Complex**: adaptation involves `generalize-*`, `extract-*`, or `restructure` — requires judgment
@@ -77,7 +77,7 @@ After all files are processed:
 Check whether `agents/mcp-servers/twilio/src` has source changes since the last npm publish:
 
 ```bash
-scripts/plugin-drift-check.sh --report  # Look for "MCP SERVER STALE" section
+.meta/scripts/plugin-drift-check.sh --report  # Look for "MCP SERVER STALE" section
 ```
 
 If the MCP server source is stale (source commits exist after the last `package.json` change):

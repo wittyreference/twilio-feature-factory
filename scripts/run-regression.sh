@@ -127,7 +127,7 @@ run_check "unit-tests"      "npm test -- --bail"                                
 run_check "lint"             "npm run lint"                                               &
 run_check "typecheck"        "cd agents/mcp-servers/twilio && npx tsc --noEmit"          &
 run_check "doc-drift"        "./scripts/check-claude-doc-drift.sh"                        &
-run_check "meta-separation"  "./scripts/validate-meta-separation.sh"                      &
+run_check "meta-separation"  "./.meta/scripts/validate-meta-separation.sh"                 &
 
 # Newman E2E — may not be available in all environments
 if [ -f "postman/collection.json" ] || command -v newman &> /dev/null 2>&1; then
@@ -135,8 +135,8 @@ if [ -f "postman/collection.json" ] || command -v newman &> /dev/null 2>&1; then
 fi
 
 # Shipping readiness — may not exist in all clones
-if [ -f "scripts/verify-shipping-ready.sh" ]; then
-    run_check "shipping-ready" "./scripts/verify-shipping-ready.sh" &
+if [ -f ".meta/scripts/verify-shipping-ready.sh" ]; then
+    run_check "shipping-ready" "./.meta/scripts/verify-shipping-ready.sh" &
 fi
 
 # README drift

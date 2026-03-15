@@ -195,7 +195,7 @@ If no drift is detected, skip silently. Don't mention it in the summary.
 If in meta-development mode, sync the executive summary's quantitative claims with reality:
 
 ```bash
-./scripts/exec-summary-sync.sh
+./.meta/scripts/exec-summary-sync.sh
 ```
 
 The script counts functions, domains, access levels, MCP tools/modules, hooks, skills, design decisions, validation tools, and the npm version — then auto-updates any numbers that have drifted. It also flags new function domains not mentioned in the prose (those need manual additions).

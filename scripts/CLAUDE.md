@@ -14,11 +14,6 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 | `run-headless.sh` | `./scripts/run-headless.sh` | Run Claude Code non-interactively via `claude -p` (CI/CD) |
 | `validation-reset.sh` | `./scripts/validation-reset.sh` | Reset Twilio account to clean state for validation runs |
 | `check-claude-doc-drift.sh` | `./scripts/check-claude-doc-drift.sh` | Compare actual files vs CLAUDE.md inventories; exit 1 on drift |
-| `plugin-drift-check.sh` | `./scripts/plugin-drift-check.sh` | Detect drift between factory source and plugin distribution |
-| `plugin-sync-deterministic.sh` | `./scripts/plugin-sync-deterministic.sh` | Apply mechanical sync adaptations from factory to plugin staging |
-| `plugin-sync-coverage.sh` | `./scripts/plugin-sync-coverage.sh` | Compare files on disk against sync map; report coverage gaps |
-| `validate-meta-separation.sh` | `./scripts/validate-meta-separation.sh` | Verify `.meta/` files stay separated from shipped paths |
-| `verify-shipping-ready.sh` | `./scripts/verify-shipping-ready.sh` | Pre-ship checklist: no meta refs, clean exports, doc links valid |
 | `demo.sh` | `npm run demo` | One-command demo launcher with ngrok, env verification, URL banner |
 | `check-demo-health.sh` | `./scripts/check-demo-health.sh` | Pre-demo health check (ngrok, server, API keys, credentials) |
 | `run-validation-suite.sh` | `./scripts/run-validation-suite.sh` | Run E2E deep validation suite against live US1 Twilio APIs |
@@ -35,7 +30,6 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 | `headless-preflight.sh` | `./scripts/headless-preflight.sh` | Pre-flight setup: deploy, ngrok, agent servers, SIP Lab droplet lifecycle |
 | `check-readme-drift.sh` | `./scripts/check-readme-drift.sh` | Detect structural drift between README.md and actual project contents |
 | `architect-metrics.sh` | `./scripts/architect-metrics.sh [--json\|--snapshot\|--diff]` | Collect codebase metrics for architect summary drift detection; session-checklist integrated |
-| `exec-summary-sync.sh` | `./scripts/exec-summary-sync.sh` | Sync executive summary metrics with codebase state; meta-mode only, called by /wrap-up |
 | `api-sync/` | `cd scripts/api-sync && npm run sync` | Automated Twilio API drift detection and coverage analysis |
 
 ## Headless Gotchas

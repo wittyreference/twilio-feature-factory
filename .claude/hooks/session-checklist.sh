@@ -65,7 +65,7 @@ if [[ "$FUNCTIONS_CHANGED" -gt 0 ]]; then
 fi
 
 # --- 7. Plugin drift check (if syncable files were touched) ---
-DRIFT_SCRIPT="$PROJECT_ROOT/scripts/plugin-drift-check.sh"
+DRIFT_SCRIPT="$PROJECT_ROOT/.meta/scripts/plugin-drift-check.sh"
 if [[ -x "$DRIFT_SCRIPT" ]] && command -v jq &>/dev/null; then
     DRIFT_COUNT=$("$DRIFT_SCRIPT" --count 2>/dev/null) || DRIFT_COUNT=0
     if [[ "$DRIFT_COUNT" -gt 0 ]]; then

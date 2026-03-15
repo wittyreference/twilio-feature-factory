@@ -197,7 +197,7 @@ if echo "$COMMAND" | grep -qE "^git\s+commit"; then
     # ============================================
     # PLUGIN SYNC AWARENESS (Non-blocking)
     # ============================================
-    SYNC_MAP="$PROJECT_ROOT/.claude/plugin-sync-map.json"
+    SYNC_MAP="$PROJECT_ROOT/.meta/sync-map.json"
     if [[ -f "$SYNC_MAP" ]] && command -v jq &>/dev/null; then
         STAGED_LIST=$(git diff --staged --name-only 2>/dev/null)
         if [[ -n "$STAGED_LIST" ]]; then

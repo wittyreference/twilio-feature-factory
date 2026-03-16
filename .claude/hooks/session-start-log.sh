@@ -155,6 +155,16 @@ if [ ! -f "$PROJECT_ROOT/agents/mcp-servers/twilio/dist/serve.js" ]; then
     echo "WARNING: MCP server not built. Tools will not be available. Run: cd agents/mcp-servers/twilio && npm install && npm run build" >&2
 fi
 
+# 6c. direnv status check — if direnv is installed but .envrc not allowed,
+# the MCP server will get empty env vars and crash silently.
+if command -v direnv >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/.envrc" ]; then
+    if ! direnv status 2>/dev/null | grep -q "Found RC allowed true"; then
+        echo "WARNING: direnv installed but .envrc not allowed. MCP tools may not work. Run: direnv allow" >&2
+    fi
+elif ! command -v direnv >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/.envrc" ]; then
+    echo "WARNING: direnv not installed. Shell env vars may override .env. Install: brew install direnv" >&2
+fi
+
 # 7. Codebase smoke test (syntax + deps, <200ms)
 SMOKE_FAILURES=""
 

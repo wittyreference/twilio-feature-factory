@@ -117,6 +117,15 @@ if [[ -x "$README_DRIFT_SCRIPT" ]]; then
     fi
 fi
 
+# --- 12. Wiki drift check ---
+WIKI_DRIFT_SCRIPT="$PROJECT_ROOT/scripts/check-wiki-drift.sh"
+if [[ -x "$WIKI_DRIFT_SCRIPT" ]]; then
+    WIKI_DRIFT_OUTPUT=$("$WIKI_DRIFT_SCRIPT" --quiet 2>/dev/null) || true
+    if [[ -n "$WIKI_DRIFT_OUTPUT" ]]; then
+        ITEMS+=("Wiki: $WIKI_DRIFT_OUTPUT")
+    fi
+fi
+
 # ============================================
 # Output checklist (only if there are items)
 # ============================================

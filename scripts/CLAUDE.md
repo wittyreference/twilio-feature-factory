@@ -29,6 +29,8 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 | `run-regression.sh` | `./scripts/run-regression.sh` | Regression validation orchestrator — parallel fast checks + headless validation lanes |
 | `headless-preflight.sh` | `./scripts/headless-preflight.sh` | Pre-flight setup: deploy, ngrok, agent servers, SIP Lab droplet lifecycle |
 | `check-readme-drift.sh` | `./scripts/check-readme-drift.sh` | Detect structural drift between README.md and actual project contents |
+| `check-wiki-drift.sh` | `./scripts/check-wiki-drift.sh [--quiet\|--json]` | Detect stat drift between GitHub wiki pages and actual codebase; session-checklist integrated |
+| `sync-wiki.sh` | `./scripts/sync-wiki.sh [--fix\|--push]` | Clone/pull wiki, detect drift, optionally auto-fix numbers and push |
 | `architect-metrics.sh` | `./scripts/architect-metrics.sh [--json\|--snapshot\|--diff]` | Collect codebase metrics for architect summary drift detection; session-checklist integrated |
 | `api-sync/` | `cd scripts/api-sync && npm run sync` | Automated Twilio API drift detection and coverage analysis |
 

@@ -225,6 +225,32 @@ if echo "$ALL_FILES" | grep -qE "\.env"; then
     SUGGESTIONS="${SUGGESTIONS}• .env.example - ensure new env vars are documented\n"
 fi
 
+# Check for wiki-affecting changes (counts that appear on wiki pages)
+# Wiki pages contain hardcoded stats that drift when code changes
+WIKI_DRIFT_HINT=""
+if echo "$ALL_FILES" | grep -qE "^functions/.*\.js$"; then
+    WIKI_DRIFT_HINT="${WIKI_DRIFT_HINT}functions, "
+fi
+if echo "$ALL_FILES" | grep -q "agents/mcp-servers/twilio/src/tools"; then
+    WIKI_DRIFT_HINT="${WIKI_DRIFT_HINT}MCP tools, "
+fi
+if echo "$ALL_FILES" | grep -q ".claude/skills/"; then
+    WIKI_DRIFT_HINT="${WIKI_DRIFT_HINT}skills, "
+fi
+if echo "$ALL_FILES" | grep -q ".claude/hooks/"; then
+    WIKI_DRIFT_HINT="${WIKI_DRIFT_HINT}hooks, "
+fi
+if echo "$ALL_FILES" | grep -q "DESIGN_DECISIONS.md"; then
+    WIKI_DRIFT_HINT="${WIKI_DRIFT_HINT}ADRs, "
+fi
+if echo "$ALL_FILES" | grep -qE "__tests__/.*\.test\."; then
+    WIKI_DRIFT_HINT="${WIKI_DRIFT_HINT}tests, "
+fi
+if [ -n "$WIKI_DRIFT_HINT" ]; then
+    WIKI_DRIFT_HINT=$(echo "$WIKI_DRIFT_HINT" | sed 's/, $//')
+    SUGGESTIONS="${SUGGESTIONS}• Wiki pages may need stat updates (changed: ${WIKI_DRIFT_HINT}) — run ./scripts/check-wiki-drift.sh\n"
+fi
+
 # Check for validation failure patterns (Source 4)
 if [ "$UNRESOLVED_PATTERNS" -gt 0 ]; then
     SUGGESTIONS="${SUGGESTIONS}• agents/mcp-servers/twilio/src/validation/CLAUDE.md - $UNRESOLVED_PATTERNS unresolved validation patterns"

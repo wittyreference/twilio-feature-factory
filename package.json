@@ -41,7 +41,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "twilio": "^5.12.2"
+    "twilio": "^5.13.0"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

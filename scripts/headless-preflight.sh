@@ -448,7 +448,7 @@ export SIP_LAB_READY
 
 log "Step 6: Writing preflight report"
 
-REPORT_DIR="$PROJECT_DIR/.meta"
+REPORT_DIR="$PROJECT_DIR/.meta/validation-reports/state"
 mkdir -p "$REPORT_DIR"
 
 python3 -c "
@@ -467,7 +467,7 @@ report = {
 
 with open('$REPORT_DIR/preflight-report.json', 'w') as f:
     json.dump(report, f, indent=2)
-print('Report written to .meta/preflight-report.json')
+print('Report written to .meta/validation-reports/state/preflight-report.json')
 "
 
 # ============================================================================

@@ -15,7 +15,7 @@ Four validation planes, each testing a different dimension:
 
 **CRITICAL**: All planes run in `/tmp/` directories. The root working tree is NEVER modified. No test files, no built functions, no deployed artifacts, no branch pollution. Findings and reports are written back to `.meta/` in the root repo only.
 
-**CWD GUARD**: Shell working directory resets to the root repo after bash operations like `npm install`, `git clone`, and other commands. You MUST `cd` to the absolute `/tmp/uber-val-RUNID/plane-X/` path before EVERY bash command that reads or writes files. Never use relative paths — always use the full `/tmp/uber-val-RUNID/...` absolute path. If you see yourself writing to `.meta/uber-val-*` or any path under the root repo that isn't `.meta/uber-validation-*.json` or `.meta/uber-validation-reports/`, STOP — your cwd has drifted.
+**CWD GUARD**: Shell working directory resets to the root repo after bash operations like `npm install`, `git clone`, and other commands. You MUST `cd` to the absolute `/tmp/uber-val-RUNID/plane-X/` path before EVERY bash command that reads or writes files. Never use relative paths — always use the full `/tmp/uber-val-RUNID/...` absolute path. If you see yourself writing to `.meta/uber-val-*` or any path under the root repo that isn't `.meta/validation-reports/`, STOP — your cwd has drifted.
 
 ## Arguments
 
@@ -34,8 +34,8 @@ Parse arguments for flags:
 ## Phase 0: Initialize
 
 1. **Generate run ID**: `uber-val-YYYYMMDD-HHMMSS`
-2. **Read history**: `.meta/uber-validation-history.json` (create if absent)
-3. **If `--resume`**: read `.meta/uber-validation-state.json`, skip completed planes, resume from first pending/timeout plane
+2. **Read history**: `.meta/validation-reports/state/uber-validation-history.json` (create if absent)
+3. **If `--resume`**: read `.meta/validation-reports/state/uber-validation-state.json`, skip completed planes, resume from first pending/timeout plane
 4. **Run `/preflight`** in the root repo (read-only environment check)
 5. **Anti-repetition selection**:
    - **Plane A UC**: Pick from UC1-UC8, least recently used in history
@@ -58,7 +58,7 @@ Parse arguments for flags:
    - The rewrite MUST preserve the core product requirements (so the UC is still buildable) but the description should be messy, incomplete, or oddly framed
    - Record the persona and rewritten description in the state file
 7. **Create temp directory structure**: `mkdir -p /tmp/uber-val-RUNID/{plane-a,plane-b,plane-c,plane-d}`
-8. **Initialize state file**: `.meta/uber-validation-state.json` with run config, plane statuses all `pending`, persona rewrites
+8. **Initialize state file**: `.meta/validation-reports/state/uber-validation-state.json` with run config, plane statuses all `pending`, persona rewrites
 
 **Repo pool for Plane D**:
 
@@ -140,7 +140,7 @@ Parse arguments for flags:
    cp ~/workspaces/twilio-feature-factory/.env /tmp/uber-val-RUNID/plane-c/
    cd /tmp/uber-val-RUNID/plane-c/ && npm install
    ```
-3. Read `.meta/uber-validation-history.json` for archetype exclusions
+3. Read `.meta/validation-reports/state/uber-validation-history.json` for archetype exclusions
 4. Generate 3-4 novel chaos scenarios:
    - Each scenario is a developer request that's intentionally problematic
    - Difficulty level from `--chaos-difficulty` (default: moderate)
@@ -202,9 +202,9 @@ Parse arguments for flags:
 
 1. Collect all findings from all planes
 2. Assign sequential IDs: `UV-001`, `UV-002`, ...
-3. Deduplicate: check finding fingerprints against `.meta/uber-validation-history.json` `knownFindingFingerprints`. Mark repeats as `seenBefore: true`.
+3. Deduplicate: check finding fingerprints against `.meta/validation-reports/state/uber-validation-history.json` `knownFindingFingerprints`. Mark repeats as `seenBefore: true`.
 4. Sort: BLOCKING first, then MAJOR, MINOR, INFO. Within severity, sort by plane.
-5. Generate markdown report: `.meta/uber-validation-reports/YYYY-MM-DD-HHMMSS.md`
+5. Generate markdown report: `.meta/validation-reports/YYYY-MM-DD-HHMMSS.md`
 
    Report structure:
    ```
@@ -219,11 +219,11 @@ Parse arguments for flags:
    ```
 
 6. If `--create-issues`: for each BLOCKING finding, `gh issue create --title "[UV-NNN] title" --body "description" --label uber-validation,blocking`
-7. Update `.meta/uber-validation-history.json`:
+7. Update `.meta/validation-reports/state/uber-validation-history.json`:
    - Add run to `runs` array (include `persona` and `rewrite` for each Plane A/B UC in `selections`)
    - Update `ffRepoUsage`, `chaosArchetypesUsed`, `personaUsage` (increment persona count per use)
    - Add new finding fingerprints to `knownFindingFingerprints`
-8. Update `.meta/uber-validation-state.json` with `completedAt` and final status
+8. Update `.meta/validation-reports/state/uber-validation-state.json` with `completedAt` and final status
 9. Cleanup: `rm -rf /tmp/uber-val-RUNID/` unless `--keep-artifacts`
 10. Print summary to stdout:
     ```
@@ -231,7 +231,7 @@ Parse arguments for flags:
     Planes: 4/4 passed
     Findings: X total (N blocking, N major, N minor, N info)
     New findings: Y | Seen before: Z
-    Report: .meta/uber-validation-reports/YYYY-MM-DD-HHMMSS.md
+    Report: .meta/validation-reports/YYYY-MM-DD-HHMMSS.md
     ```
 
 ## Finding Categories Reference

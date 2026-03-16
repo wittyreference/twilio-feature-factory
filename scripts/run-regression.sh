@@ -93,10 +93,10 @@ fi
 # --- Setup ---
 
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-REPORT_DIR="$(pwd)/.meta/regression-reports/${TIMESTAMP}"
+REPORT_DIR="$(pwd)/.meta/validation-reports/${TIMESTAMP}-regression-${MODE}"
 mkdir -p "$REPORT_DIR"
 
-REPORT_DIR_DISPLAY=".meta/regression-reports/${TIMESTAMP}"
+REPORT_DIR_DISPLAY=".meta/validation-reports/${TIMESTAMP}-regression-${MODE}"
 
 echo -e "${BOLD}Regression Validation Suite${NC}"
 echo -e "${DIM}Mode: ${MODE} | Report: ${REPORT_DIR_DISPLAY}${NC}"

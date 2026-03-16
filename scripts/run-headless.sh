@@ -28,6 +28,13 @@ ENV_FILE=".env"
 
 # Resolve a pre-defined task name to its prompt
 resolve_task_prompt() {
+    # Check meta-development validation prompts first (validation prompts live here)
+    local meta_prompt=".meta/validation-prompts/$1.md"
+    if [ -f "$meta_prompt" ]; then
+        cat "$meta_prompt"
+        return
+    fi
+
     case "$1" in
         validate)
             echo "Run /preflight checks, then run npm test --bail. Report results summary at the end."
@@ -46,21 +53,6 @@ resolve_task_prompt() {
             ;;
         e2e-validate)
             cat "$(dirname "$0")/headless-tasks/e2e-validate.md"
-            ;;
-        random-validation)
-            cat "$(dirname "$0")/headless-tasks/random-validation.md"
-            ;;
-        uber-validation)
-            cat "$(dirname "$0")/headless-tasks/uber-validation.md"
-            ;;
-        chaos-only)
-            cat "$(dirname "$0")/headless-tasks/chaos-only.md"
-            ;;
-        nonvoice-only)
-            cat "$(dirname "$0")/headless-tasks/nonvoice-only.md"
-            ;;
-        sequential-validation)
-            cat "$(dirname "$0")/headless-tasks/sequential-validation.md"
             ;;
         *)
             echo ""
@@ -86,9 +78,10 @@ Options:
   --list-tasks       List available pre-defined tasks
   --help             Show this help message
 
-Pre-defined tasks: validate, test-fix, lint-fix, typecheck, deploy-dev, e2e-validate,
-                   random-validation, uber-validation, chaos-only, nonvoice-only,
-                   sequential-validation
+Pre-defined tasks: validate, test-fix, lint-fix, typecheck, deploy-dev, e2e-validate
+Validation tasks (from .meta/validation-prompts/): chaos-only, nonvoice-only,
+                   random-validation, real-world-validation, sequential-validation,
+                   uber-validation
 
 Environment:
   CLAUDE_HEADLESS_ACKNOWLEDGED=true  Required. Confirms you accept autonomous risks.
@@ -111,10 +104,15 @@ list_tasks() {
     echo "  typecheck     Run tsc --noEmit, fix type errors, commit fixes"
     echo "  deploy-dev    Run /preflight, then deploy to dev environment"
     echo "  e2e-validate  Full E2E: deploy, live calls, callback verification, auto-fix (use --max-turns 80)"
-    echo "  random-validation  Random use case build + deploy + deep validation (use --max-turns 120)"
-    echo "  chaos-only    Chaos resilience testing — no Twilio API calls (use --max-turns 60)"
-    echo "  nonvoice-only Nonvoice validation: SMS, Verify, Sync, TaskRouter (use --max-turns 120)"
+    echo ""
+    echo "Validation tasks (from .meta/validation-prompts/ — requires meta-dev environment):"
+    echo ""
+    echo "  chaos-only             Chaos resilience testing — no Twilio API calls (use --max-turns 60)"
+    echo "  nonvoice-only          Nonvoice: SMS, Verify, Sync, TaskRouter, Video, Messaging (use --max-turns 135)"
+    echo "  random-validation      Random use case build + deploy + deep validation (use --max-turns 120)"
+    echo "  real-world-validation  New-user onboarding simulation (use --preflight --max-turns 150)"
     echo "  sequential-validation  Sequential voice UC1-UC10 incl. PSTN (use --preflight --max-turns 250)"
+    echo "  uber-validation        4-plane mega-validator (use --max-turns 200)"
     echo ""
     echo "Flags:"
     echo "  --clean            Run validation-reset.sh first (deletes deployment, recreates services)"

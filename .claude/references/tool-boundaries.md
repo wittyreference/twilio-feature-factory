@@ -85,6 +85,7 @@ Read-only operations agents can perform freely via MCP tools.
 | Validate TaskRouter task | `validate_task` | Task deep validation |
 | Validate SIP | `validate_sip` | Infrastructure validation |
 | Validate video room | `validate_video_room` | Room + participants + tracks |
+| Validate environment | `validate_environment` | Account identity + credentials + services |
 | List serverless services | `list_services` | Deployment state |
 | List serverless functions | `list_functions` | Function inventory |
 | List serverless logs | `list_logs` | Runtime logs |

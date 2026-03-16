@@ -40,7 +40,7 @@ The Twilio MCP Server enables Claude agents to interact with real Twilio infrast
 - **Pricing**: 7 tools (P3) for pricing lookups
 - **Notify**: 10 tools (P3) for push notifications
 - **Addresses**: 6 tools (P3) for address management
-- **Validation**: 14 tools for deep validation beyond HTTP 200
+- **Validation**: 15 tools for deep validation beyond HTTP 200
 
 ## Architecture
 
@@ -75,7 +75,8 @@ src/
     ├── pricing.ts        # Pricing (P3)
     ├── notify.ts         # Push notifications (P3)
     ├── addresses.ts      # Addresses (P3)
-    └── validation.ts     # Deep validation wrappers
+    ├── validation.ts     # Deep validation wrappers
+    └── environment.ts    # Environment validation
 ```
 
 ## Tool Naming Convention
@@ -113,7 +114,7 @@ Tools are organized into priority tiers. Default loads P0 + validation (~110 too
 | P1 | 40 | Lookups, Studio, Messaging Services, Serverless |
 | P2 | 97 | Intelligence, Video, Proxy, TrustHub, Content, Voice Config, Regulatory, Media |
 | P3 | 104 | SIP, Trunking, Accounts, IAM, Pricing, Notify, Addresses |
-| validation | 14 | Deep validation beyond HTTP 200 |
+| validation | 15 | Deep validation beyond HTTP 200 |
 
 Configure via `toolTiers` in `TwilioMcpServerConfig`:
 - Default: `['P0', 'validation']` — 110 tools

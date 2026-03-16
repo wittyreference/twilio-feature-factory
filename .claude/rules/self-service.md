@@ -14,6 +14,7 @@ Use MCP tools to verify state before asking the user to check manually. Prefer S
    - Video: `validate_video_room(roomSid)` — room + participants + tracks
    - Debugger (filtered): `validate_debugger(resourceSid: "CA...")` — alerts for one resource
    - SIP: `validate_sip(trunkSid, domainSid)` — infrastructure check
+   - Environment: `validate_environment()` — account identity + credentials + service SIDs
 
 2. **Need to discover/list?** → Use MCP list tools (structured JSON):
    - Deployed functions: `list_services`, `list_functions`

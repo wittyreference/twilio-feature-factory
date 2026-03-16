@@ -66,7 +66,7 @@ The project embeds an MCP server at `agents/mcp-servers/twilio/` with 351 Twilio
 
 Use MCP validation tools instead of CLI commands for Twilio validation. They provide deep validation beyond HTTP 200 — automatic polling, content quality checks, forbidden pattern detection, and unified error reporting.
 
-Available tools: `validate_call`, `validate_message`, `validate_recording`, `validate_transcript`, `validate_debugger`, `validate_voice_ai_flow`, `validate_two_way`, `validate_language_operator`, `validate_sync_document`, `validate_sync_list`, `validate_sync_map`, `validate_task`, `validate_sip`, `validate_video_room`. See `agents/mcp-servers/twilio/src/tools/validation.ts` for full documentation.
+Available tools: `validate_call`, `validate_message`, `validate_recording`, `validate_transcript`, `validate_debugger`, `validate_environment`, `validate_voice_ai_flow`, `validate_two_way`, `validate_language_operator`, `validate_sync_document`, `validate_sync_list`, `validate_sync_map`, `validate_task`, `validate_sip`, `validate_video_room`. See `agents/mcp-servers/twilio/src/tools/validation.ts` and `environment.ts` for full documentation.
 
 ### Tool Tiers & Deferred Loading
 

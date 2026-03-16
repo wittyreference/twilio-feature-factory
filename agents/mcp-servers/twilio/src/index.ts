@@ -35,6 +35,7 @@ import { notifyTools } from './tools/notify.js';
 import { addressesTools } from './tools/addresses.js';
 // Validation tools (Deep validation beyond HTTP 200)
 import { validationTools } from './tools/validation.js';
+import { environmentTools } from './tools/environment.js';
 
 /**
  * Priority tiers for tool loading. Default loads P0 + validation only.
@@ -121,7 +122,7 @@ export function createTwilioMcpServer(config: TwilioMcpServerConfig = {}) {
     P1: [lookupsTools, studioTools, messagingServicesTools, serverlessTools],
     P2: [intelligenceTools, videoTools, proxyTools, trusthubTools, contentTools, voiceConfigTools, regulatoryTools, mediaTools],
     P3: [sipTools, trunkingTools, accountsTools, iamTools, pricingTools, notifyTools, addressesTools],
-    validation: [validationTools],
+    validation: [validationTools, environmentTools],
   };
 
   // Determine which tiers to load
@@ -180,6 +181,7 @@ export { notifyTools } from './tools/notify.js';
 export { addressesTools } from './tools/addresses.js';
 // Validation tool exports
 export { validationTools } from './tools/validation.js';
+export { environmentTools } from './tools/environment.js';
 
 // Export validation utilities
 export {

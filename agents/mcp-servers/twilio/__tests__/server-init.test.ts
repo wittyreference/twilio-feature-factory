@@ -32,21 +32,21 @@ describe('MCP Server Initialization', () => {
     it('should register P0 + validation tools by default (~110)', () => {
       const server = createTwilioMcpServer(MOCK_CONFIG);
 
-      // Default loads P0 (96) + validation (14) = 110 tools
-      expect(server.tools).toHaveLength(110);
+      // Default loads P0 (96) + validation (15) = 111 tools
+      expect(server.tools).toHaveLength(111);
     });
 
     it('should register all 351 tools when toolTiers includes all', () => {
       const server = createTwilioMcpServer({ ...MOCK_CONFIG, toolTiers: ['all'] });
 
-      expect(server.tools).toHaveLength(351);
+      expect(server.tools).toHaveLength(352);
     });
 
     it('should load specific tiers when configured', () => {
       const server = createTwilioMcpServer({ ...MOCK_CONFIG, toolTiers: ['P0', 'P1', 'validation'] });
 
-      // P0 (96) + P1 (40) + validation (14) = 150
-      expect(server.tools).toHaveLength(150);
+      // P0 (96) + P1 (40) + validation (15) = 151
+      expect(server.tools).toHaveLength(151);
     });
 
     it('should throw error when missing TWILIO_ACCOUNT_SID', () => {

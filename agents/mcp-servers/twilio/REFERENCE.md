@@ -678,7 +678,7 @@ for await (const message of query({
 
 ## Validation Tools
 
-**Validation tools: 14 tools** providing deep validation beyond HTTP 200 OK to verify actual operation success. See [Deep Validation Skill](/.claude/skills/deep-validation.md) for patterns.
+**Validation tools: 15 tools** providing deep validation beyond HTTP 200 OK to verify actual operation success. See [Deep Validation Skill](/.claude/skills/deep-validation.md) for patterns.
 
 | Tool | Description |
 |------|-------------|
@@ -687,6 +687,7 @@ for await (const message of query({
 | `validate_recording` | Recording completion validation |
 | `validate_transcript` | Voice Intelligence transcript completion + sentence validation |
 | `validate_debugger` | Account-wide debugger error check |
+| `validate_environment` | Operating environment validation (account identity, credentials, service SIDs) |
 | `validate_voice_ai_flow` | Full Voice AI flow (call + recording + transcript + SMS) |
 | `validate_two_way` | Two-way conversation validation |
 | `validate_language_operator` | Language Operator results validation |

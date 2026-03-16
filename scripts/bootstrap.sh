@@ -194,12 +194,8 @@ else
     check_warn "Twilio Serverless plugin (CLI not installed yet)"
 fi
 
-# 6. direnv
-if command -v direnv > /dev/null 2>&1; then
-    check_pass "direnv $(direnv version 2>/dev/null || echo '')"
-else
-    check_warn "direnv not installed" "Recommended: brew install direnv (prevents credential conflicts)"
-fi
+# 6. direnv — checked in Phase 4 (Environment Isolation)
+#    Not a blocking prerequisite, but critical for credential safety
 
 # 7. jq
 if command -v jq > /dev/null 2>&1; then
@@ -407,15 +403,73 @@ if command -v direnv > /dev/null 2>&1; then
         if ! $CHECK_ONLY; then
             direnv allow . 2>/dev/null || true
         fi
-        check_pass "direnv configured (.envrc present)"
+        check_pass "direnv configured (.envrc present and allowed)"
     else
         check_warn ".envrc missing" "Expected in repo root"
     fi
 else
-    check_warn "direnv not installed — credential conflicts possible" \
-        "Install: brew install direnv && echo 'eval \"\$(direnv hook zsh)\"' >> ~/.zshrc"
-    echo -e "       ${DIM}Without direnv, run before each session:${NC}"
-    echo -e "       ${DIM}  set -a && source .env && set +a${NC}"
+    echo ""
+    echo -e "  ${YELLOW}${BOLD}┌──────────────────────────────────────────────────────────┐${NC}"
+    echo -e "  ${YELLOW}${BOLD}│  direnv is NOT installed                                 │${NC}"
+    echo -e "  ${YELLOW}${BOLD}│                                                          │${NC}"
+    echo -e "  ${YELLOW}${BOLD}│${NC}  Without direnv, shell env vars from other Twilio${YELLOW}${BOLD}        │${NC}"
+    echo -e "  ${YELLOW}${BOLD}│${NC}  projects WILL silently override your .env file.${YELLOW}${BOLD}         │${NC}"
+    echo -e "  ${YELLOW}${BOLD}│${NC}  This causes auth failures and wrong-account bugs.${YELLOW}${BOLD}       │${NC}"
+    echo -e "  ${YELLOW}${BOLD}└──────────────────────────────────────────────────────────┘${NC}"
+    echo ""
+    if ! $CHECK_ONLY && ! $NON_INTERACTIVE; then
+        echo -n "  Install direnv now? (brew install direnv) [Y/n] "
+        read -r install_direnv
+        if [[ -z "$install_direnv" ]] || [[ "$install_direnv" =~ ^[Yy] ]]; then
+            echo -e "  ${CYAN}INST${NC} Installing direnv..."
+            if brew install direnv 2>&1 | tail -3; then
+                # Detect shell and add hook
+                SHELL_RC=""
+                if [ -f "$HOME/.zshrc" ]; then
+                    SHELL_RC="$HOME/.zshrc"
+                elif [ -f "$HOME/.bashrc" ]; then
+                    SHELL_RC="$HOME/.bashrc"
+                fi
+                if [ -n "$SHELL_RC" ]; then
+                    HOOK_LINE='eval "$(direnv hook '"$(basename "$SHELL")"')"'
+                    if ! grep -q "direnv hook" "$SHELL_RC" 2>/dev/null; then
+                        echo "" >> "$SHELL_RC"
+                        echo "# direnv — auto-load .envrc per-directory" >> "$SHELL_RC"
+                        echo "$HOOK_LINE" >> "$SHELL_RC"
+                        echo -e "  ${GREEN}PASS${NC} direnv hook added to $SHELL_RC"
+                    fi
+                fi
+                # Allow the .envrc
+                if [ -f ".envrc" ]; then
+                    eval "$(direnv hook "$(basename "$SHELL")")" 2>/dev/null || true
+                    direnv allow . 2>/dev/null || true
+                fi
+                check_pass "direnv installed and configured"
+            else
+                check_fail "direnv installation failed" "Install manually: brew install direnv"
+            fi
+        else
+            # User opted out — record it
+            if [ -f ".env" ] && ! grep -q "DIRENV_OPTED_OUT" .env 2>/dev/null; then
+                echo "" >> .env
+                echo "# DIRENV_OPTED_OUT=true  (user chose to skip direnv during bootstrap)" >> .env
+            fi
+            check_warn "direnv skipped (opted out)" \
+                "Run before each session: set -a && source .env && set +a"
+        fi
+    elif $NON_INTERACTIVE; then
+        # Non-interactive: warn and mark opt-out
+        echo -e "  ${YELLOW}WARN${NC} direnv not installed (non-interactive mode, cannot prompt)" >&2
+        WARN=$((WARN + 1))
+        TOTAL=$((TOTAL + 1))
+        if [ -f ".env" ] && ! grep -q "DIRENV_OPTED_OUT" .env 2>/dev/null; then
+            echo "" >> .env
+            echo "# DIRENV_OPTED_OUT=true  (non-interactive bootstrap, direnv not available)" >> .env
+        fi
+    else
+        check_warn "direnv not installed" \
+            "Install: brew install direnv"
+    fi
 fi
 
 # Run env-doctor
@@ -424,6 +478,15 @@ if [ -f "scripts/env-doctor.sh" ]; then
         check_pass "env-doctor: no credential conflicts"
     else
         check_warn "env-doctor detected issues" "Run ./scripts/env-doctor.sh for details"
+    fi
+fi
+
+# MCP server startup verification
+if [ -f "scripts/verify-mcp.sh" ]; then
+    if bash scripts/verify-mcp.sh > /dev/null 2>&1; then
+        check_pass "MCP server verified (can start with current credentials)"
+    else
+        check_warn "MCP server may not start correctly" "Run: ./scripts/verify-mcp.sh for details"
     fi
 fi
 
@@ -514,8 +577,10 @@ if [ $FAIL -eq 0 ] && ! $CHECK_ONLY; then
     echo -e "${BOLD}${CYAN}└──────────────────────────────────────────────────────────┘${NC}"
     echo ""
     echo -e "  ${BOLD}Quick test${NC} — ask Claude:"
-    echo -e "  ${DIM}\"Make an outbound call to +1XXXXXXXXXX saying${NC}"
-    echo -e "  ${DIM} Hello from the Feature Factory\"${NC}"
+    echo -e "  ${DIM}\"Use the make_call MCP tool to call +1XXXXXXXXXX.${NC}"
+    echo -e "  ${DIM} Say Hello from the Feature Factory.\"${NC}"
+    echo ""
+    echo -e "  ${DIM}If MCP tools aren't working: ./scripts/verify-mcp.sh${NC}"
     echo ""
 fi
 

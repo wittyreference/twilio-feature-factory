@@ -177,9 +177,15 @@ if command -v direnv &>/dev/null; then
         check "direnv" 2 ".envrc not found — environment isolation disabled"
     fi
 else
-    check "direnv" 2 "not installed — shell vars can leak between projects"
-    echo -e "    ${DIM}Install: brew install direnv${NC}"
-    echo -e "    ${DIM}Then:    echo 'eval \"\$(direnv hook zsh)\"' >> ~/.zshrc && direnv allow${NC}"
+    # Distinguish conscious opt-out (bootstrap asked, user declined) from never-asked
+    if [ -f "$ENV_FILE" ] && grep -q "DIRENV_OPTED_OUT=true" "$ENV_FILE" 2>/dev/null; then
+        check "direnv" 2 "not installed (opted out during bootstrap) — shell vars can leak between projects"
+    else
+        check "direnv" 1 "not installed and never configured — credential conflicts likely"
+        echo -e "    ${DIM}Install: brew install direnv${NC}"
+        echo -e "    ${DIM}Then:    echo 'eval \"\$(direnv hook zsh)\"' >> ~/.zshrc && direnv allow${NC}"
+        echo -e "    ${DIM}Or run ./scripts/bootstrap.sh to set up interactively${NC}"
+    fi
 fi
 echo ""
 

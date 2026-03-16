@@ -58,7 +58,7 @@
     "twilio-run": "^5.0.0",
     "twilio-video": "^2.34.0",
     "typescript": "^5.4.0",
-    "typescript-eslint": "^8.56.1",
+    "typescript-eslint": "^8.57.0",
     "ws": "^8.19.0"
   },
   "engines": {

@@ -345,6 +345,25 @@ CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh --task random-valida
 2. Run `npm run deploy:dev` to create a fresh serverless deployment
 3. Configure webhooks on phone numbers as needed
 
+## MCP Server Verification Script
+
+The `verify-mcp.sh` script proves the MCP server can start with current credentials. Run it after bootstrap or whenever MCP tools aren't working in Claude Code.
+
+### What It Checks (4 Sections)
+
+1. **Build Artifacts** — `dist/serve.js` and `dist/index.js` exist
+2. **MCP Configuration** — `.mcp.json` exists and is valid JSON
+3. **Environment Variables** — `.env` has non-empty, non-placeholder values for `TWILIO_ACCOUNT_SID`, auth credentials, and `TWILIO_PHONE_NUMBER`
+4. **Dry-Run Startup** — Constructs the MCP server without making API calls (validates credential format and presence)
+
+### Usage
+
+```bash
+./scripts/verify-mcp.sh
+```
+
+Exit code 0 = ready, 1 = fix needed (with actionable remediation in output).
+
 ## Environment Doctor Script
 
 The `env-doctor.sh` script detects conflicts between the user's shell environment and the project's `.env` file before they cause mysterious auth failures.

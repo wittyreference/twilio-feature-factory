@@ -255,6 +255,55 @@ fi
 echo ""
 
 # ─────────────────────────────────────────────────────────
+# Phase D.5: MCP Server Verification
+# ─────────────────────────────────────────────────────────
+echo -e "${BOLD}Phase D.5: MCP Server Verification${NC}"
+echo ""
+
+# D5.1: verify-mcp.sh exists and is executable
+test_result "D5.1: verify-mcp.sh exists" "true" "$([ -f scripts/verify-mcp.sh ] && echo true || echo false)"
+
+# D5.2: verify-mcp.sh passes (server can construct itself)
+if [ -f "scripts/verify-mcp.sh" ]; then
+    if $VERBOSE; then
+        bash scripts/verify-mcp.sh 2>&1
+        MCP_EXIT=$?
+    else
+        bash scripts/verify-mcp.sh > /dev/null 2>&1
+        MCP_EXIT=$?
+    fi
+    test_result "D5.2: MCP server startup check" "0" "$MCP_EXIT"
+else
+    test_result "D5.2: MCP server startup check" "0" "1"
+fi
+
+# D5.3: Critical env vars resolve to non-empty, non-placeholder values
+for VAR_NAME in TWILIO_ACCOUNT_SID TWILIO_AUTH_TOKEN; do
+    VAR_VALUE="${!VAR_NAME:-}"
+    RESOLVED=$([ -n "$VAR_VALUE" ] && [ "$VAR_VALUE" != "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" ] && [ "$VAR_VALUE" != "your_auth_token_here" ] && echo true || echo false)
+    test_result "D5.3: $VAR_NAME resolves in MCP context" "true" "$RESOLVED"
+done
+
+echo ""
+
+# ─────────────────────────────────────────────────────────
+# Phase D.6: direnv Awareness
+# ─────────────────────────────────────────────────────────
+echo -e "${BOLD}Phase D.6: direnv Awareness${NC}"
+echo ""
+
+test_result "D6.1: .envrc exists" "true" "$([ -f .envrc ] && echo true || echo false)"
+
+if command -v direnv > /dev/null 2>&1; then
+    DIRENV_ALLOWED=$(direnv status 2>/dev/null | grep -c "Found RC allowed true" || echo "0")
+    test_result "D6.2: direnv allowed" "1" "$DIRENV_ALLOWED"
+else
+    echo -e "  ${YELLOW}SKIP${NC} D6.2: direnv not installed (expected in CI)"
+fi
+
+echo ""
+
+# ─────────────────────────────────────────────────────────
 # Phase E: Smoke Test (optional)
 # ─────────────────────────────────────────────────────────
 if $SMOKE_TEST; then

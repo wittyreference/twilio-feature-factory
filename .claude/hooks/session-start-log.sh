@@ -150,6 +150,11 @@ if command -v chub >/dev/null 2>&1; then
     echo "Context Hub (chub) available for external API docs." >&2
 fi
 
+# 6b. MCP server build check
+if [ ! -f "$PROJECT_ROOT/agents/mcp-servers/twilio/dist/serve.js" ]; then
+    echo "WARNING: MCP server not built. Tools will not be available. Run: cd agents/mcp-servers/twilio && npm install && npm run build" >&2
+fi
+
 # 7. Codebase smoke test (syntax + deps, <200ms)
 SMOKE_FAILURES=""
 

@@ -36,11 +36,11 @@ Open Claude Code in the project directory. The MCP server connects automatically
 Ask Claude:
 
 ```
-Make an outbound call to +1XXXXXXXXXX from my Twilio number.
-Use a <Say> verb to say "Hello from the Feature Factory! Your setup is working."
+Use the make_call MCP tool to call +1XXXXXXXXXX from my Twilio number.
+Say "Hello from the Feature Factory! Your setup is working."
 ```
 
-Replace `+1XXXXXXXXXX` with your personal phone number. Your phone will ring, and you'll hear the greeting.
+Replace `+1XXXXXXXXXX` with your personal phone number. Claude will use the MCP server's `make_call` tool (not the Twilio CLI) to place the call. Your phone will ring and you'll hear the greeting.
 
 ## Step 4: Verify the Call
 
@@ -74,5 +74,6 @@ No serverless functions were deployed. No webhooks were configured. Claude talke
 |---------|-----|
 | 401 Unauthorized | Run `./scripts/env-doctor.sh` to check for credential conflicts |
 | Call doesn't connect | Verify your Twilio number is voice-capable in the Console |
-| MCP tools not available | Check that `.mcp.json` exists and the server is configured |
+| MCP tools not available | 1. Verify `agents/mcp-servers/twilio/dist/serve.js` exists. 2. Run `./scripts/verify-mcp.sh` to test startup. 3. Exit Claude Code completely and relaunch. 4. If using direnv, run `direnv allow` |
+| Claude uses CLI instead of MCP | MCP tools may need hydration. Ask Claude to use the `make_call` MCP tool explicitly. If it says tools aren't available, ask it to run `ToolSearch("select:mcp__twilio__make_call")` |
 | "Invalid 'To' number" | Use E.164 format: `+1` followed by 10 digits |

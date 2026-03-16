@@ -2,6 +2,14 @@
 
 Use MCP tools to verify state before asking the user to check manually. Prefer SID-targeted tools over list-level tools, and MCP over CLI.
 
+## Before Using Any MCP Tool
+
+MCP tools appear in `<available-deferred-tools>` and require schema hydration before calling. Use `ToolSearch("select:mcp__twilio__<tool_name>")` first. If you see `mcp__twilio__*` in the deferred tools list, the MCP server IS working — do NOT tell the user to restart Claude Code or say tools aren't available.
+
+## MCP Over CLI — Always
+
+For ALL Twilio data and communication operations (calls, SMS, queries, validation), use MCP tools. NEVER use `twilio api:core:calls:create`, `twilio api:core:messages:create`, or any `twilio api:*` command when the equivalent MCP tool exists. The CLI is only for profile management (`twilio profiles:*`), deployment (`twilio serverless:deploy`), and plugin installation.
+
 ## SID-First Lookup Hierarchy
 
 1. **Have a specific resource SID?** → Use the targeted `validate_*` or `get_*` tool:

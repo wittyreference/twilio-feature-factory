@@ -1,5 +1,9 @@
 # CLAUDE.md
 
+> **First session?** Ask the user for their preferred name and update the "Preferred name" field in the Shared Working Agreement section below.
+>
+> **Preferred name: [Your name here]**
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
@@ -68,9 +72,31 @@ Use MCP validation tools instead of CLI commands for Twilio validation. They pro
 
 Available tools: `validate_call`, `validate_message`, `validate_recording`, `validate_transcript`, `validate_debugger`, `validate_environment`, `validate_voice_ai_flow`, `validate_two_way`, `validate_language_operator`, `validate_sync_document`, `validate_sync_list`, `validate_sync_map`, `validate_task`, `validate_sip`, `validate_video_room`. See `agents/mcp-servers/twilio/src/tools/validation.ts` and `environment.ts` for full documentation.
 
-### Tool Tiers & Deferred Loading
+### MCP Tool Loading — IMPORTANT
 
-By default, only P0 + validation tools (~110) are fully loaded. P2/P3 tools appear in `<available-deferred-tools>` but require schema hydration via `ToolSearch` before calling (e.g., `ToolSearch("select:create_sip_domain")`).
+ALL MCP tools (including P0 tools like `make_call` and `send_sms`) appear in `<available-deferred-tools>`. This is NORMAL — it does NOT mean the MCP server is broken. To use any MCP tool:
+
+1. Call `ToolSearch("select:mcp__twilio__make_call")` to hydrate its schema
+2. Then call the tool normally
+
+NEVER say "MCP tools aren't available" or tell the user to restart Claude Code when you can see `mcp__twilio__*` entries in `<available-deferred-tools>`. Their presence means the MCP server IS connected and working.
+
+For tools not visible in the deferred list, use keyword search: `ToolSearch("+twilio video room")`.
+
+### MCP-First Rule for Twilio Operations
+
+When MCP tools are available, ALWAYS use them over Twilio CLI:
+- Making calls: `make_call`, NOT `twilio api:core:calls:create`
+- Sending SMS: `send_sms`, NOT `twilio api:core:messages:create`
+- Querying: `get_call_logs`, NOT `twilio api:core:calls:list`
+- All validation: `validate_*` tools
+
+CLI is ONLY for operations with no MCP equivalent:
+- `twilio profiles:list` / `twilio profiles:use`
+- `twilio serverless:deploy`
+- `twilio plugins:install`
+
+If you catch yourself reaching for `twilio api:*`, stop and use the corresponding MCP tool instead.
 
 ## Agent Teams
 
@@ -107,9 +133,6 @@ This project uses a **doc-first approach**: Check → Act → Record.
 # Shared Working Agreement
 
 This section establishes shared language and expectations between human and AI collaborators. These aren't directives to follow — they're principles we both operate under.
-
-- When you first work with a new user, ask for their preferred name and update this file.
-- **Preferred name: [Your name here]**
 
 ## Working Together
 

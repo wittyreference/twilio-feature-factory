@@ -23,6 +23,7 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 | `check-changelog.sh` | `./scripts/check-changelog.sh` | Monitor Claude Code + Agent SDK releases for new features; cross-references against harness config |
 | `update.sh` | `./scripts/update.sh` | Self-contained updater — handles clones, forks, and templates uniformly |
 | `validate-updates.sh` | `./scripts/validate-updates.sh` | Cross-repo validation of check-updates.sh and update.sh across 3 GitHub repos |
+| `verify-mcp.sh` | `./scripts/verify-mcp.sh` | Verify MCP server can start (build artifacts, .mcp.json, credentials, dry-run) |
 | `env-doctor.sh` | `./scripts/env-doctor.sh` | Detect shell vs .env conflicts, orphaned regional vars, direnv status |
 | `dogfood-env.sh` | `./scripts/dogfood-env.sh` | Simulate new-user onboarding with conflicting shell env vars |
 | `validate-provisioning.sh` | `./scripts/validate-provisioning.sh` | Clean-room provisioning validator — ephemeral resources, full lifecycle, auto-teardown |

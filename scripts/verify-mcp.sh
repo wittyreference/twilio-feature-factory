@@ -63,6 +63,22 @@ if [ -f "$MCP_JSON" ]; then
     else
         check ".mcp.json is valid JSON" 1 "parse error — check file syntax"
     fi
+    # Check for ${VAR} references to undefined env vars (kills MCP startup)
+    UNDEFINED_VARS=""
+    for VAR_REF in $(grep -oE '\$\{[A-Z_]+\}' "$MCP_JSON" 2>/dev/null | sort -u); do
+        VAR_NAME=$(echo "$VAR_REF" | tr -d '${}')
+        # Check both shell env and .env file
+        SHELL_VAL="${!VAR_NAME:-}"
+        FILE_VAL=$(grep -E "^${VAR_NAME}=" "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2 | tr -d '"' | tr -d "'" || true)
+        if [ -z "$SHELL_VAL" ] && [ -z "$FILE_VAL" ]; then
+            UNDEFINED_VARS="${UNDEFINED_VARS} ${VAR_NAME}"
+        fi
+    done
+    if [ -n "$UNDEFINED_VARS" ]; then
+        check ".mcp.json env var references" 1 "undefined:${UNDEFINED_VARS} — MCP server will fail to start"
+    else
+        check ".mcp.json env var references" 0
+    fi
 else
     check ".mcp.json exists" 1 "not found — Claude Code cannot discover the MCP server"
 fi

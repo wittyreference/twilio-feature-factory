@@ -78,13 +78,33 @@ ACL_SID="${SIP_LAB_IP_ACL_SID:-}"
 IP_SID="${SIP_LAB_IP_ADDRESS_SID:-}"
 
 if [[ "$DROPLET_IP" != "$OLD_IP" ]] && [[ -n "$ACL_SID" ]] && [[ -n "$IP_SID" ]]; then
-  log "IP changed ($OLD_IP → $DROPLET_IP). Updating Twilio IP ACL..."
-  twilio api:sip:ip-access-control-lists:ip-addresses:update \
-    --ip-access-control-list-sid "$ACL_SID" \
-    --sid "$IP_SID" \
-    --ip-address "$DROPLET_IP" \
-    -o json > /dev/null 2>&1 && ok "Twilio IP ACL updated to $DROPLET_IP" \
-    || warn "Failed to update IP ACL — update manually"
+  log "IP changed ($OLD_IP → $DROPLET_IP). Updating Twilio IP ACL + origination URL..."
+
+  # Source main .env for Twilio credentials (needed for REST API call)
+  PROJECT_ROOT="$(cd "$SIP_LAB_DIR/../.." && pwd)"
+  if [[ -f "$PROJECT_ROOT/.env" ]]; then
+    source "$PROJECT_ROOT/.env"
+  fi
+
+  # Update IP ACL via REST API (CLI silently fails for this endpoint)
+  if [[ -n "$TWILIO_ACCOUNT_SID" ]] && [[ -n "$TWILIO_AUTH_TOKEN" ]]; then
+    curl -s -X POST "https://api.twilio.com/2010-04-01/Accounts/$TWILIO_ACCOUNT_SID/SIP/IpAccessControlLists/$ACL_SID/IpAddresses/$IP_SID.json" \
+      -u "$TWILIO_ACCOUNT_SID:$TWILIO_AUTH_TOKEN" \
+      -d "IpAddress=$DROPLET_IP" > /dev/null 2>&1 && ok "Twilio IP ACL updated to $DROPLET_IP" \
+      || warn "Failed to update IP ACL — update manually"
+  else
+    warn "No Twilio credentials found — update IP ACL manually for $DROPLET_IP"
+  fi
+
+  # Update origination URL
+  ORIG_SID="${SIP_LAB_ORIGINATION_URL_SID:-}"
+  TRUNK_SID="${SIP_LAB_TRUNK_SID:-}"
+  if [[ -n "$ORIG_SID" ]] && [[ -n "$TRUNK_SID" ]]; then
+    curl -s -X POST "https://trunking.twilio.com/v1/Trunks/$TRUNK_SID/OriginationUrls/$ORIG_SID" \
+      -u "$TWILIO_ACCOUNT_SID:$TWILIO_AUTH_TOKEN" \
+      -d "SipUrl=sip:$DROPLET_IP:5060" > /dev/null 2>&1 && ok "Origination URL updated to sip:$DROPLET_IP:5060" \
+      || warn "Failed to update origination URL — update manually"
+  fi
 else
   if [[ "$DROPLET_IP" == "$OLD_IP" ]]; then
     ok "IP unchanged ($DROPLET_IP) — no ACL update needed"

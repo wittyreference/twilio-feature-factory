@@ -279,7 +279,8 @@ fi
 
 # --- MEMORY.md auto-prune ---
 # Remove sections tagged with <!-- prune --> markers from previous wrap-up
-MEMORY_FILE="$HOME/.claude/projects/-Users-mcarpenter-workspaces-twilio-feature-factory/memory/MEMORY.md"
+MEMORY_DIR="$HOME/.claude/projects/$(echo "$PROJECT_ROOT" | sed 's|/|-|g')/memory"
+MEMORY_FILE="$MEMORY_DIR/MEMORY.md"
 if [ -f "$MEMORY_FILE" ]; then
     if grep -q '<!-- prune -->' "$MEMORY_FILE"; then
         PRUNE_COUNT=$(grep -c '<!-- prune -->' "$MEMORY_FILE")

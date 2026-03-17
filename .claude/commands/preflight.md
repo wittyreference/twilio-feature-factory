@@ -86,7 +86,8 @@ Quick check that auto-loaded context files haven't bloated:
 ```bash
 wc -l CLAUDE.md
 wc -l .meta/CLAUDE.md 2>/dev/null
-wc -l ~/.claude/projects/-Users-mcarpenter-workspaces-twilio-feature-factory/memory/MEMORY.md
+MEMORY_PATH="$HOME/.claude/projects/$(pwd | sed 's|/|-|g')/memory/MEMORY.md"
+wc -l "$MEMORY_PATH"
 ```
 
 - **PASS**: MEMORY.md under 150 lines

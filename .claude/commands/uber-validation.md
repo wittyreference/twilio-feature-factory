@@ -13,6 +13,12 @@ Four validation planes, each testing a different dimension:
 | **C** | Chaos validation — toolchain resilience to bad/novel input | `/tmp/uber-val-RUNID/plane-c/` (clone of this repo) |
 | **D** | FF cross-repo — generic patterns work on open-source projects | `/tmp/uber-val-RUNID/plane-d/` (clone of target repo) |
 
+**Path variables** (set these before running):
+```bash
+FACTORY_ROOT="$(git rev-parse --show-toplevel)"   # this repo
+PLUGIN_ROOT="${FACTORY_ROOT}/../twilio-claude-plugin"  # sibling checkout
+```
+
 **CRITICAL**: All planes run in `/tmp/` directories. The root working tree is NEVER modified. No test files, no built functions, no deployed artifacts, no branch pollution. Findings and reports are written back to `.meta/` in the root repo only.
 
 **CWD GUARD**: Shell working directory resets to the root repo after bash operations like `npm install`, `git clone`, and other commands. You MUST `cd` to the absolute `/tmp/uber-val-RUNID/plane-X/` path before EVERY bash command that reads or writes files. Never use relative paths — always use the full `/tmp/uber-val-RUNID/...` absolute path. If you see yourself writing to `.meta/uber-val-*` or any path under the root repo that isn't `.meta/validation-reports/`, STOP — your cwd has drifted.
@@ -80,9 +86,9 @@ Parse arguments for flags:
    ```bash
    cd /tmp/uber-val-RUNID/plane-a/
    npm init -y
-   cp ~/workspaces/twilio-feature-factory/.env .
+   cp $FACTORY_ROOT/.env .
    ```
-3. Install the plugin (if `claude plugin add` is available, use it; otherwise copy `.mcp.json` from `~/workspaces/twilio-claude-plugin`)
+3. Install the plugin (if `claude plugin add` is available, use it; otherwise copy `.mcp.json` from `$PLUGIN_ROOT`)
 4. Use the persona-rewritten UC description from Phase 0 step 6. Do NOT look up the original UC — work from the rewritten description only. The description may be vague, use wrong terminology, or miss details. This is intentional — handle it the way the toolchain would for a real user.
 5. Build the UC end-to-end using only plugin-provided tools:
    - Read the relevant skill(s) based on what the description implies (not the UC ID)
@@ -106,8 +112,8 @@ Parse arguments for flags:
 1. Mark Plane B as `in_progress`
 2. Clone this repo:
    ```bash
-   git clone --depth=1 ~/workspaces/twilio-feature-factory /tmp/uber-val-RUNID/plane-b/
-   cp ~/workspaces/twilio-feature-factory/.env /tmp/uber-val-RUNID/plane-b/
+   git clone --depth=1 $FACTORY_ROOT /tmp/uber-val-RUNID/plane-b/
+   cp $FACTORY_ROOT/.env /tmp/uber-val-RUNID/plane-b/
    cd /tmp/uber-val-RUNID/plane-b/ && npm install
    ```
 3. Select 2-3 UCs from rotation, using their persona-rewritten descriptions from Phase 0 step 6. Do NOT look up the original UCs — work from the rewritten descriptions only.
@@ -136,8 +142,8 @@ Parse arguments for flags:
 1. Mark Plane C as `in_progress`
 2. Clone this repo:
    ```bash
-   git clone --depth=1 ~/workspaces/twilio-feature-factory /tmp/uber-val-RUNID/plane-c/
-   cp ~/workspaces/twilio-feature-factory/.env /tmp/uber-val-RUNID/plane-c/
+   git clone --depth=1 $FACTORY_ROOT /tmp/uber-val-RUNID/plane-c/
+   cp $FACTORY_ROOT/.env /tmp/uber-val-RUNID/plane-c/
    cd /tmp/uber-val-RUNID/plane-c/ && npm install
    ```
 3. Read `.meta/validation-reports/state/uber-validation-history.json` for archetype exclusions
@@ -175,12 +181,12 @@ Parse arguments for flags:
    ```
 3. Install Feature Factory:
    ```bash
-   ~/workspaces/feature-factory/scripts/init.sh /tmp/uber-val-RUNID/plane-d/
+   $FACTORY_ROOT/scripts/init.sh /tmp/uber-val-RUNID/plane-d/
    ```
 4. Run automated checks:
    - Hook test suite: `.claude/hooks/__tests__/test-all-hooks.sh`
    - Leakage check: `.claude/hooks/__tests__/test-no-leakage.sh`
-   - Drift check: `~/workspaces/feature-factory/scripts/ff-drift-check.sh`
+   - Drift check: `$FACTORY_ROOT/scripts/ff-drift-check.sh`
 5. Score 16-system scorecard (from the validation protocol):
    - Flywheel: generates suggestions, no platform paths
    - Quality gates: credential detection, --no-verify, force-push, pending actions

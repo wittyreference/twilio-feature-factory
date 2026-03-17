@@ -39,7 +39,7 @@ Search these sources using grep (case-insensitive, with `-C 3` context):
 5. **Domain CLAUDE.md files** — `functions/*/CLAUDE.md` and `agents/*/CLAUDE.md`
    - Domain-specific patterns, gotchas, and conventions
 
-6. **Auto-memory** — `~/.claude/projects/-Users-mcarpenter-workspaces-twilio-feature-factory/memory/MEMORY.md`
+6. **Auto-memory** — the project's `MEMORY.md` file (in `~/.claude/projects/<project-slug>/memory/`)
    - Cross-session persistent memory
 
 ## Output Format

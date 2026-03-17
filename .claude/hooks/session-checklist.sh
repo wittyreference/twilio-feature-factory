@@ -85,7 +85,7 @@ if [ "$CLAUDE_META_MODE" = "true" ] && [ -n "${CLAUDE_LEARNING_DIR:-}" ] && [ -d
 fi
 
 # --- 9. MEMORY.md size check ---
-MEMORY_FILE="$HOME/.claude/projects/-Users-mcarpenter-workspaces-twilio-feature-factory/memory/MEMORY.md"
+MEMORY_FILE="$HOME/.claude/projects/$(echo "$PROJECT_ROOT" | sed 's|/|-|g')/memory/MEMORY.md"
 if [[ -f "$MEMORY_FILE" ]]; then
     MEMORY_LINES=$(wc -l < "$MEMORY_FILE" | tr -d ' ')
     if [[ "$MEMORY_LINES" -gt 100 ]]; then

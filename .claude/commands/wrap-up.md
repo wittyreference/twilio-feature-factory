@@ -116,7 +116,7 @@ Example:
 - Read auto-memory — are there entries from this session that should also be in the learnings file (for the promote/clear flywheel)?
 - Are there auto-memory entries that represent an architectural choice worth recording in `DESIGN_DECISIONS.md`? Signs: "we chose X over Y", "US1 is default because...", "regional requires explicit opt-in".
 
-**Capture inward**: Add session learnings that should persist across sessions to auto-memory at `~/.claude/projects/-Users-mcarpenter-workspaces-twilio-feature-factory/memory/MEMORY.md`.
+**Capture inward**: Add session learnings that should persist across sessions to auto-memory (the `MEMORY.md` file in your project memory directory).
 
 ### 4b. Refresh meta-for-dummies.md (meta mode only)
 
@@ -143,7 +143,8 @@ If significant code was produced this session (especially from autonomous work v
 Quick health check on auto-loaded context size:
 
 ```bash
-wc -l CLAUDE.md .meta/CLAUDE.md ~/.claude/projects/-Users-mcarpenter-workspaces-twilio-feature-factory/memory/MEMORY.md 2>/dev/null
+MEMORY_PATH="$HOME/.claude/projects/$(pwd | sed 's|/|-|g')/memory/MEMORY.md"
+wc -l CLAUDE.md .meta/CLAUDE.md "$MEMORY_PATH" 2>/dev/null
 ```
 
 Report the MEMORY.md line count in the summary. If over 150 lines, flag it — entries beyond 200 are truncated and never seen. Prune by replacing promoted entries with pointers (e.g., "See operational-gotchas.md → Voice Call Routing").

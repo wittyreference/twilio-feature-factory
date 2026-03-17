@@ -72,10 +72,28 @@ ssh -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no siplab@"$DROPLET_IP" \
   "sed -i 's/^EXTERNAL_IP=.*/EXTERNAL_IP=$DROPLET_IP/' ~/sip-lab/.env.sip-lab && \
    cd ~/sip-lab && docker compose restart asterisk" 2>/dev/null || true
 
+# Update Twilio IP ACL if IP changed
+OLD_IP="${EXTERNAL_IP:-161.35.130.80}"
+ACL_SID="${SIP_LAB_IP_ACL_SID:-}"
+IP_SID="${SIP_LAB_IP_ADDRESS_SID:-}"
+
+if [[ "$DROPLET_IP" != "$OLD_IP" ]] && [[ -n "$ACL_SID" ]] && [[ -n "$IP_SID" ]]; then
+  log "IP changed ($OLD_IP → $DROPLET_IP). Updating Twilio IP ACL..."
+  twilio api:sip:ip-access-control-lists:ip-addresses:update \
+    --ip-access-control-list-sid "$ACL_SID" \
+    --sid "$IP_SID" \
+    --ip-address "$DROPLET_IP" \
+    -o json > /dev/null 2>&1 && ok "Twilio IP ACL updated to $DROPLET_IP" \
+    || warn "Failed to update IP ACL — update manually"
+else
+  if [[ "$DROPLET_IP" == "$OLD_IP" ]]; then
+    ok "IP unchanged ($DROPLET_IP) — no ACL update needed"
+  else
+    warn "Missing ACL SIDs in .env.sip-lab — update IP ACL manually for $DROPLET_IP"
+  fi
+fi
+
 echo ""
 echo "  Droplet: $DROPLET_ID ($DROPLET_IP)"
 echo "  SSH:     ssh -i $SSH_KEY_PATH siplab@$DROPLET_IP"
-echo ""
-warn "Update Twilio IP ACL with new IP: $DROPLET_IP"
-echo "  Use MCP: update_sip_ip_address(aclSid, ipSid, ipAddress: '$DROPLET_IP')"
 echo ""

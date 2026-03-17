@@ -94,13 +94,17 @@ Each loads both helpers via `Runtime.getFunctions()`. Each uses `context.getTwil
 
 ### `welcome.js` (Public)
 - Create game via `engine.createGame(event.CallSid)`, save to Sync
+- First call on this session: say "Welcome to Blackjack!" before dealing. Replay (redirected from game-over): skip the greeting, go straight to dealing cards.
+  - Detection: check if a Sync doc already exists for this CallSid. Exists → replay (no greeting). Doesn't exist → first game (greeting).
 - Natural blackjack → announce + `<Redirect>` to game-over
 - Normal → `<Gather input="dtmf speech" numDigits="1" timeout="5" speechTimeout="auto" action="/voice/blackjack/action" hints="hit, hit me, card, another, stand, stay, hold">` with card narration inside
 - No-input fallback after Gather
+- IMPORTANT: All Gather elements must include `input="dtmf speech"` — never dtmf-only
 
 ### `action.protected.js` (Protected)
 - Fetch game from Sync. Not found → redirect to welcome.
 - Classify input. Unknown → re-gather with "Sorry, I did not understand"
+- IMPORTANT: All Gather elements must include `input="dtmf speech"` — never dtmf-only
 - Stand → update Sync, redirect to `/voice/blackjack/dealer-turn`
 - Hit → `engine.playerHit(game)`, update Sync. Bust → redirect game-over. 21 → redirect dealer-turn. Else → re-gather.
 
@@ -115,6 +119,7 @@ Has its OWN replay speech classification — do NOT reuse `classifyInput`:
 - Quit words: quit, no, stop, goodbye, bye
 - Digit 1 = replay → redirect to welcome. Digit 2 = quit → goodbye.
 - Outcome messages for all 7 outcomes. Replay gather: `timeout="4"`, `hints="deal, play again, yes, quit, no"`.
+- IMPORTANT: All Gather elements must include `input="dtmf speech"` — never dtmf-only
 
 ## SDK Handler Modification
 

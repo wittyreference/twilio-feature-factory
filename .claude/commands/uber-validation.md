@@ -57,7 +57,7 @@ Parse arguments for flags:
    - Pick a random chaos persona for each selected UC (from the 7 archetypes below)
    - Avoid the persona used for the same plane in the last run
    - For Plane B with multiple UCs, use a different persona for each
-   - Read the full UC description from `.claude/skills/voice-use-case-map.md`
+   - Read the full UC description from `.claude/skills/voice-use-case-map/SKILL.md` (detail in `references/` subdirectory)
    - Rewrite the UC description as that persona would describe it:
      - **Weekend Hacker**: casual, skips details, wants it to "just work"
      - **Enterprise Architect**: over-specifies, adds unnecessary HA/DR requirements

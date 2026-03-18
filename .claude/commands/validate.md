@@ -1,3 +1,8 @@
+---
+description: Validate Twilio resources beyond HTTP 200. Use when verifying calls, messages, recordings, transcripts, or any Twilio operation needs deep status checks.
+argument-hint: [resource-sid-or-type]
+---
+
 # Deep Validation
 
 Deep validation of Twilio operations beyond HTTP 200 OK responses.

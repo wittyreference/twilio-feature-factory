@@ -1,3 +1,7 @@
+---
+description: Detect drift between factory and generic distribution. Use when checking if feature-factory source diverges from the shipped generic version.
+---
+
 # Feature Factory Sync
 
 Detect and reconcile drift between twilio-feature-factory source files and the generic feature-factory distribution.

@@ -1,3 +1,8 @@
+---
+name: media-streams
+description: Twilio Media Streams WebSocket guide. Use when building voice AI with custom STT/TTS, real-time audio processing, bidirectional audio, or <Connect><Stream> integration.
+---
+
 # Media Streams Skill
 
 Guide for Twilio Media Streams (`<Connect><Stream>`) — raw audio WebSocket integration for bring-your-own STT/TTS. Load this skill when building voice AI with custom speech processing, real-time audio analysis, or third-party STT/TTS engines.

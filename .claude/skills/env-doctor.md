@@ -1,3 +1,8 @@
+---
+name: env-doctor
+description: Diagnose shell and .env credential conflicts. Use when hitting 401 errors, auth failures after switching Twilio accounts, or mysterious environment variable issues.
+---
+
 # Environment Doctor
 
 Diagnose shell vs `.env` conflicts that cause mysterious Twilio auth failures. Run this when:

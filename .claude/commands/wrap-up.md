@@ -1,3 +1,7 @@
+---
+description: End-of-session cleanup and documentation. Use when wrapping up, ending a session, or capturing learnings and pending actions before stopping.
+---
+
 # Session Wrap-Up
 
 Review the current session's work and update all relevant documentation before committing.

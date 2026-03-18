@@ -1,3 +1,9 @@
+---
+description: Parallel multi-persona code review. Use for comprehensive architecture and code quality audits across the full repo with synthesized cross-cutting report.
+model: opus
+argument-hint: [scope-or-focus-area]
+---
+
 # Uber-Review
 
 Launch parallel expert reviews of the codebase from multiple professional personas. Each reviewer gets the full repo and writes an independent assessment. Results are synthesized into a cross-cutting report.

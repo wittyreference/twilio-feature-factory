@@ -1,3 +1,8 @@
+---
+name: verify-docs
+description: Verify technical assertions in documentation. Use when writing or reviewing docs about Twilio APIs to ensure accuracy of claims, code examples, and API behavior descriptions.
+---
+
 # Documentation Assertion Verification
 
 This skill provides guidance for verifying technical assertions when writing or reviewing documentation about Twilio APIs.

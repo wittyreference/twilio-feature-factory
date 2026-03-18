@@ -1,3 +1,8 @@
+---
+name: video
+description: Twilio Video development guide. Use when building video applications, telehealth platforms, remote collaboration tools, or working with rooms, participants, recordings, and compositions.
+---
+
 # Video Development Skill
 
 Comprehensive decision-making guide for Twilio Video development. Load this skill when building video applications, telehealth platforms, or remote collaboration tools.

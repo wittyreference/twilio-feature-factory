@@ -1,3 +1,8 @@
+---
+description: Search Twilio official documentation. Use when user needs API reference, product docs, or asks how a Twilio feature works.
+argument-hint: [topic]
+---
+
 # Twilio Documentation Lookup
 
 Search Twilio's official documentation for information on: <user_request>$ARGUMENTS</user_request>

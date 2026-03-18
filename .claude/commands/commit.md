@@ -1,3 +1,8 @@
+---
+description: Stage and commit with validation. Use when user wants to commit, save progress, or checkpoint work.
+allowed-tools: Bash(git:*), Read, Grep, Edit
+---
+
 # Commit Helper
 
 Stage and commit changes with pre-commit validation and conventional commit messages.

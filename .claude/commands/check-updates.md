@@ -1,3 +1,7 @@
+---
+description: Check for Claude Code and Agent SDK updates. Use when user asks about updates, new features, changelog, or what's new.
+---
+
 Check for available updates and new Claude Code / Agent SDK features.
 
 ## Version Check

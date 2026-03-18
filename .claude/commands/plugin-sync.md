@@ -1,3 +1,7 @@
+---
+description: Detect drift between factory and twilio-claude-plugin. Use when checking if factory source diverges from the shipped plugin or preparing a plugin release.
+---
+
 # Plugin Sync
 
 Detect and reconcile drift between factory source files and the twilio-claude-plugin distribution.

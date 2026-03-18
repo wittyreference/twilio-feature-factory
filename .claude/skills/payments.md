@@ -1,3 +1,8 @@
+---
+name: payments
+description: Twilio Pay PCI-compliant payment guide. Use when implementing credit card capture during voice calls, payment processing, <Pay> verb, tokenization, or PCI compliance patterns.
+---
+
 # Payments Development Skill
 
 Guide for Twilio Pay — PCI-compliant payment collection during voice calls. Load this skill when implementing credit card capture, payment processing, or PCI compliance patterns.

@@ -1,3 +1,8 @@
+---
+description: Push current branch to remote. Use when user wants to push, upload, or sync changes to GitHub.
+allowed-tools: Bash(git:*), Read
+---
+
 # Push Helper
 
 Push the current branch to the remote with pre-push verification.

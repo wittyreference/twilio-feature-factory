@@ -1,3 +1,8 @@
+---
+name: memory-systems
+description: State tracking and session memory management. Use when implementing cross-session persistence, managing Sync documents for state, or designing memory patterns for Twilio prototypes.
+---
+
 # Memory Systems for Twilio Prototypes
 
 This skill covers state tracking and memory management for Twilio development sessions.

@@ -1,3 +1,8 @@
+---
+name: tdd-workflow
+description: Test-driven development enforcement patterns. Use when working on the TDD pipeline, debugging red/green/refactor cycle issues, or understanding how test-gen and dev phases interact.
+---
+
 # TDD Workflow Patterns
 
 This skill covers Test-Driven Development enforcement in the Feature Factory pipeline. Load this skill when working on feature development or debugging TDD-related issues.

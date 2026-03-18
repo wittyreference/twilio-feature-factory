@@ -1,3 +1,8 @@
+---
+name: compliance-regulatory
+description: Twilio regulatory compliance guide. Use when dealing with A2P 10DLC registration, regulatory bundles, TrustHub identity, number compliance, or carrier requirements.
+---
+
 # Compliance & Regulatory Skill
 
 Guide for Twilio regulatory compliance: A2P 10DLC messaging registration, regulatory bundles for phone numbers, TrustHub identity verification, and end-user management. Load this skill when dealing with number compliance, brand registration, or carrier requirements.

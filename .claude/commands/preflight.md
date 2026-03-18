@@ -1,3 +1,7 @@
+---
+description: Verify environment is ready for Twilio development. Use before starting work, after switching accounts, or when hitting auth errors or missing env vars.
+---
+
 # Preflight Environment Verification
 
 Verify that the local environment is ready for Twilio development before starting real work. Catches expired tokens, wrong CLI profiles, and missing env vars early.

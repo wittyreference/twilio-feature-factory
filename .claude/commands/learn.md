@@ -1,3 +1,8 @@
+---
+description: Interactive exercises for understanding autonomous workflows. Use when user wants to learn how the pipeline, subagents, or orchestration work.
+argument-hint: [topic]
+---
+
 # Learning Exercises
 
 Interactive learning exercises for building comprehension of autonomous work.

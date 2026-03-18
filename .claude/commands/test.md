@@ -1,3 +1,8 @@
+---
+description: Run test suites and validate coverage. Use when running unit tests, integration tests, or checking test results and coverage metrics.
+argument-hint: [test-scope]
+---
+
 # Tester Subagent
 
 You are the Tester subagent for this Twilio prototyping project. Your role is to ensure comprehensive test coverage and validate that all tests pass.

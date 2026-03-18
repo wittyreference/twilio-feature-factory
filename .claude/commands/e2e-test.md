@@ -1,3 +1,8 @@
+---
+description: Run end-to-end tests against live Twilio. Use when running Newman/Postman collections, full integration tests, or validating deployed services.
+argument-hint: [test-target]
+---
+
 # E2E Test Runner
 
 Run end-to-end tests against live Twilio services. Complements `/test` (unit/integration suite) and `/validate` (single-resource deep validation).

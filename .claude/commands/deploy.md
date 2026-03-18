@@ -1,3 +1,8 @@
+---
+description: Deploy Twilio serverless functions. Use when user says deploy, ship, push to production, or go live with changes.
+argument-hint: [environment]
+---
+
 # Deployment Helper
 
 Deploy this Twilio serverless project to the specified environment.

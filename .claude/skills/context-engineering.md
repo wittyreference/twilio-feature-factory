@@ -1,3 +1,8 @@
+---
+name: context-engineering
+description: Context management and compression techniques. Use when optimizing context window usage, managing large sessions, or applying compression strategies for Twilio development.
+---
+
 # Context Engineering for Twilio Development
 
 Unified context management skill — fundamentals, compression techniques, and session optimization.

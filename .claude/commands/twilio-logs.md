@@ -1,3 +1,8 @@
+---
+description: Fetch and analyze Twilio debugger logs. Use when debugging errors, investigating failed calls or messages, or analyzing error patterns by SID.
+argument-hint: [resource-sid]
+---
+
 # Twilio Logs Analyzer
 
 Fetch and analyze Twilio debugger logs to identify issues. Uses MCP tools for structured, SID-targeted analysis.

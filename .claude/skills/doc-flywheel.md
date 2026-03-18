@@ -1,3 +1,8 @@
+---
+name: doc-flywheel
+description: Documentation-first knowledge management workflow. Use when capturing learnings, promoting discoveries to stable docs, or following the Check-Act-Record documentation protocol.
+---
+
 # Documentation Flywheel
 
 Use the capture-promote-clear workflow for knowledge management.

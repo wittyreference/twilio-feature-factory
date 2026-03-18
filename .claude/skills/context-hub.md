@@ -1,3 +1,8 @@
+---
+name: context-hub
+description: External API documentation fetcher. Use when writing code that calls external APIs (OpenAI, Stripe, etc.) to get curated docs and prevent hallucinated API shapes.
+---
+
 # Context Hub — External API Documentation
 
 Use [context-hub](https://github.com/andrewyng/context-hub) (`chub`) to fetch curated, versioned API docs before writing code that calls external APIs. This prevents hallucinated API shapes and builds cross-session memory via annotations.

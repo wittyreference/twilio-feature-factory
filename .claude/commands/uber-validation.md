@@ -1,3 +1,8 @@
+---
+description: Comprehensive cross-repo quality validation. Use for full validation sweeps across all quality dimensions with prioritized findings report.
+model: opus
+---
+
 # Uber-Validation
 
 Unified cross-repo validation that tests all quality dimensions in isolated temp directories, captures findings into a prioritized report, and rotates test targets to avoid repetition.

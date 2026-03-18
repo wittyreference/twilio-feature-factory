@@ -1,3 +1,7 @@
+---
+description: Optimize session context usage. Use when context is getting large, session is slow, or user wants to compress or summarize context between phases.
+---
+
 # Context Optimization
 
 Optimize context for the current session. Load the `context-engineering` skill for techniques.

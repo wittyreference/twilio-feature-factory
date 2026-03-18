@@ -1,3 +1,8 @@
+---
+name: hooks-reference
+description: Reference for project hook configuration. Use when understanding pre/post tool hooks, modifying quality gates, or debugging why a hook blocked an action.
+---
+
 # Claude Code Hooks Reference
 
 This project uses Claude Code hooks (configured in `.claude/settings.json`) to enforce coding standards automatically.

@@ -1,3 +1,8 @@
+---
+description: Quick exploratory spike before committing to TDD. Use when architect identifies unknowns, unfamiliar APIs, or ambiguous behavior that needs hands-on testing first.
+argument-hint: [spike-topic]
+---
+
 # Prototype / Spike
 
 You are running a quick prototype (spike) to explore unknowns before committing to a specification and TDD cycle. This is explicitly sloppy — no tests, no docs, no production quality required.

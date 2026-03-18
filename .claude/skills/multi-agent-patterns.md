@@ -1,3 +1,8 @@
+---
+name: multi-agent-patterns
+description: Agent orchestration and coordination patterns. Use when designing multi-agent workflows, choosing between parallel/sequential/hierarchical patterns, or coordinating subagents.
+---
+
 # Multi-Agent Patterns for Twilio
 
 This skill describes orchestration and coordination patterns for Twilio development workflows.

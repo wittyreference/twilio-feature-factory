@@ -1,3 +1,8 @@
+---
+name: agent-teams-guide
+description: Reference for agent team configurations and coordination. Use when launching /team, understanding teammate communication, or choosing between parallel workflows (new-feature, bug-fix, code-review, refactor).
+---
+
 # Agent Teams Guide
 
 Agent Teams (experimental) coordinate multiple Claude Code instances for parallel work. Each teammate gets its own context window and can communicate via direct messaging and a shared task list.

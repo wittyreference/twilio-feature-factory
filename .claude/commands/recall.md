@@ -1,3 +1,9 @@
+---
+description: Search project knowledge and memory. Use when user asks to recall, remember, look up prior context, or find past decisions and learnings.
+allowed-tools: Read, Grep, Glob
+argument-hint: [topic]
+---
+
 # Recall — Knowledge Search
 
 Search accumulated project knowledge for a topic.

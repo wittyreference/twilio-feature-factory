@@ -1,3 +1,8 @@
+---
+name: autonomous-guide
+description: Guide for unattended autonomous operation. Use when running headless, in CI/CD pipelines, or configuring Claude Code for non-interactive execution with quality gates.
+---
+
 # Autonomous Mode Guide
 
 Both Claude Code and Feature Factory support autonomous mode for unattended operation. Autonomous mode pre-approves permission prompts while **keeping all quality gates enforced**.

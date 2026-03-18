@@ -1689,6 +1689,59 @@ The workshop is a private GitHub repo containing all development-only artifacts:
 
 ---
 
+## Decision 38: YAML Frontmatter and Progressive Disclosure for Skills
+
+### Context
+
+Thariq Shihipar (Anthropic Claude Code team) published "Lessons from Building Claude Code: How We Use Skills" (2026-03-17), documenting patterns from hundreds of skills in active use. An audit of our 46 skills/commands against those recommendations revealed three meaningful gaps:
+
+1. **No YAML frontmatter** — Claude inferred bare descriptions like `plugin-sync: Plugin Sync` instead of trigger-condition descriptions that drive auto-invocation
+2. **No `allowed-tools`/`model` fields** — Commands ran with full conversation permissions, no model selection
+3. **Largest skills loaded entirely into context** — `voice-use-case-map.md` (88KB), `video.md` (73KB), `voice.md` (21KB) consumed full context on every invocation
+
+### Decision
+
+**All skills and commands use YAML frontmatter with trigger-condition descriptions. The three largest skills use folder-based progressive disclosure.**
+
+Frontmatter fields per file type:
+- **Skills** (`.claude/skills/`): `name`, `description` (trigger conditions)
+- **Commands** (`.claude/commands/`): `description`, `allowed-tools`, `model`, `argument-hint`
+
+Folder structure for large skills:
+```
+skills/voice/
+├── SKILL.md          # 2-10KB summary (always loaded)
+└── references/       # Read on-demand by Claude when needed
+    └── use-case-details.md
+```
+
+### Rationale
+
+1. **Trigger-condition descriptions** improve auto-invocation accuracy — Claude matches user intent to skills via the `description` field, not the filename
+2. **`allowed-tools` restrictions** limit blast radius of commands like `/commit` and `/push` to git operations only
+3. **`model: opus`** on complex analysis commands (architect, review, uber-review, uber-validation) ensures deep reasoning regardless of the user's default model
+4. **Progressive disclosure** reduces context consumption by ~93% for the two largest skills — Claude reads the SKILL.md summary and only reads reference subdocs when diving deep
+5. **Folder-based skills confirmed working** at project level (`.claude/skills/name/SKILL.md`), not just plugin level
+
+### Alternatives Considered
+
+- **Frontmatter only, no folder restructure**: Would miss the biggest context-efficiency win (88KB + 73KB loaded per invocation). Rejected.
+- **Restructure all 46 skills into folders**: Over-engineering — only 3 skills exceeded 15KB. The remaining 16 flat skills average 5KB and don't benefit from splitting.
+- **On-demand hooks per skill**: Interesting future capability (e.g., `/careful` blocks `rm -rf` only while active), but no urgent need. Deferred.
+
+### Consequences
+
+- All 46 files now have frontmatter — future skills MUST include frontmatter following this pattern
+- Folder-based skills are a supported pattern for any skill exceeding ~15KB
+- Stale references to old flat-file paths (`skills/voice.md` → `skills/voice/SKILL.md`) must be caught during review
+- Plugin sync (`/plugin-sync`) will detect drift in the 32 syncable files that changed
+
+### Status
+
+**Accepted** - 2026-03-18
+
+---
+
 ## Decision N: [Title]
 
 ### Context
@@ -1769,3 +1822,4 @@ The workshop is a private GitHub repo containing all development-only artifacts:
 | 2026-03-07 | D35 | Clean-room provisioning validation: 14-test ephemeral lifecycle script, ~$0.07/run |
 | 2026-03-09 | D36 | .meta/ documented as intentionally single-developer, gitignored session state |
 | 2026-03-15 | D37 | Three-repo architecture with symlink overlay (.meta/ → factory-workshop). Evolves D36 |
+| 2026-03-18 | D38 | YAML frontmatter on all 46 skills/commands + progressive disclosure for 3 largest skills (voice-use-case-map, video, voice) |

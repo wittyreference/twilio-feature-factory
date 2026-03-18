@@ -9,6 +9,7 @@
 | Tool boundaries | [.claude/references/tool-boundaries.md](/.claude/references/tool-boundaries.md) |
 | Voice/TwiML patterns | [functions/voice/CLAUDE.md](/functions/voice/CLAUDE.md) |
 | Voice reference (verb options, conference API, patterns) | [functions/voice/REFERENCE.md](/functions/voice/REFERENCE.md) |
+| Voice skill (decision frameworks, gotchas) | `.claude/skills/voice/SKILL.md` (load on demand) |
 | Voice use case product map | `.claude/skills/voice-use-case-map/SKILL.md` (load on demand) |
 | Video patterns | [functions/video/CLAUDE.md](/functions/video/CLAUDE.md) |
 | Video skill (advanced) | `.claude/skills/video/SKILL.md` (load on demand) |

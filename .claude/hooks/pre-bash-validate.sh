@@ -95,6 +95,36 @@ if echo "$COMMAND" | grep -qE "^git\s+commit"; then
     fi
 
     # ============================================
+    # LOCAL PATH LEAKAGE CHECK (BLOCKING)
+    # ============================================
+    # Block commits that ship hardcoded local directory paths.
+    # These break for anyone who clones the repo to a different location.
+    LOCAL_PATH_LEAKS=$(git diff --staged 2>/dev/null \
+        | grep '^+' | grep -v '^+++' \
+        | grep -En '/Users/[a-zA-Z0-9_.-]+/(workspaces|Desktop|Documents|Downloads|Library|Projects|repos|src|code|dev)/|/home/[a-zA-Z0-9_.-]+/(workspaces|Desktop|Documents|Downloads|Projects|repos|src|code|dev)/' \
+        || true)
+    if [ -n "$LOCAL_PATH_LEAKS" ]; then
+        echo "" >&2
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+        echo "BLOCKED: Hardcoded local paths in staged changes" >&2
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+        echo "" >&2
+        echo "These paths won't work for other users:" >&2
+        echo "$LOCAL_PATH_LEAKS" | head -10 >&2
+        echo "" >&2
+        echo "Use dynamic alternatives:" >&2
+        echo '  \$HOME, \$PROJECT_ROOT, \$(git rev-parse --show-toplevel)' >&2
+        echo '  \$(pwd), relative paths, or \$(dirname "\$0")' >&2
+        echo "" >&2
+        echo "Override: SKIP_PATH_CHECK=true git commit ..." >&2
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+        echo "" >&2
+        if [ "${SKIP_PATH_CHECK:-}" != "true" ]; then
+            exit 2
+        fi
+    fi
+
+    # ============================================
     # META-ONLY HOOK REGISTRATION CHECK (BLOCKING)
     # ============================================
     # Block commits that register meta-only scripts as shipped hooks.

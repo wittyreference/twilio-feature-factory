@@ -123,6 +123,6 @@ const response = await anthropic.messages.create({
 ## Related Documentation
 
 - [ConversationRelay Protocol](/functions/conversation-relay/CLAUDE.md)
-- [Voice Skill](/.claude/skills/voice.md)
+- [Voice Skill](/.claude/skills/voice/SKILL.md)
 - [Feature Factory](/agents/feature-factory/CLAUDE.md)
 - [Voice MCP Tools](/agents/mcp-servers/twilio/CLAUDE.md)

@@ -195,4 +195,4 @@ Tests verify:
 - Room API state (type, participants)
 - Disconnect handling
 
-See `.claude/skills/video.md` for detailed testing patterns.
+See `.claude/skills/video/SKILL.md` for detailed testing patterns.

@@ -492,5 +492,5 @@ if (validation.success) {
 - [DeepValidator source](/agents/mcp-servers/twilio/src/validation/deep-validator.ts) - Library implementation
 - [Validation CLAUDE.md](/agents/mcp-servers/twilio/src/validation/CLAUDE.md) - Validation patterns
 - [Callback functions](/functions/callbacks/CLAUDE.md) - Callback infrastructure
-- [Voice skill](/.claude/skills/voice.md) - Voice-specific validation
-- [Video skill](/.claude/skills/video.md) - Video-specific validation and use cases
+- [Voice skill](/.claude/skills/voice/SKILL.md) - Voice-specific validation
+- [Video skill](/.claude/skills/video/SKILL.md) - Video-specific validation and use cases

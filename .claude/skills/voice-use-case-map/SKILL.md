@@ -22,7 +22,7 @@ Definitive per-use-case product mapping for Twilio Voice. Load this skill when r
 | 9 | PSTN Connectivity | Elastic SIP Trunking (primary), BYOC | Carrier interconnect (Elastic SIP Trunking validated in SIP Lab, SIP Interface Phase C TODO) | Yes — SIP registration (SIP Interface only), TLS, E.164 dialplan |
 | 10 | AI/ML Transcription | Voice Intelligence, Language Operators | Post-call analysis of recordings | Yes — `source_sid` vs `media_url`, operator config |
 
-**Complements:** `.claude/skills/voice.md` (decision frameworks), `functions/conversation-relay/CLAUDE.md` (ConversationRelay protocol details).
+**Complements:** `.claude/skills/voice/SKILL.md` (decision frameworks), `functions/conversation-relay/CLAUDE.md` (ConversationRelay protocol details).
 
 ## Decision Tree
 

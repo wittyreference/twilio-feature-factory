@@ -130,6 +130,9 @@
     try {
       const resp = await fetch(`/api/token?identity=${IDENTITY}`);
       const data = await resp.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
       const token = data.token;
       identityEl.textContent = IDENTITY;
       log('Token received. Initializing device...');

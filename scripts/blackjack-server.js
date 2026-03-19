@@ -23,19 +23,31 @@ app.get('/sdk/twilio.min.js', (req, res) => {
 });
 
 app.get('/api/token', (req, res) => {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const apiKey = process.env.TWILIO_API_KEY;
+  const apiSecret = process.env.TWILIO_API_SECRET;
+  const appSid = process.env.TWILIO_VOICE_SDK_APP_SID;
+
+  const missing = [];
+  if (!accountSid) missing.push('TWILIO_ACCOUNT_SID');
+  if (!apiKey) missing.push('TWILIO_API_KEY');
+  if (!apiSecret) missing.push('TWILIO_API_SECRET');
+  if (!appSid) missing.push('TWILIO_VOICE_SDK_APP_SID');
+
+  if (missing.length > 0) {
+    return res.status(500).json({
+      error: `Missing env vars: ${missing.join(', ')}. Set them in .env or export before starting.`,
+    });
+  }
+
   const identity = req.query.identity || 'blackjack-player';
   const { AccessToken } = twilio.jwt;
   const { VoiceGrant } = AccessToken;
 
-  const token = new AccessToken(
-    process.env.TWILIO_ACCOUNT_SID,
-    process.env.TWILIO_API_KEY,
-    process.env.TWILIO_API_SECRET,
-    { identity }
-  );
+  const token = new AccessToken(accountSid, apiKey, apiSecret, { identity });
 
   const voiceGrant = new VoiceGrant({
-    outgoingApplicationSid: process.env.TWILIO_VOICE_SDK_APP_SID,
+    outgoingApplicationSid: appSid,
     incomingAllow: true,
   });
   token.addGrant(voiceGrant);

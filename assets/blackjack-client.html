@@ -1,0 +1,210 @@
+<!-- ABOUTME: Casino-themed browser softphone for phone-based blackjack. -->
+<!-- ABOUTME: Uses Voice SDK 2.x for calling, DTMF for hit/stand, live event log. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blackjack - Voice SDK</title>
+<script src="/sdk/twilio.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #1a472a;
+    color: #e0e0e0;
+    font-family: 'Georgia', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+  h1 {
+    color: #ffd700;
+    font-size: 2.5em;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    margin-bottom: 10px;
+  }
+  .status-bar {
+    display: inline-block;
+    padding: 6px 20px;
+    border-radius: 20px;
+    font-family: monospace;
+    font-size: 0.9em;
+    margin-bottom: 20px;
+    font-weight: bold;
+  }
+  .status-offline { background: #c0392b; color: white; }
+  .status-connecting { background: #f39c12; color: white; }
+  .status-ready { background: #27ae60; color: white; }
+  .info { font-family: monospace; font-size: 0.85em; color: #a0a0a0; margin-bottom: 15px; }
+  .card-area {
+    background: #2d5a3d;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.4);
+    width: 100%;
+    max-width: 500px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .controls { display: flex; gap: 12px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+  button {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  button:hover:not(:disabled) { transform: scale(1.05); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-call { background: #27ae60; color: white; }
+  .btn-call.active { background: #c0392b; }
+  .btn-hit { background: #1864ab; color: white; }
+  .btn-stand { background: #862e9c; color: white; }
+  .event-log {
+    background: #0d1f13;
+    border-radius: 8px;
+    padding: 15px;
+    width: 100%;
+    max-width: 500px;
+    height: 250px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 0.8em;
+    color: #69db7c;
+  }
+  .event-log div { margin-bottom: 3px; }
+  .help { font-size: 0.8em; color: #888; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <h1>&#9824; Blackjack &#9829;</h1>
+  <div class="status-bar status-offline" id="status">OFFLINE</div>
+  <div class="info">
+    <span id="identity">—</span> | Call SID: <span id="callSid">—</span>
+  </div>
+  <div class="card-area">
+    <p>Press <strong>Call Dealer</strong> to start a game.</p>
+    <p>Use the buttons or keyboard to play.</p>
+  </div>
+  <div class="controls">
+    <button class="btn-call" id="btnCall" disabled>Call Dealer</button>
+    <button class="btn-hit" id="btnHit" disabled>HIT (1)</button>
+    <button class="btn-stand" id="btnStand" disabled>STAND (2)</button>
+  </div>
+  <p class="help">Keyboard: 1 or H = Hit, 2 or S = Stand</p>
+  <div class="event-log" id="log"></div>
+
+<script>
+  const statusEl = document.getElementById('status');
+  const identityEl = document.getElementById('identity');
+  const callSidEl = document.getElementById('callSid');
+  const logEl = document.getElementById('log');
+  const btnCall = document.getElementById('btnCall');
+  const btnHit = document.getElementById('btnHit');
+  const btnStand = document.getElementById('btnStand');
+
+  let device = null;
+  let activeCall = null;
+  const IDENTITY = 'blackjack-player';
+
+  function log(msg) {
+    const d = document.createElement('div');
+    d.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    logEl.appendChild(d);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function setStatus(state, text) {
+    statusEl.className = 'status-bar status-' + state;
+    statusEl.textContent = text;
+  }
+
+  async function init() {
+    setStatus('connecting', 'CONNECTING...');
+    log('Fetching token...');
+    try {
+      const resp = await fetch(`/api/token?identity=${IDENTITY}`);
+      const data = await resp.json();
+      const token = data.token;
+      identityEl.textContent = IDENTITY;
+      log('Token received. Initializing device...');
+
+      device = new Twilio.Device(token, { edge: 'ashburn' });
+
+      device.on('registered', () => {
+        setStatus('ready', 'READY');
+        btnCall.disabled = false;
+        log('Device registered and ready.');
+      });
+
+      device.on('error', (err) => {
+        log('Device error: ' + err.message);
+      });
+
+      device.on('incoming', (call) => {
+        log('Incoming call — auto-accepting.');
+        call.accept();
+      });
+
+      await device.register();
+    } catch (e) {
+      setStatus('offline', 'ERROR');
+      log('Init failed: ' + e.message);
+    }
+  }
+
+  btnCall.addEventListener('click', async () => {
+    if (activeCall) {
+      activeCall.disconnect();
+      return;
+    }
+    try {
+      activeCall = await device.connect({ params: { To: 'game:blackjack' } });
+      btnCall.textContent = 'Hang Up';
+      btnCall.classList.add('active');
+      btnHit.disabled = false;
+      btnStand.disabled = false;
+      callSidEl.textContent = activeCall.parameters.CallSid || '...';
+      log('Calling dealer...');
+
+      activeCall.on('accept', () => log('Call connected.'));
+      activeCall.on('disconnect', () => {
+        log('Call ended.');
+        activeCall = null;
+        btnCall.textContent = 'Call Dealer';
+        btnCall.classList.remove('active');
+        btnHit.disabled = true;
+        btnStand.disabled = true;
+        callSidEl.textContent = '—';
+      });
+      activeCall.on('error', (err) => log('Call error: ' + err.message));
+    } catch (e) {
+      log('Connect failed: ' + e.message);
+    }
+  });
+
+  btnHit.addEventListener('click', () => {
+    if (activeCall) { activeCall.sendDigits('1'); log('Sent: HIT (1)'); }
+  });
+
+  btnStand.addEventListener('click', () => {
+    if (activeCall) { activeCall.sendDigits('2'); log('Sent: STAND (2)'); }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!activeCall) return;
+    if (e.key === '1' || e.key === 'h' || e.key === 'H') {
+      activeCall.sendDigits('1'); log('Sent: HIT (1)');
+    } else if (e.key === '2' || e.key === 's' || e.key === 'S') {
+      activeCall.sendDigits('2'); log('Sent: STAND (2)');
+    }
+  });
+
+  init();
+</script>
+</body>
+</html>

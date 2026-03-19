@@ -1,5 +1,5 @@
 // ABOUTME: Twilio phone number management tools.
-// ABOUTME: Provides list_phone_numbers, configure_webhook, and search_available_numbers tools.
+// ABOUTME: Provides list, search, purchase, configure_webhook, and release tools.
 
 import { z } from 'zod';
 import type { TwilioContext } from '../index.js';
@@ -136,5 +136,64 @@ export function phoneNumberTools(context: TwilioContext) {
     }
   );
 
-  return [listPhoneNumbers, configureWebhook, searchAvailableNumbers];
+  const purchasePhoneNumber = createTool(
+    'purchase_phone_number',
+    'Purchase an available phone number. Use search_available_numbers first to find one.',
+    z.object({
+      phoneNumber: z.string().startsWith('+').describe('E.164 phone number to purchase (e.g., +14155551234)'),
+      friendlyName: z.string().optional().describe('Friendly name for the number'),
+      voiceUrl: z.string().url().optional().describe('Voice webhook URL to configure immediately'),
+      smsUrl: z.string().url().optional().describe('SMS webhook URL to configure immediately'),
+    }),
+    async ({ phoneNumber, friendlyName, voiceUrl, smsUrl }) => {
+      const createParams: {
+        phoneNumber: string;
+        friendlyName?: string;
+        voiceUrl?: string;
+        smsUrl?: string;
+      } = { phoneNumber };
+
+      if (friendlyName) {createParams.friendlyName = friendlyName;}
+      if (voiceUrl) {createParams.voiceUrl = voiceUrl;}
+      if (smsUrl) {createParams.smsUrl = smsUrl;}
+
+      const purchased = await client.incomingPhoneNumbers.create(createParams);
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            sid: purchased.sid,
+            phoneNumber: purchased.phoneNumber,
+            friendlyName: purchased.friendlyName,
+            capabilities: purchased.capabilities,
+            voiceUrl: purchased.voiceUrl,
+            smsUrl: purchased.smsUrl,
+            dateCreated: purchased.dateCreated,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  const releasePhoneNumber = createTool(
+    'release_phone_number',
+    'Release (delete) a phone number from the account. This is irreversible.',
+    z.object({
+      phoneNumberSid: z.string().startsWith('PN').describe('Phone number SID to release (starts with PN)'),
+    }),
+    async ({ phoneNumberSid }) => {
+      await client.incomingPhoneNumbers(phoneNumberSid).remove();
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ success: true, released: phoneNumberSid }, null, 2),
+        }],
+      };
+    }
+  );
+
+  return [listPhoneNumbers, configureWebhook, searchAvailableNumbers, purchasePhoneNumber, releasePhoneNumber];
 }

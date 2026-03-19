@@ -1,5 +1,5 @@
 // ABOUTME: TwiML handler invoked when a browser makes an outbound call via Voice SDK.
-// ABOUTME: Routes calls to PSTN numbers, other SDK clients, or games based on the To parameter.
+// ABOUTME: Routes calls to PSTN numbers or other SDK clients based on the To parameter.
 
 exports.handler = async (context, event, callback) => {
   const twiml = new Twilio.twiml.VoiceResponse();
@@ -19,9 +19,6 @@ exports.handler = async (context, event, callback) => {
     const clientIdentity = to.replace('client:', '');
     const dial = twiml.dial({ callerId: context.TWILIO_PHONE_NUMBER });
     dial.client(clientIdentity);
-  } else if (to.startsWith('game:')) {
-    // Game routing — redirect to the requested game handler
-    twiml.redirect('/voice/blackjack/welcome');
   } else {
     twiml.say({ voice: 'Polly.Amy' }, 'Invalid destination format. Goodbye.');
   }

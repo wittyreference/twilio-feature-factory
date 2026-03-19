@@ -14,7 +14,12 @@ app.get('/', (req, res) => {
 });
 
 app.get('/sdk/twilio.min.js', (req, res) => {
-  res.sendFile(path.resolve(__dirname, '../node_modules/@twilio/voice-sdk/dist/twilio.min.js'));
+  const sdkPath = path.resolve(__dirname, '../node_modules/@twilio/voice-sdk/dist/twilio.min.js');
+  res.sendFile(sdkPath, (err) => {
+    if (err) {
+      res.status(404).send('// Voice SDK not found locally. CDN fallback will load.');
+    }
+  });
 });
 
 app.get('/api/token', (req, res) => {

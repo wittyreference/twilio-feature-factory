@@ -113,6 +113,12 @@ See [user-guide.md](user-guide.md) for a detailed plain-language guide, or [WALK
 
 > **Quick environment check**: Run `npm run smoke-test` anytime to verify your setup is healthy.
 
+> **Shell variable conflicts**: If you have existing Twilio credentials in your shell (from another project or `.bashrc`/`.zshrc`), they will silently override your `.env` file values. Run `./scripts/env-doctor.sh` to detect mismatches, or clear them manually:
+> ```bash
+> unset TWILIO_ACCOUNT_SID TWILIO_AUTH_TOKEN TWILIO_API_KEY TWILIO_API_SECRET TWILIO_REGION TWILIO_EDGE
+> ```
+> The included `.envrc` handles this automatically if you use [direnv](https://direnv.net/).
+
 ## Available Tools
 
 ### Workflow Commands

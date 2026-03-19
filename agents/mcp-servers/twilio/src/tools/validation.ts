@@ -18,7 +18,7 @@ function createTool<T extends z.ZodType>(
  * Returns all deep validation tools configured with the given Twilio context.
  */
 export function validationTools(context: TwilioContext) {
-  const { client, syncServiceSid } = context;
+  const { client } = context;
 
   const validateCall = createTool(
     'validate_call',
@@ -269,7 +269,7 @@ export function validationTools(context: TwilioContext) {
     'validate_sync_document',
     'Validate a Sync Document - checks data structure, expected keys, types. Use after writing to a Sync Document to verify it contains the expected data.',
     z.object({
-      serviceSid: z.string().optional().describe('Sync Service SID (IS...) — uses default if not provided'),
+      serviceSid: z.string().describe('Sync Service SID (IS...)'),
       documentSidOrName: z.string().describe('Document SID (ET...) or unique name'),
       expectedKeys: z.array(z.string()).optional().describe('Keys expected in document data'),
       strictKeys: z.boolean().optional().default(false).describe('Fail if unexpected keys exist'),
@@ -277,15 +277,8 @@ export function validationTools(context: TwilioContext) {
       checkDebugger: z.boolean().optional().default(false).describe('Check debugger for related alerts'),
     }),
     async ({ serviceSid, documentSidOrName, expectedKeys, strictKeys, expectedTypes, checkDebugger }) => {
-      const sid = serviceSid || syncServiceSid;
-      if (!sid) {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2) }],
-          isError: true,
-        };
-      }
       const validator = new DeepValidator(client);
-      const result = await validator.validateSyncDocument(sid, documentSidOrName, {
+      const result = await validator.validateSyncDocument(serviceSid, documentSidOrName, {
         expectedKeys,
         strictKeys,
         expectedTypes: expectedTypes as Record<string, 'string' | 'number' | 'boolean' | 'object' | 'array'>,
@@ -305,7 +298,7 @@ export function validationTools(context: TwilioContext) {
     'validate_sync_list',
     'Validate a Sync List - checks item count constraints and item data structure. Use after adding items to a Sync List to verify the list state.',
     z.object({
-      serviceSid: z.string().optional().describe('Sync Service SID (IS...) — uses default if not provided'),
+      serviceSid: z.string().describe('Sync Service SID (IS...)'),
       listSidOrName: z.string().describe('List SID (ES...) or unique name'),
       minItems: z.number().optional().describe('Minimum items expected'),
       maxItems: z.number().optional().describe('Maximum items expected'),
@@ -314,15 +307,8 @@ export function validationTools(context: TwilioContext) {
       checkDebugger: z.boolean().optional().default(false).describe('Check debugger for related alerts'),
     }),
     async ({ serviceSid, listSidOrName, minItems, maxItems, exactItems, expectedItemKeys, checkDebugger }) => {
-      const sid = serviceSid || syncServiceSid;
-      if (!sid) {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2) }],
-          isError: true,
-        };
-      }
       const validator = new DeepValidator(client);
-      const result = await validator.validateSyncList(sid, listSidOrName, {
+      const result = await validator.validateSyncList(serviceSid, listSidOrName, {
         minItems,
         maxItems,
         exactItems,
@@ -343,22 +329,15 @@ export function validationTools(context: TwilioContext) {
     'validate_sync_map',
     'Validate a Sync Map - checks for expected keys and item data structure. Use after writing to a Sync Map to verify keys and values.',
     z.object({
-      serviceSid: z.string().optional().describe('Sync Service SID (IS...) — uses default if not provided'),
+      serviceSid: z.string().describe('Sync Service SID (IS...)'),
       mapSidOrName: z.string().describe('Map SID (MP...) or unique name'),
       expectedKeys: z.array(z.string()).optional().describe('Map item keys expected to exist'),
       expectedValueKeys: z.array(z.string()).optional().describe('Keys expected in each item\'s value data'),
       checkDebugger: z.boolean().optional().default(false).describe('Check debugger for related alerts'),
     }),
     async ({ serviceSid, mapSidOrName, expectedKeys, expectedValueKeys, checkDebugger }) => {
-      const sid = serviceSid || syncServiceSid;
-      if (!sid) {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: 'No Sync Service SID configured' }, null, 2) }],
-          isError: true,
-        };
-      }
       const validator = new DeepValidator(client);
-      const result = await validator.validateSyncMap(sid, mapSidOrName, {
+      const result = await validator.validateSyncMap(serviceSid, mapSidOrName, {
         expectedKeys,
         expectedValueKeys,
         checkDebugger,

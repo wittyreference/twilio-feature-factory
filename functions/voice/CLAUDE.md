@@ -74,6 +74,8 @@ For detailed verb options, code patterns, and conference API examples, see [REFE
 
 Common verbs: `<Say>`, `<Play>`, `<Gather>`, `<Dial>`, `<Record>`, `<Conference>`, `<Hangup>`, `<Redirect>`, `<Pause>`.
 
+Background nouns (via `<Start>`): `<Stream>`, `<Recording>`, `<Siprec>`, `<Transcription>`.
+
 For detailed options, see [REFERENCE.md](./REFERENCE.md).
 
 ## Voice Webhook Parameters
@@ -101,6 +103,7 @@ Gather callbacks include: `Digits` (DTMF), `SpeechResult` (transcribed), `Confid
 - `<Start><Stream>` — Media streaming continues
 - `<Start><Recording>` — Recording continues until explicitly stopped
 - `<Start><Siprec>` — SIPREC streaming continues
+- `<Start><Transcription>` — Real-time transcription continues, delivers events via webhook
 
 **Key Implications**:
 1. Updating participant TwiML exits current state (e.g., exits conference)
@@ -116,6 +119,10 @@ Gather callbacks include: `Digits` (DTMF), `SpeechResult` (transcribed), `Confid
 | `console.error` | 82005 | Generates error alert — **never use** |
 
 Always pass a string to `response.setBody()`, not an object. Use `JSON.stringify()` and set `Content-Type: application/json`.
+
+### `<Start><Transcription>` Callbacks Are Form-Encoded
+
+Transcription status callbacks (`transcription-started`, `transcription-content`, `transcription-stopped`, `transcription-error`) arrive as `application/x-www-form-urlencoded`, not JSON. Parse with `event.TranscriptionText`, `event.TranscriptionSid`, etc. — not `JSON.parse(event.body)`.
 
 ## Gotchas
 

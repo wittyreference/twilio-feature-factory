@@ -22,4 +22,5 @@ Rules that have each caused real debugging time loss. See domain CLAUDE.md files
 - **`<Pause>` as first TwiML verb = no-answer** — Webhook must produce audio (`<Say>`) before `<Pause>` to properly answer the call.
 - **Video rooms require API Key auth** — AccessToken for Video uses API Key + Secret, not Auth Token. Functions must have TWILIO_API_KEY and TWILIO_API_SECRET env vars.
 - **Never expose `accountSid` or `authToken` in function responses** — REST API credentials in browser JS or TwiML responses enable full account takeover. Use API Keys (`SK...`) for client-side auth. Server-side only: `context.ACCOUNT_SID`, `context.AUTH_TOKEN`.
+- **`<Start><Transcription>` callbacks are form-encoded** — Transcription status callbacks arrive as `application/x-www-form-urlencoded`, NOT JSON. Parse fields from `event` directly (`event.TranscriptionText`, `event.TranscriptionSid`). Do not `JSON.parse()`.
 </architectural_invariants>

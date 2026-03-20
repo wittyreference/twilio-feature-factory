@@ -25,6 +25,16 @@ See [SKILL.md](../SKILL.md) for the cross-cutting gotchas summary.
 - **Regional availability**: Media Streams are available in US1, IE1, and AU1 regions. Ensure your Twilio account region and WebSocket server are co-located for low latency.
 - **Unidirectional tracks**: `<Start><Stream>` supports up to 4 simultaneous tracks (inbound, outbound, or both) per call. Bidirectional streams via `<Connect><Stream>` are limited to 1 per call.
 
+## `<Transcription>`
+
+- **Engine selection**: Google (default) provides broad language coverage and is well-suited for telephony. Deepgram may offer better accuracy for specific domains (medical, legal terminology) and can have lower latency. Specify via `transcriptionEngine` attribute on `<Transcription>`.
+- **Partial results tradeoff**: `partialResults="true"` delivers interim transcription events that refine as more speech arrives. Useful for live captions but generates significantly more webhook traffic. Default is `false` (final results only).
+- **Dual-track recommended**: `track="both_tracks"` with distinct `inboundTrackLabel` and `outboundTrackLabel` enables speaker diarization. Single-track transcription reduces accuracy because the engine cannot distinguish speakers.
+- **Webhook traffic management**: Each transcription content event fires a separate HTTP request to `statusCallbackUrl`. At scale, ensure your callback endpoint can handle sustained webhook volume. Consider batching or queueing on the receiving end.
+- **Voice Intelligence integration**: Set `intelligenceService="IS..."` to automatically persist the transcript and run attached Language Operators post-call. This bridges real-time transcription with post-call analytics without additional API calls.
+- **Keyword hints**: Use the `hints` attribute (comma-separated) to improve recognition of domain-specific terms, product names, or jargon.
+- **Short utterance gap**: Utterances under ~200ms may not produce transcription events. This is a platform limitation, not an error.
+
 ## ConversationRelay
 
 - **STT provider selection**: Google is the default and works best in clean audio environments. Deepgram may perform better in noisy environments or with heavy accents. Specify via the `speechModel` attribute.

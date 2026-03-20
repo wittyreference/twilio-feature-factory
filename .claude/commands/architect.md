@@ -61,6 +61,7 @@ functions/
 | Inbound SMS | Messaging API | TwiML webhook |
 | Outbound SMS | Messaging API | REST API |
 | Voice AI | Conversation Relay | WebSocket + LLM |
+| Real-time transcription | Voice API | `<Start><Transcription>` noun |
 | Phone verification | Verify API | REST API |
 | 2FA | Verify API | REST API |
 
@@ -88,6 +89,12 @@ Q: Do you need to route tasks to available workers with skills matching?
 Q: Do you need to send from multiple numbers or manage sender pools?
 ├── Yes → Consider Messaging Services
 └── No → Use single phone number with basic Messaging API
+
+Q: Do you need transcription during live calls?
+├── Yes, Twilio-managed STT → `<Start><Transcription>` (webhooks deliver text)
+├── Yes, tied to AI agent → ConversationRelay (built-in STT)
+├── Yes, custom STT engine → `<Start><Stream>` + your own STT
+└── No, post-call only → Voice Intelligence batch via recording `source_sid`
 ```
 
 #### Prototype-First Principle
@@ -97,6 +104,7 @@ Q: Do you need to send from multiple numbers or manage sender pools?
 1. For state: Try cookies/query params → then Sync
 2. For routing: Try <Dial> with conditions → then TaskRouter
 3. For messaging: Try single number → then Messaging Services
+4. For transcription: Try `<Start><Transcription>` → then `<Start><Stream>` + custom STT
 
 When recommending advanced APIs, explicitly note:
 - What simpler alternative was considered

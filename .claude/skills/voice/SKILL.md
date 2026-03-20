@@ -53,7 +53,8 @@ but BYPASSES Programmable Voice infrastructure
 | Skill-based routing or workforce management | **TaskRouter** | Simple queues can't handle skills matrices |
 | AI-powered voice agent | **ConversationRelay** | Unless existing Dialogflow setup |
 | Third-party AI integration | **`<Connect><Stream>`** | Bidirectional media to your WebSocket |
-| Real-time transcription (monitoring) | **`<Start><Stream>`** | Unidirectional, doesn't block TwiML |
+| Real-time transcription (Twilio-managed) | **`<Start><Transcription>`** | Near real-time STT via webhooks, Voice Intelligence integration |
+| Real-time audio (bring-your-own STT) | **`<Start><Stream>`** | Unidirectional raw audio to your WebSocket |
 
 ---
 
@@ -133,6 +134,23 @@ ConversationRelay provides direct LLM integration over WebSocket. Dialogflow is 
 - `start_call_recording` - Start recording active call
 - `update_call_recording` - Pause (skip/silence), resume, or stop
 - **Tip:** Use `Twilio.CURRENT` as recordingSid to reference the active recording without knowing its SID
+
+### Transcription Method Selection
+
+**Four approaches to transcription, each for a different need:**
+
+| Approach | When | How | Latency | Voice Intelligence? |
+|----------|------|-----|---------|---------------------|
+| **`<Start><Transcription>`** | Live call monitoring, real-time captions, compliance | TwiML noun, webhooks deliver transcript events | 1-2s | Yes, via `intelligenceService` SID |
+| **ConversationRelay** | AI agent conversations | Built-in STT as part of WebSocket AI flow | Sub-second | Yes, via `intelligenceService` attribute |
+| **`<Start><Stream>`** + external STT | Custom STT engine, raw audio processing | Unidirectional WebSocket, you run STT | Depends on your STT | No (manual integration) |
+| **Voice Intelligence batch** | Post-call analysis at scale | Process recordings after call ends | Minutes | Yes (primary use case) |
+
+**Key distinctions:**
+- `<Start><Transcription>` is the only approach that gives you real-time transcription AND automatic Voice Intelligence integration without running your own STT
+- ConversationRelay also provides real-time STT, but it is tightly coupled to the AI agent WebSocket flow
+- `<Start><Stream>` gives raw audio — you supply and operate the STT engine
+- Voice Intelligence batch is for post-call analysis of existing recordings
 
 ### TTS Voice Tier Selection
 

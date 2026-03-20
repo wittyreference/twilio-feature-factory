@@ -192,7 +192,7 @@ See [SKILL.md](../SKILL.md) for the quick reference table and decision tree. See
 
 ## Use Case 10: AI/ML Transcription
 
-**Summary:** Large-scale transcription and intelligence extraction from voice calls. Turn recorded calls into searchable, analyzable text — then apply ML for sentiment, entities, topics, and compliance monitoring. This is a post-call (and sometimes real-time) analytics use case.
+**Summary:** Large-scale transcription and intelligence extraction from voice calls. Turn recorded calls into searchable, analyzable text — then apply ML for sentiment, entities, topics, and compliance monitoring. This is a post-call and real-time analytics use case. `<Start><Transcription>` provides Twilio-managed near real-time transcription during live calls, while Voice Intelligence provides batch analysis of recordings post-call.
 
 ### Software Tools
 
@@ -220,9 +220,13 @@ See [SKILL.md](../SKILL.md) for the quick reference table and decision tree. See
 - **`<Transcribe>`**: Twilio's built-in transcription capability. Attach to recordings for automatic transcription. Simpler than full Conversational Intelligence but lacks advanced features (entity detection, sentiment, PII redaction).
   - Prereqs: Conversational Intelligence Service SID for advanced features (entity detection, PII redaction). Basic transcription works without it.
 
+- **`<Transcription>`**: Near real-time transcription during live calls via `<Start><Transcription>`. Twilio-managed STT (Google or Deepgram engine) delivers transcript events to your webhook with 1-2 second latency. Supports dual-track transcription (`inbound_track`, `outbound_track`, `both_tracks`) for speaker diarization. When `intelligenceService` SID is specified, the transcript is automatically persisted and Language Operators run post-call — bridging real-time transcription with post-call analytics without additional API calls.
+  - Prereqs: StatusCallback URL to receive transcription events. Conversational Intelligence Service SID for `intelligenceService` integration.
+  - Gotcha: Callback payload is form-encoded (not JSON). `partialResults="true"` generates high webhook traffic — budget for sustained volume. Encrypted recordings cannot be transcribed. Short utterances (<200ms) may not produce output. Engine-specific `speechModel` values are not interchangeable between Google and Deepgram.
+
 - **Voice Insights**: Call metadata that enriches transcription analysis — call duration, quality scores, participant information. Combine Voice Insights data with transcription data for complete call intelligence.
 
-- **`<Stream>`**: Real-time audio streaming for live transcription. Use `<Start><Stream>` to send audio to your transcription service during the call without disrupting the conversation.
+- **`<Stream>`**: Real-time audio streaming for custom STT or audio processing. Use `<Start><Stream>` to send raw audio to your own transcription service or audio pipeline. For Twilio-managed real-time transcription, prefer `<Start><Transcription>` instead.
   - Prereqs (bidirectional): WebSocket server accepting `wss://` connections.
   - Gotcha: `<Connect><Stream>` (bidirectional) blocks all subsequent TwiML until WebSocket closes. Cannot stop a bidirectional stream without ending the call. Audio is strictly mulaw 8kHz base64 — no format negotiation.
 

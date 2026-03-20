@@ -49,6 +49,7 @@ Each product entry within a use case includes:
 | Recording | X | X | X | X | X | X | X | X | X | X |
 | `<Transcribe>` | X | X | X | X | X | X | | | | X |
 | Voice Insights | X | X | X | X | X | X | X | X | X | X |
+| `<Transcription>` | | X | X | X | X | X | | | | X |
 | `<Stream>` | | X | X | X | X | X | | | | X |
 
 ## Connectivity

@@ -20,7 +20,7 @@ Definitive per-use-case product mapping for Twilio Voice. Load this skill when r
 | 7 | Sales Dialer | Conference, AMD, Recording, Participants API | Parallel/power dialing | Yes — AMD + parallel dial timing |
 | 8 | Call Tracking | Voice API, Say (whisper), Dial, Recording, Sync | Campaign attribution + forwarding | No — well-understood APIs |
 | 9 | PSTN Connectivity | Elastic SIP Trunking (primary), BYOC | Carrier interconnect (Elastic SIP Trunking validated in SIP Lab, SIP Interface Phase C TODO) | Yes — SIP registration (SIP Interface only), TLS, E.164 dialplan |
-| 10 | AI/ML Transcription | Voice Intelligence, Language Operators | Post-call analysis of recordings | Yes — `source_sid` vs `media_url`, operator config |
+| 10 | AI/ML Transcription | Voice Intelligence, Language Operators, `<Start><Transcription>` | Real-time and post-call transcription + analysis | Yes — `source_sid` vs `media_url`, operator config, engine selection |
 
 **Complements:** `.claude/skills/voice/SKILL.md` (decision frameworks), `functions/conversation-relay/CLAUDE.md` (ConversationRelay protocol details).
 
@@ -41,7 +41,8 @@ Is this outbound (you initiate) or inbound (caller dials you)?
 │   ├── AI handles conversation? → UC 5 or 6 (AI Agents)
 │   └── Marketing attribution? → UC 8 (Call Tracking)
 ├── SIP infrastructure needs PSTN? → UC 9 (PSTN Connectivity)
-└── Post-call analysis at scale? → UC 10 (AI/ML Transcription)
+├── Real-time transcription during live calls? → UC 10 (`<Start><Transcription>`)
+└── Post-call analysis at scale? → UC 10 (Voice Intelligence batch)
 ```
 
 **AI Agent choice:** Use UC 5 (ConversationRelay) when you want Twilio-managed STT/TTS. Use UC 6 (Media Streams) when you have your own AI platform or need raw audio control.
@@ -68,6 +69,7 @@ Common paths: Notifications → IVR → Contact Center | IVR → AI Agents → C
 - **Recording → Intelligence**: Use `source_sid` (Recording SID), NOT `media_url`.
 - **`<Connect><Stream>`**: Blocks all subsequent TwiML. Cannot stop without ending call. Audio is mulaw 8kHz base64 only.
 - **Conference warm transfer**: `endConferenceOnExit` must be set per-participant deliberately.
+- **`<Start><Transcription>`**: Callbacks are form-encoded, not JSON. `partialResults="true"` creates high webhook volume. Engine-specific `speechModel` values not interchangeable (Google vs Deepgram).
 
 ## Reference Files
 

@@ -144,20 +144,96 @@ fi
 echo -e "${BOLD}Phase 1: Prerequisites${NC}"
 echo ""
 
-# 1. Node.js
+# Node.js version-switching helpers (used by check below)
+ensure_node_version() {
+    local target="22"
+    if command -v fnm > /dev/null 2>&1; then
+        fnm install "$target" > /dev/null 2>&1 && fnm use "$target" > /dev/null 2>&1
+        return $?
+    elif command -v nvm > /dev/null 2>&1; then
+        nvm install "$target" > /dev/null 2>&1 && nvm use "$target" > /dev/null 2>&1
+        return $?
+    fi
+    return 1
+}
+
+install_fnm() {
+    if ! command -v brew > /dev/null 2>&1; then
+        return 1
+    fi
+    brew install fnm > /dev/null 2>&1 || return 1
+    # Add shell hook
+    local shell_rc=""
+    if [ -f "$HOME/.zshrc" ]; then
+        shell_rc="$HOME/.zshrc"
+    elif [ -f "$HOME/.bashrc" ]; then
+        shell_rc="$HOME/.bashrc"
+    fi
+    if [ -n "$shell_rc" ] && ! grep -q "fnm env" "$shell_rc" 2>/dev/null; then
+        echo "" >> "$shell_rc"
+        echo "# fnm — fast Node.js version manager" >> "$shell_rc"
+        echo 'eval "$(fnm env --use-on-cd --shell '"'"'"$(basename "$SHELL")"'"'"')"' >> "$shell_rc"
+    fi
+    eval "$(fnm env --use-on-cd --shell "$(basename "$SHELL")")" 2>/dev/null || true
+    fnm install 22 > /dev/null 2>&1 && fnm use 22 > /dev/null 2>&1
+    return $?
+}
+
+# 1. Node.js (pinned to 22 via .node-version)
 if command -v node > /dev/null 2>&1; then
     NODE_VERSION=$(node --version | sed 's/v//')
     NODE_MAJOR=$(echo "$NODE_VERSION" | cut -d. -f1)
     if [ "$NODE_MAJOR" -eq 20 ] || [ "$NODE_MAJOR" -eq 22 ]; then
         check_pass "Node.js $NODE_VERSION"
-    elif [ "$NODE_MAJOR" -gt 22 ]; then
-        check_warn "Node.js $NODE_VERSION (officially supported: 20.x, 22.x)" \
-            "Usually works fine, but Twilio Serverless may not support it"
     else
-        check_fail "Node.js $NODE_VERSION (need 20.x or 22.x)" "Install from https://nodejs.org"
+        # Wrong version — attempt auto-switch
+        if ! $CHECK_ONLY && ensure_node_version; then
+            NODE_VERSION=$(node --version | sed 's/v//')
+            check_pass "Node.js $NODE_VERSION (auto-switched from v${NODE_MAJOR})"
+        elif ! $CHECK_ONLY && ! $NON_INTERACTIVE; then
+            echo -e "  ${YELLOW}WARN${NC} Node.js $NODE_VERSION (need 20.x or 22.x)"
+            echo -n "  Install fnm (fast Node manager) to auto-switch? [Y/n] "
+            read -r install_fnm_answer
+            if [[ -z "$install_fnm_answer" ]] || [[ "$install_fnm_answer" =~ ^[Yy] ]]; then
+                if install_fnm; then
+                    NODE_VERSION=$(node --version | sed 's/v//')
+                    check_pass "Node.js $NODE_VERSION (fnm installed, auto-switched)"
+                else
+                    check_fail "fnm installation failed" "Install manually: brew install fnm && fnm install 22 && fnm use 22"
+                fi
+            else
+                check_fail "Node.js $NODE_VERSION (need 20.x or 22.x)" "fnm install 22 && fnm use 22"
+            fi
+        elif ! $CHECK_ONLY && $NON_INTERACTIVE; then
+            # Non-interactive: try harder — install fnm if brew available
+            if install_fnm; then
+                NODE_VERSION=$(node --version | sed 's/v//')
+                check_pass "Node.js $NODE_VERSION (fnm auto-installed)"
+            else
+                check_fail "Node.js $NODE_VERSION (need 20.x or 22.x)" "Install fnm: brew install fnm && fnm install 22"
+            fi
+        else
+            check_fail "Node.js $NODE_VERSION (need 20.x or 22.x)" "Install fnm: brew install fnm && fnm install 22"
+        fi
     fi
 else
-    check_fail "Node.js not found" "Install from https://nodejs.org"
+    if ! $CHECK_ONLY && ! $NON_INTERACTIVE; then
+        echo -e "  ${RED}FAIL${NC} Node.js not found"
+        echo -n "  Install fnm (fast Node manager) to get Node 22? [Y/n] "
+        read -r install_fnm_answer
+        if [[ -z "$install_fnm_answer" ]] || [[ "$install_fnm_answer" =~ ^[Yy] ]]; then
+            if install_fnm; then
+                NODE_VERSION=$(node --version | sed 's/v//')
+                check_pass "Node.js $NODE_VERSION (fnm installed)"
+            else
+                check_fail "Node.js not found" "Install fnm: brew install fnm && fnm install 22"
+            fi
+        else
+            check_fail "Node.js not found" "Install from https://nodejs.org or: brew install fnm && fnm install 22"
+        fi
+    else
+        check_fail "Node.js not found" "Install fnm: brew install fnm && fnm install 22"
+    fi
 fi
 
 # 2. npm
@@ -458,13 +534,21 @@ else
                 "Run before each session: set -a && source .env && set +a"
         fi
     elif $NON_INTERACTIVE; then
-        # Non-interactive: warn and mark opt-out
-        echo -e "  ${YELLOW}WARN${NC} direnv not installed (non-interactive mode, cannot prompt)" >&2
-        WARN=$((WARN + 1))
-        TOTAL=$((TOTAL + 1))
-        if [ -f ".env" ] && ! grep -q "DIRENV_OPTED_OUT" .env 2>/dev/null; then
-            echo "" >> .env
-            echo "# DIRENV_OPTED_OUT=true  (non-interactive bootstrap, direnv not available)" >> .env
+        # Non-interactive: auto-install direnv if brew available
+        if command -v brew > /dev/null 2>&1; then
+            echo -e "  ${CYAN}INST${NC} Installing direnv (non-interactive)..."
+            if brew install direnv > /dev/null 2>&1; then
+                eval "$(direnv hook "$(basename "$SHELL")")" 2>/dev/null || true
+                if [ -f ".envrc" ]; then
+                    direnv allow . 2>/dev/null || true
+                fi
+                check_pass "direnv auto-installed and allowed"
+            else
+                check_warn "direnv auto-install failed" "Install manually: brew install direnv"
+            fi
+        else
+            check_warn "direnv not installed (brew not available)" \
+                "Install manually: brew install direnv"
         fi
     else
         check_warn "direnv not installed" \

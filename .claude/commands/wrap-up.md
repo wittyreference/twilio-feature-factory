@@ -207,6 +207,22 @@ The script counts functions, domains, access levels, MCP tools/modules, hooks, s
 
 If the script reports changes, review the diff and include the exec summary update context in the session learnings. If no drift, skip silently.
 
+### 7d. Wiki Drift Check
+
+If session changes touched functions, MCP tools, or tests, check for wiki stat drift:
+
+```bash
+./scripts/check-wiki-drift.sh --quiet
+```
+
+If drift is detected (exit code 1), run the sync to fix:
+
+```bash
+./scripts/sync-wiki.sh --fix
+```
+
+Review the diff before pushing wiki changes. Skip if no relevant files changed this session.
+
 ### 8. Clear Pending Actions
 
 After addressing flywheel suggestions, clear the pending actions file:

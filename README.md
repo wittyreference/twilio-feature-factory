@@ -321,7 +321,7 @@ For live voice AI validation, the project uses agent-to-agent testing with Conve
 - Twilio phone numbers with ConversationRelay webhooks
 - `ANTHROPIC_API_KEY` for LLM responses
 
-See `.meta/sequential-validation.md` for the full validation procedure.
+See `.meta/validation-prompts/interactive-sequential.md` for the full validation procedure.
 
 ## Safety Features
 

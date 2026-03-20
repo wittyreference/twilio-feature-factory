@@ -184,7 +184,7 @@ SNAPSHOT_PATH="$([ -d .meta ] && echo .meta/architect-metrics.json || echo archi
 
 If drift is detected (exit code 1), the output lists specific deltas (e.g., `functions: 73 → 78`). Handle it:
 
-1. Read the current architect summary (find it via `ls .meta/old-analysis/*ARCHITECT*`)
+1. Read the current architect summary (find it via `ls .meta/analysis/*ARCHITECT*`)
 2. Update every section where the drifted metrics appear — counts in prose, tables, the file map appendix, and domain breakdowns. Don't just find-and-replace numbers; check if new domains, tools, or capabilities need prose additions too.
 3. After updating, refresh the baseline snapshot:
    ```bash

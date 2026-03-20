@@ -1114,7 +1114,7 @@ Key properties:
 
 ### Context
 
-A Claude Code Insights report identified 16 "wrong_approach" friction events during Twilio validation sessions — the agent would misdiagnose live service failures, skip E2E phases, or fail to use the correct MCP validation tools. The report recommended an "autonomous test-iterate-fix loop" pattern. The raw concept (captured in `.meta/prompt-queue.md`) suggested building infrastructure for sequential prompt execution with retry budgets.
+A Claude Code Insights report identified 16 "wrong_approach" friction events during Twilio validation sessions — the agent would misdiagnose live service failures, skip E2E phases, or fail to use the correct MCP validation tools. The report recommended an "autonomous test-iterate-fix loop" pattern. The raw concept (captured in `.meta/prompt-queue.md`, since implemented as D24, file deleted) suggested building infrastructure for sequential prompt execution with retry budgets.
 
 ### Decision
 

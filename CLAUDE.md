@@ -186,11 +186,17 @@ This section establishes shared language and expectations between human and AI c
 - When a multi-step validation or implementation plan exists, NEVER silently skip steps. If a step cannot be completed, explicitly report it as skipped with the reason. Report completion status for every step, not just the ones that succeeded.
 - If authentication or credentials expire mid-session, surface it to the user immediately rather than attempting workarounds or continuing with degraded access.
 
+## Sandbox Mode
+
+Native sandbox (Seatbelt on macOS) is available via `settings.local.json`. When enabled with `autoAllowBashIfSandboxed: true`, Bash commands auto-allow without prompts as long as they stay within filesystem and network boundaries. Hooks still fire normally — sandbox is a separate layer below hooks.
+
+If a command fails due to sandbox restrictions (blocked domain, write outside allowed paths), add the domain/path to the sandbox config in `settings.local.json` and restart Claude Code. To disable entirely: set `"enabled": false` in the sandbox block.
+
 ## When Blocked by a Hook
 
 When a pre-write or pre-bash hook blocks your action, **do not guess at workarounds**. Follow this protocol:
 
-1. **Check `settings.local.json` first.** The permissions list is a record of previously-approved workflows. Search it for the pattern you need — the answer is almost always already there.
+1. **Check `settings.local.json` first.** It may contain sandbox config or previously-approved workflows.
 2. **Use the established bypass.** For meta-mode write blocks, prepend the env var to a Bash command:
    ```bash
    CLAUDE_ALLOW_PRODUCTION_WRITE=true cat > functions/path/file.js << 'EOF'
@@ -205,6 +211,7 @@ When a pre-write or pre-bash hook blocks your action, **do not guess at workarou
 Rules that prevent real debugging time loss. Loaded contextually via `.claude/rules/*-invariants.md` (serverless, environment, voice-protocol). Each rule also lives in its domain CLAUDE.md file. See `.claude/references/operational-gotchas.md` for cross-cutting gotchas.
 
 - **Verify FriendlyName: max 4 total digits** — `POST /v2/Services` returns 60200 ("Invalid parameter") if FriendlyName contains 5+ digit characters total, even non-consecutive. Use alpha-only identifiers for programmatic names (`echo "$TS" | md5 | tr '0-9' 'g-p' | head -c 8`).
+- **jq is a hard prerequisite** — All safety hooks silently skip ALL validation without jq. Never advise users to skip jq installation. `bootstrap.sh` enforces this.
 
 # Session discipline
 

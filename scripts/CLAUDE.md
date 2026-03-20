@@ -27,6 +27,8 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 | `env-doctor.sh` | `./scripts/env-doctor.sh` | Detect shell vs .env conflicts, orphaned regional vars, direnv status |
 | `dogfood-env.sh` | `./scripts/dogfood-env.sh` | Simulate new-user onboarding with conflicting shell env vars |
 | `validate-provisioning.sh` | `./scripts/validate-provisioning.sh` | Clean-room provisioning validator — ephemeral resources, full lifecycle, auto-teardown |
+| `provision-ephemeral.sh` | `./scripts/provision-ephemeral.sh <env-file>` | Create ephemeral Twilio resources (Sync, Verify, Messaging, TaskRouter) for isolated validation |
+| `cleanup-ephemeral.sh` | `./scripts/cleanup-ephemeral.sh <env-file>` | Delete ephemeral resources created by provision-ephemeral.sh |
 | `run-regression.sh` | `./scripts/run-regression.sh` | Regression validation orchestrator — parallel fast checks + headless validation lanes |
 | `headless-preflight.sh` | `./scripts/headless-preflight.sh` | Pre-flight setup: deploy, ngrok, agent servers, SIP Lab droplet lifecycle |
 | `check-readme-drift.sh` | `./scripts/check-readme-drift.sh` | Detect structural drift between README.md and actual project contents |
@@ -51,3 +53,5 @@ These issues were discovered across 16 headless sessions and 4 rounds of prompt 
 | **Wrong prompt file wastes sessions** | `--prompt-file .meta/random-validation.md` (interactive plan) vs `--task random-validation` (headless-optimized) | Always use `--task random-validation` for headless runs |
 | **MCP server needs `.env` sourced** | MCP tools fail with auth errors if env vars aren't exported | `run-headless.sh` must export env vars for MCP tools to work |
 | **Headless validation burns turns on infrastructure** | Setup, deploy, and webhook config consume 30-40% of turn budget before validation starts | Use `--preflight` flag to handle deploy/ngrok/agents BEFORE claude launches |
+| **jq required for all safety hooks** | Without jq, ALL hooks silently skip credential detection, --no-verify blocking, meta-mode isolation, ABOUTME enforcement | bootstrap.sh now fails without jq; hooks emit stderr warning when jq is absent |
+| **Validation reuses existing resources by default** | Headless lanes use .env SIDs, masking provisioning friction | Use `--fresh-resources` flag for ephemeral resources per session |

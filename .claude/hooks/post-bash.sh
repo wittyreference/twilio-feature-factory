@@ -35,6 +35,9 @@ _check_compact_pending() {
 _check_compact_pending
 
 COMMAND=""
+if [ -n "$_POST_BASH_HOOK_INPUT" ] && ! command -v jq &> /dev/null; then
+    echo "WARNING: jq not installed — post-bash hooks disabled (deployment tracking). Run: brew install jq" >&2
+fi
 if [ -n "$_POST_BASH_HOOK_INPUT" ] && command -v jq &> /dev/null; then
     COMMAND="$(echo "$_POST_BASH_HOOK_INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)"
 fi

@@ -7,7 +7,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 MCP_DIR="$PROJECT_DIR/agents/mcp-servers/twilio"
-REPORT_DIR="$MCP_DIR/__tests__/validation-reports"
+# Reports land in .meta/validation-reports/ for progression tracking
+if [ -d "$PROJECT_DIR/.meta/validation-reports" ]; then
+    REPORT_DIR="$PROJECT_DIR/.meta/validation-reports"
+else
+    REPORT_DIR="$MCP_DIR/__tests__/validation-reports"
+fi
 
 cd "$PROJECT_DIR"
 
@@ -50,7 +55,8 @@ echo ""
 
 # Run the tests
 TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
-REPORT_FILE="$REPORT_DIR/$TIMESTAMP-results.txt"
+mkdir -p "$REPORT_DIR"
+REPORT_FILE="$REPORT_DIR/$TIMESTAMP-e2e-deep-validation.txt"
 
 echo "Running E2E tests..."
 echo ""

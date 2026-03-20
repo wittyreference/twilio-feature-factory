@@ -182,7 +182,7 @@ main() {
     mkdir -p .claude/autonomous-sessions
 
     # Create session log
-    SESSION_ID="autonomous-$(date +%Y%m%d-%H%M%S)"
+    SESSION_ID="autonomous-$(date +%Y-%m-%d-%H%M%S)"
     SESSION_LOG=".claude/autonomous-sessions/${SESSION_ID}.log"
 
     echo "================================================================================" > "$SESSION_LOG"

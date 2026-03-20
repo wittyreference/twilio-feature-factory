@@ -10,7 +10,7 @@ Launch parallel expert reviews of the codebase from multiple professional person
 
 ## Overview
 
-Six reviewer personas, each evaluating the codebase from their professional lens:
+Eight reviewer personas, each evaluating the codebase from their professional lens:
 
 | Reviewer | Persona | Focus |
 |----------|---------|-------|
@@ -21,6 +21,7 @@ Six reviewer personas, each evaluating the codebase from their professional lens
 | **DevEx** | Developer experience engineer | Onboarding friction, error messages, time-to-first-success |
 | **SRE** | Platform SRE / operations engineer | Failure modes, resource lifecycle, observability, deployment safety |
 | **Skeptic** | Staff engineer (20yr), AI-tooling skeptic | Claim scrutiny, complexity budget, demo gap, cargo culting |
+| **Anthropic** | Anthropic Claude Code power-user / internal dev | Platform best practices, CLAUDE.md architecture, hooks ROI, what Anthropic should provide natively |
 
 ## Arguments
 
@@ -29,7 +30,7 @@ $ARGUMENTS
 </user_request>
 
 Parse arguments for flags:
-- `--reviewers architect,test,docs,security,devex,sre,skeptic` — which reviewers to run (default: all)
+- `--reviewers architect,test,docs,security,devex,sre,skeptic,anthropic` — which reviewers to run (default: all)
 - `--focus "specific area or question"` — optional focus area appended to each reviewer's prompt
 - `--output-dir PATH` — override report directory (default: `.meta/review-reports/`)
 
@@ -37,19 +38,20 @@ Parse arguments for flags:
 
 | Reviewer ID | Prompt File |
 |-------------|-------------|
-| `architect` | `.meta/senior-architect-review.md` |
-| `test` | `.meta/test-developer-review.md` |
-| `docs` | `.meta/docs-editor-review.md` |
-| `security` | `.meta/security-auditor-review.md` |
-| `devex` | `.meta/devex-engineer-review.md` |
-| `sre` | `.meta/platform-sre-review.md` |
-| `skeptic` | `.meta/skeptical-ic-review.md` |
+| `architect` | `.meta/reviewers/senior-architect-review.md` |
+| `test` | `.meta/reviewers/test-developer-review.md` |
+| `docs` | `.meta/reviewers/docs-editor-review.md` |
+| `security` | `.meta/reviewers/security-auditor-review.md` |
+| `devex` | `.meta/reviewers/devex-engineer-review.md` |
+| `sre` | `.meta/reviewers/platform-sre-review.md` |
+| `skeptic` | `.meta/reviewers/skeptical-ic-review.md` |
+| `anthropic` | `.meta/reviewers/anthropic-developer-review.md` |
 
 ## Execution
 
 ### Phase 1: Initialize
 
-1. **Generate run ID**: `review-YYYYMMDD-HHMMSS`
+1. **Generate run ID**: `YYYY-MM-DD-HHMMSS` (e.g., `2026-03-20-143052`)
 2. **Parse `--reviewers`**: Default to all 7. Validate each ID exists in the mapping table above.
 3. **Read prompt files**: For each selected reviewer, read the corresponding `.meta/*-review.md` file.
 4. **Create output directory**: `.meta/review-reports/{run-id}/`
@@ -127,6 +129,7 @@ Merge all reviewers' recommendations into a single prioritized list. Deduplicate
 | Developer Experience | | DevEx | |
 | Operational Readiness | | SRE | |
 | Claims Accuracy | | Skeptic | |
+| Platform Best Practices | | Anthropic | |
 | **Overall** | **(avg)** | | |
 
 ### Phase 5: Summary

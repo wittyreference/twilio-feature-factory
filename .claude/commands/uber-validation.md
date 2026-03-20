@@ -13,10 +13,10 @@ Four validation planes, each testing a different dimension:
 
 | Plane | What It Tests | Isolation |
 |-------|--------------|-----------|
-| **A** | Plugin dogfooding — build a UC using only the plugin | `/tmp/uber-val-RUNID/plane-a/` |
-| **B** | Sequential validation — voice UCs build + deploy + deep validate | `/tmp/uber-val-RUNID/plane-b/` (clone of this repo) |
-| **C** | Chaos validation — toolchain resilience to bad/novel input | `/tmp/uber-val-RUNID/plane-c/` (clone of this repo) |
-| **D** | FF cross-repo — generic patterns work on open-source projects | `/tmp/uber-val-RUNID/plane-d/` (clone of target repo) |
+| **A** | Plugin dogfooding — build a UC using only the plugin | `/tmp/uber-val-YYYY-MM-DD-HHMMSS/plane-a/` |
+| **B** | Sequential validation — voice UCs build + deploy + deep validate | `/tmp/uber-val-YYYY-MM-DD-HHMMSS/plane-b/` (clone of this repo) |
+| **C** | Chaos validation — toolchain resilience to bad/novel input | `/tmp/uber-val-YYYY-MM-DD-HHMMSS/plane-c/` (clone of this repo) |
+| **D** | FF cross-repo — generic patterns work on open-source projects | `/tmp/uber-val-YYYY-MM-DD-HHMMSS/plane-d/` (clone of target repo) |
 
 **Path variables** (set these before running):
 ```bash
@@ -26,7 +26,7 @@ PLUGIN_ROOT="${FACTORY_ROOT}/../twilio-claude-plugin"  # sibling checkout
 
 **CRITICAL**: All planes run in `/tmp/` directories. The root working tree is NEVER modified. No test files, no built functions, no deployed artifacts, no branch pollution. Findings and reports are written back to `.meta/` in the root repo only.
 
-**CWD GUARD**: Shell working directory resets to the root repo after bash operations like `npm install`, `git clone`, and other commands. You MUST `cd` to the absolute `/tmp/uber-val-RUNID/plane-X/` path before EVERY bash command that reads or writes files. Never use relative paths — always use the full `/tmp/uber-val-RUNID/...` absolute path. If you see yourself writing to `.meta/uber-val-*` or any path under the root repo that isn't `.meta/validation-reports/`, STOP — your cwd has drifted.
+**CWD GUARD**: Shell working directory resets to the root repo after bash operations like `npm install`, `git clone`, and other commands. You MUST `cd` to the absolute `/tmp/uber-val-YYYY-MM-DD-HHMMSS/plane-X/` path before EVERY bash command that reads or writes files. Never use relative paths — always use the full `/tmp/uber-val-YYYY-MM-DD-HHMMSS/...` absolute path. If you see yourself writing to `.meta/uber-val-*` or any path under the root repo that isn't `.meta/validation-reports/`, STOP — your cwd has drifted.
 
 ## Arguments
 
@@ -40,11 +40,11 @@ Parse arguments for flags:
 - `--create-issues` — create GitHub issues for BLOCKING/MAJOR findings
 - `--ff-repo NAME` — force specific repo for Plane D (default: anti-repetition selection)
 - `--chaos-difficulty mild|moderate|extreme` — chaos scenario difficulty (default: moderate)
-- `--keep-artifacts` — don't delete `/tmp/uber-val-RUNID/` after run
+- `--keep-artifacts` — don't delete `/tmp/uber-val-YYYY-MM-DD-HHMMSS/` after run
 
 ## Phase 0: Initialize
 
-1. **Generate run ID**: `uber-val-YYYYMMDD-HHMMSS`
+1. **Generate run ID**: `YYYY-MM-DD-HHMMSS` (e.g., `2026-03-20-143052`)
 2. **Read history**: `.meta/validation-reports/state/uber-validation-history.json` (create if absent)
 3. **If `--resume`**: read `.meta/validation-reports/state/uber-validation-state.json`, skip completed planes, resume from first pending/timeout plane
 4. **Run `/preflight`** in the root repo (read-only environment check)
@@ -68,7 +68,7 @@ Parse arguments for flags:
      - **Non-Technical Founder**: business language only, no technical vocabulary
    - The rewrite MUST preserve the core product requirements (so the UC is still buildable) but the description should be messy, incomplete, or oddly framed
    - Record the persona and rewritten description in the state file
-7. **Create temp directory structure**: `mkdir -p /tmp/uber-val-RUNID/{plane-a,plane-b,plane-c,plane-d}`
+7. **Create temp directory structure**: `mkdir -p /tmp/uber-val-YYYY-MM-DD-HHMMSS/{plane-a,plane-b,plane-c,plane-d}`
 8. **Initialize state file**: `.meta/validation-reports/state/uber-validation-state.json` with run config, plane statuses all `pending`, persona rewrites
 
 **Repo pool for Plane D**:
@@ -89,7 +89,7 @@ Parse arguments for flags:
 1. Mark Plane A as `in_progress` in state file
 2. Create fresh project:
    ```bash
-   cd /tmp/uber-val-RUNID/plane-a/
+   cd /tmp/uber-val-YYYY-MM-DD-HHMMSS/plane-a/
    npm init -y
    cp $FACTORY_ROOT/.env .
    ```
@@ -117,9 +117,9 @@ Parse arguments for flags:
 1. Mark Plane B as `in_progress`
 2. Clone this repo:
    ```bash
-   git clone --depth=1 $FACTORY_ROOT /tmp/uber-val-RUNID/plane-b/
-   cp $FACTORY_ROOT/.env /tmp/uber-val-RUNID/plane-b/
-   cd /tmp/uber-val-RUNID/plane-b/ && npm install
+   git clone --depth=1 $FACTORY_ROOT /tmp/uber-val-YYYY-MM-DD-HHMMSS/plane-b/
+   cp $FACTORY_ROOT/.env /tmp/uber-val-YYYY-MM-DD-HHMMSS/plane-b/
+   cd /tmp/uber-val-YYYY-MM-DD-HHMMSS/plane-b/ && npm install
    ```
 3. Select 2-3 UCs from rotation, using their persona-rewritten descriptions from Phase 0 step 6. Do NOT look up the original UCs — work from the rewritten descriptions only.
 4. For each UC, follow the sequential validation lifecycle:
@@ -147,9 +147,9 @@ Parse arguments for flags:
 1. Mark Plane C as `in_progress`
 2. Clone this repo:
    ```bash
-   git clone --depth=1 $FACTORY_ROOT /tmp/uber-val-RUNID/plane-c/
-   cp $FACTORY_ROOT/.env /tmp/uber-val-RUNID/plane-c/
-   cd /tmp/uber-val-RUNID/plane-c/ && npm install
+   git clone --depth=1 $FACTORY_ROOT /tmp/uber-val-YYYY-MM-DD-HHMMSS/plane-c/
+   cp $FACTORY_ROOT/.env /tmp/uber-val-YYYY-MM-DD-HHMMSS/plane-c/
+   cd /tmp/uber-val-YYYY-MM-DD-HHMMSS/plane-c/ && npm install
    ```
 3. Read `.meta/validation-reports/state/uber-validation-history.json` for archetype exclusions
 4. Generate 3-4 novel chaos scenarios:
@@ -182,11 +182,11 @@ Parse arguments for flags:
 1. Mark Plane D as `in_progress`
 2. Clone target repo (selected in Phase 0):
    ```bash
-   git clone --depth=1 https://github.com/{org}/{repo}.git /tmp/uber-val-RUNID/plane-d/
+   git clone --depth=1 https://github.com/{org}/{repo}.git /tmp/uber-val-YYYY-MM-DD-HHMMSS/plane-d/
    ```
 3. Install Feature Factory:
    ```bash
-   $FACTORY_ROOT/scripts/init.sh /tmp/uber-val-RUNID/plane-d/
+   $FACTORY_ROOT/scripts/init.sh /tmp/uber-val-YYYY-MM-DD-HHMMSS/plane-d/
    ```
 4. Run automated checks:
    - Hook test suite: `.claude/hooks/__tests__/test-all-hooks.sh`
@@ -235,7 +235,7 @@ Parse arguments for flags:
    - Update `ffRepoUsage`, `chaosArchetypesUsed`, `personaUsage` (increment persona count per use)
    - Add new finding fingerprints to `knownFindingFingerprints`
 8. Update `.meta/validation-reports/state/uber-validation-state.json` with `completedAt` and final status
-9. Cleanup: `rm -rf /tmp/uber-val-RUNID/` unless `--keep-artifacts`
+9. Cleanup: `rm -rf /tmp/uber-val-YYYY-MM-DD-HHMMSS/` unless `--keep-artifacts`
 10. Print summary to stdout:
     ```
     UBER-VALIDATION COMPLETE

@@ -82,7 +82,7 @@ info "$BEHIND_COUNT new commit(s) available"
 STASHED=false
 if ! git diff --quiet || ! git diff --cached --quiet; then
     info "Stashing local changes..."
-    git stash push -m "auto-stash before update $(date +%Y%m%d-%H%M%S)" --quiet
+    git stash push -m "auto-stash before update $(date +%Y-%m-%d-%H%M%S)" --quiet
     STASHED=true
 fi
 

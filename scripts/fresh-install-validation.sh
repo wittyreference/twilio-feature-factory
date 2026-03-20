@@ -18,6 +18,7 @@ KEEP=false
 VERBOSE=false
 SMOKE_TEST=false
 GIT_CLONE=false
+DEGRADED=false
 
 # Parse flags
 for arg in "$@"; do
@@ -26,6 +27,7 @@ for arg in "$@"; do
         --verbose) VERBOSE=true ;;
         --smoke-test) SMOKE_TEST=true ;;
         --git-clone) GIT_CLONE=true ;;
+        --degraded) DEGRADED=true ;;
         --help|-h)
             echo "Usage: $0 [--keep] [--verbose] [--smoke-test] [--git-clone]"
             echo ""
@@ -36,6 +38,7 @@ for arg in "$@"; do
             echo "  --verbose      Show full command output"
             echo "  --smoke-test   Run Phase E: send SMS + make call (requires TEST_PHONE_NUMBER)"
             echo "  --git-clone    Use git clone instead of rsync (slower, but true fresh clone)"
+            echo "  --degraded     Test bootstrap behavior with missing prerequisites (jq, brew, node)"
             echo ""
             echo "Required environment variables:"
             echo "  TWILIO_ACCOUNT_SID    Account credentials"
@@ -110,6 +113,19 @@ fi
 
 START_TIME=$(date +%s)
 
+# ─────────────────────────────────────────────────────────
+# Fast path: --degraded only (skip Phases A-E, no clone needed)
+# ─────────────────────────────────────────────────────────
+if $DEGRADED && ! $SMOKE_TEST; then
+    echo -e "${DIM}Running degraded-environment tests only (no clone required)${NC}"
+    echo ""
+    # Jump straight to degraded phases (F/G/H) defined near the end
+    # Set WORK_DIR to a dummy to avoid cleanup errors
+    WORK_DIR=""
+    KEEP=true
+fi
+
+if [ -n "$WORK_DIR" ]; then
 # ─────────────────────────────────────────────────────────
 # Phase A: Clone/Copy
 # ─────────────────────────────────────────────────────────
@@ -477,6 +493,69 @@ if $SMOKE_TEST; then
         test_result "E3: Call initiated" "true" "false"
     fi
 
+    echo ""
+fi
+
+fi  # end if [ -n "$WORK_DIR" ] (skip Phases A-E when --degraded only)
+
+# ─────────────────────────────────────────────────────────
+# Phase F/G/H: Degraded-Environment Tests (--degraded only)
+# ─────────────────────────────────────────────────────────
+if $DEGRADED; then
+    echo -e "${BOLD}Phase F: Missing jq simulation${NC}"
+
+    # Build a PATH that excludes ALL directories containing jq
+    FILTERED_PATH=""
+    while IFS= read -r dir; do
+        [ -x "$dir/jq" ] || FILTERED_PATH="${FILTERED_PATH}:${dir}"
+    done <<< "$(echo "$PATH" | tr ':' '\n')"
+    FILTERED_PATH="${FILTERED_PATH#:}"  # strip leading colon
+
+    DEGRADED_OUTPUT=$(PATH="$FILTERED_PATH" \
+        bash scripts/bootstrap.sh --check-only --non-interactive 2>&1 || true)
+
+    TOTAL=$((TOTAL + 1))
+    if echo "$DEGRADED_OUTPUT" | grep -qi "FAIL.*jq"; then
+        PASS=$((PASS + 1))
+        echo -e "  ${GREEN}✓${NC} bootstrap reports FAIL when jq is missing"
+    else
+        FAIL=$((FAIL + 1))
+        echo -e "  ${RED}✗${NC} bootstrap should report FAIL when jq is missing (got WARN or nothing)"
+        if $VERBOSE; then echo -e "  ${DIM}Output: $(echo "$DEGRADED_OUTPUT" | grep -i jq | head -3)${NC}"; fi
+    fi
+    echo ""
+
+    echo -e "${BOLD}Phase G: Missing Homebrew simulation${NC}"
+
+    # Strip brew from PATH
+    DEGRADED_OUTPUT=$(PATH=$(echo "$PATH" | tr ':' '\n' | grep -v homebrew | grep -v '/usr/local/bin' | tr '\n' ':') \
+        bash scripts/bootstrap.sh --check-only --non-interactive 2>&1 || true)
+
+    TOTAL=$((TOTAL + 1))
+    if echo "$DEGRADED_OUTPUT" | grep -qiE "FAIL|error|install"; then
+        PASS=$((PASS + 1))
+        echo -e "  ${GREEN}✓${NC} bootstrap reports actionable errors when Homebrew is missing"
+    else
+        FAIL=$((FAIL + 1))
+        echo -e "  ${RED}✗${NC} bootstrap should report errors when Homebrew is missing (silent failure)"
+    fi
+    echo ""
+
+    echo -e "${BOLD}Phase H: Missing Node simulation${NC}"
+
+    # Strip node/fnm/nvm from PATH
+    DEGRADED_OUTPUT=$(PATH=$(echo "$PATH" | tr ':' '\n' | grep -v node | grep -v fnm | grep -v nvm | grep -v '.volta' | tr '\n' ':') \
+        bash scripts/bootstrap.sh --check-only --non-interactive 2>&1 || true)
+
+    TOTAL=$((TOTAL + 1))
+    if echo "$DEGRADED_OUTPUT" | grep -qiE "FAIL.*node|node.*FAIL|node.*not found|node.*missing"; then
+        PASS=$((PASS + 1))
+        echo -e "  ${GREEN}✓${NC} bootstrap reports FAIL when Node is missing"
+    else
+        FAIL=$((FAIL + 1))
+        echo -e "  ${RED}✗${NC} bootstrap should report FAIL when Node is missing"
+        if $VERBOSE; then echo -e "  ${DIM}Output: $(echo "$DEGRADED_OUTPUT" | grep -i node | head -3)${NC}"; fi
+    fi
     echo ""
 fi
 

@@ -22,6 +22,7 @@ PROMPT=""
 PROMPT_FILE=""
 TASK_NAME=""
 CLEAN_SLATE=false
+FRESH_RESOURCES=false
 PREFLIGHT=false
 PREFLIGHT_ARGS=""
 ENV_FILE=".env"
@@ -144,6 +145,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --clean)
             CLEAN_SLATE=true
+            shift
+            ;;
+        --fresh-resources)
+            FRESH_RESOURCES=true
             shift
             ;;
         --preflight)
@@ -275,7 +280,7 @@ fi
 
 mkdir -p .claude/autonomous-sessions
 
-SESSION_ID="headless-$(date +%Y%m%d-%H%M%S)"
+SESSION_ID="headless-$(date +%Y-%m-%d-%H%M%S)"
 SESSION_LOG=".claude/autonomous-sessions/${SESSION_ID}.log"
 
 {
@@ -306,6 +311,20 @@ echo -e "${CYAN}Headless session: ${SESSION_ID}${NC}"
 echo -e "${DIM}Audit log: ${SESSION_LOG}${NC}"
 echo -e "${DIM}Max turns: ${MAX_TURNS}${NC}"
 echo ""
+
+# --- Ephemeral resources (if --fresh-resources) ---
+
+if [ "$FRESH_RESOURCES" = true ]; then
+    EPHEMERAL_ENV="/tmp/validation-env-$(date +%s)"
+    cp "$ENV_FILE" "$EPHEMERAL_ENV"
+    echo -e "${CYAN}Provisioning ephemeral Twilio resources...${NC}"
+    "$SCRIPT_DIR/provision-ephemeral.sh" "$EPHEMERAL_ENV"
+    ENV_FILE="$EPHEMERAL_ENV"
+    # Re-source to pick up new SIDs
+    set -a; source "$EPHEMERAL_ENV"; set +a
+    trap '"$SCRIPT_DIR/cleanup-ephemeral.sh" "$EPHEMERAL_ENV" 2>/dev/null || true; rm -f "$EPHEMERAL_ENV"' EXIT
+    echo ""
+fi
 
 # --- Launch claude -p ---
 
@@ -472,6 +491,12 @@ else
     echo -e "${RED}Headless session exited with code ${EXIT_CODE}.${NC}"
 fi
 echo -e "${DIM}Audit log: ${SESSION_LOG}${NC}"
+
+# --- Post-session cleanup (if --clean mode) ---
+if [ "$CLEAN_SLATE" = true ]; then
+    echo -e "${DIM}Post-session cleanup (--clean mode)...${NC}"
+    "$SCRIPT_DIR/validation-reset.sh" --quiet 2>/dev/null || true
+fi
 
 # --- Generate learning exercises from autonomous work ---
 PROJECT_ROOT="$(pwd)"

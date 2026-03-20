@@ -13,6 +13,14 @@ DIM='\033[2m'
 BOLD='\033[1m'
 NC='\033[0m'
 
+# Parse arguments
+QUIET=false
+for arg in "$@"; do
+    case $arg in
+        --quiet) QUIET=true ;;
+    esac
+done
+
 # Must run from project root
 if [ ! -f "package.json" ] || [ ! -d ".claude" ]; then
     echo -e "${RED}Error: Must be run from the twilio-feature-factory root directory${NC}" >&2
@@ -53,19 +61,26 @@ update_env() {
     fi
 }
 
+# Quiet-aware logging
+log() {
+    if [ "$QUIET" != true ]; then
+        echo -e "$@"
+    fi
+}
+
 # Track what was cleaned for the summary
 CLEANED=()
 NEW_SIDS=()
 
-echo -e "${BOLD}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}║         Validation Reset — Clean Slate                     ║${NC}"
-echo -e "${BOLD}╚════════════════════════════════════════════════════════════╝${NC}"
-echo ""
+log "${BOLD}╔════════════════════════════════════════════════════════════╗${NC}"
+log "${BOLD}║         Validation Reset — Clean Slate                     ║${NC}"
+log "${BOLD}╚════════════════════════════════════════════════════════════╝${NC}"
+log ""
 
 # ─────────────────────────────────────────────────────────────
 # Phase 1: Remove serverless deployment
 # ─────────────────────────────────────────────────────────────
-echo -e "${CYAN}[Phase 1/7]${NC} Remove serverless deployment..."
+log "${CYAN}[Phase 1/7]${NC} Remove serverless deployment..."
 
 SERVICE_NAME="prototype"
 SERVICE_SID=$(twilio api:serverless:v1:services:list -o json 2>/dev/null \
@@ -88,7 +103,7 @@ fi
 
 # Clear callback base URL since the service is gone
 update_env "TWILIO_CALLBACK_BASE_URL" ""
-echo -e "${DIM}  Cleared TWILIO_CALLBACK_BASE_URL in .env${NC}"
+log "${DIM}  Cleared TWILIO_CALLBACK_BASE_URL in .env${NC}"
 
 # Clear the serverless toolkit's cached service SID
 if [ -f ".twiliodeployinfo" ]; then
@@ -99,8 +114,8 @@ fi
 # ─────────────────────────────────────────────────────────────
 # Phase 2: Reset phone number webhooks
 # ─────────────────────────────────────────────────────────────
-echo ""
-echo -e "${CYAN}[Phase 2/7]${NC} Reset phone number webhooks..."
+log ""
+log "${CYAN}[Phase 2/7]${NC} Reset phone number webhooks..."
 
 NUMBERS_JSON=$(twilio api:core:incoming-phone-numbers:list -o json 2>/dev/null || echo "[]")
 NUM_COUNT=$(echo "$NUMBERS_JSON" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
@@ -129,8 +144,8 @@ fi
 # ─────────────────────────────────────────────────────────────
 # Phase 3: Delete & recreate services
 # ─────────────────────────────────────────────────────────────
-echo ""
-echo -e "${CYAN}[Phase 3/7]${NC} Delete & recreate services..."
+log ""
+log "${CYAN}[Phase 3/7]${NC} Delete & recreate services..."
 
 # --- Sync Service ---
 if [ -n "$TWILIO_SYNC_SERVICE_SID" ]; then
@@ -255,8 +270,8 @@ fi
 # ─────────────────────────────────────────────────────────────
 # Phase 4: Delete recordings
 # ─────────────────────────────────────────────────────────────
-echo ""
-echo -e "${CYAN}[Phase 4/7]${NC} Delete recordings..."
+log ""
+log "${CYAN}[Phase 4/7]${NC} Delete recordings..."
 
 REC_JSON=$(curl -s "${TWILIO_API}/Recordings.json?PageSize=200" -u "$AUTH")
 REC_COUNT=$(echo "$REC_JSON" | python3 -c "
@@ -285,8 +300,8 @@ fi
 # ─────────────────────────────────────────────────────────────
 # Phase 5: Delete Voice Intelligence transcripts
 # ─────────────────────────────────────────────────────────────
-echo ""
-echo -e "${CYAN}[Phase 5/7]${NC} Delete Voice Intelligence transcripts..."
+log ""
+log "${CYAN}[Phase 5/7]${NC} Delete Voice Intelligence transcripts..."
 
 TRANSCRIPT_JSON=$(curl -s "https://intelligence.twilio.com/v2/Transcripts?PageSize=200" -u "$AUTH" 2>/dev/null || echo '{"transcripts":[]}')
 TX_COUNT=$(echo "$TRANSCRIPT_JSON" | python3 -c "
@@ -315,8 +330,8 @@ fi
 # ─────────────────────────────────────────────────────────────
 # Phase 6: Clear validation state
 # ─────────────────────────────────────────────────────────────
-echo ""
-echo -e "${CYAN}[Phase 6/7]${NC} Clear validation state..."
+log ""
+log "${CYAN}[Phase 6/7]${NC} Clear validation state..."
 
 if [ -f ".meta/sequential-validation-state.json" ]; then
     rm ".meta/sequential-validation-state.json"
@@ -341,11 +356,11 @@ fi
 # ─────────────────────────────────────────────────────────────
 # Phase 7: Summary
 # ─────────────────────────────────────────────────────────────
-echo ""
-echo -e "${BOLD}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}║                  Reset Complete                            ║${NC}"
-echo -e "${BOLD}╚════════════════════════════════════════════════════════════╝${NC}"
-echo ""
+log ""
+log "${BOLD}╔════════════════════════════════════════════════════════════╗${NC}"
+log "${BOLD}║                  Reset Complete                            ║${NC}"
+log "${BOLD}╚════════════════════════════════════════════════════════════╝${NC}"
+log ""
 
 if [ ${#CLEANED[@]} -gt 0 ]; then
     echo -e "${CYAN}Cleaned:${NC}"
@@ -363,8 +378,8 @@ if [ ${#NEW_SIDS[@]} -gt 0 ]; then
     echo ""
 fi
 
-echo -e "${YELLOW}Next steps:${NC}"
-echo "  1. Re-source .env if running in a shell session"
-echo "  2. Run 'npm run deploy:dev' to create a fresh serverless deployment"
-echo "  3. Configure webhooks on phone numbers as needed"
-echo ""
+log "${YELLOW}Next steps:${NC}"
+log "  1. Re-source .env if running in a shell session"
+log "  2. Run 'npm run deploy:dev' to create a fresh serverless deployment"
+log "  3. Configure webhooks on phone numbers as needed"
+log ""

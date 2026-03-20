@@ -15,6 +15,9 @@ fi
 
 FILE_PATH=""
 CONTENT=""
+if [ -n "$HOOK_INPUT" ] && ! command -v jq &> /dev/null; then
+    echo "WARNING: jq not installed — safety hooks disabled (credential detection, pipeline gate, ABOUTME). Run: brew install jq" >&2
+fi
 if [ -n "$HOOK_INPUT" ] && command -v jq &> /dev/null; then
     FILE_PATH="$(echo "$HOOK_INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)"
     CONTENT="$(echo "$HOOK_INPUT" | jq -r '.tool_input.content // .tool_input.new_string // empty' 2>/dev/null)"

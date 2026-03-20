@@ -92,7 +92,7 @@ fi
 
 # --- Setup ---
 
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
 REPORT_DIR="$(pwd)/.meta/validation-reports/${TIMESTAMP}-regression-${MODE}"
 mkdir -p "$REPORT_DIR"
 
@@ -143,6 +143,9 @@ fi
 if [ -f "scripts/check-readme-drift.sh" ]; then
     run_check "readme-drift" "./scripts/check-readme-drift.sh" &
 fi
+
+# Degraded-environment bootstrap resilience
+run_check "degraded-env" "./scripts/fresh-install-validation.sh --degraded" &
 
 # Wait for all Phase 1 checks
 wait
@@ -213,9 +216,15 @@ else
         lane_start=$(date +%s)
         echo -e "  ${CYAN}[$lane_name]${NC} Starting (${max_turns} turns max)... $(date +%H:%M:%S)"
 
+        # Fresh resources in standard/full modes to avoid reusing existing infrastructure
+        local fresh_flag=""
+        if [ "$MODE" != "quick" ]; then
+            fresh_flag="--fresh-resources"
+        fi
+
         exit_code=0
         REGRESSION_REPORT_DIR="$REPORT_DIR" \
-            $HEADLESS_SCRIPT --task "$task_name" --max-turns "$max_turns" \
+            $HEADLESS_SCRIPT --task "$task_name" --max-turns "$max_turns" $fresh_flag \
             > "${REPORT_DIR}/lane-${lane_name}.log" 2>&1 || exit_code=$?
         echo "$exit_code" > "${REPORT_DIR}/lane-${lane_name}.exit"
 

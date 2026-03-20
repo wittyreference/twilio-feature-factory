@@ -223,6 +223,20 @@ CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh \
   --prompt-file scripts/headless-tasks/parallel-refactor.md --max-turns 60
 ```
 
+### Isolation Flags
+
+| Flag | Effect |
+|------|--------|
+| `--clean` | Runs `validation-reset.sh --quiet` AFTER session ends (post-session cleanup) |
+| `--fresh-resources` | Provisions ephemeral Sync/Verify/Messaging/TaskRouter resources before the session. Uses `provision-ephemeral.sh` to create, `cleanup-ephemeral.sh` to delete on exit. Session sees fresh SIDs instead of `.env` ones. |
+| `--env-file FILE` | Use an alternative env file instead of `.env` |
+
+```bash
+# Isolated validation with fresh resources + cleanup
+CLAUDE_HEADLESS_ACKNOWLEDGED=true ./scripts/run-headless.sh \
+  --task nonvoice-only --max-turns 120 --fresh-resources --clean
+```
+
 ### Key Differences from enable-autonomous.sh
 
 | | `enable-autonomous.sh` | `run-headless.sh` |
@@ -434,6 +448,36 @@ The `dogfood-env.sh` script simulates a new user with pre-existing conflicting T
 ### Exit Code
 
 Exit code equals the number of failed tests (0 = all passed).
+
+## Ephemeral Provisioning Scripts
+
+Two scripts work together to create and clean up isolated Twilio resources for validation runs.
+
+### provision-ephemeral.sh
+
+Creates ephemeral Sync, Verify, Messaging, and TaskRouter resources with `validation-{TIMESTAMP}` prefix. Appends new SIDs to the specified env file and writes an `EPHEMERAL_SIDS` manifest for cleanup.
+
+```bash
+# Create ephemeral resources, appending SIDs to a temp env file
+./scripts/provision-ephemeral.sh /tmp/my-test-env
+```
+
+**Resources created**: Sync service (IS*), Verify service (VA*), Messaging service (MG*), TaskRouter workspace (WS*). Does NOT purchase phone numbers (uses existing from env).
+
+**FriendlyName convention**: `validation-{type}-{unix-timestamp}` (e.g., `validation-sync-1774027823`). The Verify service uses an alpha-only hash to avoid the 60200 digit restriction.
+
+### cleanup-ephemeral.sh
+
+Reads the `EPHEMERAL_SIDS` manifest from the env file and deletes each resource. Reports success/failure per resource.
+
+```bash
+# Clean up resources created by provision-ephemeral.sh
+./scripts/cleanup-ephemeral.sh /tmp/my-test-env
+```
+
+**Cascade behavior**: TaskRouter workspace deletion cascades to queues and workflows (same as Twilio Console behavior).
+
+**Integration**: `run-headless.sh --fresh-resources` calls both scripts automatically — provision before the session, cleanup on EXIT trap.
 
 ## API Sync Script
 

@@ -1778,6 +1778,53 @@ Claude Code v2.1.80+ introduced "channels" — MCP servers that push external ev
 
 ---
 
+## Decision 40: Validation Isolation and Ephemeral Resources
+
+### Context
+
+Uber-review findings and real user reports revealed that validation runs gave a false sense of confidence. Specific issues:
+
+1. **Resource reuse masked onboarding friction** — Most validation types (headless prompts, E2E deep validation, run-validation-suite) operated against pre-existing resources from `.env`. Only `validate-provisioning.sh` created fresh ones. A user who hit provisioning failures during first-time setup would never see that failure in validation.
+
+2. **jq absence silently disabled all safety hooks** — All 4 hook scripts (pre-write, pre-bash, post-write, post-bash) used `command -v jq` guards that silently skipped ALL validation (credential detection, `--no-verify` blocking, meta-mode isolation, ABOUTME enforcement) when jq was missing. Bootstrap only warned about jq — it didn't block.
+
+3. **Cleanup was prompt-dependent** — Headless validation prompts said "clean up test artifacts" in vague prose, relying on LLM compliance. `run-validation-suite.sh` had zero cleanup — Jest E2E test recordings, transcripts, and Sync documents persisted indefinitely.
+
+4. **No degraded-environment testing** — No validation tested bootstrap behavior when Homebrew, Node, or jq were absent. Real users hit these issues, but validation always ran on a fully-configured dev machine.
+
+### Decision
+
+**Four-tier improvement: jq enforcement, cleanup reliability, ephemeral provisioning, degraded-environment testing.**
+
+### Rationale
+
+1. jq is a hard prerequisite, not optional — every safety hook depends on it. Making bootstrap fail without jq and adding stderr warnings to hooks ensures the gap is visible.
+2. Cleanup must be deterministic (trap-based), not advisory (prompt-based). `validation-reset.sh --quiet` as a post-session trap is more reliable than asking an LLM to remember cleanup.
+3. Ephemeral resources (extracted from `validate-provisioning.sh` into reusable `provision-ephemeral.sh` / `cleanup-ephemeral.sh`) let any headless session test against fresh infrastructure without manual setup.
+4. Degraded-environment tests (missing jq/Homebrew/Node via PATH manipulation) catch bootstrap reporting regressions in 3 seconds with zero LLM cost.
+
+### Alternatives Considered
+
+- **Docker-based isolated testing**: Rejected — too heavy for dev workflow, doesn't test macOS-specific paths (fnm, direnv, Homebrew)
+- **Separate test account**: Rejected — doesn't catch provisioning edge cases on the primary account, adds credential management complexity
+- **CI-based testing**: Deferred — valuable but orthogonal. These improvements work locally and in CI.
+
+### Consequences
+
+- `--fresh-resources` flag in `run-headless.sh` provisions ephemeral Sync/Verify/Messaging/TaskRouter resources per session
+- `provision-ephemeral.sh` / `cleanup-ephemeral.sh` are reusable helpers extracted from `validate-provisioning.sh`
+- jq is now a hard prerequisite in `bootstrap.sh` (auto-installs via Homebrew, fails with install instructions otherwise)
+- All 4 hooks emit stderr warnings when jq is absent instead of silently skipping
+- `--degraded` flag in `fresh-install-validation.sh` tests bootstrap with missing prerequisites (Phases F/G/H)
+- `run-regression.sh` Phase 1 includes degraded-env tests; standard/full modes pass `--fresh-resources` to headless lanes
+- Headless prompt cleanup sections rewritten with explicit MCP tool calls instead of vague instructions
+
+### Status
+
+**Accepted** - 2026-03-20
+
+---
+
 ## Decision N: [Title]
 
 ### Context
@@ -1860,3 +1907,4 @@ Claude Code v2.1.80+ introduced "channels" — MCP servers that push external ev
 | 2026-03-15 | D37 | Three-repo architecture with symlink overlay (.meta/ → factory-workshop). Evolves D36 |
 | 2026-03-18 | D38 | YAML frontmatter on all 46 skills/commands + progressive disclosure for 3 largest skills (voice-use-case-map, video, voice) |
 | 2026-03-19 | D39 | Claude Code channels evaluated and deferred — pull-based architecture correct for dev tooling |
+| 2026-03-20 | D40 | Validation isolation: jq enforcement, ephemeral provisioning, cleanup reliability, degraded-env testing |

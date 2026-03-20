@@ -273,11 +273,21 @@ fi
 # 6. direnv — checked in Phase 4 (Environment Isolation)
 #    Not a blocking prerequisite, but critical for credential safety
 
-# 7. jq
+# 7. jq (required — all safety hooks depend on jq for JSON parsing)
 if command -v jq > /dev/null 2>&1; then
     check_pass "jq"
 else
-    check_warn "jq not installed" "Some hooks use jq. Install: brew install jq"
+    if command -v brew > /dev/null 2>&1; then
+        echo "  Installing jq..."
+        brew install jq > /dev/null 2>&1
+        if command -v jq > /dev/null 2>&1; then
+            check_pass "jq (auto-installed)"
+        else
+            check_fail "jq installation failed" "Manual install: brew install jq"
+        fi
+    else
+        check_fail "jq not installed" "Install jq (https://jqlang.github.io/jq/download/) — all safety hooks require it"
+    fi
 fi
 
 # 8. Claude Code

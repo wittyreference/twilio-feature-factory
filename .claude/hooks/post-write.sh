@@ -14,6 +14,9 @@ fi
 
 # Extract file path from JSON input (Write: .tool_input.file_path, Edit: .tool_input.file_path)
 FILE_PATH=""
+if [ -n "$HOOK_INPUT" ] && ! command -v jq &> /dev/null; then
+    echo "WARNING: jq not installed — post-write hooks disabled (auto-lint, session tracking). Run: brew install jq" >&2
+fi
 if [ -n "$HOOK_INPUT" ] && command -v jq &> /dev/null; then
     FILE_PATH="$(echo "$HOOK_INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)"
 fi

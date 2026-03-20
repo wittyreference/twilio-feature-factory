@@ -197,7 +197,7 @@ fi
 # ============================================
 for domain in voice conversation-relay callbacks pay video helpers messaging-services proxy sync messaging verify taskrouter phone-numbers; do
     ACTUAL=$(find "$PROJECT_ROOT/functions/$domain" -name "*.js" -not -name "*.test.js" 2>/dev/null | wc -l | tr -d ' ')
-    WIKI_VAL=$(grep -i "| $domain" "$WIKI_DIR/Architecture.md" 2>/dev/null | grep -oE '\| *[0-9]+' | head -1 | grep -oE '[0-9]+' || echo "0")
+    WIKI_VAL=$(grep -i "| $domain/" "$WIKI_DIR/Architecture.md" 2>/dev/null | grep -oE '\| *[0-9]+' | head -1 | grep -oE '[0-9]+' || echo "0")
     if [ "$WIKI_VAL" != "0" ] && [ "$ACTUAL" != "$WIKI_VAL" ]; then
         add_drift "domain:$domain" "$WIKI_VAL" "$ACTUAL"
     fi

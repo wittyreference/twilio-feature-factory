@@ -1742,6 +1742,42 @@ skills/voice/
 
 ---
 
+## Decision 39: Claude Code Channels Evaluated and Deferred
+
+### Context
+
+Claude Code v2.1.80+ introduced "channels" — MCP servers that push external events into active sessions from platforms like Telegram, Discord, CI/CD, or webhooks. Evaluated 8 potential use cases (CI/CD notifications, Twilio debugger alerts, API drift, plugin sync status, Telegram remote control, inter-agent coordination, webhook events, changelog updates) against the factory's architecture.
+
+### Decision
+
+**Do not implement channels. The factory's pull-based architecture is the correct design for a development tool. Re-evaluate when channels exit research preview or gain persistent delivery (queue semantics).**
+
+### Rationale
+
+1. **Pull beats push for development tools.** The factory's information needs are developer-initiated. MCP tools provide on-demand data access for the specific resource being worked on. Channels solve a monitoring/alerting problem the factory doesn't have.
+2. **Session-bound constraint is disqualifying.** 7 of 8 use cases involve events that happen asynchronously from sessions (CI results, API drift, webhook callbacks, debugger alerts). Events arriving with no session open are lost — this is fundamental, not workaround-able.
+3. **Hooks already cover the session event space.** 12 hooks form a complete session-scoped event system (SessionStart, PreWrite/PostWrite, PreBash/PostBash, SubagentStop, PreCompact). Channels would be a parallel event system with different semantics for no additional capability.
+
+### Alternatives Considered
+
+- **Telegram/Discord bridge**: Closest fit — remote monitoring of long-running validations. Fails because headless mode uses `claude -p` (not interactive sessions), and channels require interactive sessions. Remote monitoring better served by writing status to Sync or sending SMS via existing MCP tools.
+- **CI/CD notification channel**: `gh run view` achieves the same thing. Most CI results arrive after the triggering session ends. A channel saves one CLI command at cost of maintaining a webhook server, auth, and event parsing.
+- **Twilio debugger event channel**: `validate_call(sid)` already does targeted deep validation. Pushing all debugger events creates noise. The factory is a dev tool, not a production monitor (D10).
+- **Inter-agent coordination channel**: Channels operate at the MCP→Claude boundary for external events. Agent Teams already have SendMessage for inter-agent communication. The orchestrator's pain point is sequential execution, not transport (see todo: "take orchestrator out behind the shed").
+
+### Consequences
+
+- No implementation work, no new dependencies, no maintenance burden for a research-preview API
+- Generic distribution users are not exposed to `--dangerously-load-development-channels` flag
+- Time stays on roadmap priorities: orchestrator rewrite, context pressure awareness (H1), automation gap closure
+- Watching brief added to todo for re-evaluation triggers
+
+### Status
+
+**Deferred** - 2026-03-19. Re-evaluate when: (a) channels gain persistent delivery / queue semantics, (b) channels work with `claude -p` headless mode, (c) channels exit research preview, or (d) the factory evolves to sit in production monitoring paths.
+
+---
+
 ## Decision N: [Title]
 
 ### Context
@@ -1823,3 +1859,4 @@ skills/voice/
 | 2026-03-09 | D36 | .meta/ documented as intentionally single-developer, gitignored session state |
 | 2026-03-15 | D37 | Three-repo architecture with symlink overlay (.meta/ → factory-workshop). Evolves D36 |
 | 2026-03-18 | D38 | YAML frontmatter on all 46 skills/commands + progressive disclosure for 3 largest skills (voice-use-case-map, video, voice) |
+| 2026-03-19 | D39 | Claude Code channels evaluated and deferred — pull-based architecture correct for dev tooling |

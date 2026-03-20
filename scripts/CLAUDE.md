@@ -7,9 +7,9 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 
 | Script | Command | Purpose |
 |--------|---------|---------|
-| `bootstrap.sh` | `npm run bootstrap` | Complete post-clone setup wizard (prerequisites, credentials, provisioning, MCP verification) |
+| `bootstrap.sh` | `npm run bootstrap` | Complete post-clone setup wizard (prerequisites with fnm/direnv auto-install, credentials, provisioning, MCP verification) |
 | `setup.js` | `npm run setup` | Interactive setup for provisioning Twilio resources (also called by bootstrap.sh) |
-| `fresh-install-validation.sh` | `./scripts/fresh-install-validation.sh` | Automated test of post-clone onboarding in /tmp (validates bootstrap flow end-to-end) |
+| `fresh-install-validation.sh` | `./scripts/fresh-install-validation.sh` | Automated test of post-clone onboarding in /tmp (validates bootstrap flow, MCP protocol handshake, minimal-env startup) |
 | `enable-autonomous.sh` | `./scripts/enable-autonomous.sh` | Launch Claude Code in autonomous mode (interactive) |
 | `run-headless.sh` | `./scripts/run-headless.sh` | Run Claude Code non-interactively via `claude -p` (CI/CD) |
 | `validation-reset.sh` | `./scripts/validation-reset.sh` | Reset Twilio account to clean state for validation runs |
@@ -23,7 +23,7 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 | `check-changelog.sh` | `./scripts/check-changelog.sh` | Monitor Claude Code + Agent SDK releases for new features; cross-references against harness config |
 | `update.sh` | `./scripts/update.sh` | Self-contained updater — handles clones, forks, and templates uniformly |
 | `validate-updates.sh` | `./scripts/validate-updates.sh` | Cross-repo validation of check-updates.sh and update.sh across 3 GitHub repos |
-| `verify-mcp.sh` | `./scripts/verify-mcp.sh` | Verify MCP server can start (build artifacts, .mcp.json, credentials, dry-run) |
+| `verify-mcp.sh` | `./scripts/verify-mcp.sh` | Verify MCP server can start (Node.js version, build artifacts, .mcp.json, credentials, dry-run) |
 | `env-doctor.sh` | `./scripts/env-doctor.sh` | Detect shell vs .env conflicts, orphaned regional vars, direnv status |
 | `dogfood-env.sh` | `./scripts/dogfood-env.sh` | Simulate new-user onboarding with conflicting shell env vars |
 | `validate-provisioning.sh` | `./scripts/validate-provisioning.sh` | Clean-room provisioning validator — ephemeral resources, full lifecycle, auto-teardown |

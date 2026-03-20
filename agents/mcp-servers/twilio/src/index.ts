@@ -68,7 +68,7 @@ export interface TwilioTool {
 
 export interface TwilioContext {
   client: Twilio.Twilio;
-  defaultFromNumber: string;
+  defaultFromNumber?: string;
   verifyServiceSid?: string;
   syncServiceSid?: string;
   taskrouterWorkspaceSid?: string;
@@ -94,7 +94,9 @@ export function createTwilioMcpServer(config: TwilioMcpServerConfig = {}) {
   }
 
   if (!defaultFromNumber) {
-    throw new Error('TWILIO_PHONE_NUMBER is required');
+    process.stderr.write(
+      'Warning: TWILIO_PHONE_NUMBER not set — tools that send SMS or make calls will require an explicit "from" number\n'
+    );
   }
 
   let client: Twilio.Twilio;

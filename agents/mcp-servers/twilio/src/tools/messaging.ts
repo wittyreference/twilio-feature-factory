@@ -43,10 +43,17 @@ export function messagingTools(context: TwilioContext) {
       from: phoneNumberSchema.optional().describe('Sender phone number (defaults to configured number)'),
     }),
     async ({ to, body, from }) => {
+      const fromNumber = from || defaultFromNumber;
+      if (!fromNumber) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: 'TWILIO_PHONE_NUMBER not configured — add it to .env and restart Claude Code, or pass an explicit "from" number' }) }],
+          isError: true,
+        };
+      }
       const message = await client.messages.create({
         to,
         body,
-        from: from || defaultFromNumber,
+        from: fromNumber,
       });
 
       return {
@@ -81,11 +88,18 @@ export function messagingTools(context: TwilioContext) {
       from: phoneNumberSchema.optional().describe('Sender phone number (defaults to configured number)'),
     }),
     async ({ to, body, mediaUrl, from }) => {
+      const fromNumber = from || defaultFromNumber;
+      if (!fromNumber) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: 'TWILIO_PHONE_NUMBER not configured — add it to .env and restart Claude Code, or pass an explicit "from" number' }) }],
+          isError: true,
+        };
+      }
       const message = await client.messages.create({
         to,
         body: body || '',
         mediaUrl,
-        from: from || defaultFromNumber,
+        from: fromNumber,
       });
 
       return {

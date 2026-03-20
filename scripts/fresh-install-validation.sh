@@ -304,6 +304,126 @@ fi
 echo ""
 
 # ─────────────────────────────────────────────────────────
+# Phase D.7: MCP Protocol Handshake
+# ─────────────────────────────────────────────────────────
+echo -e "${BOLD}Phase D.7: MCP Protocol Handshake${NC}"
+echo ""
+
+MCP_SERVE="agents/mcp-servers/twilio/dist/serve.js"
+if [ -f "$MCP_SERVE" ]; then
+    INIT_REQ='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"fresh-install-test","version":"1.0"}}}'
+    LIST_REQ='{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+
+    # Find timeout command (gtimeout on macOS via coreutils, timeout on Linux)
+    TIMEOUT_CMD=""
+    if command -v gtimeout > /dev/null 2>&1; then
+        TIMEOUT_CMD="gtimeout 10"
+    elif command -v timeout > /dev/null 2>&1; then
+        TIMEOUT_CMD="timeout 10"
+    fi
+
+    # Run MCP handshake
+    if [ -n "$TIMEOUT_CMD" ]; then
+        MCP_RESPONSE=$(printf '%s\n%s\n' "$INIT_REQ" "$LIST_REQ" | \
+            TWILIO_ACCOUNT_SID="$TWILIO_ACCOUNT_SID" \
+            TWILIO_AUTH_TOKEN="$TWILIO_AUTH_TOKEN" \
+            $TIMEOUT_CMD node "$MCP_SERVE" 2>/dev/null || echo "")
+    else
+        # Fallback: background process with kill after 10s
+        TWILIO_ACCOUNT_SID="$TWILIO_ACCOUNT_SID" \
+        TWILIO_AUTH_TOKEN="$TWILIO_AUTH_TOKEN" \
+        node "$MCP_SERVE" < <(printf '%s\n%s\n' "$INIT_REQ" "$LIST_REQ"; sleep 10) > /tmp/mcp-handshake-$$ 2>/dev/null &
+        MCP_PID=$!
+        sleep 3
+        kill $MCP_PID 2>/dev/null || true
+        wait $MCP_PID 2>/dev/null || true
+        MCP_RESPONSE=$(cat /tmp/mcp-handshake-$$ 2>/dev/null || echo "")
+        rm -f /tmp/mcp-handshake-$$
+    fi
+
+    # Parse tool count from tools/list response
+    MCP_TOOL_COUNT=$(echo "$MCP_RESPONSE" | python3 -c "
+import sys, json
+for line in sys.stdin:
+    line = line.strip()
+    if not line:
+        continue
+    try:
+        msg = json.loads(line)
+        if 'result' in msg and 'tools' in msg['result']:
+            print(len(msg['result']['tools']))
+            sys.exit(0)
+    except (json.JSONDecodeError, KeyError):
+        pass
+print(0)
+" 2>/dev/null || echo "0")
+
+    test_result "D7.1: MCP server responds to protocol" "true" "$([ -n "$MCP_RESPONSE" ] && echo true || echo false)"
+    test_result "D7.2: MCP tools registered (>0)" "true" "$([ "$MCP_TOOL_COUNT" -gt 0 ] && echo true || echo false)"
+    echo -e "  ${DIM}Tool count: $MCP_TOOL_COUNT${NC}"
+else
+    test_result "D7.1: MCP server binary exists" "true" "false"
+fi
+
+echo ""
+
+# ─────────────────────────────────────────────────────────
+# Phase D.8: Minimal Env Startup (no phone number)
+# ─────────────────────────────────────────────────────────
+echo -e "${BOLD}Phase D.8: Minimal Env Startup${NC}"
+echo -e "${DIM}Tests MCP server with only SID + token (simulates fresh user without phone number)${NC}"
+echo ""
+
+if [ -f "$MCP_SERVE" ]; then
+    INIT_REQ='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"minimal-env-test","version":"1.0"}}}'
+    LIST_REQ='{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+
+    # Run with minimal env — only SID and token, nothing else
+    if [ -n "$TIMEOUT_CMD" ]; then
+        MINIMAL_RESPONSE=$(printf '%s\n%s\n' "$INIT_REQ" "$LIST_REQ" | \
+            env -i HOME="$HOME" PATH="$PATH" NODE_PATH="${NODE_PATH:-}" \
+            TWILIO_ACCOUNT_SID="$TWILIO_ACCOUNT_SID" \
+            TWILIO_AUTH_TOKEN="$TWILIO_AUTH_TOKEN" \
+            $TIMEOUT_CMD node "$MCP_SERVE" 2>/dev/null || echo "")
+    else
+        env -i HOME="$HOME" PATH="$PATH" NODE_PATH="${NODE_PATH:-}" \
+        TWILIO_ACCOUNT_SID="$TWILIO_ACCOUNT_SID" \
+        TWILIO_AUTH_TOKEN="$TWILIO_AUTH_TOKEN" \
+        node "$MCP_SERVE" < <(printf '%s\n%s\n' "$INIT_REQ" "$LIST_REQ"; sleep 10) > /tmp/mcp-minimal-$$ 2>/dev/null &
+        MCP_PID=$!
+        sleep 3
+        kill $MCP_PID 2>/dev/null || true
+        wait $MCP_PID 2>/dev/null || true
+        MINIMAL_RESPONSE=$(cat /tmp/mcp-minimal-$$ 2>/dev/null || echo "")
+        rm -f /tmp/mcp-minimal-$$
+    fi
+
+    MINIMAL_TOOL_COUNT=$(echo "$MINIMAL_RESPONSE" | python3 -c "
+import sys, json
+for line in sys.stdin:
+    line = line.strip()
+    if not line:
+        continue
+    try:
+        msg = json.loads(line)
+        if 'result' in msg and 'tools' in msg['result']:
+            print(len(msg['result']['tools']))
+            sys.exit(0)
+    except (json.JSONDecodeError, KeyError):
+        pass
+print(0)
+" 2>/dev/null || echo "0")
+
+    test_result "D8.1: MCP starts without TWILIO_PHONE_NUMBER" "true" "$([ -n "$MINIMAL_RESPONSE" ] && echo true || echo false)"
+    test_result "D8.2: Tools registered in minimal env (>0)" "true" "$([ "$MINIMAL_TOOL_COUNT" -gt 0 ] && echo true || echo false)"
+    echo -e "  ${DIM}Tool count (minimal): $MINIMAL_TOOL_COUNT${NC}"
+else
+    test_result "D8.1: MCP server binary exists" "true" "false"
+fi
+
+echo ""
+
+# ─────────────────────────────────────────────────────────
 # Phase E: Smoke Test (optional)
 # ─────────────────────────────────────────────────────────
 if $SMOKE_TEST; then

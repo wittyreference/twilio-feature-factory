@@ -95,7 +95,7 @@ At runtime in Claude Code, the MCP framework adds a namespace prefix: `mcp__twil
 | `TWILIO_API_SECRET` | One of auth | API Key Secret |
 | `TWILIO_REGION` | Optional | Regional endpoint (au1, ie1, etc.) |
 | `TWILIO_EDGE` | Optional | Edge location (sydney, dublin, etc.) |
-| `TWILIO_PHONE_NUMBER` | Yes | Default "from" number (E.164) |
+| `TWILIO_PHONE_NUMBER` | For calls/SMS | Default "from" number (E.164). Server starts without it; tools that send messages or make calls require it at invocation. |
 | `TWILIO_VERIFY_SERVICE_SID` | For verify | Verify Service SID |
 | `TWILIO_SYNC_SERVICE_SID` | For sync | Sync Service SID |
 | `TWILIO_TASKROUTER_WORKSPACE_SID` | For taskrouter | Workspace SID |

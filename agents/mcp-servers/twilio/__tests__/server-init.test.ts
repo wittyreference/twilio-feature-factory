@@ -89,18 +89,22 @@ describe('MCP Server Initialization', () => {
       }
     });
 
-    it('should throw error when missing TWILIO_PHONE_NUMBER', () => {
+    it('should warn but not throw when missing TWILIO_PHONE_NUMBER', () => {
       const originalPhone = process.env.TWILIO_PHONE_NUMBER;
       delete process.env.TWILIO_PHONE_NUMBER;
+      const stderrSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
       try {
-        expect(() => {
-          createTwilioMcpServer({
-            accountSid: 'ACtest12345678901234567890123456',
-            authToken: 'test_token',
-          });
-        }).toThrow('TWILIO_PHONE_NUMBER is required');
+        const server = createTwilioMcpServer({
+          accountSid: 'ACtest12345678901234567890123456',
+          authToken: 'test_token',
+        });
+        expect(server).toBeDefined();
+        expect(stderrSpy).toHaveBeenCalledWith(
+          expect.stringContaining('TWILIO_PHONE_NUMBER not set')
+        );
       } finally {
+        stderrSpy.mockRestore();
         if (originalPhone) {
           process.env.TWILIO_PHONE_NUMBER = originalPhone;
         }

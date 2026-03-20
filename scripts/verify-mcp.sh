@@ -37,6 +37,18 @@ check() {
 echo -e "${BOLD}MCP Server Verification${NC}"
 echo ""
 
+# ─── Check 0: Node.js version ─────────────────────────────────────────
+echo -e "${BOLD}0. Runtime${NC}"
+NODE_MAJOR=$(node -v 2>/dev/null | sed 's/v\([0-9]*\).*/\1/' || echo "0")
+if [ "$NODE_MAJOR" -eq 20 ] || [ "$NODE_MAJOR" -eq 22 ]; then
+    check "Node.js $(node -v)" 0
+elif [ "$NODE_MAJOR" -eq 0 ]; then
+    check "Node.js" 1 "not found — install Node.js 22: brew install fnm && fnm install 22"
+else
+    check "Node.js $(node -v)" 1 "supported: 20.x, 22.x — use fnm or nvm to switch: fnm install 22 && fnm use 22"
+fi
+echo ""
+
 # ─── Check 1: dist/serve.js exists ──────────────────────────────────────
 echo -e "${BOLD}1. Build Artifacts${NC}"
 if [ -f "$MCP_DIST" ]; then
@@ -131,11 +143,13 @@ else
     check "Auth credentials" 1 "TWILIO_AUTH_TOKEN or TWILIO_API_KEY not set — add to .env"
 fi
 
-# Validate phone number
+# Validate phone number (optional — server starts without it, but call/SMS tools need it)
 if [ -n "$PHONE" ] && [[ "$PHONE" == +* ]] && [[ "$PHONE" != +1xxxxxxxxxx* ]]; then
     check "TWILIO_PHONE_NUMBER" 0
 elif [ -z "$PHONE" ] || [[ "$PHONE" == +1xxxxxxxxxx* ]]; then
-    check "TWILIO_PHONE_NUMBER" 1 "not set or still placeholder — add to .env"
+    echo -e "  ${YELLOW}⚠${NC} TWILIO_PHONE_NUMBER — not set (optional — tools that send SMS or make calls will need it)"
+    WARN=${WARN:-0}
+    WARN=$((WARN + 1))
 fi
 echo ""
 

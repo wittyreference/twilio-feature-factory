@@ -62,6 +62,12 @@ export function studioTools(context: TwilioContext) {
     }),
     async ({ flowSid, to, from, parameters }) => {
       const fromNumber = from || context.defaultFromNumber;
+      if (!fromNumber) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: 'TWILIO_PHONE_NUMBER not configured — add it to .env and restart Claude Code, or pass an explicit "from" number' }) }],
+          isError: true,
+        };
+      }
 
       const executionParams: {
         to: string;

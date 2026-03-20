@@ -95,9 +95,16 @@ export function voiceTools(context: TwilioContext) {
         };
       }
 
+      const fromNumber = from || defaultFromNumber;
+      if (!fromNumber) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: 'TWILIO_PHONE_NUMBER not configured — add it to .env and restart Claude Code, or pass an explicit "from" number' }) }],
+          isError: true,
+        };
+      }
       const callParams: Record<string, unknown> = {
         to,
-        from: from || defaultFromNumber,
+        from: fromNumber,
       };
 
       if (url) {callParams.url = url;}
@@ -408,6 +415,13 @@ export function voiceTools(context: TwilioContext) {
       record: z.boolean().optional().describe('Record participant audio'),
     }),
     async ({ conferenceSid, to, from, label, earlyMedia, beep, muted, hold, startConferenceOnEnter, endConferenceOnExit, coaching, callSidToCoach, record }) => {
+      const fromNumber = from || defaultFromNumber;
+      if (!fromNumber) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ success: false, error: 'TWILIO_PHONE_NUMBER not configured — add it to .env and restart Claude Code, or pass an explicit "from" number' }) }],
+          isError: true,
+        };
+      }
       const createParams: {
         to: string;
         from: string;
@@ -423,7 +437,7 @@ export function voiceTools(context: TwilioContext) {
         record?: boolean;
       } = {
         to,
-        from: from || defaultFromNumber,
+        from: fromNumber,
       };
 
       if (label) {createParams.label = label;}

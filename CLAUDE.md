@@ -102,6 +102,22 @@ If you catch yourself reaching for `twilio api:*`, stop and use the correspondin
 
 Agent Teams coordinate multiple Claude Code instances for parallel work. Use `/team [workflow] [task]` to launch. See the `agent-teams-guide` skill for configurations, comparison with subagents, and enable/disable instructions.
 
+## Multi-Session Concurrent Work
+
+MC frequently runs multiple Claude Code sessions simultaneously. The infrastructure supports this via **git worktrees** for code isolation and **session-scoped state files** for metadata isolation.
+
+**When to use a worktree**: Any session that will write code or commit to `twilio-feature-factory`. Use `/worktree-start` to create an isolated worktree with `.meta`, `.env`, and build artifacts configured automatically.
+
+**When NOT needed**: Sessions that only read code (reviews, debugging, investigations) or only write to `.meta/` (todo, learnings, meta work). These can share the main working directory safely.
+
+**Practical cap**: 1 main-directory session (coordination/meta) + 2-3 worktree sessions (feature work, validation). More is possible but coordination overhead increases.
+
+**Session state files**: Hooks write to `.sessions/<session_id>.start` and `.sessions/<session_id>.files` instead of shared root files. This prevents concurrent sessions from overwriting each other's timestamps. Legacy shared files are maintained for backward compat.
+
+**Twilio resource isolation**: Sessions that deploy should use separate lanes. Main development uses `.env` (Lane A). Validation uses `.env.lane-b` (Lane B) with a separate phone number and service SIDs. Pass `--lane-b` to `worktree-setup.sh` for validation worktrees.
+
+**Merging worktree work**: After `ExitWorktree(action: "keep")`, merge the worktree branch to main: `git merge <branch-name>`. Review before merging — worktrees that both modify shared files (CLAUDE.md, package.json) may produce conflicts.
+
 ## Documentation Navigator
 
 See [.claude/references/doc-navigator.md](/.claude/references/doc-navigator.md) for the full topic-to-file lookup table (36 entries covering all domains, skills, and references).

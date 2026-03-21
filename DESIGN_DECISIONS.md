@@ -994,7 +994,7 @@ Two-phase approach:
 
 ### Status
 
-**Implemented** — Sandbox mode is active in Feature Factory (`src/sandbox.ts`). Default behavior in autonomous mode.
+**Implemented** — Phase 1 (sandbox/temp clone) active in Feature Factory (`src/sandbox.ts`). Phase 2 (git worktrees) implemented for interactive sessions: `/worktree-start` command + `worktree-setup.sh` configures `.meta` symlink, `.env`, and MCP artifacts. Session-scoped state files (`.sessions/<id>.*`) prevent concurrent session interference.
 
 ---
 

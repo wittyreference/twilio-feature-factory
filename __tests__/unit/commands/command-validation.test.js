@@ -13,7 +13,6 @@ describe('Slash Command Validation', () => {
     'deploy.md',
     'dev.md',
     'docs.md',
-    'orchestrate.md',
     'review.md',
     'spec.md',
     'test-gen.md',
@@ -126,15 +125,6 @@ describe('Slash Command Validation', () => {
             content.includes('Run the'); // Instructions to run something
           expect(hasActionableContent).toBe(true);
         }
-      }
-    });
-
-    it('orchestrate command should reference other commands', () => {
-      const cmdPath = path.join(COMMANDS_DIR, 'orchestrate.md');
-      if (fs.existsSync(cmdPath)) {
-        const content = fs.readFileSync(cmdPath, 'utf-8');
-        // Orchestrator should mention the commands it coordinates
-        expect(content).toMatch(/\/architect|\/spec|\/dev|\/review/);
       }
     });
 

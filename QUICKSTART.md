@@ -65,7 +65,7 @@ No serverless functions were deployed. No webhooks were configured. Claude talke
 
 - **Build a full feature**: See [WALKTHROUGH.md](WALKTHROUGH.md) for a guided 30-minute tutorial building a Voice AI Assistant with call summary
 - **Explore MCP tools**: Ask Claude "What Twilio tools are available?" to see the full inventory
-- **Run the pipeline**: Try `/orchestrate new-feature "build a voice IVR that routes to sales or support"` to run the full development pipeline with human approval gates
+- **Run the pipeline**: Try `/architect "voice IVR that routes to sales or support"` to start the development pipeline — Claude will guide you through spec, test-gen, dev, review, and docs phases
 - **Send an SMS**: If you have A2P 10DLC registration, try `send_sms` (required for US messaging)
 
 ## Troubleshooting

@@ -277,7 +277,7 @@ Hook runs → pending-actions.md → Agent reads → Takes action → Clears fil
 
 ### Workflow State Tracking
 
-For orchestrated workflows, track phase completion:
+For multi-phase pipeline workflows, track phase completion:
 
 ```markdown
 ## Workflow: new-feature "Voice IVR"
@@ -301,7 +301,7 @@ Status: IN_PROGRESS
 - None
 
 ### Decisions Log
-- Phase 1: Chose orchestrator pattern
+- Phase 1: Chose sequential pipeline pattern
 - Phase 2: DTMF-only, 3 options
 - Phase 3: 6 test cases defined
 ```

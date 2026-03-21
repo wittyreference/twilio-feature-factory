@@ -125,7 +125,7 @@ See [user-guide.md](user-guide.md) for a detailed plain-language guide, or [WALK
 
 | Command | What It Does |
 |---------|--------------|
-| `/orchestrate [workflow] [task]` | Run full development pipelines |
+| `/architect [topic]` | Start the development pipeline with design review |
 | `/team [workflow] [task]` | Coordinate parallel multi-agent work |
 
 ### Development Subagents
@@ -190,7 +190,7 @@ The Feature Factory orchestrates the supervised development pipeline with human 
 
 **Default: Supervised mode** — Human approves the plan and reviews key phase outputs before proceeding.
 
-- **Interactive CLI** — Standard Claude Code session with `/orchestrate`
+- **Interactive CLI** — Standard Claude Code session with `/architect` to start the pipeline
 - **Headless** — `scripts/run-headless.sh` for CI/CD pipelines, no TTY required
 
 Built-in safeguards:

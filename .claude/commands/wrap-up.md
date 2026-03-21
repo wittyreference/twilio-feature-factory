@@ -135,7 +135,7 @@ If the session completed or progressed a tracked task, update the todo file.
 
 ### 5b. Generate Learning Exercises
 
-If significant code was produced this session (especially from autonomous work via headless, `/orchestrate`, or `/team`), check for and generate learning exercises:
+If significant code was produced this session (especially from autonomous work via headless or `/team`), check for and generate learning exercises:
 
 1. Check if `.meta/learning/session-log.jsonl` has events
 2. If so, run the exercise generation: `bash .claude/hooks/generate-learning-exercises.sh`

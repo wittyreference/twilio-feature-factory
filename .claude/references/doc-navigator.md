@@ -48,6 +48,7 @@
 | Hooks reference | `.claude/skills/hooks-reference.md` (load on demand) |
 | Hook troubleshooting | [.claude/references/hook-troubleshooting.md](/.claude/references/hook-troubleshooting.md) |
 | Environment doctor | `.claude/skills/env-doctor.md` (load on demand) |
+| Workflow patterns (pipeline phases) | [.claude/references/workflow-patterns.md](/.claude/references/workflow-patterns.md) |
 | Autonomous mode | `.claude/skills/autonomous-guide.md` (load on demand) |
 | Headless runner | `scripts/run-headless.sh --help` (CI/CD, `claude -p` wrapper) |
 | Agent teams details | `.claude/skills/agent-teams-guide.md` (load on demand) |

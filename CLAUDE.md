@@ -114,7 +114,7 @@ See [.claude/references/doc-navigator.md](/.claude/references/doc-navigator.md) 
 
 ## Development Pipeline
 
-New serverless functions and significant features MUST use the development pipeline via `/orchestrate` (architect → prototype → spec → test-gen → dev → review → docs). The pre-write hook enforces this — new function files without corresponding tests will be blocked.
+New serverless functions and significant features MUST follow the development pipeline (architect → prototype → spec → test-gen → dev → review → docs). Start with `/architect` and follow the phase sequences in `.claude/references/workflow-patterns.md`. The pre-write hook enforces this — new function files without corresponding tests will be blocked.
 
 **When to use**: New files in `functions/`, new Twilio features, anything touching voice/messaging/verification.
 **When NOT needed**: Bug fixes, doc updates, config changes, single-line refactors within existing files.
@@ -216,7 +216,7 @@ Rules that prevent real debugging time loss. Loaded contextually via `.claude/ru
 # Session discipline
 
 - **Ephemeral branch guard**: Before committing, check the current branch. If it matches `validation-*`, `headless-*`, `uber-val-*`, or `fresh-install-*`, **stop and ask the user** whether to switch to main first. The pre-commit hook warns about this, but you MUST treat that warning as actionable — do not proceed without user confirmation. Feature work should land on main, not on leftover validation branches.
-- Prioritize the pipeline over ad-hoc implementation. For tasks that create new functions, always invoke `/orchestrate` or run pipeline phases sequentially. Ad-hoc coding (skipping architect/spec) is only appropriate for bug fixes and small edits to existing files.
+- Prioritize the pipeline over ad-hoc implementation. For tasks that create new functions, start with `/architect` and follow the pipeline phases sequentially (see `.claude/references/workflow-patterns.md`). Ad-hoc coding (skipping architect/spec) is only appropriate for bug fixes and small edits to existing files.
 - Do not convert lazy/conditional `require()` calls to static `import` statements without verifying the conditional logic still works. Node.js conditional requires exist for a reason (optional dependencies, environment-specific loading).
 - Run the full relevant test suite before presenting work as complete. A passing subset is not sufficient — regressions in unrelated tests still need to be caught.
 - After modifying TypeScript files, run `tsc --noEmit` in the relevant package to verify compilation before committing.
@@ -255,4 +255,4 @@ Build/dev commands are in `.claude/rules/build-commands.md` (loads when working 
 
 ## Slash Commands
 
-See `.claude/rules/slash-commands.md` for the full command reference. Key entry points: `/orchestrate`, `/team`, `/architect`.
+See `.claude/rules/slash-commands.md` for the full command reference. Key entry points: `/architect`, `/team`.

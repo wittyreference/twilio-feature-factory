@@ -9,7 +9,7 @@ Interactive learning exercises for building comprehension of autonomous work.
 
 ## What This Is
 
-When autonomous sessions (headless, `/orchestrate`, `/team`) produce code, you see clean artifacts but miss the decision-making process. These exercises use the **generation effect** — actively engaging with code produces deeper understanding than passive review.
+When autonomous sessions (headless, `/team`) produce code, you see clean artifacts but miss the decision-making process. These exercises use the **generation effect** — actively engaging with code produces deeper understanding than passive review.
 
 ## How It Works
 
@@ -38,7 +38,7 @@ $ARGUMENTS
 2. Read `.meta/learning/exercise-state.json` for session state
 3. If `exercises_declined` is true, say "Exercises suppressed for this session. Use `/learn review` for retrieval practice on past topics."
 4. If `exercises_completed` >= 2, say "Session cap reached (2/2). Use `/learn review` for retrieval practice."
-5. If no pending exercises, say "No exercises pending. Autonomous work generates exercises — check after your next headless run or `/orchestrate`."
+5. If no pending exercises, say "No exercises pending. Autonomous work generates exercises — check after your next headless run or `/team` session."
 6. Otherwise, show the list of pending exercises (title + file path) and ask which one to work on
 7. When the user picks one, present the exercise question and STOP. Wait for their response.
 8. After their response, provide feedback:

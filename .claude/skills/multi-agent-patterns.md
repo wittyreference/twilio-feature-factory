@@ -64,8 +64,8 @@ A central coordinator manages the workflow, invoking specialists in sequence.
 
 ```
                     ┌─────────────┐
-                    │ Orchestrator│
-                    │ /orchestrate│
+                    │  Claude Code │
+                    │  (sequencer) │
                     └──────┬──────┘
                            │
      ┌─────────┬───────────┼───────────┬─────────┐
@@ -84,7 +84,7 @@ A central coordinator manages the workflow, invoking specialists in sequence.
 ### Twilio Example: New Voice Feature
 
 ```
-/orchestrate new-feature "Add voicemail recording"
+/architect "Add voicemail recording"
 
 Phase 1: /architect
   → Design: functions/voice/voicemail.protected.js
@@ -399,8 +399,8 @@ Teammates are subject to `TeammateIdle` and `TaskCompleted` hooks:
 
 ```
 Is work sequential with clear phases?
-├── Yes → Orchestrator Pattern
-│         Use /orchestrate command
+├── Yes → Sequential Pipeline
+│         Start with /architect, follow phase sequence
 │
 └── No → Do agents need to discuss findings?
          ├── Yes → Agent Teams Pattern

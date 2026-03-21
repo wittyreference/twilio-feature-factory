@@ -35,8 +35,8 @@ Agent Teams (experimental) coordinate multiple Claude Code instances for paralle
 
 ## When to Use Teams vs Subagents
 
-| Criteria | Use Subagents (`/orchestrate`) | Use Teams (`/team`) |
-|----------|-------------------------------|---------------------|
+| Criteria | Use Sequential Phases | Use Teams (`/team`) |
+|----------|----------------------|---------------------|
 | Task structure | Sequential, clear phases | Parallel or adversarial |
 | Communication | Results flow one direction | Agents discuss findings |
 | Context needs | Shared context is fine | Each agent needs fresh context |

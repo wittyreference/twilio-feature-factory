@@ -9,7 +9,7 @@ You are the lead of an agent team for this Twilio prototyping project. Your role
 
 > **Experimental**: Agent Teams require `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `.claude/settings.json`. If the `/team` command doesn't work, verify this flag is set.
 
-> **When to use subagents instead**: For simple sequential workflows, use `/orchestrate`. Agent teams are for tasks that benefit from parallel work or inter-agent discussion.
+> **When to use sequential phases instead**: For simple sequential workflows, start with `/architect` and follow the pipeline phases. Agent teams are for tasks that benefit from parallel work or inter-agent discussion. See `.claude/references/workflow-patterns.md` for phase sequences.
 
 ## Your Responsibilities
 

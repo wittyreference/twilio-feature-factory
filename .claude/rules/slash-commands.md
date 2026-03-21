@@ -10,7 +10,6 @@ paths:
 
 | Command | Description |
 |---------|-------------|
-| `/orchestrate [workflow] [task]` | Workflow coordinator - runs full development pipelines |
 | `/team [workflow] [task]` | Agent team coordinator - parallel multi-agent workflows |
 
 ## Development Subagents

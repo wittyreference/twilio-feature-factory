@@ -262,11 +262,11 @@ if { [[ "$FILE_PATH" =~ functions/.*\.js$ ]] || [[ "$RESOLVED_FILE_PATH" =~ func
                 echo "This project enforces pipeline-driven development." >&2
                 echo "For new features, use the development pipeline:" >&2
                 echo "" >&2
-                echo "  /orchestrate new-feature \"[description]\"" >&2
-                echo "" >&2
-                echo "Or run phases manually:" >&2
+                echo "  /architect [feature]   # Start with design review" >&2
                 echo "  /test-gen [feature]    # Write failing tests first" >&2
                 echo "  /dev [task]            # Then implement" >&2
+                echo "" >&2
+                echo "See .claude/references/workflow-patterns.md for full phase sequences." >&2
                 echo "" >&2
                 echo "Override: SKIP_PIPELINE_GATE=true (for emergency fixes)" >&2
                 exit 2

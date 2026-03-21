@@ -6,8 +6,7 @@ This document describes the available workflow patterns for developing Twilio fe
 
 | Command | Role | Description |
 |---------|------|-------------|
-| `/orchestrate` | Workflow Coordinator | Runs full development pipelines automatically |
-| `/architect` | Architect | Design review, pattern selection, unknowns identification |
+| `/architect` | Architect | Design review, pattern selection, unknowns identification — pipeline entry point |
 | `/prototype` | Prototyper | Quick spike to test unknowns — no tests, produces learnings |
 | `/spec` | Specification Writer | Creates detailed technical specifications |
 | `/test-gen` | Test Generator | TDD Red Phase - writes failing tests first |
@@ -29,9 +28,7 @@ Full development pipeline for building new Twilio functionality:
 /architect ──► /prototype (if unknowns) ──► /spec ──► /test-gen ──► /dev ──► /review ──► /test ──► /docs
 ```
 
-**Orchestrated**: `/orchestrate new-feature [description]`
-
-**Manual execution**:
+**Execution**:
 
 1. `/architect [feature]` - Get architecture review, identify unknowns
 2. `/prototype [unknowns]` - Quick spike to test unfamiliar APIs *(skip if no unknowns)*
@@ -50,9 +47,7 @@ Quick fix pipeline for resolving issues:
 /twilio-logs ──► /architect ──► /test-gen ──► /dev ──► /review ──► /test
 ```
 
-**Orchestrated**: `/orchestrate bug-fix [issue]`
-
-**Manual execution**:
+**Execution**:
 
 1. `/twilio-logs` - Analyze debugger logs to identify the issue
 2. `/architect [diagnosis]` - Determine fix approach
@@ -69,9 +64,7 @@ Improve code structure without changing behavior:
 /test ──► /architect ──► /dev ──► /review ──► /test
 ```
 
-**Orchestrated**: `/orchestrate refactor [target]`
-
-**Manual execution**:
+**Execution**:
 
 1. `/test` - Verify existing tests pass (baseline)
 2. `/architect [refactor plan]` - Design the refactoring approach
@@ -87,9 +80,7 @@ Update documentation without code changes:
 /docs
 ```
 
-**Orchestrated**: `/orchestrate docs-only [scope]`
-
-**Manual execution**:
+**Execution**:
 
 1. `/docs [scope]` - Update specified documentation
 
@@ -101,9 +92,7 @@ Review code for security issues:
 /review ──► /dev ──► /test
 ```
 
-**Orchestrated**: `/orchestrate security-audit [scope]`
-
-**Manual execution**:
+**Execution**:
 
 1. `/review security [scope]` - Security-focused code review
 2. `/dev [fixes]` - Implement security fixes (if needed)
@@ -111,12 +100,12 @@ Review code for security issues:
 
 ## Agent Team Workflows
 
-For tasks that benefit from parallel work or inter-agent discussion, use `/team` instead of `/orchestrate`. Agent teams spawn multiple Claude Code instances that communicate via messaging and a shared task list.
+For tasks that benefit from parallel work or inter-agent discussion, use `/team`. Agent teams spawn multiple Claude Code instances that communicate via messaging and a shared task list.
 
 ### When to Use Teams vs Subagents
 
-| Criteria | Use Subagents (`/orchestrate`) | Use Teams (`/team`) |
-|----------|-------------------------------|---------------------|
+| Criteria | Use Sequential Phases | Use Teams (`/team`) |
+|----------|----------------------|---------------------|
 | Task structure | Sequential, clear phases | Parallel or adversarial |
 | Communication | Results flow one direction | Agents discuss findings |
 | Context needs | Shared context is fine | Each agent needs fresh context |
@@ -183,23 +172,19 @@ Run with: `/team validation [scope]`
 
 Four validators run simultaneously, each focused on one domain (voice/calls, recordings, TaskRouter tasks, debugger sweep). Lead synthesizes findings into a unified pass/fail report. Use after deployments or workflow completions to verify multiple products in parallel.
 
-## Standalone vs Orchestrated vs Team-Based
+## Sequential vs Team-Based
 
 All subagents work independently. Choose the approach that fits your workflow:
 
-### Orchestrated Mode
+### Sequential Mode
 
-Use `/orchestrate` when:
-
-- Building a complete new feature with sequential phases
-- Following a standard workflow pattern
-- Want automated sequencing and handoffs
-- Working on a well-defined task
+Start with `/architect` and follow the phase sequence for your workflow type (see above). Claude Code handles sequencing, context handoff, and state tracking natively.
 
 Example:
 
 ```text
-/orchestrate new-feature voice IVR menu with speech recognition
+/architect voice IVR menu with speech recognition
+# Claude guides you through spec → test-gen → dev → review → docs
 ```
 
 ### Team-Based Mode
@@ -268,10 +253,6 @@ Each subagent suggests the next logical step:
 ### Example 1: Add Voice IVR
 
 ```text
-# Full orchestrated pipeline
-/orchestrate new-feature Add a voice IVR menu that routes callers to sales or support
-
-# Or manually
 /architect voice IVR with department routing
 /spec voice IVR with Gather verb for digit input
 /test-gen voice IVR handler
@@ -284,10 +265,6 @@ Each subagent suggests the next logical step:
 ### Example 2: Fix SMS Webhook Bug
 
 ```text
-# Orchestrated
-/orchestrate bug-fix SMS webhook returning 500 error for empty body
-
-# Or manually
 /twilio-logs
 /test-gen regression test for empty SMS body
 /dev fix empty body handling in messaging webhook

@@ -50,7 +50,7 @@ When `.meta/` exists at the project root, this is a meta-development environment
 
 - **Todo / roadmap**: `.meta/todo.md` in meta-development, `todo.md` otherwise
 - **Session learnings**: `.meta/learnings.md` in meta-development, `.claude/learnings.md` otherwise
-- **Pending actions**: `.meta/pending-actions.md` in meta-development, `.claude/pending-actions.md` otherwise
+- **Pending actions**: `.meta/pending-actions.json` in meta-development, `.claude/pending-actions.json` otherwise
 - **Archived plans**: `.meta/plans/` in meta-development, `.claude/archive/plans/` otherwise
 
 The hooks in `.claude/hooks/` auto-detect the environment. Claude must also follow this routing — when the user says "todo" or "learnings", use the meta-development paths if `.meta/` exists. See `.meta/CLAUDE.md` for full meta-development documentation.

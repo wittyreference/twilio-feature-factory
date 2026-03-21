@@ -295,40 +295,43 @@ if echo "$COMMAND" | grep -qE "^git\s+commit"; then
     # AUTO-CLEAR ADDRESSED PENDING ACTIONS
     # ============================================
     PENDING_ACTIONS="$CLAUDE_PENDING_ACTIONS"
-    if [ -f "$PENDING_ACTIONS" ]; then
+    if [ -f "$PENDING_ACTIONS" ] && command -v jq &>/dev/null && jq empty "$PENDING_ACTIONS" 2>/dev/null; then
         STAGED_FILES=$(git diff --staged --name-only 2>/dev/null)
         if [ -n "$STAGED_FILES" ]; then
             CLEARED_COUNT=0
-            TEMP_FILE=$(mktemp)
-            while IFS= read -r line; do
-                if echo "$line" | grep -q "^\- \["; then
-                    # Extract doc path: text between "• " and " - "
-                    DOC_PATH=$(echo "$line" | sed -n 's/.*• \(.*\) - .*/\1/p')
-                    # Resolve aliases
-                    case "$DOC_PATH" in
-                        "Root CLAUDE.md") RESOLVED="CLAUDE.md" ;;
-                        ".meta/design-decisions.md") RESOLVED="DESIGN_DECISIONS.md" ;;
-                        "Verify doc-map.md"*) RESOLVED=".claude/references/doc-map.md" ;;
-                        ".meta/"*) RESOLVED="" ;;  # gitignored, skip
-                        "Relevant "*) RESOLVED="" ;;  # too vague, skip
-                        *) RESOLVED="$DOC_PATH" ;;
-                    esac
-                    # Check if resolved path is in staged files
-                    if [ -n "$RESOLVED" ] && echo "$STAGED_FILES" | grep -qF "$RESOLVED"; then
-                        TIMESTAMP=$(echo "$line" | sed -n 's/.*\[\(.*\)\].*/\1/p')
-                        echo "*Auto-cleared [$TIMESTAMP]: $DOC_PATH - staged in this commit*" >> "$TEMP_FILE"
-                        CLEARED_COUNT=$((CLEARED_COUNT + 1))
-                    else
-                        echo "$line" >> "$TEMP_FILE"
+            ACTION_COUNT=$(jq '.actions | length' "$PENDING_ACTIONS" 2>/dev/null || echo "0")
+
+            if [ "$ACTION_COUNT" -gt 0 ]; then
+                # Build a jq filter that removes actions whose target matches a staged file
+                # Resolve aliases for target matching
+                KEEP_FILTER='[.actions[] | select('
+                FIRST=true
+                while IFS= read -r staged_file; do
+                    [ -z "$staged_file" ] && continue
+                done <<< "$STAGED_FILES"
+
+                # Use jq to filter: keep actions whose target is NOT in staged files
+                STAGED_PATTERN=$(echo "$STAGED_FILES" | tr '\n' '|' | sed 's/|$//')
+                UPDATED=$(jq --arg pattern "$STAGED_PATTERN" '
+                    .actions as $all |
+                    [$all[] | select(
+                        . as $action |
+                        ($pattern | split("|")) |
+                        map(. as $f | $action.target | contains($f)) |
+                        any | not
+                    )] as $remaining |
+                    ($all | length) - ($remaining | length) as $cleared |
+                    {actions: $remaining, _cleared: $cleared}
+                ' "$PENDING_ACTIONS" 2>/dev/null)
+
+                if [ -n "$UPDATED" ]; then
+                    CLEARED_COUNT=$(echo "$UPDATED" | jq -r '._cleared // 0')
+                    echo "$UPDATED" | jq 'del(._cleared)' > "$PENDING_ACTIONS"
+                    if [ "$CLEARED_COUNT" -gt 0 ]; then
+                        echo "" >&2
+                        echo "Doc flywheel: Auto-cleared $CLEARED_COUNT pending action(s) addressed in this commit." >&2
                     fi
-                else
-                    echo "$line" >> "$TEMP_FILE"
                 fi
-            done < "$PENDING_ACTIONS"
-            mv "$TEMP_FILE" "$PENDING_ACTIONS"
-            if [ "$CLEARED_COUNT" -gt 0 ]; then
-                echo "" >&2
-                echo "Doc flywheel: Auto-cleared $CLEARED_COUNT pending action(s) addressed in this commit." >&2
             fi
         fi
     fi
@@ -369,24 +372,23 @@ if echo "$COMMAND" | grep -qE "^git\s+commit"; then
     # ============================================
     # PENDING DOCUMENTATION ACTIONS (BLOCKING)
     # ============================================
-    # Block commit if pending-actions.md has items (unless escape hatch used)
+    # Block commit if pending-actions.json has items (unless escape hatch used)
     # PENDING_ACTIONS set above in auto-clear section
-    if [ -f "$PENDING_ACTIONS" ]; then
-        # Count non-empty, non-header lines (actual action items)
-        ACTION_COUNT=$(grep -c "^\- \[" "$PENDING_ACTIONS" 2>/dev/null || echo "0")
+    if [ -f "$PENDING_ACTIONS" ] && command -v jq &>/dev/null && jq empty "$PENDING_ACTIONS" 2>/dev/null; then
+        ACTION_COUNT=$(jq '.actions | length' "$PENDING_ACTIONS" 2>/dev/null || echo "0")
         if [ "$ACTION_COUNT" -gt 0 ]; then
             echo "" >&2
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
             echo "PENDING DOCUMENTATION ACTIONS ($ACTION_COUNT items)" >&2
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
             echo "" >&2
-            # Show the action items (lines starting with "- [")
-            grep "^\- \[" "$PENDING_ACTIONS" >&2
+            # Show action items from JSON
+            jq -r '.actions[] | "- [\(.timestamp)] \(.target) - \(.reason)"' "$PENDING_ACTIONS" >&2
             echo "" >&2
 
             # Check for escape hatch (environment variable)
             if [ "$SKIP_PENDING_ACTIONS" = "true" ] || [ "$SKIP_PENDING_ACTIONS" = "1" ]; then
-                echo "⚠️  Skipping pending-actions check (SKIP_PENDING_ACTIONS set)" >&2
+                echo "Skipping pending-actions check (SKIP_PENDING_ACTIONS set)" >&2
                 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
                 echo "" >&2
             else

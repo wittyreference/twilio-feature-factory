@@ -100,7 +100,7 @@ Cross-cutting gotchas discovered through real debugging sessions. Domain-specifi
 
 - **Hooks receive tool input on stdin as JSON, not env vars** — `CLAUDE_TOOL_INPUT_FILE_PATH`, `CLAUDE_TOOL_INPUT_COMMAND`, `CLAUDE_TOOL_INPUT_CONTENT` don't exist. Parse stdin with `jq`: `FILE_PATH="$(cat | jq -r '.tool_input.file_path // empty')"`. All 4 hooks (pre-bash-validate, pre-write-validate, post-write, post-bash) were silently broken until fixed.
 
-- **Flywheel must exclude its own output files** — Editing `pending-actions.md` triggers post-write, which tracks it in `.session-files`, which the next flywheel run picks up, generating infinite recursive suggestions. Filter out `pending-actions.md`, `.session-files`, `.session-start`, `.last-doc-check` from the file collection.
+- **Flywheel must exclude its own output files** — Editing `pending-actions.json` triggers post-write, which tracks it in `.session-files`, which the next flywheel run picks up, generating infinite recursive suggestions. Filter out `pending-actions.json`, `.session-files`, `.session-start`, `.last-doc-check` from the file collection.
 
 - **Pending actions auto-clear only works for concrete paths** — Entries with vague targets ("Relevant CLAUDE.md") or gitignored paths (`.meta/todo.md`) never match staged files and accumulate forever. Always use specific file paths in suggestions.
 

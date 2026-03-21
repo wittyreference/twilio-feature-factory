@@ -11,8 +11,8 @@ Review the current session's work and update all relevant documentation before c
 ### 1. Gather Session Context
 
 Determine environment:
-- If `.meta/` exists → meta-development mode (learnings: `.meta/learnings.md`, pending: `.meta/pending-actions.md`, todo: `.meta/todo.md`)
-- Otherwise → standard mode (learnings: `.claude/learnings.md`, pending: `.claude/pending-actions.md`, todo: `todo.md`)
+- If `.meta/` exists → meta-development mode (learnings: `.meta/learnings.md`, pending: `.meta/pending-actions.json`, todo: `.meta/todo.md`)
+- Otherwise → standard mode (learnings: `.claude/learnings.md`, pending: `.claude/pending-actions.json`, todo: `todo.md`)
 
 Collect what changed this session:
 ```bash

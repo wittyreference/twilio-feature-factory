@@ -95,8 +95,8 @@ If the committed work completes a todo item, check it off.
 ### 2. Pending Actions
 
 Determine the pending actions path:
-- If `.meta/` directory exists: `.meta/pending-actions.md`
-- Otherwise: `.claude/pending-actions.md`
+- If `.meta/` directory exists: `.meta/pending-actions.json`
+- Otherwise: `.claude/pending-actions.json`
 
 If the file has entries, mention any doc update suggestions related to the committed files.
 

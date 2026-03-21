@@ -22,7 +22,7 @@ The flywheel automatically tracks file changes and suggests documentation update
 3. flywheel-doc-check.sh analyzes all sources
         |
         v
-4. Suggestions appended to pending-actions.md
+4. Suggestions appended to pending-actions.json
         |
         v
 5. Pre-commit shows pending action count
@@ -37,7 +37,7 @@ The flywheel automatically tracks file changes and suggests documentation update
 |------|---------|
 | `.claude/hooks/flywheel-doc-check.sh` | Analyzes changes and generates suggestions |
 | `.claude/hooks/flywheel-session-summary.sh` | End-of-session review reminder |
-| `.claude/pending-actions.md` | Queued documentation suggestions |
+| `.claude/pending-actions.json` | Queued documentation suggestions |
 | `.claude/learnings.md` | Session discoveries (capture -> promote -> clear) |
 | `.claude/.session-start` | Timestamp when session began |
 | `.claude/.session-files` | Files touched during session |
@@ -113,7 +113,7 @@ The flywheel hooks are enabled by default in the shipped `.claude/settings.json`
 ```
 
 - **`post-write.sh`** runs on every `Write` or `Edit` tool use, tracking modified files to `.session-files`
-- **`flywheel-doc-check.sh`** analyzes all three sources and appends suggestions to `pending-actions.md`
+- **`flywheel-doc-check.sh`** analyzes all three sources and appends suggestions to `pending-actions.json`
 - Hook paths use `$(git rev-parse --show-toplevel)` for portability across subdirectories (see [DESIGN_DECISIONS.md](../DESIGN_DECISIONS.md#decision-11-use-git-rev-parse-for-hook-paths))
 
 ## Key Documents to Maintain

@@ -702,13 +702,13 @@ The documentation flywheel (capture → promote → clear workflow) had hooks th
 
 **Replace stdout/stderr hook output with file-based communication.**
 
-Hooks write to `pending-actions.md` → Agent reads file at key moments → File is cleared after actions addressed.
+Hooks write to `pending-actions.json` → Agent reads file at key moments → File is cleared after actions addressed.
 
 ### Implementation
 
 ```
 ┌─────────────────┐     writes to      ┌──────────────────────┐
-│ doc-update-check│ ──────────────────►│ pending-actions.md   │
+│ doc-update-check│ ──────────────────►│ pending-actions.json   │
 │ session-summary │                    └──────────────────────┘
 └─────────────────┘                              │
                                                  ▼ agent reads
@@ -719,10 +719,10 @@ Hooks write to `pending-actions.md` → Agent reads file at key moments → File
 ```
 
 **Changes:**
-- `doc-update-check.sh` appends to `pending-actions.md` instead of stdout
+- `doc-update-check.sh` appends to `pending-actions.json` instead of stdout
 - `pre-bash-validate.sh` displays file contents before commits
 - `notify-ready.sh` tells the developer about pending action count in desktop notification
-- `CLAUDE.md` instructs agent to read `pending-actions.md` before commits
+- `CLAUDE.md` instructs agent to read `pending-actions.json` before commits
 
 ### Rationale
 

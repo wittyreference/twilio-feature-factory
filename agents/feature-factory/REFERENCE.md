@@ -122,7 +122,7 @@ When autonomous mode completes, you receive a comprehensive summary:
 - Test results (unit, integration, coverage, lint)
 - Files created/modified
 - Learnings captured (`.claude/learnings.md`)
-- Recommended actions (`.claude/pending-actions.md`)
+- Recommended actions (`.claude/pending-actions.json`)
 - Audit log path (`.feature-factory/autonomous-*.log`)
 
 ### Audit Logging

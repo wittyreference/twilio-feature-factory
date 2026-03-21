@@ -39,7 +39,7 @@ This project uses Claude Code hooks (configured in `.claude/settings.json`) to e
 
 - Hardcoded Twilio credentials (`AC...`, `SK...`, auth tokens)
 - `git commit --no-verify` or `git commit -n`
-- `git commit` with unaddressed pending-actions.md (override: `SKIP_PENDING_ACTIONS=true`)
+- `git commit` with unaddressed pending-actions.json (override: `SKIP_PENDING_ACTIONS=true`)
 - `git commit` with TypeScript compilation errors in staged `.ts/.tsx` files (override: `SKIP_TSC_CHECK=true`)
 - `git push --force` to main/master
 - Deployment when tests fail

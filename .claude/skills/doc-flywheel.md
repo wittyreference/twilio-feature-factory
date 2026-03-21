@@ -38,12 +38,14 @@ The `doc-update-check.sh` hook detects file changes and appends documentation su
 
 **Before committing, ALWAYS check for pending actions:**
 ```bash
-cat .meta/pending-actions.md 2>/dev/null || cat .claude/pending-actions.md 2>/dev/null || echo "No pending actions"
+jq -r '.actions[] | "- [\(.timestamp)] \(.target) - \(.reason)"' .meta/pending-actions.json 2>/dev/null || \
+jq -r '.actions[] | "- [\(.timestamp)] \(.target) - \(.reason)"' .claude/pending-actions.json 2>/dev/null || \
+echo "No pending actions"
 ```
 
 After addressing actions, clear the file:
 ```bash
-rm -f .meta/pending-actions.md .claude/pending-actions.md
+rm -f .meta/pending-actions.json .claude/pending-actions.json
 ```
 
 ## Documentation Standards for Technical Assertions

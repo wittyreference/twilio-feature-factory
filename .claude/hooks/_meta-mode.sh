@@ -9,7 +9,7 @@ export PROJECT_ROOT="${PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null
 if [[ -d "$PROJECT_ROOT/.meta" ]]; then
     export CLAUDE_META_MODE="true"
     export CLAUDE_META_DIR="$PROJECT_ROOT/.meta"
-    export CLAUDE_PENDING_ACTIONS="$PROJECT_ROOT/.meta/pending-actions.md"
+    export CLAUDE_PENDING_ACTIONS="$PROJECT_ROOT/.meta/pending-actions.json"
     export CLAUDE_LEARNINGS="$PROJECT_ROOT/.meta/learnings.md"
     export CLAUDE_LOGS_DIR="$PROJECT_ROOT/.meta/logs"
     export CLAUDE_PLANS_DIR="$PROJECT_ROOT/.meta/plans"
@@ -17,7 +17,7 @@ if [[ -d "$PROJECT_ROOT/.meta" ]]; then
 else
     export CLAUDE_META_MODE="false"
     export CLAUDE_META_DIR=""
-    export CLAUDE_PENDING_ACTIONS="$PROJECT_ROOT/.claude/pending-actions.md"
+    export CLAUDE_PENDING_ACTIONS="$PROJECT_ROOT/.claude/pending-actions.json"
     export CLAUDE_LEARNINGS="$PROJECT_ROOT/.claude/learnings.md"
     export CLAUDE_LOGS_DIR="$PROJECT_ROOT/.claude/logs"
     export CLAUDE_PLANS_DIR="$PROJECT_ROOT/.claude/archive/plans"

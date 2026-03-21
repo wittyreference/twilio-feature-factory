@@ -112,9 +112,9 @@ if [ -x "$DRIFT_SCRIPT" ]; then
 fi
 
 # Deduplicate, clean up, and exclude flywheel's own output files to prevent
-# recursive re-firing (editing pending-actions.md triggers post-write, which
+# recursive re-firing (editing pending-actions.json triggers post-write, which
 # tracks it in .session-files, which the next flywheel run picks up)
-ALL_FILES=$(echo "$ALL_FILES" | grep -v "^$" | grep -v "pending-actions\.md" | grep -v "\.session-files" | grep -v "\.session-start" | grep -v "\.last-doc-check" | sort -u)
+ALL_FILES=$(echo "$ALL_FILES" | grep -v "^$" | grep -v "pending-actions\.\(md\|json\)" | grep -v "\.session-files" | grep -v "\.session-start" | grep -v "\.last-doc-check" | sort -u)
 
 if [ -z "$ALL_FILES" ]; then
     # No files to analyze
@@ -268,16 +268,15 @@ fi
 # ============================================
 
 if [ -n "$SUGGESTIONS" ]; then
-    # Initialize pending-actions.md if it doesn't exist
-    if [ ! -f "$PENDING_ACTIONS_FILE" ]; then
-        cat > "$PENDING_ACTIONS_FILE" << 'EOF'
-# Pending Documentation Actions
+    # jq required for JSON operations
+    if ! command -v jq &>/dev/null; then
+        echo "WARNING: jq not installed — pending actions not saved. Run: brew install jq" >&2
+        exit 0
+    fi
 
-Actions detected by the documentation flywheel. Review before committing.
-
----
-
-EOF
+    # Initialize pending-actions.json if it doesn't exist
+    if [ ! -f "$PENDING_ACTIONS_FILE" ] || ! jq empty "$PENDING_ACTIONS_FILE" 2>/dev/null; then
+        echo '{"actions":[]}' > "$PENDING_ACTIONS_FILE"
     fi
 
     # Count sources for context (tr -d removes any newlines from counts)
@@ -285,31 +284,44 @@ EOF
     COMMITTED_COUNT=$(echo "$COMMITTED_FILES" | grep -c "." 2>/dev/null | tr -d '\n' || echo "0")
     SESSION_COUNT=$(echo "$SESSION_TRACKED" | grep -c "." 2>/dev/null | tr -d '\n' || echo "0")
 
-    # Append new actions (dedup with 24h staleness — old entries don't suppress forever)
+    # Append new actions as JSON (dedup with 24h staleness)
     NOW_EPOCH=$(date +%s)
     STALE_THRESHOLD=86400  # 24 hours in seconds
+    ISO_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
     echo -e "$SUGGESTIONS" | while IFS= read -r line; do
         if [ -n "$line" ]; then
+            # Parse "target - reason" from "• target - reason"
             SUGGESTION_TEXT=$(echo "$line" | sed 's/^• //')
-            EXISTING_LINE=$(grep -F "$SUGGESTION_TEXT" "$PENDING_ACTIONS_FILE" 2>/dev/null | tail -1)
+            TARGET=$(echo "$SUGGESTION_TEXT" | sed 's/ - .*//')
+            REASON=$(echo "$SUGGESTION_TEXT" | sed 's/^[^ ]* - //')
 
-            if [ -z "$EXISTING_LINE" ]; then
-                # No existing entry — add it
-                echo "- [$TIMESTAMP] $line" >> "$PENDING_ACTIONS_FILE"
+            # Check for existing entry with same target
+            EXISTING_TS=$(jq -r --arg t "$TARGET" \
+                '[.actions[] | select(.target == $t)] | last | .timestamp // empty' \
+                "$PENDING_ACTIONS_FILE" 2>/dev/null)
+
+            ADD_ENTRY=false
+            if [ -z "$EXISTING_TS" ]; then
+                ADD_ENTRY=true
             else
-                # Extract timestamp from existing entry: "- [YYYY-MM-DD HH:MM] • ..."
-                EXISTING_TS=$(echo "$EXISTING_LINE" | sed -n 's/^.*\[\([0-9-]* [0-9:]*\)\].*$/\1/p')
-                if [ -n "$EXISTING_TS" ]; then
-                    # Parse timestamp (macOS then Linux fallback, default 0 = always re-suggest)
-                    EXISTING_EPOCH=$(date -j -f "%Y-%m-%d %H:%M" "$EXISTING_TS" "+%s" 2>/dev/null \
-                        || date -d "$EXISTING_TS" "+%s" 2>/dev/null \
-                        || echo "0")
-                    AGE=$((NOW_EPOCH - EXISTING_EPOCH))
-                    if [ "$AGE" -gt "$STALE_THRESHOLD" ]; then
-                        # Existing entry is stale (>24h) — re-suggest
-                        echo "- [$TIMESTAMP] $line" >> "$PENDING_ACTIONS_FILE"
-                    fi
+                # Parse existing timestamp and check staleness
+                EXISTING_EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$EXISTING_TS" "+%s" 2>/dev/null \
+                    || date -d "$EXISTING_TS" "+%s" 2>/dev/null \
+                    || echo "0")
+                AGE=$((NOW_EPOCH - EXISTING_EPOCH))
+                if [ "$AGE" -gt "$STALE_THRESHOLD" ]; then
+                    ADD_ENTRY=true
+                fi
+            fi
+
+            if [ "$ADD_ENTRY" = true ]; then
+                # Append new action to JSON array
+                UPDATED=$(jq --arg ts "$ISO_TIMESTAMP" --arg tgt "$TARGET" --arg rsn "$REASON" \
+                    '.actions += [{"timestamp": $ts, "target": $tgt, "reason": $rsn}]' \
+                    "$PENDING_ACTIONS_FILE" 2>/dev/null)
+                if [ -n "$UPDATED" ]; then
+                    echo "$UPDATED" > "$PENDING_ACTIONS_FILE"
                 fi
             fi
         fi

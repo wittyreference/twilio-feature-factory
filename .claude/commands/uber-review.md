@@ -10,7 +10,7 @@ Launch parallel expert reviews of the codebase from multiple professional person
 
 ## Overview
 
-Eight reviewer personas, each evaluating the codebase from their professional lens:
+Ten reviewer personas, each evaluating the codebase from their professional lens:
 
 | Reviewer | Persona | Focus |
 |----------|---------|-------|
@@ -22,6 +22,8 @@ Eight reviewer personas, each evaluating the codebase from their professional le
 | **SRE** | Platform SRE / operations engineer | Failure modes, resource lifecycle, observability, deployment safety |
 | **Skeptic** | Staff engineer (20yr), AI-tooling skeptic | Claim scrutiny, complexity budget, demo gap, cargo culting |
 | **Anthropic** | Anthropic Claude Code power-user / internal dev | Platform best practices, CLAUDE.md architecture, hooks ROI, what Anthropic should provide natively |
+| **Context** | Context engineering specialist | Context window budget, layer conflicts, attention decay, compaction resilience, redundancy tax |
+| **Prompt** | Prompt engineer / instruction auditor | Ambiguous instructions, contradictions across layers, dead instructions, tone conflicts, hierarchy gaps |
 
 ## Arguments
 
@@ -30,7 +32,7 @@ $ARGUMENTS
 </user_request>
 
 Parse arguments for flags:
-- `--reviewers architect,test,docs,security,devex,sre,skeptic,anthropic` — which reviewers to run (default: all)
+- `--reviewers architect,test,docs,security,devex,sre,skeptic,anthropic,context,prompt` — which reviewers to run (default: all)
 - `--focus "specific area or question"` — optional focus area appended to each reviewer's prompt
 - `--output-dir PATH` — override report directory (default: `.meta/review-reports/`)
 
@@ -46,13 +48,15 @@ Parse arguments for flags:
 | `sre` | `.meta/reviewers/platform-sre-review.md` |
 | `skeptic` | `.meta/reviewers/skeptical-ic-review.md` |
 | `anthropic` | `.meta/reviewers/anthropic-developer-review.md` |
+| `context` | `.meta/reviewers/context-engineer-review.md` |
+| `prompt` | `.meta/reviewers/prompt-engineer-review.md` |
 
 ## Execution
 
 ### Phase 1: Initialize
 
 1. **Generate run ID**: `YYYY-MM-DD-HHMMSS` (e.g., `2026-03-20-143052`)
-2. **Parse `--reviewers`**: Default to all 7. Validate each ID exists in the mapping table above.
+2. **Parse `--reviewers`**: Default to all 10. Validate each ID exists in the mapping table above.
 3. **Read prompt files**: For each selected reviewer, read the corresponding `.meta/*-review.md` file.
 4. **Create output directory**: `.meta/review-reports/{run-id}/`
 
@@ -130,6 +134,8 @@ Merge all reviewers' recommendations into a single prioritized list. Deduplicate
 | Operational Readiness | | SRE | |
 | Claims Accuracy | | Skeptic | |
 | Platform Best Practices | | Anthropic | |
+| Context Engineering | | Context | |
+| Instruction Clarity | | Prompt | |
 | **Overall** | **(avg)** | | |
 
 ### Phase 5: Summary

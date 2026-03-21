@@ -27,8 +27,12 @@ Read the pending actions file for flywheel-generated suggestions.
 Check this session's commits for discovery signals that may not have been recorded:
 
 ```bash
-# Get session start timestamp
-SESSION_START=$(cat {session-dir}/.session-start 2>/dev/null)
+# Get session start timestamp (check per-session file first, then legacy shared file)
+SESSION_DIR={session-dir}
+SESSION_START=$(ls -t "$SESSION_DIR"/.sessions/*.start 2>/dev/null | head -1 | xargs cat 2>/dev/null)
+if [ -z "$SESSION_START" ]; then
+    SESSION_START=$(cat "$SESSION_DIR/.session-start" 2>/dev/null)
+fi
 # List commits made this session
 git log --since="@${SESSION_START}" --format='%h %s' 2>/dev/null
 ```

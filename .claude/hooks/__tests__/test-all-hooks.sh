@@ -310,15 +310,30 @@ assert_exit "Empty JSON passes" "0" "$EXIT"
 EXIT=$(echo '{"tool_input":{"file_path":"'"$PROJECT_ROOT"'/.meta/test.md"}}' | bash "$HOOK_DIR/post-write.sh" >/dev/null 2>&1; echo $?)
 assert_exit "Non-JS file passes" "0" "$EXIT"
 
-# Test: session file tracking (must run from project root for git rev-parse)
-SESSION_FILE="$SESSION_DIR/.session-files"
+# Test: session file tracking with session_id (must run from project root for git rev-parse)
+TEST_SESSION_ID="test-session-$$"
+SESSION_FILE="$SESSION_DIR/.sessions/${TEST_SESSION_ID}.files"
 rm -f "$SESSION_FILE"
-(cd "$PROJECT_ROOT" && echo '{"tool_input":{"file_path":"'"$PROJECT_ROOT"'/.claude/test-tracking.md"}}' | bash "$HOOK_DIR/post-write.sh" >/dev/null 2>&1)
+(cd "$PROJECT_ROOT" && echo '{"session_id":"'"$TEST_SESSION_ID"'","tool_input":{"file_path":"'"$PROJECT_ROOT"'/.claude/test-tracking.md"}}' | bash "$HOOK_DIR/post-write.sh" >/dev/null 2>&1)
 if [ -f "$SESSION_FILE" ] && grep -q "test-tracking.md" "$SESSION_FILE"; then
-    echo -e "${GREEN}PASS${NC}: Session file tracking works"
+    echo -e "${GREEN}PASS${NC}: Session-scoped file tracking works"
     PASS_COUNT=$((PASS_COUNT + 1))
 else
     echo -e "${RED}FAIL${NC}: Session file not tracked in $SESSION_FILE"
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+fi
+# Cleanup test session files
+rm -f "$SESSION_DIR/.sessions/${TEST_SESSION_ID}."*
+
+# Test: fallback to legacy paths when no session_id
+LEGACY_SESSION_FILE="$SESSION_DIR/.session-files"
+rm -f "$LEGACY_SESSION_FILE"
+(cd "$PROJECT_ROOT" && echo '{"tool_input":{"file_path":"'"$PROJECT_ROOT"'/.claude/test-legacy.md"}}' | bash "$HOOK_DIR/post-write.sh" >/dev/null 2>&1)
+if [ -f "$LEGACY_SESSION_FILE" ] && grep -q "test-legacy.md" "$LEGACY_SESSION_FILE"; then
+    echo -e "${GREEN}PASS${NC}: Legacy fallback file tracking works"
+    PASS_COUNT=$((PASS_COUNT + 1))
+else
+    echo -e "${RED}FAIL${NC}: Legacy file not tracked in $LEGACY_SESSION_FILE"
     FAIL_COUNT=$((FAIL_COUNT + 1))
 fi
 

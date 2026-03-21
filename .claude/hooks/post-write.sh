@@ -12,13 +12,15 @@ if [ ! -t 0 ]; then
     HOOK_INPUT="$(cat)"
 fi
 
-# Extract file path from JSON input (Write: .tool_input.file_path, Edit: .tool_input.file_path)
+# Extract file path and session ID from JSON input
 FILE_PATH=""
+HOOK_SESSION_ID=""
 if [ -n "$HOOK_INPUT" ] && ! command -v jq &> /dev/null; then
     echo "WARNING: jq not installed — post-write hooks disabled (auto-lint, session tracking). Run: brew install jq" >&2
 fi
 if [ -n "$HOOK_INPUT" ] && command -v jq &> /dev/null; then
     FILE_PATH="$(echo "$HOOK_INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)"
+    HOOK_SESSION_ID="$(echo "$HOOK_INPUT" | jq -r '.session_id // empty' 2>/dev/null)"
 fi
 
 # ============================================
@@ -60,8 +62,19 @@ source "$SCRIPT_DIR/_meta-mode.sh"
 
 # Use environment-aware paths (routes to .meta/ or .claude/ based on context)
 SESSION_DIR="$(dirname "$CLAUDE_PENDING_ACTIONS")"
-SESSION_FILE="$SESSION_DIR/.session-files"
-SESSION_START="$SESSION_DIR/.session-start"
+
+# Session-scoped state: isolate per-session to support concurrent Claude Code instances.
+# Each session gets its own .start/.files in .sessions/<id>/ instead of shared root files.
+if [ -n "$HOOK_SESSION_ID" ]; then
+    SESSIONS_DIR="$SESSION_DIR/.sessions"
+    mkdir -p "$SESSIONS_DIR"
+    SESSION_FILE="$SESSIONS_DIR/${HOOK_SESSION_ID}.files"
+    SESSION_START="$SESSIONS_DIR/${HOOK_SESSION_ID}.start"
+else
+    # Fallback for missing session_id (old Claude Code versions, testing)
+    SESSION_FILE="$SESSION_DIR/.session-files"
+    SESSION_START="$SESSION_DIR/.session-start"
+fi
 
 # Initialize session start time if not set
 if [ ! -f "$SESSION_START" ]; then

@@ -70,3 +70,4 @@ playwright-report/
 .claude/.last-doc-check
 .claude/.compact-pending
 .claude/.update-cache/
+.claude/.sessions/

@@ -128,7 +128,8 @@
   "permissions": {
     "allow": [
       "WebSearch",
-      "WebFetch"
+      "WebFetch",
+      "mcp__twilio__*"
     ]
   },
   "env": {

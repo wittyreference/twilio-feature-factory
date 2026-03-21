@@ -50,8 +50,19 @@ if [ "$CLAUDE_META_MODE" = "true" ] && [ "$CLAUDE_ALLOW_PRODUCTION_WRITE" != "tr
     RESOLVED_FILE_PATH="$_META_RESOLVED_DIR/$(basename "$FILE_PATH")"
     RESOLVED_PROJECT_ROOT="$(realpath "$PROJECT_ROOT" 2>/dev/null || echo "$PROJECT_ROOT")"
 
-    # Normalize file path (remove project root prefix for comparison)
+    # Compute relative path from both resolved and raw FILE_PATH.
+    # When .meta/ is a symlink to an external directory (e.g., factory-workshop),
+    # realpath resolves it outside PROJECT_ROOT, breaking the prefix strip.
+    # Fall back to the raw FILE_PATH (relative to PROJECT_ROOT) for pattern matching.
     RELATIVE_PATH="${RESOLVED_FILE_PATH#$RESOLVED_PROJECT_ROOT/}"
+    if [[ "$RELATIVE_PATH" == "$RESOLVED_FILE_PATH" ]]; then
+        # Resolved path is outside project root — use raw path instead
+        RELATIVE_PATH="${FILE_PATH#$RESOLVED_PROJECT_ROOT/}"
+        # If still absolute, try stripping unresolved PROJECT_ROOT
+        if [[ "$RELATIVE_PATH" == "$FILE_PATH" ]]; then
+            RELATIVE_PATH="${FILE_PATH#$PROJECT_ROOT/}"
+        fi
+    fi
 
     # Only enforce meta-mode isolation for files INSIDE the project root.
     # Files outside (e.g., ~/.claude/plans/, ~/.claude/memory/) are not

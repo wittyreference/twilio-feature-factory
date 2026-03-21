@@ -36,6 +36,7 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 | `sync-wiki.sh` | `./scripts/sync-wiki.sh [--fix\|--push]` | Clone/pull wiki, detect drift, optionally auto-fix numbers and push |
 | `architect-metrics.sh` | `./scripts/architect-metrics.sh [--json\|--snapshot\|--diff]` | Collect codebase metrics for architect summary drift detection; session-checklist integrated |
 | `api-sync/` | `cd scripts/api-sync && npm run sync` | Automated Twilio API drift detection and coverage analysis |
+| `save-coverage-baseline.sh` | `./scripts/save-coverage-baseline.sh` | Save current test coverage snapshot for regression detection (used by pre-commit guardrail) |
 
 ## Headless Gotchas
 

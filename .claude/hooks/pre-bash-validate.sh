@@ -80,6 +80,66 @@ if echo "$COMMAND" | grep -qE "^git\s+commit"; then
     fi
 
     # ============================================
+    # COVERAGE REGRESSION GUARDRAIL (BLOCKING)
+    # ============================================
+    # Prevents agents from deleting tests or reducing coverage.
+    # Two checks: (1) test file deletion detection (instant, always runs),
+    # (2) coverage baseline comparison (instant, runs if baseline exists).
+    if [ "${SKIP_COVERAGE_CHECK:-}" != "true" ]; then
+        # Check 1: Detect test file deletions in staged changes
+        DELETED_TESTS=$(git diff --staged --name-only --diff-filter=D 2>/dev/null \
+            | grep -E '\.(test|spec)\.(js|ts)$' || true)
+        if [ -n "$DELETED_TESTS" ]; then
+            DELETED_COUNT=$(echo "$DELETED_TESTS" | wc -l | tr -d ' ')
+            echo "" >&2
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+            echo "BLOCKED: $DELETED_COUNT test file(s) being deleted" >&2
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+            echo "" >&2
+            echo "$DELETED_TESTS" | head -10 >&2
+            echo "" >&2
+            echo "Test files should not be deleted without explicit approval." >&2
+            echo "If this is intentional, override: SKIP_COVERAGE_CHECK=true" >&2
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+            echo "" >&2
+            exit 2
+        fi
+
+        # Check 2: Coverage baseline regression (if baseline exists)
+        BASELINE_FILE="$PROJECT_ROOT/.coverage-baseline.json"
+        CURRENT_COVERAGE="$PROJECT_ROOT/coverage/coverage-summary.json"
+        if [ -f "$BASELINE_FILE" ] && [ -f "$CURRENT_COVERAGE" ] && command -v jq &>/dev/null; then
+            # Compare each metric — block if any drops more than 2%
+            REGRESSION_FOUND=false
+            REGRESSION_DETAILS=""
+            for METRIC in statements branches functions lines; do
+                BASELINE_VAL=$(jq -r ".coverage.$METRIC // 0" "$BASELINE_FILE" 2>/dev/null)
+                CURRENT_VAL=$(jq -r ".total.$METRIC.pct // 0" "$CURRENT_COVERAGE" 2>/dev/null)
+                DROP=$(echo "$BASELINE_VAL - $CURRENT_VAL" | bc -l 2>/dev/null || echo "0")
+                if [ "$(echo "$DROP > 2" | bc -l 2>/dev/null || echo "0")" = "1" ]; then
+                    REGRESSION_FOUND=true
+                    REGRESSION_DETAILS="${REGRESSION_DETAILS}  $METRIC: ${CURRENT_VAL}% (was ${BASELINE_VAL}%, dropped ${DROP}%)\n"
+                fi
+            done
+            if [ "$REGRESSION_FOUND" = true ]; then
+                echo "" >&2
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+                echo "BLOCKED: Coverage regression detected (>2% drop)" >&2
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+                echo "" >&2
+                printf "%b" "$REGRESSION_DETAILS" >&2
+                echo "" >&2
+                echo "Add tests to restore coverage before committing." >&2
+                echo "To update baseline: ./scripts/save-coverage-baseline.sh" >&2
+                echo "Override: SKIP_COVERAGE_CHECK=true git commit ..." >&2
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+                echo "" >&2
+                exit 2
+            fi
+        fi
+    fi
+
+    # ============================================
     # META REFERENCE LEAKAGE WARNING
     # ============================================
     # Warn if staged files contain .meta/ references (potential leakage)

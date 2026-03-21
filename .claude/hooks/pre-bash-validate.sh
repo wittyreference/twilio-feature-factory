@@ -179,6 +179,52 @@ if echo "$COMMAND" | grep -qE "^git\s+commit"; then
         fi
     fi
 
+    # ============================================
+    # TYPESCRIPT COMPILATION CHECK (BLOCKING)
+    # ============================================
+    # Run tsc --noEmit for staged .ts/.tsx files to catch type errors before commit.
+    # Only runs for packages that have staged TypeScript files.
+    STAGED_TS=$(git diff --staged --name-only 2>/dev/null | grep -E '\.(ts|tsx)$' || true)
+    if [ -n "$STAGED_TS" ] && command -v npx &>/dev/null; then
+        TSC_FAILED=false
+        TSC_ERRORS=""
+
+        # Check MCP server package
+        if echo "$STAGED_TS" | grep -q '^agents/mcp-servers/twilio/'; then
+            MCP_TSC_OUT=$(cd "$PROJECT_ROOT/agents/mcp-servers/twilio" && npx tsc --noEmit 2>&1 || true)
+            if echo "$MCP_TSC_OUT" | grep -q 'error TS'; then
+                TSC_FAILED=true
+                TSC_ERRORS="${TSC_ERRORS}\n--- agents/mcp-servers/twilio ---\n$(echo "$MCP_TSC_OUT" | grep 'error TS' | head -10)"
+            fi
+        fi
+
+        # Check Feature Factory package
+        if echo "$STAGED_TS" | grep -q '^agents/feature-factory/'; then
+            FF_TSC_OUT=$(cd "$PROJECT_ROOT/agents/feature-factory" && npx tsc --noEmit 2>&1 || true)
+            if echo "$FF_TSC_OUT" | grep -q 'error TS'; then
+                TSC_FAILED=true
+                TSC_ERRORS="${TSC_ERRORS}\n--- agents/feature-factory ---\n$(echo "$FF_TSC_OUT" | grep 'error TS' | head -10)"
+            fi
+        fi
+
+        if [ "$TSC_FAILED" = true ]; then
+            echo "" >&2
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+            echo "BLOCKED: TypeScript compilation errors in staged files" >&2
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+            printf "%b" "$TSC_ERRORS" >&2
+            echo "" >&2
+            echo "" >&2
+            echo "Fix type errors before committing." >&2
+            echo "Override: SKIP_TSC_CHECK=true git commit ..." >&2
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+            echo "" >&2
+            if [ "${SKIP_TSC_CHECK:-}" != "true" ]; then
+                exit 2
+            fi
+        fi
+    fi
+
     # Call the consolidated flywheel-doc-check (environment-aware)
     FLYWHEEL_HOOK="$SCRIPT_DIR/flywheel-doc-check.sh"
     if [ -x "$FLYWHEEL_HOOK" ]; then

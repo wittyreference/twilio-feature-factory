@@ -40,6 +40,10 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 | `score-validation.sh` | `./scripts/score-validation.sh [--label NAME] [FILE]` | Score validation results as 0-100, append to scores.jsonl (accepts MCP JSON or provisioning text) |
 | `validation-trend.sh` | `./scripts/validation-trend.sh [--summary]` | Show validation score trends, flag regressions (>10 point drop) |
 | `audit-script-wiring.sh` | `./scripts/audit-script-wiring.sh [--quiet]` | Find orphaned .sh files not referenced from hooks, commands, docs, or other scripts |
+| `query-events.sh` | `./scripts/query-events.sh [command]` | Query structured JSONL events (summary, failures, timeline, session, safety, deploys, tests, types, today, raw) |
+| `eval-summary.sh` | `./scripts/eval-summary.sh [all\|today\|week]` | Aggregate events into evaluation metrics with period filtering |
+| `eval-baseline.sh` | `./scripts/eval-baseline.sh` | Snapshot current event metrics as comparison baseline (archives previous) |
+| `eval-regression.sh` | `./scripts/eval-regression.sh` | Compare current metrics against baseline; flag degradation |
 
 ## Headless Gotchas
 

@@ -40,8 +40,8 @@ describe('phoneNumberTools', () => {
   });
 
   describe('tool structure', () => {
-    it('should return an array of 3 tools', () => {
-      expect(tools).toHaveLength(3);
+    it('should return an array of 5 tools', () => {
+      expect(tools).toHaveLength(5);
     });
 
     it('should have list_phone_numbers tool with correct metadata', () => {

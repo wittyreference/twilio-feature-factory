@@ -136,16 +136,15 @@ describe('WebSocket Server Generator', () => {
       expect(server?.content).toContain('OpenAI');
     });
 
-    it('should generate placeholder for custom provider', () => {
+    it('should generate anthropic provider by default', () => {
       const input: WebSocketGeneratorInput = {
         ...defaultInput,
-        llmProvider: 'custom',
+        llmProvider: 'anthropic',
       };
       const result = generateWebSocketServer(input);
       const server = result.find((f) => f.type === 'websocket-server');
 
-      expect(server?.content).toContain('TODO');
-      expect(server?.content).toContain('custom');
+      expect(server?.content).toContain('anthropic');
     });
   });
 

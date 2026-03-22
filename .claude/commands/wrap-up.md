@@ -227,7 +227,45 @@ If drift is detected (exit code 1), run the sync to fix:
 
 Review the diff before pushing wiki changes. Skip if no relevant files changed this session.
 
-### 8. Clear Pending Actions
+### 8. Session Observability & Evaluation
+
+Analyze this session's structured event data for patterns and anomalies.
+
+**Activity summary:**
+```bash
+./scripts/query-events.sh summary
+```
+
+Report the event counts. Flag anything unusual (e.g., high bash_command count relative to file_write may indicate excessive iteration).
+
+**Safety check review:**
+```bash
+./scripts/query-events.sh safety
+```
+
+If any injection patterns were detected, report them with context. Were they false positives (legitimate code) or genuine concerns? If false positives, note the pattern for potential exclusion.
+
+**Evaluation metrics:**
+```bash
+./scripts/eval-summary.sh today
+```
+
+Review the summary. If a baseline exists, run regression check:
+```bash
+./scripts/eval-regression.sh
+```
+
+If regressions are detected (metrics worse than baseline by >5%), flag them with context — did a harness change cause this, or was it task difficulty variance?
+
+If no baseline exists yet and there are 20+ events, recommend creating one:
+```
+No evaluation baseline found. Consider creating one:
+  ./scripts/eval-baseline.sh
+```
+
+Skip this section silently if events.jsonl doesn't exist (first session after setup).
+
+### 9. Clear Pending Actions
 
 After addressing flywheel suggestions, clear the pending actions file:
 ```markdown
@@ -240,7 +278,7 @@ Actions detected by the documentation flywheel. Review before committing.
 <!-- Doc suggestions will be appended below this line by flywheel-doc-check.sh -->
 ```
 
-### 9. Summary
+### 10. Summary
 
 Output what was updated:
 
@@ -252,6 +290,11 @@ Output what was updated:
 
 ### Docs Updated
 - [list of files modified with brief reason]
+
+### Session Observability
+- Events: [N] total ([breakdown by type])
+- Safety: [N blocked / N checked] — [any notable findings]
+- Evaluation: [regression status or "no baseline yet"]
 
 ### Todo
 - [items checked off or updated]

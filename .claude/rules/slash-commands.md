@@ -44,6 +44,7 @@ paths:
 | `/plugin-sync` | Detect and reconcile drift between factory source and plugin distribution |
 | `/ff-sync` | Detect drift between factory and generic feature-factory distribution |
 | `/uber-validation` | Unified cross-repo validation — plugin dogfooding, sequential, chaos, FF cross-repo |
+| `/super-uber-validation` | Exhaustive validation — ALL 10 UCs, ALL 7 chaos archetypes, ALL 6 FF repos (~70-90 min) |
 | `/uber-review` | Parallel multi-persona code review with synthesized cross-cutting report |
 | `/value-audit` | Three-pass adversarial review — detect value leakage to plugin/ff repos |
 | `/help-twilio [use case]` | Find the right Twilio skill — use case to skill navigator |

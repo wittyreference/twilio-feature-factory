@@ -6,6 +6,7 @@
 #   ./scripts/check-readme-drift.sh          # Full report to stdout
 #   ./scripts/check-readme-drift.sh --quiet   # One-line summary for hooks
 #   ./scripts/check-readme-drift.sh --json    # Machine-readable JSON output
+#   ./scripts/check-readme-drift.sh --fix     # Auto-update numeric counts in README.md
 
 set -euo pipefail
 
@@ -14,10 +15,12 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 QUIET=false
 JSON=false
+FIX=false
 for arg in "$@"; do
     case "$arg" in
         --quiet) QUIET=true ;;
         --json) JSON=true ;;
+        --fix) FIX=true ;;
     esac
 done
 
@@ -171,6 +174,59 @@ if [ -n "$SKILLS_DIR" ]; then
         DRIFT_ITEMS+=("skills(+$((ACTUAL_SKILLS - README_SKILLS)))")
         DRIFT_DETAILS="${DRIFT_DETAILS}Skills: README says ${README_SKILLS}, actual ${ACTUAL_SKILLS}"$'\n'
     fi
+fi
+
+# ============================================
+# FIX MODE: Auto-update numeric counts
+# ============================================
+
+if [ "$FIX" = true ] && [ ${#DRIFT_ITEMS[@]} -gt 0 ]; then
+    FIXED=()
+    UNFIXED=()
+
+    # Fix slash command count: "NN slash commands" and "Slash command definitions (NN)"
+    if [[ " ${DRIFT_ITEMS[*]} " == *"commands("* ]]; then
+        sed -i '' "s/[0-9][0-9]* slash commands/${ACTUAL_CMDS} slash commands/g" "$README"
+        sed -i '' "s/Slash command definitions ([0-9][0-9]*)/Slash command definitions (${ACTUAL_CMDS})/g" "$README"
+        FIXED+=("commands: ${ACTUAL_CMDS}")
+    fi
+
+    # Fix hook count: "NN safety and quality hooks", "Safety and quality hooks (NN)", "NN Claude Code hooks"
+    if [[ " ${DRIFT_ITEMS[*]} " == *"hooks("* ]]; then
+        sed -i '' "s/[0-9][0-9]* safety and quality hooks/${ACTUAL_HOOKS} safety and quality hooks/g" "$README"
+        sed -i '' "s/Safety and quality hooks ([0-9][0-9]*)/Safety and quality hooks (${ACTUAL_HOOKS})/g" "$README"
+        sed -i '' "s/[0-9][0-9]* Claude Code hooks/${ACTUAL_HOOKS} Claude Code hooks/g" "$README"
+        FIXED+=("hooks: ${ACTUAL_HOOKS}")
+    fi
+
+    # Fix skills count: "NN skills" patterns
+    if [[ " ${DRIFT_ITEMS[*]} " == *"skills("* ]]; then
+        sed -i '' "s/ [0-9][0-9]* skills/ ${ACTUAL_SKILLS} skills/g" "$README"
+        FIXED+=("skills: ${ACTUAL_SKILLS}")
+    fi
+
+    # Functions subdirectory tree and npm script table rows can't be auto-fixed
+    if [[ " ${DRIFT_ITEMS[*]} " == *"functions("* ]]; then
+        UNFIXED+=("functions/ tree (manual update needed)")
+    fi
+    if [[ " ${DRIFT_ITEMS[*]} " == *"scripts("* ]]; then
+        UNFIXED+=("Available Scripts table (manual update needed)")
+    fi
+
+    if [ "$QUIET" = false ] && [ "$JSON" = false ]; then
+        if [ ${#FIXED[@]} -gt 0 ]; then
+            echo "Fixed: $(IFS=', '; echo "${FIXED[*]}")"
+        fi
+        if [ ${#UNFIXED[@]} -gt 0 ]; then
+            echo "Not auto-fixable: $(IFS=', '; echo "${UNFIXED[*]}")"
+        fi
+    fi
+
+    # Re-check after fixes to set exit code correctly
+    if [ ${#UNFIXED[@]} -eq 0 ]; then
+        exit 0
+    fi
+    exit 1
 fi
 
 # ============================================

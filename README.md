@@ -210,7 +210,7 @@ See [agents/feature-factory/CLAUDE.md](agents/feature-factory/CLAUDE.md) for arc
 ## What's Implemented
 
 **Development Tools**
-- 26 slash commands across workflow, development, and utility categories
+- 27 slash commands across workflow, development, and utility categories
 - MCP Server with 340 Twilio API tools across 28 modules including 14 deep validation tools
 - Voice AI Builder with TwiML and WebSocket generators
 - Feature Factory with autonomous mode, stall detection, and sandbox isolation
@@ -220,7 +220,7 @@ See [agents/feature-factory/CLAUDE.md](agents/feature-factory/CLAUDE.md) for arc
 
 **Coordination**
 - Agent Teams with 4 pre-configured workflows (new-feature, bug-fix, code-review, refactor)
-- 17 safety and quality hooks
+- 16 safety and quality hooks
 - Work discovery and background polling in Feature Factory
 
 ## Project Structure
@@ -247,8 +247,8 @@ twilio-feature-factory/
 │   ├── doc-generator/       # Documentation generation
 │   └── voice-ai-builder/    # Voice AI app generator
 ├── .claude/                 # Claude Code configuration
-│   ├── commands/            # Slash command definitions (26)
-│   ├── hooks/               # Safety and quality hooks (17)
+│   ├── commands/            # Slash command definitions (27)
+│   ├── hooks/               # Safety and quality hooks (16)
 │   ├── rules/               # Declarative agent rules
 │   ├── skills/              # Context engineering skills
 │   └── workflows/           # Workflow definitions
@@ -325,7 +325,7 @@ See `.meta/validation-prompts/interactive-sequential.md` for the full validation
 
 ## Safety Features
 
-17 Claude Code hooks protect your code automatically:
+16 Claude Code hooks protect your code automatically:
 
 **Security**
 - Credential blocking (hardcoded SIDs, tokens, API keys)

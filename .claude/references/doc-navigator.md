@@ -56,4 +56,6 @@
 | Learning exercises | `.claude/commands/learn.md`, `.meta/learning/` |
 | Implementation progress | Todo file (see [Meta-Development Mode](/CLAUDE.md#meta-development-mode)) |
 | Session learnings | Learnings file (see [Meta-Development Mode](/CLAUDE.md#meta-development-mode)) |
+| Model bump checklist | [.claude/references/model-bump-checklist.md](/.claude/references/model-bump-checklist.md) |
+| Validation scoring | `scripts/score-validation.sh --help`, `scripts/validation-trend.sh --help` |
 | Search accumulated knowledge | `/recall <topic>` — searches learnings, decisions, gotchas, domain docs |

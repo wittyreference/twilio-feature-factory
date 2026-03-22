@@ -37,6 +37,8 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 | `architect-metrics.sh` | `./scripts/architect-metrics.sh [--json\|--snapshot\|--diff]` | Collect codebase metrics for architect summary drift detection; session-checklist integrated |
 | `api-sync/` | `cd scripts/api-sync && npm run sync` | Automated Twilio API drift detection and coverage analysis |
 | `save-coverage-baseline.sh` | `./scripts/save-coverage-baseline.sh` | Save current test coverage snapshot for regression detection (used by pre-commit guardrail) |
+| `score-validation.sh` | `./scripts/score-validation.sh [--label NAME] [FILE]` | Score validation results as 0-100, append to scores.jsonl (accepts MCP JSON or provisioning text) |
+| `validation-trend.sh` | `./scripts/validation-trend.sh [--summary]` | Show validation score trends, flag regressions (>10 point drop) |
 
 ## Headless Gotchas
 

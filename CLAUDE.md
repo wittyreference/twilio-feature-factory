@@ -72,16 +72,9 @@ Use MCP validation tools instead of CLI commands for Twilio validation. They pro
 
 Available tools: `validate_call`, `validate_message`, `validate_recording`, `validate_transcript`, `validate_debugger`, `validate_environment`, `validate_voice_ai_flow`, `validate_two_way`, `validate_language_operator`, `validate_sync_document`, `validate_sync_list`, `validate_sync_map`, `validate_task`, `validate_sip`, `validate_video_room`. See `agents/mcp-servers/twilio/src/tools/validation.ts` and `environment.ts` for full documentation.
 
-### MCP Tool Loading — IMPORTANT
+### MCP Tool Loading
 
-ALL MCP tools (including P0 tools like `make_call` and `send_sms`) appear in `<available-deferred-tools>`. This is NORMAL — it does NOT mean the MCP server is broken. To use any MCP tool:
-
-1. Call `ToolSearch("select:mcp__twilio__make_call")` to hydrate its schema
-2. Then call the tool normally
-
-NEVER say "MCP tools aren't available" or tell the user to restart Claude Code when you can see `mcp__twilio__*` entries in `<available-deferred-tools>`. Their presence means the MCP server IS connected and working.
-
-For tools not visible in the deferred list, use keyword search: `ToolSearch("+twilio video room")`.
+MCP tools appear in `<available-deferred-tools>` and require `ToolSearch("select:mcp__twilio__<name>")` to hydrate before use. Their presence in the deferred list confirms the MCP server is connected — NEVER say tools aren't available when `mcp__twilio__*` entries exist. For tools not in the deferred list, use keyword search: `ToolSearch("+twilio video room")`.
 
 ### MCP-First Rule for Twilio Operations
 
@@ -186,7 +179,6 @@ This section establishes shared language and expectations between human and AI c
 
 # Getting help
 
-- ALWAYS ask for clarification rather than making assumptions.
 - If you're having trouble with something, it's ok to stop and ask for help. Especially if it's something your human might be better at.
 - Before starting a deliverable (document, audit, plan, analysis), confirm the framing with a 1-2 sentence summary of what you'll produce and what perspective you'll take. "I'll write a [type] from [perspective] covering [scope]." This prevents wasted effort on wrong-format outputs.
 
@@ -200,7 +192,6 @@ This section establishes shared language and expectations between human and AI c
   - **Outbound** (API-initiated): FROM = your Twilio number, TO = the destination
   - **Inbound** (webhook-triggered): FROM = the external caller/sender, TO = your Twilio number
 - When a multi-step validation or implementation plan exists, NEVER silently skip steps. If a step cannot be completed, explicitly report it as skipped with the reason. Report completion status for every step, not just the ones that succeeded.
-- If authentication or credentials expire mid-session, surface it to the user immediately rather than attempting workarounds or continuing with degraded access.
 
 ## Sandbox Mode
 

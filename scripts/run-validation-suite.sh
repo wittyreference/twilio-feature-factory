@@ -4,6 +4,13 @@
 
 set -euo pipefail
 
+SCORE=false
+for arg in "$@"; do
+    case "$arg" in
+        --score) SCORE=true ;;
+    esac
+done
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 MCP_DIR="$PROJECT_DIR/agents/mcp-servers/twilio"
@@ -81,5 +88,35 @@ else
 fi
 echo "  Report saved: $REPORT_FILE"
 echo "══════════════════════════════════════════════"
+
+# ─── Scoring ─────────────────────────────────────────────────────────────────
+if [ "$SCORE" = true ] && [ -x "$SCRIPT_DIR/score-validation.sh" ]; then
+    echo ""
+    # Parse Jest output for pass/fail counts
+    JEST_PASSED=$(grep -cE '^\s+✓|✓.*\(' "$REPORT_FILE" 2>/dev/null || echo "0")
+    JEST_FAILED=$(grep -cE '^\s+✕|✕.*\(' "$REPORT_FILE" 2>/dev/null || echo "0")
+    JEST_TOTAL=$((JEST_PASSED + JEST_FAILED))
+
+    if [ "$JEST_TOTAL" -gt 0 ]; then
+        # Build JSON for scorer
+        CHECKS_JSON="{}"
+        for i in $(seq 1 "$JEST_PASSED"); do
+            CHECKS_JSON=$(echo "$CHECKS_JSON" | jq --arg k "pass_$i" '. + {($k): {passed: true, message: "passed"}}')
+        done
+        for i in $(seq 1 "$JEST_FAILED"); do
+            CHECKS_JSON=$(echo "$CHECKS_JSON" | jq --arg k "fail_$i" '. + {($k): {passed: false, message: "failed"}}')
+        done
+
+        RESULT_JSON=$(jq -n \
+            --argjson checks "$CHECKS_JSON" \
+            --argjson pass "$JEST_PASSED" \
+            --argjson total "$JEST_TOTAL" \
+            '{success: ($pass == $total), checks: $checks, errors: [], warnings: []}')
+
+        echo "$RESULT_JSON" | "$SCRIPT_DIR/score-validation.sh" --label e2e-deep
+    else
+        echo "  (Could not parse Jest output for scoring)"
+    fi
+fi
 
 exit $EXIT_CODE

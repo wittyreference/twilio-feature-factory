@@ -16,14 +16,16 @@ NC='\033[0m'
 TIMESTAMP=$(date +%s)
 KEEP=false
 VERBOSE=false
+SCORE=false
 
 # Parse flags
 for arg in "$@"; do
     case "$arg" in
         --keep) KEEP=true ;;
         --verbose) VERBOSE=true ;;
+        --score) SCORE=true ;;
         --help|-h)
-            echo "Usage: $0 [--keep] [--verbose]"
+            echo "Usage: $0 [--keep] [--verbose] [--score]"
             echo ""
             echo "Clean-room provisioning validator. Creates ephemeral Twilio resources"
             echo "(phone number, Sync, Verify, Messaging, TaskRouter, Serverless, VI),"
@@ -31,6 +33,7 @@ for arg in "$@"; do
             echo ""
             echo "  --keep     Don't delete created resources when done (inspect manually)"
             echo "  --verbose  Show full API responses"
+            echo "  --score    Compute a 0-100 score and save to scores.jsonl"
             echo ""
             echo "Cost per run: ~\$0.07 (number prorated + 1 SMS + 1 call)"
             exit 0
@@ -678,5 +681,36 @@ else
     echo -e "${GREEN}All tests passed!${NC}"
 fi
 echo ""
+
+# ─── Scoring ─────────────────────────────────────────────────────────────────
+if [ "$SCORE" = true ] && [ -x "$SCRIPT_DIR/score-validation.sh" ]; then
+    echo ""
+    # Build a JSON result compatible with score-validation.sh
+    CHECKS_JSON="{}"
+    ERRORS_JSON="[]"
+
+    # Reconstruct from counters (score-validation.sh uses checks.*.passed)
+    CHECKS_JSON=$(jq -n \
+        --argjson pass "$PASS" \
+        --argjson fail "$FAIL" \
+        --argjson total "$TOTAL" \
+        '{summary: {passed: ($pass == $total), message: "\($pass)/\($total) passed"}}')
+
+    # Build full checks object with one entry per check
+    for i in $(seq 1 "$PASS"); do
+        CHECKS_JSON=$(echo "$CHECKS_JSON" | jq --arg k "pass_$i" '. + {($k): {passed: true, message: "passed"}}')
+    done
+    for i in $(seq 1 "$FAIL"); do
+        CHECKS_JSON=$(echo "$CHECKS_JSON" | jq --arg k "fail_$i" '. + {($k): {passed: false, message: "failed"}}')
+    done
+
+    RESULT_JSON=$(jq -n \
+        --argjson checks "$CHECKS_JSON" \
+        --argjson pass "$PASS" \
+        --argjson total "$TOTAL" \
+        '{success: ($pass == $total), checks: $checks, errors: [], warnings: []}')
+
+    echo "$RESULT_JSON" | "$SCRIPT_DIR/score-validation.sh" --label provisioning
+fi
 
 exit "$FAIL"

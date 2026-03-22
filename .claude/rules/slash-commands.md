@@ -46,5 +46,6 @@ paths:
 | `/uber-validation` | Unified cross-repo validation — plugin dogfooding, sequential, chaos, FF cross-repo |
 | `/uber-review` | Parallel multi-persona code review with synthesized cross-cutting report |
 | `/value-audit` | Three-pass adversarial review — detect value leakage to plugin/ff repos |
+| `/help-twilio [use case]` | Find the right Twilio skill — use case to skill navigator |
 | `/check-updates [--force]` | Check for Claude Code and Agent SDK updates and new features |
 | `/worktree-start [name]` | Start isolated git worktree for concurrent Claude Code sessions |

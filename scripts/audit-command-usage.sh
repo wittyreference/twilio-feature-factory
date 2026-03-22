@@ -23,13 +23,20 @@ done
 # Reference sources
 SLASH_COMMANDS_REF="$PROJECT_ROOT/.claude/rules/slash-commands.md"
 COMMANDS_DIR="$PROJECT_ROOT/.claude/commands"
+SKILLS_DIR="$PROJECT_ROOT/.claude/skills"
 ROOT_CLAUDE="$PROJECT_ROOT/CLAUDE.md"
 
-# Collect all command names (strip .md extension)
+# Collect all command names from .claude/commands/*.md (strip .md extension)
 COMMANDS=()
 while IFS= read -r f; do
     COMMANDS+=("${f%.md}")
 done < <(find "$COMMANDS_DIR" -maxdepth 1 -name "*.md" -exec basename {} \; 2>/dev/null | sort)
+
+# Collect directory-based skills from .claude/skills/*/SKILL.md
+DIR_SKILLS=()
+while IFS= read -r d; do
+    DIR_SKILLS+=("$(basename "$d")")
+done < <(find "$SKILLS_DIR" -maxdepth 2 -name "SKILL.md" -exec dirname {} \; 2>/dev/null | sort)
 
 # Capture git log once (last 500 commits, subject line only)
 GIT_LOG=$(git -C "$PROJECT_ROOT" log --oneline -500 --format='%s' 2>/dev/null || true)
@@ -134,9 +141,57 @@ done
 
 TOTAL=${#COMMANDS[@]}
 
+# Classify directory-based skills
+declare -a SKILL_NAMES=()
+declare -a SKILL_STATUS=()
+declare -a SKILL_REF=()
+declare -a SKILL_DOCS=()
+
+SKILL_DRIFT_COUNT=0
+SKILL_DRIFT_LIST=()
+SKILL_ACTIVE_COUNT=0
+SKILL_DOCUMENTED_COUNT=0
+SKILL_UNDOCUMENTED_COUNT=0
+
+for skill in "${DIR_SKILLS[@]}"; do
+    result=$(classify_command "$skill")
+    read -r in_ref handoffs git_hits docs <<< "$result"
+
+    has_evidence=false
+    if [ "$handoffs" -gt 0 ] || [ "$git_hits" -gt 0 ] || [ "$docs" -gt 0 ]; then
+        has_evidence=true
+    fi
+
+    if [ "$in_ref" = "yes" ] && [ "$has_evidence" = true ]; then
+        status="ACTIVE"
+        SKILL_ACTIVE_COUNT=$((SKILL_ACTIVE_COUNT + 1))
+    elif [ "$in_ref" = "yes" ]; then
+        status="DOCUMENTED"
+        SKILL_DOCUMENTED_COUNT=$((SKILL_DOCUMENTED_COUNT + 1))
+    elif [ "$has_evidence" = true ]; then
+        status="UNDOCUMENTED"
+        SKILL_UNDOCUMENTED_COUNT=$((SKILL_UNDOCUMENTED_COUNT + 1))
+        SKILL_DRIFT_COUNT=$((SKILL_DRIFT_COUNT + 1))
+        SKILL_DRIFT_LIST+=("$skill")
+    else
+        status="UNDOCUMENTED"
+        SKILL_UNDOCUMENTED_COUNT=$((SKILL_UNDOCUMENTED_COUNT + 1))
+        SKILL_DRIFT_COUNT=$((SKILL_DRIFT_COUNT + 1))
+        SKILL_DRIFT_LIST+=("$skill")
+    fi
+
+    SKILL_NAMES+=("$skill")
+    SKILL_STATUS+=("$status")
+    SKILL_REF+=("$in_ref")
+    SKILL_DOCS+=("$docs")
+done
+
+SKILL_TOTAL=${#DIR_SKILLS[@]}
+TOTAL_DRIFT=$((DRIFT_COUNT + SKILL_DRIFT_COUNT))
+
 # --quiet mode: exit code only
 if [ "$QUIET" = true ]; then
-    exit $((DRIFT_COUNT > 0 ? 1 : 0))
+    exit $((TOTAL_DRIFT > 0 ? 1 : 0))
 fi
 
 # Full report
@@ -159,12 +214,29 @@ for target_status in "${STATUS_ORDER[@]}"; do
     done
 done
 
-# Drift report
-if [ "$DRIFT_COUNT" -gt 0 ]; then
+# Directory-based skills section
+if [ "$SKILL_TOTAL" -gt 0 ]; then
     echo ""
-    echo "Reference doc drift: $DRIFT_COUNT command(s) not in slash-commands.md"
+    echo "Directory Skills: $SKILL_TOTAL total ($SKILL_ACTIVE_COUNT active, $SKILL_DOCUMENTED_COUNT documented, $SKILL_UNDOCUMENTED_COUNT undocumented)"
+    echo ""
+    for target_status in "${STATUS_ORDER[@]}"; do
+        for (( i=0; i<SKILL_TOTAL; i++ )); do
+            if [ "${SKILL_STATUS[$i]}" = "$target_status" ]; then
+                printf "  [%-12s] %-24s ref:%-3s  docs:%-2s\n" \
+                    "${SKILL_STATUS[$i]}" "/${SKILL_NAMES[$i]}" \
+                    "${SKILL_REF[$i]}" "${SKILL_DOCS[$i]}"
+            fi
+        done
+    done
+fi
+
+# Drift report
+if [ "$TOTAL_DRIFT" -gt 0 ]; then
+    echo ""
+    ALL_DRIFT=("${DRIFT_LIST[@]}" "${SKILL_DRIFT_LIST[@]}")
+    echo "Reference doc drift: $TOTAL_DRIFT item(s) not in slash-commands.md"
     printf "  "
-    printf "/%s " "${DRIFT_LIST[@]}"
+    printf "/%s " "${ALL_DRIFT[@]}"
     echo ""
 fi
 
@@ -173,4 +245,4 @@ echo ""
 echo "Note: Git evidence is heuristic — commit prefix matches (e.g., 'test:')"
 echo "don't necessarily mean the slash command was invoked."
 
-exit $((DRIFT_COUNT > 0 ? 1 : 0))
+exit $((TOTAL_DRIFT > 0 ? 1 : 0))

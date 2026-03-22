@@ -25,6 +25,14 @@ paths:
 | `/test [scope]` | Test runner - executes and validates test suites |
 | `/docs [scope]` | Technical writer - documentation updates and maintenance |
 
+## Domain Guides
+
+| Command | Description |
+|---------|-------------|
+| `/video` | Twilio Video development guide — rooms, participants, recordings, compositions |
+| `/voice` | Twilio Voice development guide — IVR, contact centers, Voice AI, TwiML, Calls API |
+| `/voice-use-case-map` | Voice use case to Twilio product mapping — IVR, contact center, conferencing, SIP |
+
 ## Utility Commands
 
 | Command | Description |

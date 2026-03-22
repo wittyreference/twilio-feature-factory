@@ -42,4 +42,8 @@ paths:
 | `/wrap-up [scope]` | End-of-session doc updates — learnings, CLAUDE.md, todo, pending actions |
 | `/learn [action]` | Interactive learning exercises on autonomous work |
 | `/plugin-sync` | Detect and reconcile drift between factory source and plugin distribution |
+| `/ff-sync` | Detect drift between factory and generic feature-factory distribution |
 | `/uber-validation` | Unified cross-repo validation — plugin dogfooding, sequential, chaos, FF cross-repo |
+| `/uber-review` | Parallel multi-persona code review with synthesized cross-cutting report |
+| `/check-updates [--force]` | Check for Claude Code and Agent SDK updates and new features |
+| `/worktree-start [name]` | Start isolated git worktree for concurrent Claude Code sessions |

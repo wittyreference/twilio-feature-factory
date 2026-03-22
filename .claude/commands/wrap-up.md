@@ -162,11 +162,17 @@ Report the MEMORY.md line count in the summary. If over 150 lines, flag it — e
 Quick checks that hooks and automation are still working:
 
 **Compaction summary capture:**
+
+With 1M context windows, compaction is rare. Only check this if compaction actually occurred during the session:
 ```bash
-# Check the most recent compaction summary
+# Check if this session had any compaction events
+grep "$(date +%Y-%m-%d)" .meta/logs/session-events.log 2>/dev/null | grep -q "source=compact"
+```
+If compaction fired this session, verify a corresponding summary was captured:
+```bash
 ls -lt .meta/logs/compaction-summary-*.md 2>/dev/null | head -1
 ```
-If the newest summary is more than a week old and sessions have been compacted recently, the `post-compact-summary.sh` hook may have stopped firing. Known issue: Claude Code ≥2.1.59 removed the `isCompactSummary` transcript marker. Check the hook for the `KNOWN ISSUE` comment.
+If compaction occurred but no summary exists, the `post-compact-summary.sh` hook may have stopped firing. Known issue: Claude Code ≥2.1.59 removed the `isCompactSummary` transcript marker. Check the hook for the `KNOWN ISSUE` comment. Skip silently if no compaction occurred.
 
 **Plan archiving:**
 ```bash

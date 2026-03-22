@@ -42,6 +42,8 @@ Parse arguments for flags:
 - `--output-dir PATH` — override report directory (default: `.meta/review-reports/`)
 - `--phases initial,critical,arbiter` — which phases to run (default: all three). Use `--phases initial` for backward-compatible 10-review behavior.
 - `--resume {run-id}` — resume a previous run, skipping phases whose outputs already exist. Reads existing review files from `.meta/review-reports/{run-id}/`.
+- `--create-issues` — after synthesis, create GitHub issues for Tier 1 + Tier 2 priority action items (Critical, High, and multi-arbiter Medium findings). Deduplicates against previous runs via fingerprint mapping.
+- `--create-issues=all` — also includes Tier 3 items (single-arbiter Medium findings).
 
 ## Reviewer-to-File Mapping
 
@@ -372,3 +374,111 @@ Print a summary to the user:
 - Top 3 consensus findings (from arbiter-confirmed findings)
 - Most significant disagreement and its resolution
 - Any cross-domain contradictions worth human attention
+
+### Phase 10: Create GitHub Issues (optional)
+
+Skip unless `--create-issues` or `--create-issues=all` flag is present. Requires `gh` CLI authenticated.
+
+**Prerequisite**: Synthesis must exist at `.meta/review-reports/{run-id}/synthesis.md` with a Priority Action Items section.
+
+#### Step 1: Ensure labels exist
+
+Create labels idempotently (these are additive to any existing labels):
+
+```bash
+gh label create "review" --description "From uber-review findings" --color "7057ff" --force
+gh label create "architecture" --description "Architecture domain" --color "0e8a16" --force
+gh label create "testing" --description "Test quality domain" --color "006b75" --force
+gh label create "documentation" --description "Documentation domain" --color "1d76db" --force
+gh label create "security" --description "Security domain" --color "b60205" --force
+gh label create "devex" --description "Developer experience domain" --color "5319e7" --force
+gh label create "operations" --description "SRE/operations domain" --color "fbca04" --force
+gh label create "claims" --description "Claims accuracy domain" --color "d93f0b" --force
+gh label create "platform" --description "Platform best practices domain" --color "0075ca" --force
+gh label create "context-eng" --description "Context engineering domain" --color "e4e669" --force
+gh label create "prompts" --description "Instruction clarity domain" --color "c5def5" --force
+```
+
+#### Step 2: Load state file
+
+Read `.meta/review-reports/state/uber-review-history.json` if it exists. Schema:
+
+```json
+{
+  "lastRun": "2026-03-22-120407",
+  "issueMappings": {
+    "fingerprint-slug": { "issue": 51, "state": "open" }
+  }
+}
+```
+
+If the file doesn't exist, start with `{ "lastRun": null, "issueMappings": {} }`.
+
+#### Step 3: Parse synthesis Priority Action Items
+
+Read the synthesis file. Extract each numbered action item from the Priority Action Items section (Section 5). For each item, extract:
+- **Title**: The bold text (e.g., "Protect public endpoints")
+- **Tier**: 1, 2, or 3 based on the subsection it appears in
+- **Domains**: The arbiter sources listed in parentheses (e.g., "Security, SRE, Test arbiters")
+- **Severity**: Derived from the description (Critical/High/Medium)
+- **Description**: The full text of the action item
+- **Effort estimate**: If present (e.g., "10-30 minutes")
+
+#### Step 4: Apply threshold filter
+
+- `--create-issues` (default): Include Tier 1 + Tier 2 items
+- `--create-issues=all`: Include Tier 1 + Tier 2 + Tier 3 items
+
+#### Step 5: For each finding above threshold
+
+1. **Generate fingerprint**: Lowercase the title, remove punctuation, take first 6 significant words, join with hyphens.
+   - "Protect public endpoints" → `protect-public-endpoints`
+   - "Fix /commit allowed-tools" → `fix-commit-allowed-tools`
+   - "Make jq a hard prerequisite" → `make-jq-hard-prerequisite`
+
+2. **Check dedup**: Look up fingerprint in `issueMappings`.
+   - If open issue exists: Run `gh issue comment {issue_num} --body "Re-confirmed in uber-review run {run-id} (Tier {N}, {severity})"`. Skip creation.
+   - If closed issue exists or no mapping: Create new issue.
+
+3. **Create issue**: Determine labels from domains:
+   - Always: `review`
+   - Per domain mentioned: map to label (`architect` → `architecture`, `test` → `testing`, `docs` → `documentation`, `security` → `security`, `devex` → `devex`, `sre` → `operations`, `skeptic` → `claims`, `anthropic` → `platform`, `context` → `context-eng`, `prompt` → `prompts`)
+
+   Issue body template:
+   ```markdown
+   ## [UR-{N}] {Title}
+
+   **Severity:** {Critical/High/Medium} | **Tier:** {1/2/3} | **Domains:** {domain list}
+   **Run:** {run-id} | **Fingerprint:** `{fingerprint-slug}`
+
+   ### Description
+   {Full action item text from synthesis}
+
+   ### Evidence
+   - Synthesis: `.meta/review-reports/{run-id}/synthesis.md`
+   - Arbiter reviews: {list of `{domain}-arbiter.md` files that sourced this finding}
+
+   ---
+   _Auto-created by `/uber-review --create-issues`_
+   ```
+
+   ```bash
+   gh issue create \
+     --title "[UR-{N}] {Title}" \
+     --body "{body}" \
+     --label "review,{domain-labels}"
+   ```
+
+4. **Record mapping**: Add `fingerprint → { issue: N, state: "open" }` to `issueMappings`.
+
+#### Step 6: Save state file
+
+Write updated state to `.meta/review-reports/state/uber-review-history.json`.
+
+#### Step 7: Print summary
+
+```
+GitHub Issues: {created} created, {reconfirmed} re-confirmed, {skipped} below threshold
+Issue numbers: #{N}, #{N+1}, ...
+State: .meta/review-reports/state/uber-review-history.json
+```

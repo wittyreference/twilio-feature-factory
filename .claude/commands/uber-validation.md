@@ -37,7 +37,7 @@ $ARGUMENTS
 Parse arguments for flags:
 - `--planes A,B,C,D` — which planes to run (default: all)
 - `--resume` — resume from last incomplete run
-- `--create-issues` — create GitHub issues for BLOCKING/MAJOR findings
+- `--create-issues` — create GitHub issues for MAJOR+ findings (use `--create-issues=all` for actionable MINOR too)
 - `--ff-repo NAME` — force specific repo for Plane D (default: anti-repetition selection)
 - `--chaos-difficulty mild|moderate|extreme` — chaos scenario difficulty (default: moderate)
 - `--keep-artifacts` — don't delete `/tmp/uber-val-YYYY-MM-DD-HHMMSS/` after run
@@ -229,7 +229,34 @@ Parse arguments for flags:
    ## Cross-Run Trends (findings seen across multiple runs)
    ```
 
-6. If `--create-issues`: for each BLOCKING finding, `gh issue create --title "[UV-NNN] title" --body "description" --label uber-validation,blocking`
+6. If `--create-issues`:
+   a. **Threshold:** Default = BLOCKING + MAJOR. With `--create-issues=all` = also include actionable MINOR. INFO always excluded.
+   b. **Actionability filter for MINOR:** Include if category is `doc-gap`, `FF-LEAKAGE`, `FF-INSTALL`, `FF-DRIFT`, `RESILIENCE-FAILURE`, `misconception`. Exclude if category is `doc-strength`, `persona-identification`, `existing-code-reuse`, `product-selection` (observational), `test-results`.
+   c. **Dedup:** For each qualifying finding, check `issueMappings` in history file for existing open issue with same fingerprint.
+      - If open issue exists: `gh issue comment $ISSUE_NUM --repo wittyreference/twilio-feature-factory -b "Re-confirmed in run $RUN_ID (severity: $SEV)"`
+      - If no issue or closed: create new issue (see template below), record in `issueMappings`
+   d. **Labels:** Always `validation` + category-based:
+      - `ff-*` fingerprint or Plane D source → add `ff`
+      - `doc-gap` / `misconception` category → add `doc-gap`
+      - Chaos source (Plane C) → add `chaos`
+      - UC-related (Plane A/B) → add `voice`
+   e. **Issue body template:**
+      ```
+      ## [UV-NNN] Title
+      **Severity:** MAJOR/MINOR | **Source:** Plane A/UC3 | **Run:** RUN_ID (uber)
+      **Fingerprint:** `fingerprint-string`
+      ### Description
+      [Full description from findings]
+      ### Recommendation
+      [Recommendation text if available]
+      ### Context
+      - Report: `.meta/validation-reports/RUN_ID.md`
+      - UC/Persona: (if applicable)
+      - Chaos Score: N.N/5.0 (if from chaos plane)
+      ---
+      _Auto-created by `/uber-validation --create-issues`_
+      ```
+   f. **Record:** Update `issueMappings` in history file: `{ "fingerprint": { "issue": N, "state": "open" } }`
 7. Update `.meta/validation-reports/state/uber-validation-history.json`:
    - Add run to `runs` array (include `persona` and `rewrite` for each Plane A/B UC in `selections`)
    - Update `ffRepoUsage`, `chaosArchetypesUsed`, `personaUsage` (increment persona count per use)

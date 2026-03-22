@@ -33,7 +33,7 @@ $ARGUMENTS
 
 Parse arguments for flags:
 - `--resume` — resume from last incomplete run
-- `--create-issues` — create GitHub issues for BLOCKING/MAJOR findings
+- `--create-issues` — create GitHub issues for MAJOR+ findings (use `--create-issues=all` for actionable MINOR too)
 - `--chaos-difficulty mild|moderate|extreme` — chaos scenario difficulty (default: moderate)
 - `--keep-artifacts` — don't delete `/tmp/super-uber-RUN_ID/` after run
 - `--skip-chaos` — skip chaos plane to save time
@@ -273,7 +273,35 @@ Same flow as D1, but for the second batch of 3 repos.
    Compared against all prior uber-val and super-uber runs
    ```
 
-6. If `--create-issues`: for each BLOCKING finding, `gh issue create --title "[SUV-NNN] title" --body "description" --label super-uber-validation,blocking`
+6. If `--create-issues`:
+   a. **Threshold:** Default = BLOCKING + MAJOR. With `--create-issues=all` = also include actionable MINOR. INFO always excluded.
+   b. **Actionability filter for MINOR:** Include if category is `doc-gap`, `FF-LEAKAGE`, `FF-INSTALL`, `FF-DRIFT`, `RESILIENCE-FAILURE`, `misconception`. Exclude if category is `doc-strength`, `persona-identification`, `existing-code-reuse`, `product-selection` (observational), `test-results`.
+   c. **Dedup:** For each qualifying finding, check `issueMappings` in history file for existing open issue with same fingerprint.
+      - If open issue exists: `gh issue comment $ISSUE_NUM --repo wittyreference/twilio-feature-factory -b "Re-confirmed in run $RUN_ID (severity: $SEV)"`
+      - If no issue or closed: create new issue (see template below), record in `issueMappings`
+      - Same-fingerprint findings within one run (e.g., SUV-004/SUV-030) → single issue listing both IDs
+   d. **Labels:** Always `validation` + category-based:
+      - `ff-*` fingerprint or D1/D2 source → add `ff`
+      - `doc-gap` / `misconception` category → add `doc-gap`
+      - Chaos source (C) → add `chaos`
+      - UC-related (S1-S4) → add `voice`
+   e. **Issue body template:**
+      ```
+      ## [SUV-NNN] Title
+      **Severity:** MAJOR/MINOR | **Source:** S1/UC8 | **Run:** RUN_ID (super-uber)
+      **Fingerprint:** `fingerprint-string`
+      ### Description
+      [Full description from findings]
+      ### Recommendation
+      [Recommendation text if available from Priority Action Items]
+      ### Context
+      - Report: `.meta/validation-reports/RUN_ID-super-uber.md`
+      - UC/Persona: (if applicable)
+      - Chaos Score: N.N/5.0 (if from chaos plane)
+      ---
+      _Auto-created by `/super-uber-validation --create-issues`_
+      ```
+   f. **Record:** Update `issueMappings` in history file: `{ "fingerprint": { "issue": N, "state": "open" } }`
 7. Update `.meta/validation-reports/state/uber-validation-history.json`:
    - Add run to `runs` array with `"type": "super-uber"`, all 10 UC assignments, all 10 chaos scenarios
    - Update `ffRepoUsage` (all 6 repos), `chaosArchetypesUsed`, `personaUsage`, `pluginUCUsage` (all 10 UCs)

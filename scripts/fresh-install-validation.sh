@@ -311,7 +311,9 @@ echo ""
 test_result "D6.1: .envrc exists" "true" "$([ -f .envrc ] && echo true || echo false)"
 
 if command -v direnv > /dev/null 2>&1; then
-    DIRENV_ALLOWED=$(direnv status 2>/dev/null | grep -c "Found RC allowed true" || echo "0")
+    # direnv 2.37+ uses "Found RC allowed 0" (0=success), older used "true"
+    # Check for allowPath which is present only when allowed, regardless of version
+    DIRENV_ALLOWED=$(direnv status 2>/dev/null | grep -c "Found RC allowPath" || echo "0")
     test_result "D6.2: direnv allowed" "1" "$DIRENV_ALLOWED"
 else
     echo -e "  ${YELLOW}SKIP${NC} D6.2: direnv not installed (expected in CI)"

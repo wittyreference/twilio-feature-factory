@@ -37,6 +37,14 @@ check() {
 echo -e "${BOLD}MCP Server Verification${NC}"
 echo ""
 
+# ─── Activate fnm/nvm if available (respect .node-version) ────────────
+if command -v fnm > /dev/null 2>&1; then
+    eval "$(fnm env --use-on-cd --shell "$(basename "$SHELL")")" 2>/dev/null || true
+elif [ -s "$HOME/.nvm/nvm.sh" ]; then
+    # shellcheck disable=SC1091
+    . "$HOME/.nvm/nvm.sh" 2>/dev/null || true
+fi
+
 # ─── Check 0: Node.js version ─────────────────────────────────────────
 echo -e "${BOLD}0. Runtime${NC}"
 NODE_MAJOR=$(node -v 2>/dev/null | sed 's/v\([0-9]*\).*/\1/' || echo "0")

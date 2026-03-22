@@ -102,11 +102,11 @@ else
     FAIL_COUNT=$((FAIL_COUNT + 1))
 fi
 
-if [ "$META_PENDING" = "$META_ROOT/$EXPECTED_DIR/pending-actions.md" ]; then
+if [ "$META_PENDING" = "$META_ROOT/$EXPECTED_DIR/pending-actions.json" ]; then
     echo -e "${GREEN}PASS${NC}: Pending actions path routes to $EXPECTED_DIR/"
     PASS_COUNT=$((PASS_COUNT + 1))
 else
-    echo -e "${RED}FAIL${NC}: Pending actions path wrong: $META_PENDING (expected $META_ROOT/$EXPECTED_DIR/pending-actions.md)"
+    echo -e "${RED}FAIL${NC}: Pending actions path wrong: $META_PENDING (expected $META_ROOT/$EXPECTED_DIR/pending-actions.json)"
     FAIL_COUNT=$((FAIL_COUNT + 1))
 fi
 
@@ -512,10 +512,18 @@ echo "--- Orphaned hook check ---"
 ORPHAN_COUNT=0
 for hook_file in "$HOOK_DIR"/*.sh; do
     hook_name=$(basename "$hook_file")
-    # Skip helper files (prefixed with _) and test directories
+    # Skip helper files (prefixed with _), test directories, and known helper
+    # scripts that are invoked by other hooks/commands but not registered as
+    # Claude Code hooks themselves
     if [[ "$hook_name" == _* ]]; then
         continue
     fi
+    case "$hook_name" in
+        generate-learning-exercises.sh|worktree-setup.sh)
+            # Helper scripts invoked by subagent-log.sh/wrap-up and worktree-start
+            continue
+            ;;
+    esac
     if ! grep -q "$hook_name" "$PROJECT_ROOT/.claude/settings.json" 2>/dev/null; then
         echo -e "${RED}FAIL${NC}: $hook_name exists but is NOT registered in settings.json (orphaned)"
         FAIL_COUNT=$((FAIL_COUNT + 1))

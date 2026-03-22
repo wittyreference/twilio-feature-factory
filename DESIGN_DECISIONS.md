@@ -1825,6 +1825,53 @@ Uber-review findings and real user reports revealed that validation runs gave a 
 
 ---
 
+## Decision 42: Safety Pattern Scoping — Development-Time Only
+
+### Context
+
+The `_safety-patterns.sh` hook detects 12 classic prompt injection/jailbreak phrases (e.g., "ignore all previous instructions", "you are now a", "pretend you are") in content written via Claude Code's Write/Edit tools. A question arose about whether this appropriately distinguishes between two threat models:
+
+1. **Production runtime**: End-users interacting with deployed ConversationRelay agents (e.g., a Fortune 500 customer trying to get an AI banking assistant to say something inappropriate or grant unauthorized credits). This is a real threat that production apps must defend against.
+2. **Development time**: Developers using this repo to build those apps — writing system prompts, adopting reviewer personas, discussing injection techniques in documentation. These are legitimate development activities that should not be blocked.
+
+### Decision
+
+**Safety patterns are correctly scoped to development-time file writes only. No changes needed.**
+
+The hook fires exclusively when Claude Code's Write/Edit tool writes content to non-exempt files. It does not affect:
+
+- **Runtime behavior** of deployed Twilio apps (ConversationRelay WebSocket personas, IVR prompts, etc.)
+- **Documentation** (`.md` files are explicitly exempt)
+- **Test files** (`.test.js`, `.test.ts`, `__tests__/` are explicitly exempt)
+- **Compiled agent source** (Feature Factory TypeScript agent prompts like "You are the Code Review agent" are already on disk, not written through the hook during normal operation)
+- **The safety patterns file itself** (`_safety-patterns.sh` is exempt to allow self-editing)
+
+### Rationale
+
+1. The two threat models require different defenses at different layers. Production prompt injection defense belongs in the deployed application's system prompts, guardrails, and input validation — not in a development-time file-write hook.
+2. The exemption list (`.md`, tests, self) covers all legitimate development contexts where injection-like language naturally appears.
+3. The one edge case — hardcoding a system prompt like `"You are now a banking assistant"` directly in a `.js` function file — is actually a healthy forcing function. System prompts should be externalized to Sync documents, environment config, or separate prompt files where they can be updated without redeployment.
+4. Reviewers performing code reviews operate through the Feature Factory agent's compiled TypeScript, not through Write/Edit operations on function files. No interference.
+
+### Alternatives Considered
+
+- **Relaxing patterns**: Rejected — the patterns are appropriately broad for catching injection in production code. The exemption list handles legitimate dev use cases without weakening the patterns themselves.
+- **Adding a global bypass env var**: Rejected — the existing escape hatches (Bash write, exempt file types) are sufficient and more targeted than a blanket disable.
+- **Extending to runtime**: Out of scope — production injection defense is an application-level concern, not a development tooling concern. Each deployed app should implement its own guardrails appropriate to its threat model.
+
+### Consequences
+
+- Developers can freely discuss injection patterns in docs and tests without friction.
+- ConversationRelay persona adoption at runtime is completely unaffected.
+- System prompts embedded directly in `.js` files will be blocked, encouraging externalization.
+- The hook continues to catch accidental injection patterns in production function code (the actual threat it's designed for).
+
+### Status
+
+**Accepted** - 2026-03-22
+
+---
+
 ## Decision N: [Title]
 
 ### Context
@@ -1909,3 +1956,4 @@ Uber-review findings and real user reports revealed that validation runs gave a 
 | 2026-03-19 | D39 | Claude Code channels evaluated and deferred — pull-based architecture correct for dev tooling |
 | 2026-03-20 | D40 | Validation isolation: jq enforcement, ephemeral provisioning, cleanup reliability, degraded-env testing |
 | 2026-03-21 | D41 | Remove /orchestrate — Claude Code IS the orchestrator. Plan mode + CLAUDE.md + individual phase skills handle sequencing natively. Zero usage across 70+ sessions. Workflow patterns preserved as reference doc. |
+| 2026-03-22 | D42 | Safety pattern scoping confirmed: development-time Write/Edit hook only. Docs, tests, runtime, compiled agent source all exempt. Hardcoded system prompts in .js blocked intentionally (forces externalization). |

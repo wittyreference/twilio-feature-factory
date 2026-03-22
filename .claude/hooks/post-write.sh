@@ -126,6 +126,14 @@ if [ -n "${CLAUDE_HEADLESS:-}" ] || [ -n "${CLAUDE_SUBAGENT:-}" ] || [ -n "${CLA
     fi
 fi
 
+# ============================================
+# STRUCTURED EVENT EMISSION (observability)
+# ============================================
+
+source "$SCRIPT_DIR/_emit-event.sh"
+EMIT_SESSION_ID="$HOOK_SESSION_ID"
+emit_event "file_write" "$(jq -nc --arg fp "$REL_PATH" '{file_path: $fp}')"
+
 # Only process JavaScript files
 if [[ ! "$FILE_PATH" =~ \.(js|mjs|cjs|ts)$ ]]; then
     exit 0

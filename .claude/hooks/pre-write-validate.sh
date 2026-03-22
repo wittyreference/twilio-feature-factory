@@ -211,6 +211,35 @@ if [ "$SKIP_CREDENTIALS" = "false" ]; then
 fi
 
 # ============================================
+# PROMPT INJECTION HEURISTIC CHECK
+# ============================================
+
+# Skip injection checks for documentation files (they legitimately discuss these topics)
+SKIP_INJECTION=false
+if [[ "$FILE_PATH" =~ \.md$ ]] || [[ "$FILE_PATH" =~ CLAUDE\.md$ ]] || \
+   [[ "$FILE_PATH" =~ \.test\.(js|ts)$ ]] || [[ "$FILE_PATH" =~ __tests__/ ]] || \
+   [[ "$FILE_PATH" =~ _safety-patterns\.sh$ ]]; then
+    SKIP_INJECTION=true
+fi
+
+if [ "$SKIP_INJECTION" = "false" ] && [ -n "$CONTENT" ]; then
+    source "$HOOK_DIR/_emit-event.sh"
+    source "$HOOK_DIR/_safety-patterns.sh"
+    EMIT_SESSION_ID="$(echo "$HOOK_INPUT" | jq -r '.session_id // empty' 2>/dev/null)"
+
+    if ! check_injection_patterns "$CONTENT" "file_content"; then
+        echo "BLOCKED: Content contains text matching known prompt injection patterns." >&2
+        echo "" >&2
+        echo "This may be a false positive. If the content is legitimate:" >&2
+        echo "  - Documentation files (.md) are exempt from this check" >&2
+        echo "  - Test files are exempt from this check" >&2
+        echo "  - Review the content and use Bash write if needed" >&2
+        echo "" >&2
+        exit 2
+    fi
+fi
+
+# ============================================
 # ABOUTME VALIDATION FOR NEW JS FILES
 # ============================================
 

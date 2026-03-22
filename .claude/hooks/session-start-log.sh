@@ -29,6 +29,11 @@ TIMESTAMP=$(date -Iseconds)
 # Log every SessionStart event (this is the diagnostic value)
 echo "SessionStart: source=$SOURCE session=$SESSION_ID model=$MODEL timestamp=$TIMESTAMP" >> "$LOGS_DIR/session-events.log"
 
+# Structured event emission (observability)
+source "$HOOK_DIR/_emit-event.sh"
+EMIT_SESSION_ID="$SESSION_ID"
+emit_event "session_start" "$(jq -nc --arg src "$SOURCE" --arg mdl "$MODEL" '{source: $src, model: $mdl}')"
+
 # For compaction-like events (source=compact, or any source with a transcript),
 # attempt to extract the compaction summary
 if [ "$SOURCE" = "compact" ] || [ "$SOURCE" = "clear" ] || [ "$SOURCE" = "plan" ]; then

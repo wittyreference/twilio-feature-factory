@@ -26,6 +26,17 @@ if [ -n "$HOOK_INPUT" ] && command -v jq &>/dev/null; then
     fi
 fi
 
+# Structured event emission (observability)
+if [ -n "$HOOK_INPUT" ] && command -v jq &>/dev/null; then
+    SUBAGENT_SESSION_ID=$(echo "$HOOK_INPUT" | jq -r '.session_id // ""' 2>/dev/null)
+    source "$SCRIPT_DIR/_emit-event.sh"
+    EMIT_SESSION_ID="$SUBAGENT_SESSION_ID"
+    emit_event "subagent_complete" "$(jq -nc \
+        --arg type "${AGENT_TYPE:-unknown}" \
+        --arg aid "${AGENT_ID:-}" \
+        '{subagent_type: $type, agent_id: $aid}')"
+fi
+
 # Call the consolidated flywheel-doc-check (environment-aware)
 FLYWHEEL_HOOK="$SCRIPT_DIR/flywheel-doc-check.sh"
 if [ -x "$FLYWHEEL_HOOK" ]; then

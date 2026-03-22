@@ -39,6 +39,7 @@ For detailed per-script documentation, setup instructions, usage examples, and t
 | `save-coverage-baseline.sh` | `./scripts/save-coverage-baseline.sh` | Save current test coverage snapshot for regression detection (used by pre-commit guardrail) |
 | `score-validation.sh` | `./scripts/score-validation.sh [--label NAME] [FILE]` | Score validation results as 0-100, append to scores.jsonl (accepts MCP JSON or provisioning text) |
 | `validation-trend.sh` | `./scripts/validation-trend.sh [--summary]` | Show validation score trends, flag regressions (>10 point drop) |
+| `audit-script-wiring.sh` | `./scripts/audit-script-wiring.sh [--quiet]` | Find orphaned .sh files not referenced from hooks, commands, docs, or other scripts |
 
 ## Headless Gotchas
 

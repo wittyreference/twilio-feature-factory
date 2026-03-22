@@ -1908,3 +1908,4 @@ Uber-review findings and real user reports revealed that validation runs gave a 
 | 2026-03-18 | D38 | YAML frontmatter on all 46 skills/commands + progressive disclosure for 3 largest skills (voice-use-case-map, video, voice) |
 | 2026-03-19 | D39 | Claude Code channels evaluated and deferred — pull-based architecture correct for dev tooling |
 | 2026-03-20 | D40 | Validation isolation: jq enforcement, ephemeral provisioning, cleanup reliability, degraded-env testing |
+| 2026-03-21 | D41 | Remove /orchestrate — Claude Code IS the orchestrator. Plan mode + CLAUDE.md + individual phase skills handle sequencing natively. Zero usage across 70+ sessions. Workflow patterns preserved as reference doc. |

@@ -30,10 +30,17 @@ WIKI_REPO="https://github.com/wittyreference/twilio-feature-factory.wiki.git"
 
 echo "Syncing wiki..."
 if [ -d "$WIKI_DIR/.git" ]; then
-    git -C "$WIKI_DIR" pull --quiet 2>/dev/null
-    echo "  Pulled latest from wiki repo"
+    if git -C "$WIKI_DIR" pull --quiet 2>/dev/null; then
+        echo "  Pulled latest from wiki repo"
+    else
+        echo "  Pull failed — re-cloning..."
+        rm -rf "$WIKI_DIR"
+        git clone --quiet "$WIKI_REPO" "$WIKI_DIR"
+        echo "  Cloned wiki repo to $WIKI_DIR"
+    fi
 else
-    git clone --quiet "$WIKI_REPO" "$WIKI_DIR" 2>/dev/null
+    rm -rf "$WIKI_DIR"
+    git clone --quiet "$WIKI_REPO" "$WIKI_DIR"
     echo "  Cloned wiki repo to $WIKI_DIR"
 fi
 

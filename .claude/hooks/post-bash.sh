@@ -87,6 +87,117 @@ if echo "$COMMAND" | grep -qE "(npm\s+(test|run\s+(test|build))|jest|vitest)"; t
 fi
 
 # ============================================
+# VALUE LEAKAGE DETECTION (post-commit)
+# ============================================
+# After a successful git commit, check if committed files are in sync maps.
+# Files not mapped (and not excluded) are potential value leakage candidates.
+# Meta-mode only — this detection only runs when .meta/ exists.
+
+if [ "$CLAUDE_META_MODE" = "true" ] && echo "$COMMAND" | grep -qE '^git\s+commit\b'; then
+    _detect_value_leakage() {
+        # PROJECT_ROOT and CLAUDE_META_MODE are set by _meta-mode.sh (sourced above)
+
+        # Noise filters: skip ephemeral branches
+        local BRANCH
+        BRANCH=$(git -C "$PROJECT_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)
+        case "$BRANCH" in
+            validation-*|headless-*|uber-val-*|fresh-install-*) return 0 ;;
+        esac
+
+        # Get committed files from the most recent commit
+        local COMMITTED_FILES
+        COMMITTED_FILES=$(git -C "$PROJECT_ROOT" diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null)
+        [ -z "$COMMITTED_FILES" ] && return 0
+
+        # Noise filter: skip if all files are under .meta/ or are tests
+        local HAS_SYNCABLE=false
+        while IFS= read -r file; do
+            case "$file" in
+                .meta/*) continue ;;
+                __tests__/*|*.test.*|*.spec.*) continue ;;
+                .claude/skills/*|.claude/commands/*|.claude/hooks/*|.claude/rules/*|.claude/references/*) HAS_SYNCABLE=true ;;
+                functions/*/CLAUDE.md|functions/*/REFERENCE.md) HAS_SYNCABLE=true ;;
+                scripts/*.sh) HAS_SYNCABLE=true ;;
+            esac
+        done <<< "$COMMITTED_FILES"
+        [ "$HAS_SYNCABLE" = "false" ] && return 0
+
+        # Build list of all mapped + excluded paths from both sync maps
+        local PLUGIN_MAP="$PROJECT_ROOT/.meta/sync-map.json"
+        local FF_MAP="$PROJECT_ROOT/../feature-factory/ff-sync-map.json"
+        local KNOWN_PATHS=""
+
+        if [ -f "$PLUGIN_MAP" ]; then
+            # Extract all factory paths from mappings and all excluded paths
+            local PLUGIN_MAPPED PLUGIN_EXCLUDED
+            PLUGIN_MAPPED=$(jq -r '[.mappings[][]? | .factory // empty] | .[]' "$PLUGIN_MAP" 2>/dev/null)
+            PLUGIN_EXCLUDED=$(jq -r '[.excluded[][]? // empty] | .[]' "$PLUGIN_MAP" 2>/dev/null)
+            KNOWN_PATHS="$PLUGIN_MAPPED"$'\n'"$PLUGIN_EXCLUDED"
+        fi
+
+        if [ -f "$FF_MAP" ]; then
+            local FF_MAPPED FF_EXCLUDED
+            FF_MAPPED=$(jq -r '[.mappings[][]? | .source // empty] | .[]' "$FF_MAP" 2>/dev/null)
+            FF_EXCLUDED=$(jq -r '[.excluded[][]? // empty] | .[]' "$FF_MAP" 2>/dev/null)
+            KNOWN_PATHS="$KNOWN_PATHS"$'\n'"$FF_MAPPED"$'\n'"$FF_EXCLUDED"
+        fi
+
+        # Check each syncable committed file against known paths
+        local CANDIDATES=()
+        local COMMIT_SHA
+        COMMIT_SHA=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null)
+
+        while IFS= read -r file; do
+            # Only check syncable directories
+            case "$file" in
+                .claude/skills/*|.claude/commands/*|.claude/hooks/*|.claude/rules/*|.claude/references/*) ;;
+                functions/*/CLAUDE.md|functions/*/REFERENCE.md) ;;
+                scripts/*.sh) ;;
+                *) continue ;;
+            esac
+            # Skip if file is in known paths (mapped or excluded)
+            if echo "$KNOWN_PATHS" | grep -qxF "$file"; then
+                continue
+            fi
+            CANDIDATES+=("$file")
+        done <<< "$COMMITTED_FILES"
+
+        [ ${#CANDIDATES[@]} -eq 0 ] && return 0
+
+        # Determine which sync maps are missing each candidate
+        local PENDING_DIR="$PROJECT_ROOT/.meta/value-assessments"
+        mkdir -p "$PENDING_DIR" 2>/dev/null
+        local TIMESTAMP
+        TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+        local FILES_JSON
+        FILES_JSON=$(printf '%s\n' "${CANDIDATES[@]}" | jq -R -s 'split("\n") | map(select(length > 0))')
+
+        # Write pending entry
+        jq -nc \
+            --arg commit "$COMMIT_SHA" \
+            --arg ts "$TIMESTAMP" \
+            --argjson files "$FILES_JSON" \
+            '{commit:$commit, timestamp:$ts, files:$files, reviewed:false}' \
+            >> "$PENDING_DIR/pending.jsonl"
+
+        # Emit structured event
+        local HOOK_DIR
+        HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        source "$HOOK_DIR/_emit-event.sh"
+        EMIT_SESSION_ID="$_POST_BASH_SESSION_ID"
+        emit_event "value_leakage_candidate" "$(jq -nc \
+            --arg commit "$COMMIT_SHA" \
+            --argjson files "$FILES_JSON" \
+            --arg count "${#CANDIDATES[@]}" \
+            '{commit:$commit, files:$files, count:($count|tonumber)}')"
+
+        echo "[VALUE] ${#CANDIDATES[@]} file(s) not in any sync map — run /value-audit to review" >&2
+    }
+    _detect_value_leakage
+fi
+
+# ============================================
 # STRUCTURED EVENT EMISSION (observability)
 # ============================================
 

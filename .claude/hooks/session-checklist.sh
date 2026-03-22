@@ -117,6 +117,17 @@ if [[ -x "$README_DRIFT_SCRIPT" ]]; then
     fi
 fi
 
+# --- 13. Value leakage candidates (meta mode only) ---
+if [ "$CLAUDE_META_MODE" = "true" ]; then
+    PENDING_FILE="$PROJECT_ROOT/.meta/value-assessments/pending.jsonl"
+    if [ -f "$PENDING_FILE" ]; then
+        VALUE_COUNT=$(grep -c '"reviewed":false' "$PENDING_FILE" 2>/dev/null) || VALUE_COUNT=0
+        if [[ "$VALUE_COUNT" -gt 0 ]]; then
+            ITEMS+=("[MANUAL] VALUE: $VALUE_COUNT file(s) not in any sync map — /wrap-up will review (or run /value-audit)")
+        fi
+    fi
+fi
+
 # --- 12. Wiki drift check ---
 WIKI_DRIFT_SCRIPT="$PROJECT_ROOT/scripts/check-wiki-drift.sh"
 if [[ -x "$WIKI_DRIFT_SCRIPT" ]]; then

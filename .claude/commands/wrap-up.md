@@ -217,6 +217,29 @@ The script counts functions, domains, access levels, MCP tools/modules, hooks, s
 
 If the script reports changes, review the diff and include the exec summary update context in the session learnings. If no drift, skip silently.
 
+### 7e. Value Leakage Check (meta mode only)
+
+Check if this session committed files that aren't in any sync map:
+
+```bash
+PENDING_FILE="$PROJECT_ROOT/.meta/value-assessments/pending.jsonl"
+if [ -f "$PENDING_FILE" ]; then
+    PENDING_COUNT=$(grep -c '"reviewed":false' "$PENDING_FILE" 2>/dev/null) || PENDING_COUNT=0
+else
+    PENDING_COUNT=0
+fi
+```
+
+If candidates exist (`PENDING_COUNT > 0`):
+1. Report: "N value leakage candidate(s) detected this session"
+2. Run `/value-audit` logic inline — launch the Advocate and Critic as parallel Opus subagents, then synthesize as Arbiter
+3. Write assessment to `.meta/value-assessments/assessments/`
+4. Report summary: "N files assessed: X ship, Y exclude, Z defer"
+
+If no candidates, skip silently.
+
+The assessments produced here are consumed by `/plugin-sync` and `/ff-sync` step 0 — they propose sync map entries for human approval.
+
 ### 7d. Wiki Drift Check
 
 If session changes touched functions, MCP tools, or tests, check for wiki stat drift:

@@ -8,6 +8,29 @@ Detect and reconcile drift between twilio-feature-factory source files and the g
 
 ## Workflow
 
+### 0. Surface value audit recommendations
+
+Check `.meta/value-assessments/assessments/` for completed assessments with `ship` or `exclude` verdicts targeting feature-factory:
+
+```bash
+for f in .meta/value-assessments/assessments/*.json; do
+    [ -f "$f" ] || continue
+    jq -r '.candidates[] | select((.verdict == "ship" or .verdict == "exclude") and (.target_repos | index("ff"))) | "\(.verdict): \(.file) → ff"' "$f" 2>/dev/null
+done
+```
+
+For each `ship` verdict targeting `ff`:
+1. Show the proposed sync map entry (from `sync_map_entry.ff`)
+2. Show the arbiter's rationale
+3. Ask the user to approve or skip
+4. On approval, add the entry to `../feature-factory/ff-sync-map.json` under the appropriate `mappings` category
+
+For each `exclude` verdict:
+1. Show the file and reason
+2. On approval, add to the `excluded` section in `ff-sync-map.json`
+
+Skip if no assessment files exist or none target feature-factory.
+
 ### 1. Run drift detection
 
 ```bash

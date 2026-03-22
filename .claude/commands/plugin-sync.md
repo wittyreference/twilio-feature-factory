@@ -8,7 +8,32 @@ Detect and reconcile drift between factory source files and the twilio-claude-pl
 
 ## Workflow
 
-### 0. Coverage audit
+### 0. Surface value audit recommendations
+
+Check `.meta/value-assessments/assessments/` for completed assessments with `ship` or `exclude` verdicts not yet applied to the sync map:
+
+```bash
+# Find assessment files with actionable verdicts
+for f in .meta/value-assessments/assessments/*.json; do
+    [ -f "$f" ] || continue
+    jq -r '.candidates[] | select(.verdict == "ship" or .verdict == "exclude") | "\(.verdict): \(.file) → \(.target_repos | join(", "))"' "$f" 2>/dev/null
+done
+```
+
+For each `ship` verdict:
+1. Show the proposed sync map entry (from `sync_map_entry.plugin`)
+2. Show the arbiter's rationale and confidence level
+3. Ask the user to approve or skip
+4. On approval, add the entry to `.meta/sync-map.json` under the appropriate `mappings` category
+
+For each `exclude` verdict:
+1. Show the file and the reason for exclusion
+2. Ask the user to approve
+3. On approval, add the file to `.meta/sync-map.json` under the appropriate `excluded` category
+
+Skip this step if no assessment files exist or none have actionable verdicts.
+
+### 0b. Coverage audit
 
 Run the coverage audit to identify files not yet in the sync map:
 

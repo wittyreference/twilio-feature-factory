@@ -45,5 +45,6 @@ paths:
 | `/ff-sync` | Detect drift between factory and generic feature-factory distribution |
 | `/uber-validation` | Unified cross-repo validation — plugin dogfooding, sequential, chaos, FF cross-repo |
 | `/uber-review` | Parallel multi-persona code review with synthesized cross-cutting report |
+| `/value-audit` | Three-pass adversarial review — detect value leakage to plugin/ff repos |
 | `/check-updates [--force]` | Check for Claude Code and Agent SDK updates and new features |
 | `/worktree-start [name]` | Start isolated git worktree for concurrent Claude Code sessions |

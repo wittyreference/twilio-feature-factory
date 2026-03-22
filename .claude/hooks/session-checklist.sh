@@ -15,13 +15,13 @@ ITEMS=()
 # --- 1. Uncommitted changes ---
 UNCOMMITTED=$(git -C "$PROJECT_ROOT" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
 if [[ "$UNCOMMITTED" -gt 0 ]]; then
-    ITEMS+=("UNCOMMITTED: $UNCOMMITTED file(s) with uncommitted changes")
+    ITEMS+=("[MANUAL] UNCOMMITTED: $UNCOMMITTED file(s) with uncommitted changes")
 fi
 
 # --- 2. Unpushed commits ---
 UNPUSHED=$(git -C "$PROJECT_ROOT" log --oneline '@{upstream}..HEAD' 2>/dev/null | wc -l | tr -d ' ')
 if [[ "$UNPUSHED" -gt 0 ]]; then
-    ITEMS+=("UNPUSHED: $UNPUSHED commit(s) not pushed to remote")
+    ITEMS+=("[MANUAL] UNPUSHED: $UNPUSHED commit(s) not pushed to remote")
 fi
 
 # --- 3. Learnings freshness ---
@@ -31,10 +31,10 @@ if [[ -f "$CLAUDE_LEARNINGS" ]]; then
     NOW=$(date +%s)
     LEARN_AGE=$(( NOW - LEARN_MTIME ))
     if [[ $LEARN_AGE -gt 14400 ]]; then
-        ITEMS+=("LEARNINGS: Learnings file not updated this session — capture any discoveries to $CLAUDE_LEARNINGS")
+        ITEMS+=("[MANUAL] LEARNINGS: Learnings file not updated this session — capture any discoveries to $CLAUDE_LEARNINGS")
     fi
 else
-    ITEMS+=("LEARNINGS: No learnings file found — consider creating $CLAUDE_LEARNINGS")
+    ITEMS+=("[MANUAL] LEARNINGS: No learnings file found — consider creating $CLAUDE_LEARNINGS")
 fi
 
 # --- 4. Pending doc actions ---
@@ -42,7 +42,7 @@ if [[ -f "$CLAUDE_PENDING_ACTIONS" ]]; then
     # Count unchecked items (lines starting with "- [ ]")
     UNCHECKED=$(grep -c '^\- \[ \]' "$CLAUDE_PENDING_ACTIONS" 2>/dev/null) || UNCHECKED=0
     if [[ "$UNCHECKED" -gt 0 ]]; then
-        ITEMS+=("DOCS: $UNCHECKED unchecked pending doc action(s) in $(basename "$CLAUDE_PENDING_ACTIONS")")
+        ITEMS+=("[AUTO] DOCS: $UNCHECKED unchecked pending doc action(s) — auto-cleared when matching files are committed")
     fi
 fi
 
@@ -54,14 +54,14 @@ if [[ -n "$LAST_TEST_COMMIT" ]]; then
     # Check if source files changed since that commit
     CHANGED_SINCE_TEST=$(git -C "$PROJECT_ROOT" diff --name-only "$LAST_TEST_COMMIT" -- '*.ts' '*.js' '*.json' 2>/dev/null | grep -v node_modules | grep -v dist | wc -l | tr -d ' ')
     if [[ "$CHANGED_SINCE_TEST" -gt 5 ]]; then
-        ITEMS+=("TESTS: $CHANGED_SINCE_TEST source files changed since last test commit — consider running npm test")
+        ITEMS+=("[MANUAL] TESTS: $CHANGED_SINCE_TEST source files changed since last test commit — consider running npm test")
     fi
 fi
 
 # --- 6. E2E test reminder (if functional code was modified) ---
 FUNCTIONS_CHANGED=$(git -C "$PROJECT_ROOT" diff --name-only HEAD 2>/dev/null | grep -c '^functions/') || FUNCTIONS_CHANGED=0
 if [[ "$FUNCTIONS_CHANGED" -gt 0 ]]; then
-    ITEMS+=("E2E: $FUNCTIONS_CHANGED function file(s) modified — consider running npm run test:e2e")
+    ITEMS+=("[MANUAL] E2E: $FUNCTIONS_CHANGED function file(s) modified — consider running npm run test:e2e")
 fi
 
 # --- 7. Plugin drift check (if syncable files were touched) ---
@@ -69,7 +69,7 @@ DRIFT_SCRIPT="$PROJECT_ROOT/.meta/scripts/plugin-drift-check.sh"
 if [[ -x "$DRIFT_SCRIPT" ]] && command -v jq &>/dev/null; then
     DRIFT_COUNT=$("$DRIFT_SCRIPT" --count 2>/dev/null) || DRIFT_COUNT=0
     if [[ "$DRIFT_COUNT" -gt 0 ]]; then
-        ITEMS+=("PLUGIN: $DRIFT_COUNT factory file(s) drifted from plugin — run /plugin-sync to review")
+        ITEMS+=("[MANUAL] PLUGIN: $DRIFT_COUNT factory file(s) drifted from plugin — run /plugin-sync to review")
     fi
 fi
 
@@ -79,7 +79,7 @@ if [ "$CLAUDE_META_MODE" = "true" ] && [ -n "${CLAUDE_LEARNING_DIR:-}" ] && [ -d
     if [ -f "$EXERCISE_FILE" ]; then
         EXERCISE_COUNT=$(grep -c '^## ' "$EXERCISE_FILE" 2>/dev/null) || EXERCISE_COUNT=0
         if [[ "$EXERCISE_COUNT" -gt 0 ]]; then
-            ITEMS+=("LEARNING: $EXERCISE_COUNT exercise(s) pending — use /learn to build comprehension of autonomous work")
+            ITEMS+=("[MANUAL] LEARNING: $EXERCISE_COUNT exercise(s) pending — use /learn to build comprehension of autonomous work")
         fi
     fi
 fi
@@ -89,7 +89,7 @@ MEMORY_FILE="$HOME/.claude/projects/$(echo "$PROJECT_ROOT" | sed 's|/|-|g')/memo
 if [[ -f "$MEMORY_FILE" ]]; then
     MEMORY_LINES=$(wc -l < "$MEMORY_FILE" | tr -d ' ')
     if [[ "$MEMORY_LINES" -gt 100 ]]; then
-        ITEMS+=("MEMORY: ${MEMORY_LINES}/200 lines — run /wrap-up to prune stale entries")
+        ITEMS+=("[AUTO] MEMORY: ${MEMORY_LINES}/200 lines — stale entries auto-pruned at next session start after /wrap-up tags them")
     fi
 fi
 
@@ -102,7 +102,7 @@ if [[ "$CLAUDE_META_MODE" == "true" ]] && [[ -x "$ARCHITECT_METRICS" ]]; then
         if [[ $DRIFT_RC -ne 0 ]]; then
             DRIFT_ITEMS=$(echo "$DRIFT_OUTPUT" | grep '^ *-' | sed 's/^ *- //' | paste -sd', ' -)
             if [[ -n "$DRIFT_ITEMS" ]]; then
-                ITEMS+=("ARCHITECT: Summary drift ($DRIFT_ITEMS) — /wrap-up will handle it")
+                ITEMS+=("[AUTO] ARCHITECT: Summary drift ($DRIFT_ITEMS) — /wrap-up step 7b handles this")
             fi
         fi
     fi
@@ -113,7 +113,7 @@ README_DRIFT_SCRIPT="$PROJECT_ROOT/scripts/check-readme-drift.sh"
 if [[ -x "$README_DRIFT_SCRIPT" ]]; then
     DRIFT_OUTPUT=$("$README_DRIFT_SCRIPT" --quiet 2>/dev/null) || true
     if [[ -n "$DRIFT_OUTPUT" ]]; then
-        ITEMS+=("README: $DRIFT_OUTPUT")
+        ITEMS+=("[AUTO] README: $DRIFT_OUTPUT — run check-readme-drift.sh --fix")
     fi
 fi
 
@@ -122,7 +122,7 @@ WIKI_DRIFT_SCRIPT="$PROJECT_ROOT/scripts/check-wiki-drift.sh"
 if [[ -x "$WIKI_DRIFT_SCRIPT" ]]; then
     WIKI_DRIFT_OUTPUT=$("$WIKI_DRIFT_SCRIPT" --quiet 2>/dev/null) || true
     if [[ -n "$WIKI_DRIFT_OUTPUT" ]]; then
-        ITEMS+=("Wiki: $WIKI_DRIFT_OUTPUT")
+        ITEMS+=("[AUTO] Wiki: $WIKI_DRIFT_OUTPUT — run sync-wiki.sh --fix")
     fi
 fi
 

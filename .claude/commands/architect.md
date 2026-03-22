@@ -75,6 +75,21 @@ These add complexity. Default to simpler solutions for prototypes.
 | **TaskRouter** | Skills-based routing to agents, contact center features, task queuing with SLAs | Simple call forwarding, single destination, no agent availability logic |
 | **Messaging Services** | High-volume campaigns, multiple sender numbers, A2P 10DLC compliance, sticky sender needed | Single phone number, low volume, simple notifications |
 
+#### Deprecated Products (Do Not Use)
+
+These Twilio products are sunset or deprecated. If a user request references them (or you find them in copy-pasted code), redirect to the current alternative.
+
+| Deprecated Product | Status | Use Instead |
+| ------------------ | ------ | ----------- |
+| **Autopilot** | Sunset | ConversationRelay + external LLM |
+| **Programmable Chat** | Sunset | Conversations API |
+| **Legacy Conversations (v1)** | Deprecated | Conversations API (v2) |
+| **Programmable Video (P2P)** | Deprecated | Video Go Rooms or Group Rooms |
+| **Authy API** | Deprecated | Verify API |
+| **Proxy** | Limited | Conversations API with scoped users |
+
+If you see `autopilot`, `programmable-chat`, `authy`, or legacy SDK imports in user-provided code, flag it immediately — don't build on a deprecated foundation.
+
 #### Complexity Decision Tree
 
 ```text
@@ -96,6 +111,25 @@ Q: Do you need transcription during live calls?
 ├── Yes, custom STT engine → `<Start><Stream>` + your own STT
 └── No, post-call only → Voice Intelligence batch via recording `source_sid`
 ```
+
+#### High-Volume Outbound Patterns
+
+When the request involves mass notifications, blast campaigns, or high-volume outbound calling:
+
+| Pattern | Capacity | Twilio Service | Notes |
+| ------- | -------- | -------------- | ----- |
+| Sequential outbound calls | ~1 CPS (call per second) per number | Voice API | Default rate; request increase via support |
+| Concurrent outbound calls | ~100 concurrent per account (default) | Voice API | Hard limit varies by account; check console |
+| Queue-based outbound | Thousands queued, workers drain at rate limit | TaskRouter + Voice API | Best for contact-center-style dial campaigns |
+| Bulk SMS (A2P 10DLC) | Varies by campaign class (T1: 4,500 msg/min) | Messaging Services | Requires 10DLC registration; throttled without it |
+| Bulk SMS (toll-free) | ~3 SMS/sec per number | Messaging Services | Verification required; lower throughput than 10DLC |
+| Bulk SMS (short code) | ~100 SMS/sec | Messaging Services + Short Code | Highest throughput; 8-12 week provisioning |
+
+**Key guidance for high-volume requests:**
+- Always recommend **Messaging Services** over single-number sends — sender pool, automatic compliance, sticky sender
+- For voice blasts, recommend **queue-based** patterns (TaskRouter or custom queue) to stay within CPS limits rather than fire-and-forget loops
+- Flag account-level concurrency limits early — users hit them before they expect to
+- For 10K+ recipients, discuss **Notify** (batch API) as the delivery layer with Messaging Services underneath
 
 #### Prototype-First Principle
 
@@ -197,9 +231,28 @@ When the request mentions **retention**, **recording**, **compliance**, **GDPR**
 1. Flag the conflict explicitly in your Architecture Fit Analysis
 2. List the specific contradictions (e.g., "GDPR requires deletion on request, SOX requires 7-year retention")
 3. Recommend the user resolve the conflict before proceeding to `/spec`
-4. Suggest tiered retention (e.g., separate PII-scrubbed transcripts from raw recordings) if applicable
+4. Suggest a resolution template from below if applicable
 
 Do NOT silently choose one regulation over another. The user must make the compliance decision.
+
+**Resolution Templates**
+
+Use these as starting points when surfacing conflicts. Present them as options for the user to evaluate with their compliance team — not as recommendations.
+
+**GDPR + SOX (retention vs. erasure):**
+- Tiered storage: retain PII-scrubbed transcripts for SOX (7 years), delete raw recordings with PII on GDPR schedule (30 days or on request)
+- Implementation: `<Record>` → post-call transcription via Voice Intelligence → scrub PII from transcript → delete recording → retain transcript
+- Twilio levers: recording auto-deletion rules, Voice Intelligence PII redaction, Sync TTL for ephemeral state
+
+**GDPR + HIPAA (minimization vs. access controls):**
+- Encrypt at rest + strict access controls (satisfies HIPAA), automated deletion schedules (satisfies GDPR minimization)
+- Implementation: recordings stored with encryption, BAA in place, scheduled deletion job via recording API
+- Flag: HIPAA 6-year retention may conflict with GDPR erasure requests — user must determine which takes precedence per jurisdiction
+
+**PCI DSS + any recording requirement:**
+- Never record payment segments — use `<Pay>` for card capture, pause recording during payment with `<Record>` pause/resume or split the call flow
+- Implementation: separate TwiML for payment leg (no `<Record>`), rejoin main flow after payment completes
+- Flag: if the user says "record everything for compliance" AND handles payments, this is always a conflict — surface it immediately
 
 ### Step 3c: Feasibility & Scope Assessment
 
